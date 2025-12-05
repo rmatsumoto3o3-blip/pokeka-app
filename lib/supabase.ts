@@ -16,7 +16,7 @@ export interface User {
 export interface Deck {
   id: string
   user_id: string
-  deck_code: string
+  deck_code: string | null  // デッキコードは任意に変更
   deck_name: string
   image_url: string | null
   created_at: string
@@ -27,9 +27,27 @@ export interface Match {
   deck_id: string
   user_id: string
   result: 'win' | 'loss' | 'draw'
-  opponent_name: string
+  opponent_name: string | null  // 任意項目に変更
   date: string
   notes: string | null
+  side: string | null  // サイドカード枚数（例: "3-6"）
+  going_first: '先攻' | '後攻' | null  // 先攻/後攻の選択
+  created_at: string
+}
+
+export interface ReferenceDeck {
+  id: string
+  deck_name: string
+  deck_code: string | null
+  deck_url: string | null
+  image_url: string | null
+  created_at: string
+}
+
+export interface ReferenceDeckFavorite {
+  id: string
+  user_id: string
+  deck_id: string
   created_at: string
 }
 

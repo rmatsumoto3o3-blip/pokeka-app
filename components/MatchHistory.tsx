@@ -53,21 +53,6 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
         }
     }
 
-    const handleDelete = async (matchId: string) => {
-        if (!confirm('この試合記録を削除しますか?')) return
-
-        try {
-            const { error } = await supabase
-                .from('matches')
-                .delete()
-                .eq('id', matchId)
-
-            if (error) throw error
-            fetchMatches()
-        } catch (err) {
-            console.error('Error deleting match:', err)
-        }
-    }
 
     const getResultColor = (result: string) => {
         switch (result) {
@@ -134,6 +119,16 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
                                     <div className="text-gray-300">
                                         <span className="text-gray-400">日付:</span> {new Date(match.date).toLocaleDateString('ja-JP')}
                                     </div>
+                                    {match.side && (
+                                        <div className="text-gray-300">
+                                            <span className="text-gray-400">サイド:</span> {match.side}
+                                        </div>
+                                    )}
+                                    {match.going_first !== null && (
+                                        <div className="text-gray-300">
+                                            <span className="text-gray-400">先攻:</span> {match.going_first ? '取った' : '取らなかった'}
+                                        </div>
+                                    )}
                                     {match.notes && (
                                         <div className="text-gray-300">
                                             <span className="text-gray-400">メモ:</span> {match.notes}
@@ -141,13 +136,6 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
                                     )}
                                 </div>
                             </div>
-
-                            <button
-                                onClick={() => handleDelete(match.id)}
-                                className="ml-4 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg border border-red-500/30 transition text-sm"
-                            >
-                                削除
-                            </button>
                         </div>
                     </div>
                 ))}

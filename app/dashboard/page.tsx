@@ -7,11 +7,13 @@ import type { User } from '@supabase/supabase-js'
 import DeckList from '@/components/DeckList'
 import AddDeckForm from '@/components/AddDeckForm'
 import MatchHistory from '@/components/MatchHistory'
+import ReferenceDeckManager from '@/components/ReferenceDeckManager'
+import ReferenceDeckList from '@/components/ReferenceDeckList'
 
 export default function Dashboard() {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'decks' | 'history'>('decks')
+    const [activeTab, setActiveTab] = useState<'register' | 'decks' | 'history' | 'reference'>('decks')
     const router = useRouter()
 
     useEffect(() => {
@@ -75,33 +77,55 @@ export default function Dashboard() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex gap-2 mb-6">
                     <button
-                        onClick={() => setActiveTab('decks')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'decks'
-                                ? 'bg-white text-purple-900 shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                        onClick={() => setActiveTab('register')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'register'
+                            ? 'bg-white text-purple-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
-                        デッキ管理
+                        デッキ登録
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('decks')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'decks'
+                            ? 'bg-white text-purple-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                    >
+                        デッキ一覧
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
                         className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'history'
-                                ? 'bg-white text-purple-900 shadow-lg'
-                                : 'bg-white/10 text-white hover:bg-white/20'
+                            ? 'bg-white text-purple-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
                         戦績履歴
                     </button>
+                    <button
+                        onClick={() => setActiveTab('reference')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition ${activeTab === 'reference'
+                            ? 'bg-white text-purple-900 shadow-lg'
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
+                    >
+                        参考デッキ
+                    </button>
                 </div>
 
                 {/* Content */}
-                {activeTab === 'decks' ? (
-                    <div className="space-y-6">
-                        <AddDeckForm userId={user?.id || ''} />
-                        <DeckList userId={user?.id || ''} />
-                    </div>
-                ) : (
+                {activeTab === 'register' ? (
+                    <AddDeckForm userId={user?.id || ''} />
+                ) : activeTab === 'decks' ? (
+                    <DeckList userId={user?.id || ''} />
+                ) : activeTab === 'history' ? (
                     <MatchHistory userId={user?.id || ''} />
+                ) : (
+                    <div className="space-y-6">
+                        <ReferenceDeckManager userEmail={user?.email || ''} />
+                        <ReferenceDeckList userId={user?.id || ''} userEmail={user?.email || ''} />
+                    </div>
                 )}
             </div>
         </div>
