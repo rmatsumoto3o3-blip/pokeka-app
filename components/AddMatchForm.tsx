@@ -149,7 +149,7 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
                     value={opponentName}
                     onChange={(e) => setOpponentName(e.target.value)}
                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="対戦相手の名前（任意）"
+                    placeholder="対戦相手のデッキ名"
                 />
             </div>
 

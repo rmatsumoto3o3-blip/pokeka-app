@@ -14,6 +14,9 @@ interface MatchWithDeck extends Match {
 
 export default function MatchHistory({ userId }: MatchHistoryProps) {
     const [matches, setMatches] = useState<MatchWithDeck[]>([])
+    const [allMatches, setAllMatches] = useState<MatchWithDeck[]>([])
+    const [decks, setDecks] = useState<Deck[]>([])
+    const [selectedDeckId, setSelectedDeckId] = useState<string>('all')
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -45,11 +48,22 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
                 deck: (decksData || []).find((d) => d.id === match.deck_id)!,
             }))
 
+            setAllMatches(matchesWithDecks)
             setMatches(matchesWithDecks)
+            setDecks(decksData || [])
         } catch (err) {
             console.error('Error fetching matches:', err)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleDeckFilter = (deckId: string) => {
+        setSelectedDeckId(deckId)
+        if (deckId === 'all') {
+            setMatches(allMatches)
+        } else {
+            setMatches(allMatches.filter(match => match.deck_id === deckId))
         }
     }
 
@@ -94,8 +108,27 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
     }
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">戦績履歴</h2>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">戦績履歴</h2>
+
+                {/* デッキフィルター */}
+                <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-300">デッキで絞り込み:</label>
+                    <select
+                        value={selectedDeckId}
+                        onChange={(e) => handleDeckFilter(e.target.value)}
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                        <option value="all">すべてのデッキ</option>
+                        {decks.map((deck) => (
+                            <option key={deck.id} value={deck.id}>
+                                {deck.deck_name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
 
             <div className="space-y-3">
                 {matches.map((match) => (
