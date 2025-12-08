@@ -1,6 +1,24 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+
 export default function PrivacyPolicy() {
+    const router = useRouter()
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setIsLoggedIn(!!session)
+        }
+        checkAuth()
+    }, [])
+
+    const handleBack = () => {
+        router.push(isLoggedIn ? '/dashboard' : '/')
+    }
     return (
         <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 py-12 px-4">
             <div className="max-w-4xl mx-auto bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
@@ -99,12 +117,12 @@ export default function PrivacyPolicy() {
                 </div>
 
                 <div className="mt-8 text-center">
-                    <a
-                        href="/dashboard"
+                    <button
+                        onClick={handleBack}
                         className="inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
                     >
-                        ダッシュボードに戻る
-                    </a>
+                        {isLoggedIn ? 'ダッシュボードに戻る' : 'トップページに戻る'}
+                    </button>
                 </div>
             </div>
         </div>
