@@ -51,8 +51,8 @@ export default function AuthPage() {
 
     // Color Change: White background, Pop card
     return (
-        <div className="min-h-screen flex items-center justify-center bg-pink-50">
-            <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border-2 border-pink-200">
+        <div className="min-h-screen flex items-center justify-center bg-pink-50 px-4">
+            <div className="w-full max-w-md p-6 md:p-8 bg-white rounded-2xl shadow-xl border-2 border-pink-200">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-gray-900 mb-2">
                         <span className="text-pink-500">⚡</span> ポケカ戦績

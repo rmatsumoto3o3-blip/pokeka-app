@@ -77,91 +77,80 @@ export default function Dashboard() {
     // Color Change: White base
     return (
         <div className="min-h-screen bg-pink-50">
-            {/* Header / Navigation */}
             <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center">
-                            <span className="text-xl font-bold text-gray-900">
-                                <span className="text-pink-500">⚡</span> ポケカ戦績
-                            </span>
+                    <div className="flex justify-between h-16">
+                        <div className="flex overflow-x-auto">
+                            <div className="flex-shrink-0 flex items-center">
+                                <span className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-4 md:mr-8 whitespace-nowrap">
+                                    ポケカ戦績
+                                </span>
+                            </div>
+                            <div className="flex space-x-2 md:space-x-8 items-center whitespace-nowrap">
+                                <button
+                                    onClick={() => setActiveTab('decks')}
+                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'decks'
+                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                >
+                                    デッキ管理
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'history'
+                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                >
+                                    戦績履歴
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('reference')}
+                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'reference'
+                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                >
+                                    参考デッキ
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm text-gray-600 hidden sm:block">
-                                {userEmail}
-                            </span>
+                        <div className="flex items-center ml-4">
+                            <span className="hidden md:inline-block text-sm text-gray-500 mr-4">{userEmail}</span>
                             <button
                                 onClick={handleSignOut}
-                                className="px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-pink-500 hover:bg-pink-50 transition"
+                                className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
                             >
                                 ログアウト
                             </button>
                         </div>
                     </div>
                 </div>
-
-                {/* Tabs */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex space-x-1 overflow-x-auto pb-2 scrollbar-hide">
-                        {[
-                            { id: 'decks', label: 'デッキ一覧', icon: '🎴' },
-                            { id: 'add_deck', label: 'デッキ登録', icon: '➕' },
-                            { id: 'history', label: '戦績履歴', icon: '📊' },
-                            { id: 'reference', label: '参考デッキ', icon: '📚' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`
-                    flex items-center px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap
-                    ${activeTab === tab.id
-                                        ? 'bg-pink-500 text-white shadow-md'
-                                        : 'text-gray-600 hover:bg-pink-50 hover:text-pink-500'
-                                    }
-                  `}
-                            >
-                                <span className="mr-2">{tab.icon}</span>
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
             </nav>
 
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {activeTab === 'decks' && (
                     <div className="space-y-6">
-                        <div className="bg-white rounded-xl p-6 border-2 border-pink-200 shadow-sm">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
+                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                            <AddDeckForm userId={userId} onSuccess={() => setActiveTab('decks')} />
+                        </div>
+                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
                             <DeckList userId={userId} />
                         </div>
                     </div>
                 )}
 
-                {activeTab === 'add_deck' && (
-                    <div className="max-w-2xl mx-auto">
-                        <div className="bg-white rounded-xl p-6 border-2 border-pink-200 shadow-sm">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">新しいデッキを登録</h2>
-                            <AddDeckForm
-                                userId={userId}
-                                onSuccess={() => setActiveTab('decks')}
-                            />
-                        </div>
-                    </div>
-                )}
-
                 {activeTab === 'history' && (
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-xl p-6 border-2 border-blue-200 shadow-sm">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">戦績履歴</h2>
-                            <MatchHistory userId={userId} />
-                        </div>
+                    <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                        <MatchHistory userId={userId} />
                     </div>
                 )}
 
                 {activeTab === 'reference' && (
-                    <div className="space-y-6">
+                    <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ（管理者編集用）</h2>
                         <ReferenceDeckList userId={userId} userEmail={userEmail} />
                     </div>
                 )}

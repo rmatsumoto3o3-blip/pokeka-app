@@ -60,110 +60,115 @@ export default function Home() {
         </div>
       </header>
 
-      {/* メインビジュアル */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            対戦記録を簡単管理
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            デッキ管理から試合記録、戦績分析まで。<br />
-            ポケモンカードの対戦記録を一元管理できます。
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-12 md:pt-32 md:pb-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-100/50 via-purple-100/50 to-blue-100/50 z-0" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-white border border-pink-200 text-pink-600 text-sm font-semibold shadow-sm animate-fade-in-up">
+            ✨ ポケモンカード専用 戦績管理アプリ
+          </div>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 leading-tight animate-fade-in-up delay-100">
+            最強の<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">ポケカデッキ</span>を<br className="md:hidden" />見つけよう
+          </h1>
+          <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
+            日々の対戦成績を記録して、勝率を分析。<br className="hidden md:inline" />
+            環境デッキや優勝デッキもチェックして、あなたのプレイングを進化させましょう。
           </p>
-          <button
-            onClick={() => router.push('/auth')}
-            className="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
-          >
-            無料で登録して始める
-          </button>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
+            <a
+              href="/auth"
+              className="px-8 py-4 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            >
+              今すぐ始める（無料）
+            </a>
+            <a
+              href="#features"
+              className="px-8 py-4 rounded-xl bg-white text-gray-700 font-bold text-lg border-2 border-gray-100 hover:border-pink-200 hover:bg-pink-50 transition-all duration-200 shadow-sm"
+            >
+              機能を見る
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* 参考デッキ一覧 */}
-      <section className="py-16 px-4 bg-pink-50">
-        <div className="max-w-7xl mx-auto">
+      {/* Reference Decks Section (Public Preview) */}
+      <section className="py-12 md:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">最新デッキレシピ・環境デッキ</h3>
-            <p className="text-gray-600">登録不要で閲覧できます</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">注目の参考デッキ</h2>
+            <p className="text-gray-600">最新の大会優勝デッキや環境デッキをチェック</p>
           </div>
 
           {loading ? (
-            <div className="text-center text-gray-600">読み込み中...</div>
+            <div className="text-center text-gray-500 py-12">読み込み中...</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {decks.map((deck) => (
-                <div
-                  key={deck.id}
-                  className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
-                >
+                <div key={deck.id} className="group bg-white rounded-2xl p-4 md:p-6 border-2 border-pink-100 hover:border-pink-300 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1">
                   {deck.image_url && (
-                    <div className="w-full h-48 bg-gray-100">
+                    <div className="relative w-full h-40 md:h-48 mb-4 rounded-xl overflow-hidden bg-gray-100">
                       <img
                         src={deck.image_url}
                         alt={deck.deck_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                       />
                     </div>
                   )}
-                  <div className="p-4">
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">{deck.deck_name}</h4>
-                    {deck.deck_code && (
-                      <p className="text-sm text-gray-500 mb-2 font-mono break-all bg-gray-50 px-2 py-1 rounded inline-block">
-                        {deck.deck_code}
-                      </p>
-                    )}
-                    {deck.deck_url && (
-                      <div>
-                        <a
-                          href={deck.deck_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-pink-500 hover:text-pink-600 underline"
-                        >
-                          詳細を見る →
-                        </a>
-                      </div>
-                    )}
+                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 group-hover:text-pink-600 transition-colors">
+                    {deck.deck_name}
+                  </h3>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-xs md:text-sm text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                      デッキコード: {deck.deck_code}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {decks.length === 0 && !loading && (
-            <div className="text-center text-gray-400 py-12">
-              まだデッキが登録されていません
-            </div>
-          )}
+          <div className="text-center mt-12">
+            <a href="/auth" className="inline-flex items-center text-pink-600 font-semibold hover:text-pink-700 transition">
+              もっと見る <span className="ml-2">→</span>
+            </a>
+          </div>
         </div>
       </section>
 
-      {/* 機能紹介 */}
-      <section className="py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">登録すると使える機能</h3>
-            <p className="text-gray-600">無料で全ての機能が利用できます</p>
+      {/* Features Section */}
+      <section id="features" className="py-12 md:py-20 bg-pink-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
+            <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-xl p-6 border-2 border-purple-200 shadow-sm">
-              <div className="text-4xl mb-4">🎴</div>
-              <h4 className="text-xl font-bold text-gray-900 mb-3">デッキ管理</h4>
-              <p className="text-gray-600">
-                デッキコードや画像を登録して、複数のデッキを一元管理。
-                デッキごとの戦績も自動集計されます。
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border-2 border-blue-200 shadow-sm">
-              <div className="text-4xl mb-4">📊</div>
-              <h4 className="text-xl font-bold text-gray-900 mb-3">試合記録</h4>
-              <p className="text-gray-600">
-                勝敗、先攻後攻、サイド状況など詳細な試合記録を保存。
-                デッキ別に戦績を分析できます。
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {[
+              {
+                icon: "📊",
+                title: "勝率を自動計算",
+                description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
+              },
+              {
+                icon: "📝",
+                title: "詳細な対戦記録",
+                description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
+              },
+              {
+                icon: "🔍",
+                title: "参考デッキ閲覧",
+                description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
+              }
+            ].map((feature, index) => (
+              <div key={index} className="bg-white rounded-2xl p-6 md:p-8 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl">
+                <div className="text-4xl md:text-5xl mb-4 md:mb-6">{feature.icon}</div>
+                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
+                <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
           </div>
 
           <div className="text-center mt-12">
