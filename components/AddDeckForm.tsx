@@ -5,9 +5,10 @@ import { supabase } from '@/lib/supabase'
 
 interface AddDeckFormProps {
     userId: string
+    onSuccess?: () => void
 }
 
-export default function AddDeckForm({ userId }: AddDeckFormProps) {
+export default function AddDeckForm({ userId, onSuccess }: AddDeckFormProps) {
     const [deckCode, setDeckCode] = useState('')
     const [deckName, setDeckName] = useState('')
     const [imageFile, setImageFile] = useState<File | null>(null)
@@ -61,10 +62,16 @@ export default function AddDeckForm({ userId }: AddDeckFormProps) {
             setImageFile(null)
             setSuccess(true)
 
-            // Reload page to show new deck
-            setTimeout(() => {
-                window.location.reload()
-            }, 1000)
+            if (onSuccess) {
+                setTimeout(() => {
+                    onSuccess()
+                }, 1000)
+            } else {
+                // Should not happen in new flow, but fallback
+                setTimeout(() => {
+                    window.location.reload()
+                }, 1000)
+            }
         } catch (err: any) {
             setError(err.message || 'デッキの登録に失敗しました')
         } finally {
@@ -72,38 +79,39 @@ export default function AddDeckForm({ userId }: AddDeckFormProps) {
         }
     }
 
+    // Color Change: White base
     return (
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-4">新しいデッキを登録</h2>
+        <div className="bg-white rounded-2xl p-6 border-2 border-pink-100 shadow-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">新しいデッキを登録</h2>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-500/20 text-red-200 rounded-lg border border-red-500/30">
+                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200">
                     {error}
                 </div>
             )}
 
             {success && (
-                <div className="mb-4 p-3 bg-green-500/20 text-green-200 rounded-lg border border-green-500/30">
+                <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-lg border border-green-200">
                     デッキを登録しました!
                 </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         デッキコード
                     </label>
                     <input
                         type="text"
                         value={deckCode}
                         onChange={(e) => setDeckCode(e.target.value)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                         placeholder="例: ggnnLg-abc123...（任意）"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         デッキ名 *
                     </label>
                     <input
@@ -111,22 +119,22 @@ export default function AddDeckForm({ userId }: AddDeckFormProps) {
                         value={deckName}
                         onChange={(e) => setDeckName(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                         placeholder="例: ピカチュウex"
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-200 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                         デッキ画像
                     </label>
                     <input
                         type="file"
                         accept="image/*"
                         onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer transition"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-500 file:text-white hover:file:bg-pink-600 file:cursor-pointer transition"
                     />
-                    <p className="mt-2 text-sm text-gray-400">
+                    <p className="mt-2 text-sm text-gray-500">
                         公式サイトのデッキ画像をアップロードできます
                     </p>
                 </div>
@@ -134,7 +142,7 @@ export default function AddDeckForm({ userId }: AddDeckFormProps) {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                     {loading ? '登録中...' : 'デッキを登録'}
                 </button>

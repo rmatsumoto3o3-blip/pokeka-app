@@ -57,30 +57,29 @@ export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckLi
         }
     }
 
+    // Color Change: White base
     if (loading) {
-        return <div className="text-white text-center">読み込み中...</div>
+        return <div className="text-gray-600 text-center">読み込み中...</div>
     }
 
     if (decks.length === 0) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
-                <p className="text-gray-300 text-lg">まだ参考デッキがありません</p>
+            <div className="bg-white rounded-2xl p-8 border-2 border-pink-100 text-center shadow-sm">
+                <p className="text-gray-500 text-lg">まだ参考デッキがありません</p>
             </div>
         )
     }
 
     return (
         <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">参考デッキ一覧</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {decks.map((deck) => (
                     <div
                         key={deck.id}
-                        className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20 hover:border-purple-500/50 transition"
+                        className="bg-white rounded-xl p-4 border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
                     >
                         {deck.image_url && (
-                            <div className="relative w-full h-48 mb-3 rounded-lg overflow-hidden">
+                            <div className="relative w-full h-48 mb-3 rounded-lg overflow-hidden bg-gray-100">
                                 <img
                                     src={deck.image_url}
                                     alt={deck.deck_name}
@@ -89,12 +88,14 @@ export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckLi
                             </div>
                         )}
 
-                        <h3 className="text-lg font-bold text-white mb-2">{deck.deck_name}</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
 
                         {deck.deck_code && (
                             <div className="mb-2">
-                                <span className="text-xs text-gray-400">デッキコード:</span>
-                                <p className="text-sm text-gray-200 font-mono break-all">{deck.deck_code}</p>
+                                <span className="text-xs text-gray-500 mr-1">デッキコード:</span>
+                                <p className="text-sm text-gray-700 font-mono break-all inline-block bg-gray-50 px-1 rounded">
+                                    {deck.deck_code}
+                                </p>
                             </div>
                         )}
 
@@ -104,7 +105,7 @@ export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckLi
                                     href={deck.deck_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition text-center"
+                                    className="flex-1 px-3 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm rounded-lg transition text-center shadow-sm"
                                 >
                                     詳細を見る →
                                 </a>
@@ -114,7 +115,7 @@ export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckLi
                             {isAdmin && (
                                 <button
                                     onClick={() => handleDelete(deck.id, deck.deck_name)}
-                                    className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg border border-red-500/30 transition text-sm"
+                                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm"
                                 >
                                     削除
                                 </button>

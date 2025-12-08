@@ -89,14 +89,15 @@ export default function DeckList({ userId }: DeckListProps) {
         }
     }
 
+    // Color Change: White base
     if (loading) {
-        return <div className="text-white text-center">読み込み中...</div>
+        return <div className="text-gray-600 text-center">読み込み中...</div>
     }
 
     if (decks.length === 0) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
-                <p className="text-gray-300 text-lg">まだデッキが登録されていません</p>
+            <div className="bg-white rounded-2xl p-8 border-2 border-pink-100 text-center shadow-sm">
+                <p className="text-gray-500 text-lg">まだデッキが登録されていません</p>
                 <p className="text-gray-400 mt-2">上のフォームから最初のデッキを登録しましょう!</p>
             </div>
         )
@@ -104,13 +105,13 @@ export default function DeckList({ userId }: DeckListProps) {
 
     return (
         <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white">登録済みデッキ</h2>
+            {/* H2 Removed as it's in parent */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {decks.map((deck) => (
                     <div
                         key={deck.id}
-                        className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden border border-white/20 hover:border-white/40 transition"
+                        className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
                     >
                         {deck.image_url && (
                             <img
@@ -121,45 +122,45 @@ export default function DeckList({ userId }: DeckListProps) {
                         )}
 
                         <div className="p-4">
-                            <h3 className="text-xl font-bold text-white mb-2">{deck.deck_name}</h3>
-                            <p className="text-sm text-gray-400 mb-4 font-mono">{deck.deck_code}</p>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
+                            <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
 
                             <div className="grid grid-cols-2 gap-2 mb-4">
-                                <div className="bg-white/10 rounded-lg p-2 text-center">
-                                    <div className="text-2xl font-bold text-white">{deck.total_matches}</div>
-                                    <div className="text-xs text-gray-400">試合数</div>
+                                <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">
+                                    <div className="text-2xl font-bold text-gray-900">{deck.total_matches}</div>
+                                    <div className="text-xs text-gray-500">試合数</div>
                                 </div>
-                                <div className="bg-white/10 rounded-lg p-2 text-center">
-                                    <div className="text-2xl font-bold text-green-400">
+                                <div className="bg-gray-50 rounded-lg p-2 text-center">
+                                    <div className="text-2xl font-bold text-green-600">
                                         {deck.win_rate.toFixed(1)}%
                                     </div>
-                                    <div className="text-xs text-gray-400">勝率</div>
+                                    <div className="text-xs text-gray-500">勝率</div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 text-sm mb-4">
-                                <span className="text-green-400">{deck.wins}勝</span>
-                                <span className="text-red-400">{deck.losses}敗</span>
-                                <span className="text-gray-400">{deck.draws}分</span>
+                            <div className="flex gap-2 text-sm mb-4 font-medium">
+                                <span className="text-green-600">{deck.wins}勝</span>
+                                <span className="text-red-600">{deck.losses}敗</span>
+                                <span className="text-gray-600">{deck.draws}分</span>
                             </div>
 
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
-                                    className="flex-1 py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                                    className="flex-1 py-2 px-4 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm"
                                 >
                                     {selectedDeck === deck.id ? '閉じる' : '試合を記録'}
                                 </button>
                                 <button
                                     onClick={() => handleDelete(deck.id)}
-                                    className="py-2 px-4 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg border border-red-500/30 transition"
+                                    className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
                                 >
                                     削除
                                 </button>
                             </div>
 
                             {selectedDeck === deck.id && (
-                                <div className="mt-4 pt-4 border-t border-white/20">
+                                <div className="mt-4 pt-4 border-t border-gray-100">
                                     <AddMatchForm
                                         deckId={deck.id}
                                         userId={userId}

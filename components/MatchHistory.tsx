@@ -71,13 +71,13 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
     const getResultColor = (result: string) => {
         switch (result) {
             case 'win':
-                return 'bg-green-500/20 text-green-200 border-green-500/30'
+                return 'bg-green-50 text-green-700 border-green-200'
             case 'loss':
-                return 'bg-red-500/20 text-red-200 border-red-500/30'
+                return 'bg-red-50 text-red-700 border-red-200'
             case 'draw':
-                return 'bg-gray-500/20 text-gray-200 border-gray-500/30'
+                return 'bg-gray-50 text-gray-700 border-gray-200'
             default:
-                return 'bg-white/10 text-white border-white/20'
+                return 'bg-gray-50 text-gray-700 border-gray-200'
         }
     }
 
@@ -94,14 +94,15 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
         }
     }
 
+    // Color Change: White base
     if (loading) {
-        return <div className="text-white text-center">読み込み中...</div>
+        return <div className="text-gray-600 text-center">読み込み中...</div>
     }
 
     if (matches.length === 0) {
         return (
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 text-center">
-                <p className="text-gray-300 text-lg">まだ試合記録がありません</p>
+            <div className="bg-white rounded-2xl p-8 border-2 border-pink-100 text-center shadow-sm">
+                <p className="text-gray-500 text-lg">まだ試合記録がありません</p>
                 <p className="text-gray-400 mt-2">デッキ管理タブから試合を記録しましょう!</p>
             </div>
         )
@@ -110,15 +111,16 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-white">戦績履歴</h2>
+                {/* H2 Removed as it's in parent */}
+                <div />
 
                 {/* デッキフィルター */}
                 <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-300">デッキで絞り込み:</label>
+                    <label className="text-sm text-gray-600">デッキで絞り込み:</label>
                     <select
                         value={selectedDeckId}
                         onChange={(e) => handleDeckFilter(e.target.value)}
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-500 shadow-sm"
                     >
                         <option value="all">すべてのデッキ</option>
                         {decks.map((deck) => (
@@ -134,7 +136,7 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
                 {matches.map((match) => (
                     <div
                         key={match.id}
-                        className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20"
+                        className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition"
                     >
                         <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -142,28 +144,28 @@ export default function MatchHistory({ userId }: MatchHistoryProps) {
                                     <span className={`px-3 py-1 rounded-lg border font-semibold ${getResultColor(match.result)}`}>
                                         {getResultText(match.result)}
                                     </span>
-                                    <span className="text-white font-semibold">{match.deck?.deck_name || 'デッキ不明'}</span>
+                                    <span className="text-gray-900 font-semibold">{match.deck?.deck_name || 'デッキ不明'}</span>
                                 </div>
 
                                 <div className="space-y-1 text-sm">
-                                    <div className="text-gray-300">
+                                    <div className="text-gray-600">
                                         <span className="text-gray-400">対戦相手:</span> {match.opponent_name}
                                     </div>
-                                    <div className="text-gray-300">
+                                    <div className="text-gray-600">
                                         <span className="text-gray-400">日付:</span> {new Date(match.date).toLocaleDateString('ja-JP')}
                                     </div>
                                     {match.side && (
-                                        <div className="text-gray-300">
+                                        <div className="text-gray-600">
                                             <span className="text-gray-400">サイド:</span> {match.side}
                                         </div>
                                     )}
                                     {match.going_first !== null && (
-                                        <div className="text-gray-300">
+                                        <div className="text-gray-600">
                                             <span className="text-gray-400">先攻:</span> {match.going_first ? '取った' : '取らなかった'}
                                         </div>
                                     )}
                                     {match.notes && (
-                                        <div className="text-gray-300">
+                                        <div className="text-gray-600">
                                             <span className="text-gray-400">メモ:</span> {match.notes}
                                         </div>
                                     )}
