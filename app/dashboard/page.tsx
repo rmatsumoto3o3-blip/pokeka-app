@@ -9,6 +9,7 @@ import AddDeckForm from '@/components/AddDeckForm'
 import MatchHistory from '@/components/MatchHistory'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
+import Footer from '@/components/Footer'
 
 export default function Dashboard() {
     const [user, setUser] = useState<User | null>(null)
@@ -128,6 +129,8 @@ export default function Dashboard() {
                     </div>
                 )}
             </div>
+
+            <Footer />
         </div>
     )
 }
