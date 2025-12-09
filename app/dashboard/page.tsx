@@ -80,17 +80,17 @@ export default function Dashboard() {
         <div className="min-h-screen bg-pink-50">
             <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex overflow-x-auto">
+                    <div className="flex justify-between h-14 md:h-16">
+                        <div className="flex overflow-x-auto no-scrollbar items-center">
                             <div className="flex-shrink-0 flex items-center">
-                                <span className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-4 md:mr-8 whitespace-nowrap">
+                                <span className="text-base md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-2 md:mr-8 whitespace-nowrap">
                                     ポケカ戦績
                                 </span>
                             </div>
-                            <div className="flex space-x-2 md:space-x-8 items-center whitespace-nowrap">
+                            <div className="flex space-x-1 md:space-x-8 items-center whitespace-nowrap">
                                 <button
                                     onClick={() => setActiveTab('decks')}
-                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'decks'
+                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'decks'
                                         ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
@@ -99,7 +99,7 @@ export default function Dashboard() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('history')}
-                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'history'
+                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'history'
                                         ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
@@ -108,7 +108,7 @@ export default function Dashboard() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('reference')}
-                                    className={`inline-flex items-center px-3 py-2 md:px-1 md:pt-1 border-b-2 text-sm font-medium transition ${activeTab === 'reference'
+                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'reference'
                                         ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
@@ -117,11 +117,11 @@ export default function Dashboard() {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex items-center ml-4">
+                        <div className="flex items-center ml-2 md:ml-4 flex-shrink-0">
                             <span className="hidden md:inline-block text-sm text-gray-500 mr-4">{userEmail}</span>
                             <button
                                 onClick={handleSignOut}
-                                className="text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap"
+                                className="text-xs md:text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap px-2 py-1 bg-gray-100 rounded md:bg-transparent"
                             >
                                 ログアウト
                             </button>

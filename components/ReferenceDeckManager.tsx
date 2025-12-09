@@ -194,8 +194,8 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                     <span className="bg-purple-100 p-2 rounded-lg mr-2">📁</span>
                     デッキタイプ設定（画像管理）
                 </h2>
-                <div className="flex gap-4 items-end">
-                    <div className="flex-1">
+                <div className="flex flex-col md:flex-row gap-4 md:items-end">
+                    <div className="w-full md:flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             デッキタイプを選択
                         </label>
@@ -210,7 +210,7 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                             ))}
                         </select>
                     </div>
-                    <div className="flex-1">
+                    <div className="w-full md:flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             表紙画像
                         </label>
@@ -224,7 +224,7 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                     <button
                         onClick={handleUpdateArchetypeImage}
                         disabled={!manageArchetypeId || !archetypeImageFile || archetypeLoading}
-                        className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow disabled:opacity-50 transition"
+                        className="w-full md:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow disabled:opacity-50 transition"
                     >
                         {archetypeLoading ? '更新中...' : '画像を設定'}
                     </button>

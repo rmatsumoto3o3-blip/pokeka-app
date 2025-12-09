@@ -38,21 +38,21 @@ export default function Home() {
     <div className="min-h-screen bg-white text-gray-900">
       {/* ヘッダー */}
       <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+            <h1 className="text-base sm:text-2xl font-bold text-gray-900 whitespace-nowrap">
               ⚡️ポケメタ⚡️
             </h1>
-            <div className="flex gap-3">
+            <div className="flex gap-2 md:gap-3">
               <button
                 onClick={() => router.push('/auth')}
-                className="px-4 py-2 text-gray-600 hover:text-pink-500 transition"
+                className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap"
               >
                 ログイン
               </button>
               <button
                 onClick={() => router.push('/auth')}
-                className="px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-lg font-semibold transition shadow-md"
+                className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
               >
                 登録して始める
               </button>
