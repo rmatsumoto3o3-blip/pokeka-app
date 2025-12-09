@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Footer from '@/components/Footer'
+import ReferenceDeckList from '@/components/ReferenceDeckList'
 
 export default function Home() {
   const [decks, setDecks] = useState<ReferenceDeck[]>([])
@@ -39,8 +40,8 @@ export default function Home() {
       <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              <span className="text-pink-500">⚡</span> ポケカ戦績
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+              ⚡️ポケメタ⚡️
             </h1>
             <div className="flex gap-3">
               <button
@@ -68,11 +69,13 @@ export default function Home() {
             ✨ ポケモンカード専用 戦績管理アプリ
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 leading-tight animate-fade-in-up delay-100">
-            最強の<span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">ポケカデッキ</span>を<br className="md:hidden" />見つけよう
+            数字で環境把握<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">数字で見るポケカ</span>
           </h1>
           <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
-            日々の対戦成績を記録して、勝率を分析。<br className="hidden md:inline" />
-            環境デッキや優勝デッキもチェックして、あなたのプレイングを進化させましょう。
+            日々の対戦成績を記録して、勝率を分析。<br className="block sm:hidden" />
+            環境デッキや優勝デッキもチェックして、<br className="block sm:hidden" />
+            あなたのプレイングを進化させましょう。
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fade-in-up delay-300">
             <a
@@ -94,43 +97,9 @@ export default function Home() {
       {/* Reference Decks Section (Public Preview) */}
       <section className="py-12 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">注目の参考デッキ</h2>
-            <p className="text-gray-600">最新の大会優勝デッキや環境デッキをチェック</p>
-          </div>
-
-          {loading ? (
-            <div className="text-center text-gray-500 py-12">読み込み中...</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-              {decks.map((deck) => (
-                <div key={deck.id} className="group bg-white rounded-2xl p-4 md:p-6 border-2 border-pink-100 hover:border-pink-300 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:-translate-y-1">
-                  {deck.image_url && (
-                    <div className="relative w-full h-40 md:h-48 mb-4 rounded-xl overflow-hidden bg-gray-100">
-                      <img
-                        src={deck.image_url}
-                        alt={deck.deck_name}
-                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </div>
-                  )}
-                  <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 group-hover:text-pink-600 transition-colors">
-                    {deck.deck_name}
-                  </h3>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xs md:text-sm text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                      デッキコード: {deck.deck_code}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="text-center mt-12">
-            <a href="/auth" className="inline-flex items-center text-pink-600 font-semibold hover:text-pink-700 transition">
-              もっと見る <span className="ml-2">→</span>
-            </a>
+          {/* Unified Reference Deck List */}
+          <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
+            <ReferenceDeckList />
           </div>
         </div>
       </section>

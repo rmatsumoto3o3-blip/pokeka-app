@@ -41,6 +41,15 @@ export interface ReferenceDeck {
   deck_code: string | null
   deck_url: string | null
   image_url: string | null
+  event_type: 'City League' | 'Championship' | 'Worldwide' | 'Gym Battle' | null
+  archetype_id: string | null
+  created_at: string
+}
+
+export interface DeckArchetype {
+  id: string
+  name: string
+  cover_image_url?: string | null
   created_at: string
 }
 

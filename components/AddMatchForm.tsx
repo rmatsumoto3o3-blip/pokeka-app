@@ -62,7 +62,7 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
     return (
         <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     結果 *
                 </label>
                 <div className="flex gap-2">
@@ -100,7 +100,7 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     先攻/後攻 *
                 </label>
                 <div className="flex gap-2">
@@ -128,33 +128,33 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     サイド
                 </label>
                 <input
                     type="text"
                     value={side}
                     onChange={(e) => setSide(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                     placeholder="例: 3-6 または 自分3 相手6"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     対戦相手
                 </label>
                 <input
                     type="text"
                     value={opponentName}
                     onChange={(e) => setOpponentName(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                     placeholder="対戦相手のデッキ名"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     日付 *
                 </label>
                 <input
@@ -162,19 +162,19 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-200 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                     メモ
                 </label>
                 <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                     placeholder="試合の詳細など..."
                 />
             </div>

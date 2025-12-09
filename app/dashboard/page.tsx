@@ -8,6 +8,7 @@ import AddMatchForm from '@/components/AddMatchForm'
 import MatchHistory from '@/components/MatchHistory'
 import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
+import ReferenceDeckManager from '@/components/ReferenceDeckManager'
 import Footer from '@/components/Footer'
 
 export default function Dashboard() {
@@ -149,9 +150,18 @@ export default function Dashboard() {
                 )}
 
                 {activeTab === 'reference' && (
-                    <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ（管理者編集用）</h2>
-                        <ReferenceDeckList userId={userId} userEmail={userEmail} />
+                    <div className="space-y-6">
+                        {/* Admin Only: Manager Form */}
+                        {(userEmail === 'player1@pokeka.local' ||
+                            userEmail === 'player2@pokeka.local' ||
+                            userEmail === 'player3@pokeka.local') && (
+                                <ReferenceDeckManager userEmail={userEmail} />
+                            )}
+
+                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
+                            <ReferenceDeckList userId={userId} userEmail={userEmail} />
+                        </div>
                     </div>
                 )}
             </main>
