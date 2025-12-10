@@ -7,8 +7,13 @@ import AddMatchForm from './AddMatchForm'
 
 interface DeckListProps {
     userId: string
+    matchCount?: number
+    maxMatches?: number
+    isMatchLimitReached?: boolean
+    onMatchAdded?: () => void
 }
 
+// ... (existing helper interface) ...
 interface DeckWithStats extends Deck {
     matches: Match[]
     total_matches: number
@@ -18,7 +23,13 @@ interface DeckWithStats extends Deck {
     win_rate: number
 }
 
-export default function DeckList({ userId }: DeckListProps) {
+export default function DeckList({
+    userId,
+    matchCount = 0,
+    maxMatches = 100,
+    isMatchLimitReached = false,
+    onMatchAdded
+}: DeckListProps) {
     const [decks, setDecks] = useState<DeckWithStats[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedDeck, setSelectedDeck] = useState<string | null>(null)
@@ -105,8 +116,6 @@ export default function DeckList({ userId }: DeckListProps) {
 
     return (
         <div className="space-y-4">
-            {/* H2 Removed as it's in parent */}
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {decks.map((deck) => (
                     <div
@@ -167,7 +176,11 @@ export default function DeckList({ userId }: DeckListProps) {
                                         onSuccess={() => {
                                             setSelectedDeck(null)
                                             fetchDecks()
+                                            if (onMatchAdded) onMatchAdded()
                                         }}
+                                        isLimitReached={isMatchLimitReached}
+                                        matchCount={matchCount}
+                                        maxMatches={maxMatches}
                                     />
                                 </div>
                             )}

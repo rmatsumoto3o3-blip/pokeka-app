@@ -16,6 +16,14 @@ export default function Dashboard() {
     const [userEmail, setUserEmail] = useState<string>('')
     const [activeTab, setActiveTab] = useState('decks') // decks, history, add_deck, reference
     const [loading, setLoading] = useState(true)
+
+    // Usage Limits
+    const [deckCount, setDeckCount] = useState(0)
+    const [matchCount, setMatchCount] = useState(0)
+    const [isAdmin, setIsAdmin] = useState(false)
+    const MAX_DECKS = 5
+    const MAX_MATCHES = 100
+
     const router = useRouter()
 
     useEffect(() => {
@@ -25,7 +33,27 @@ export default function Dashboard() {
                 const { data: { session } } = await supabase.auth.getSession()
                 if (session) {
                     setUserId(session.user.id)
-                    setUserEmail(session.user.email || '')
+                    const email = session.user.email || ''
+                    setUserEmail(email)
+
+                    // Admin Check
+                    if (['player1@pokeka.local', 'player2@pokeka.local', 'player3@pokeka.local'].includes(email)) {
+                        setIsAdmin(true)
+                    }
+
+                    // Fetch Counts
+                    const { count: dCount } = await supabase
+                        .from('decks')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', session.user.id)
+
+                    const { count: mCount } = await supabase
+                        .from('matches')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', session.user.id)
+
+                    setDeckCount(dCount || 0)
+                    setMatchCount(mCount || 0)
                 }
             } catch (error) {
                 console.error('Initial auth check error:', error)
@@ -41,11 +69,9 @@ export default function Dashboard() {
             if (session) {
                 setUserId(session.user.id)
                 setUserEmail(session.user.email || '')
-                // If we are logged in, make sure we are not redirected away (unless logic dictates)
             } else {
                 setUserId(null)
                 setUserEmail('')
-                // Only redirect if we finished loading and found no user
                 if (!loading) router.push('/auth')
             }
         })
@@ -65,6 +91,15 @@ export default function Dashboard() {
         router.push('/auth')
     }
 
+    // Refresh counts when actions happen
+    const refreshCounts = async () => {
+        if (!userId) return
+        const { count: dCount } = await supabase.from('decks').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+        const { count: mCount } = await supabase.from('matches').select('*', { count: 'exact', head: true }).eq('user_id', userId)
+        setDeckCount(dCount || 0)
+        setMatchCount(mCount || 0)
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-pink-50">
@@ -75,7 +110,17 @@ export default function Dashboard() {
 
     if (!userId) return null
 
-    // Color Change: White base
+    // Helper for limits
+    const isDeckLimitReached = !isAdmin && deckCount >= MAX_DECKS
+    // const isMatchLimitReached = !isAdmin && matchCount >= MAX_MATCHES // Passed to children
+
+    const getDeckUsageColor = () => {
+        if (isAdmin) return 'text-purple-600 bg-purple-50'
+        if (deckCount >= MAX_DECKS) return 'text-red-600 bg-red-50'
+        if (deckCount >= MAX_DECKS - 1) return 'text-yellow-600 bg-yellow-50'
+        return 'text-green-600 bg-green-50'
+    }
+
     return (
         <div className="min-h-screen bg-pink-50">
             <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
@@ -118,7 +163,12 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div className="flex items-center ml-2 md:ml-4 flex-shrink-0">
-                            <span className="hidden md:inline-block text-sm text-gray-500 mr-4">{userEmail}</span>
+                            {/* Usage Counter (Mobile/Desktop) */}
+                            <div className={`hidden md:flex items-center px-3 py-1 rounded-full text-xs font-bold mr-4 ${getDeckUsageColor()}`}>
+                                <span className="mr-1">🔥</span>
+                                {isAdmin ? '無制限' : `デッキ: ${deckCount}/${MAX_DECKS}`}
+                            </div>
+
                             <button
                                 onClick={handleSignOut}
                                 className="text-xs md:text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap px-2 py-1 bg-gray-100 rounded md:bg-transparent"
@@ -130,15 +180,37 @@ export default function Dashboard() {
                 </div>
             </nav>
 
+            {/* Mobile Usage Counter */}
+            <div className="md:hidden bg-white border-b border-pink-100 px-4 py-2 flex justify-end">
+                <div className={`flex items-center px-3 py-1 rounded-full text-xs font-bold ${getDeckUsageColor()}`}>
+                    <span className="mr-1">🔥</span>
+                    {isAdmin ? '無制限' : `デッキ: ${deckCount}/${MAX_DECKS}`}
+                </div>
+            </div>
+
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {activeTab === 'decks' && (
                     <div className="space-y-6">
                         <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                            <AddDeckForm userId={userId} onSuccess={() => setActiveTab('decks')} />
+                            <AddDeckForm
+                                userId={userId}
+                                onSuccess={() => {
+                                    setActiveTab('decks')
+                                    refreshCounts()
+                                }}
+                                isLimitReached={isDeckLimitReached}
+                                deckCount={deckCount}
+                                maxDecks={MAX_DECKS}
+                            />
                         </div>
                         <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
                             <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
-                            <DeckList userId={userId} />
+                            <DeckList
+                                userId={userId}
+                                matchCount={matchCount}
+                                maxMatches={MAX_MATCHES}
+                                isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
+                            />
                         </div>
                     </div>
                 )}

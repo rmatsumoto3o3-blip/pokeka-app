@@ -7,9 +7,19 @@ interface AddMatchFormProps {
     deckId: string
     userId: string
     onSuccess: () => void
+    isLimitReached?: boolean
+    matchCount?: number
+    maxMatches?: number
 }
 
-export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchFormProps) {
+export default function AddMatchForm({
+    deckId,
+    userId,
+    onSuccess,
+    isLimitReached = false,
+    matchCount = 0,
+    maxMatches = 100
+}: AddMatchFormProps) {
     const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win')
     const [goingFirst, setGoingFirst] = useState<'先攻' | '後攻' | null>(null)
     const [side, setSide] = useState('')
@@ -20,7 +30,9 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        if (isLimitReached) return
 
+        // ... (existing submit logic) ...
         // 先政/後攻の選択を必須にする
         if (!goingFirst) {
             alert('先攻/後攻を選択してください')
@@ -59,8 +71,20 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
         }
     }
 
+    if (isLimitReached) {
+        return (
+            <div className="p-4 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
+                <p className="font-bold">⚠️ 対戦履歴の上限 ({maxMatches}戦) に達しました</p>
+                <p className="text-sm mt-1">
+                    これ以上記録を追加できません。正式リリースをお待ちください。
+                </p>
+            </div>
+        )
+    }
+
     return (
         <form onSubmit={handleSubmit} className="space-y-3">
+            {/* ... (existing fields) ... */}
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     結果 *
@@ -163,6 +187,7 @@ export default function AddMatchForm({ deckId, userId, onSuccess }: AddMatchForm
                     onChange={(e) => setDate(e.target.value)}
                     required
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="Select date"
                 />
             </div>
 

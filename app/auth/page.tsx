@@ -1,14 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function AuthPage() {
+    const searchParams = useSearchParams()
     const [isLogin, setIsLogin] = useState(true)
+
+    useEffect(() => {
+        const mode = searchParams.get('mode')
+        if (mode === 'signup') {
+            setIsLogin(false)
+        }
+    }, [searchParams])
+
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [nickname, setNickname] = useState('')
+    const [inviteCode, setInviteCode] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
@@ -35,6 +45,7 @@ export default function AuthPage() {
                     options: {
                         data: {
                             nickname: nickname || email.split('@')[0],
+                            invite_code: inviteCode.trim(), // Remove whitespace
                         },
                     },
                 })
@@ -73,18 +84,33 @@ export default function AuthPage() {
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     {!isLogin && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                ニックネーム
-                            </label>
-                            <input
-                                type="text"
-                                value={nickname}
-                                onChange={(e) => setNickname(e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-                                placeholder="プレイヤー名（任意）"
-                            />
-                        </div>
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    招待コード <span className="text-red-500 text-xs">(ベータ版必須)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                    placeholder="POKE-BETA-..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    ニックネーム
+                                </label>
+                                <input
+                                    type="text"
+                                    value={nickname}
+                                    onChange={(e) => setNickname(e.target.value)}
+                                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                    placeholder="プレイヤー名（任意）"
+                                />
+                            </div>
+                        </>
                     )}
 
                     <div>

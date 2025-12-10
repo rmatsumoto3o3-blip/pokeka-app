@@ -7,6 +7,8 @@ import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 interface ReferenceDeckListProps {
     userId?: string | null
     userEmail?: string | null
+    initialDecks?: ReferenceDeck[]
+    initialArchetypes?: DeckArchetype[]
 }
 
 const EVENT_TYPES = [
@@ -27,12 +29,17 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 
 
-export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckListProps) {
-    const [decks, setDecks] = useState<ReferenceDeck[]>([])
-    const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])
+export default function ReferenceDeckList({
+    userId,
+    userEmail,
+    initialDecks = [],
+    initialArchetypes = []
+}: ReferenceDeckListProps) {
+    const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
+    const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
     const [selectedEvent, setSelectedEvent] = useState('All')
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(initialDecks.length === 0)
     const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Modal State
 
     // Admin Check (Safe for guest)
@@ -41,12 +48,15 @@ export default function ReferenceDeckList({ userId, userEmail }: ReferenceDeckLi
         userEmail === 'player3@pokeka.local'
 
     useEffect(() => {
+        // If we have initial data, don't fetch (unless we want to refresh, but for now ISR is the goal)
+        if (initialDecks.length > 0) return
+
         const loadData = async () => {
             await Promise.all([fetchDecks(), fetchArchetypes()])
             setLoading(false)
         }
         loadData()
-    }, [])
+    }, [initialDecks.length])
 
     const fetchDecks = async () => {
         const { data, error } = await supabase
