@@ -9,6 +9,7 @@ import MatchHistory from '@/components/MatchHistory'
 import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
+import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
 
 export default function Dashboard() {
@@ -189,53 +190,76 @@ export default function Dashboard() {
             </div>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-                {activeTab === 'decks' && (
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                            <AddDeckForm
-                                userId={userId}
-                                onSuccess={() => {
-                                    setActiveTab('decks')
-                                    refreshCounts()
-                                }}
-                                isLimitReached={isDeckLimitReached}
-                                deckCount={deckCount}
-                                maxDecks={MAX_DECKS}
-                            />
-                        </div>
-                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
-                            <DeckList
-                                userId={userId}
-                                matchCount={matchCount}
-                                maxMatches={MAX_MATCHES}
-                                isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
-                            />
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                    {/* Main Content Column */}
+                    <div className="lg:col-span-3 space-y-6">
+                        {activeTab === 'decks' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                    <AddDeckForm
+                                        userId={userId}
+                                        onSuccess={() => {
+                                            setActiveTab('decks')
+                                            refreshCounts()
+                                        }}
+                                        isLimitReached={isDeckLimitReached}
+                                        deckCount={deckCount}
+                                        maxDecks={MAX_DECKS}
+                                    />
+                                </div>
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
+                                    <DeckList
+                                        userId={userId}
+                                        matchCount={matchCount}
+                                        maxMatches={MAX_MATCHES}
+                                        isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                <MatchHistory userId={userId} />
+                            </div>
+                        )}
+
+                        {activeTab === 'reference' && (
+                            <div className="space-y-6">
+                                {/* Admin Only: Manager Form */}
+                                {(userEmail === 'player1@pokeka.local' ||
+                                    userEmail === 'player2@pokeka.local' ||
+                                    userEmail === 'player3@pokeka.local') && (
+                                        <ReferenceDeckManager userEmail={userEmail} />
+                                    )}
+
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
+                                    <ReferenceDeckList userId={userId} userEmail={userEmail} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mobile Ad Slot (Visible only on mobile) */}
+                        <div className="lg:hidden mt-8">
+                            <AdPlaceholder slot="mobile-bottom" label="Sponsored" />
                         </div>
                     </div>
-                )}
 
-                {activeTab === 'history' && (
-                    <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                        <MatchHistory userId={userId} />
-                    </div>
-                )}
+                    {/* Sidebar Column (Visible only on Desktop) */}
+                    <div className="hidden lg:block lg:col-span-1 space-y-6 sticky top-24">
+                        <AdPlaceholder slot="sidebar-top" label="Sponsored" className="min-h-[300px]" />
+                        <AdPlaceholder slot="sidebar-bottom" label="Sponsored" className="min-h-[300px]" />
 
-                {activeTab === 'reference' && (
-                    <div className="space-y-6">
-                        {/* Admin Only: Manager Form */}
-                        {(userEmail === 'player1@pokeka.local' ||
-                            userEmail === 'player2@pokeka.local' ||
-                            userEmail === 'player3@pokeka.local') && (
-                                <ReferenceDeckManager userEmail={userEmail} />
-                            )}
-
-                        <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
-                            <ReferenceDeckList userId={userId} userEmail={userEmail} />
+                        <div className="bg-white rounded-xl p-4 border border-pink-100 shadow-sm">
+                            <h3 className="text-sm font-bold text-gray-900 mb-2">お知らせ</h3>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                                ベータ版をご利用いただきありがとうございます。不具合やご要望は開発者までご連絡ください。
+                            </p>
                         </div>
                     </div>
-                )}
+                </div>
             </main>
 
             <Footer />

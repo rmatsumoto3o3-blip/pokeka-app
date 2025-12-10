@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
+import AdPlaceholder from '@/components/AdPlaceholder'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 
 interface LandingPageProps {
@@ -96,6 +97,11 @@ export default function LandingPage({ decks, archetypes }: LandingPageProps) {
                 </div>
             </section>
 
+            {/* Ad Slot: Mid-Page */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <AdPlaceholder slot="landing-mid" label="Sponsored" />
+            </div>
+
             {/* Features Section */}
             <section id="features" className="py-12 md:py-20 bg-pink-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -142,6 +148,11 @@ export default function LandingPage({ decks, archetypes }: LandingPageProps) {
                     </div>
                 </div>
             </section>
+
+            {/* Ad Slot: Bottom */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <AdPlaceholder slot="landing-bottom" label="Sponsored" />
+            </div>
 
             <Footer />
         </div>
