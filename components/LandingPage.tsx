@@ -24,7 +24,7 @@ export default function LandingPage({ decks, archetypes }: LandingPageProps) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
                     <div className="flex justify-between items-center">
                         <h1 className="text-base sm:text-2xl font-bold text-gray-900 whitespace-nowrap">
-                            ⚡️ポケメタ⚡️
+                            ⚡️ポケリス⚡️
                         </h1>
                         <div className="flex gap-2 md:gap-3">
                             <button
@@ -53,8 +53,8 @@ export default function LandingPage({ decks, archetypes }: LandingPageProps) {
                     </div>
                     <h1 className="font-extrabold text-gray-900 tracking-tight mb-6 animate-fade-in-up delay-100">
                         <span className="block text-xl md:text-2xl mb-2 text-gray-600">数字で見るポケカ</span>
-                        <span className="block text-5xl md:text-7xl leading-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
-                            PokéMetaLyx
+                        <span className="block text-5xl md:text-7xl leading-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 font-[family-name:var(--font-press-start-2p)] py-2">
+                            PokéLix
                         </span>
                     </h1>
                     <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
