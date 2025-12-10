@@ -40,7 +40,7 @@
 
 | ホスト名 | TYPE | VALUE |
 | :--- | :--- | :--- |
-| **pokelix** | **CNAME** | **cname.vercel-dns.com** |
+| **pokelix** | **CNAME** | **6b4762f71da6e71e.vercel-dns-017.com** |
 
 5.  **"追加"** を押し、確認画面へ進んで設定を完了させます。
 
