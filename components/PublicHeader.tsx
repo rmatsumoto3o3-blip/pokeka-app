@@ -3,9 +3,25 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 export default function PublicHeader() {
     const router = useRouter()
+    const [isLoggedIn, setIsLoggedIn] = React.useState(false)
+
+    React.useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setIsLoggedIn(!!session)
+        }
+        checkUser()
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            setIsLoggedIn(!!session)
+        })
+
+        return () => subscription.unsubscribe()
+    }, [])
 
     return (
         <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
@@ -25,18 +41,29 @@ export default function PublicHeader() {
                             コラム・記事
                         </Link>
 
-                        <button
-                            onClick={() => router.push('/auth')}
-                            className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap"
-                        >
-                            ログイン
-                        </button>
-                        <button
-                            onClick={() => router.push('/auth?mode=signup')}
-                            className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
-                        >
-                            無料で登録
-                        </button>
+                        {isLoggedIn ? (
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs md:text-sm rounded-lg font-bold shadow-md hover:shadow-lg transition whitespace-nowrap"
+                            >
+                                ダッシュボードへ
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => router.push('/auth')}
+                                    className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap"
+                                >
+                                    ログイン
+                                </button>
+                                <button
+                                    onClick={() => router.push('/auth?mode=signup')}
+                                    className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
+                                >
+                                    無料で登録
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
