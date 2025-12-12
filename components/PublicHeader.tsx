@@ -1,0 +1,45 @@
+'use client'
+
+import React from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+
+export default function PublicHeader() {
+    const router = useRouter()
+
+    return (
+        <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+                <div className="flex justify-between items-center">
+                    <Link href="/" className="flex items-center">
+                        <h1 className="text-base sm:text-2xl font-bold text-gray-900 whitespace-nowrap cursor-pointer">
+                            ⚡️ポケリス⚡️
+                        </h1>
+                    </Link>
+
+                    <div className="flex gap-2 md:gap-3 items-center">
+                        <Link
+                            href="/articles"
+                            className="hidden md:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
+                        >
+                            コラム・記事
+                        </Link>
+
+                        <button
+                            onClick={() => router.push('/auth')}
+                            className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap"
+                        >
+                            ログイン
+                        </button>
+                        <button
+                            onClick={() => router.push('/auth?mode=signup')}
+                            className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
+                        >
+                            無料で登録
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+    )
+}

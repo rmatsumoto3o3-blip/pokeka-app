@@ -60,6 +60,19 @@ export interface ReferenceDeckFavorite {
   created_at: string
 }
 
+export interface Article {
+  id: string
+  title: string
+  slug: string
+  content: string
+  excerpt: string | null
+  thumbnail_url: string | null
+  is_published: boolean
+  published_at: string | null
+  created_at: string
+  updated_at?: string
+}
+
 // Helper function to get deck with match statistics
 export interface DeckWithStats extends Deck {
   total_matches: number

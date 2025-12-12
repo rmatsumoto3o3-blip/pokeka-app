@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AddDeckForm from '@/components/AddDeckForm'
-import AddMatchForm from '@/components/AddMatchForm'
 import MatchHistory from '@/components/MatchHistory'
 import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
+import ArticleManager from '@/components/ArticleManager'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
 
 export default function Dashboard() {
     const [userId, setUserId] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
-    const [activeTab, setActiveTab] = useState('decks') // decks, history, add_deck, reference
+    const [activeTab, setActiveTab] = useState('decks') // decks, history, add_deck, reference, articles
     const [loading, setLoading] = useState(true)
 
     // Usage Limits
@@ -38,7 +38,7 @@ export default function Dashboard() {
                     setUserEmail(email)
 
                     // Admin Check
-                    if (['player1@pokeka.local', 'player2@pokeka.local', 'player3@pokeka.local'].includes(email)) {
+                    if (['player1@pokeka.local', 'player2@pokeka.local', 'player3@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
                         setIsAdmin(true)
                     }
 
@@ -161,6 +161,17 @@ export default function Dashboard() {
                                 >
                                     参考デッキ
                                 </button>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => setActiveTab('articles')}
+                                        className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'articles'
+                                            ? 'border-purple-500 text-purple-900 bg-purple-50 md:bg-transparent rounded-md md:rounded-none'
+                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        記事管理
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center ml-2 md:ml-4 flex-shrink-0">
@@ -230,7 +241,8 @@ export default function Dashboard() {
                                 {/* Admin Only: Manager Form */}
                                 {(userEmail === 'player1@pokeka.local' ||
                                     userEmail === 'player2@pokeka.local' ||
-                                    userEmail === 'player3@pokeka.local') && (
+                                    userEmail === 'player3@pokeka.local' ||
+                                    isAdmin) && ( // Expanded check just in case, though isAdmin covers it
                                         <ReferenceDeckManager userEmail={userEmail} />
                                     )}
 
@@ -238,6 +250,12 @@ export default function Dashboard() {
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
                                     <ReferenceDeckList userId={userId} userEmail={userEmail} />
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'articles' && isAdmin && (
+                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                <ArticleManager />
                             </div>
                         )}
 
