@@ -9,6 +9,7 @@ import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
 import ArticleManager from '@/components/ArticleManager'
+import SideArticleList from '@/components/SideArticleList'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
 
@@ -260,13 +261,18 @@ export default function Dashboard() {
                         )}
 
                         {/* Mobile Ad Slot (Visible only on mobile) */}
-                        <div className="lg:hidden mt-8">
+                        <div className="lg:hidden mt-8 space-y-6">
+                            {/* Mobile Article List */}
+                            <SideArticleList />
                             <AdPlaceholder slot="mobile-bottom" label="Sponsored" />
                         </div>
                     </div>
 
                     {/* Sidebar Column (Visible only on Desktop) */}
                     <div className="hidden lg:block lg:col-span-1 space-y-6 sticky top-24">
+                        {/* Sidebar Article List (Top Priority) */}
+                        <SideArticleList />
+
                         <AdPlaceholder slot="sidebar-top" label="Sponsored" className="min-h-[300px]" />
                         <AdPlaceholder slot="sidebar-bottom" label="Sponsored" className="min-h-[300px]" />
 
