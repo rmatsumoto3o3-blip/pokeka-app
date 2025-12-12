@@ -18,10 +18,19 @@ export default async function Home() {
     .select('*')
     .order('name')
 
+  // Fetch latest articles for the carousel
+  const { data: articles } = await supabase
+    .from('articles')
+    .select('*')
+    .eq('is_published', true)
+    .order('published_at', { ascending: false })
+    .limit(5)
+
   return (
     <LandingPage
       decks={decks || []}
       archetypes={archetypes || []}
+      articles={articles || []}
     />
   )
 }
