@@ -162,7 +162,7 @@ export default function ArticleManager() {
                                 type="text"
                                 value={title}
                                 onChange={handleTitleChange}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
                                 required
                             />
                         </div>
@@ -173,7 +173,7 @@ export default function ArticleManager() {
                                 type="text"
                                 value={slug}
                                 onChange={(e) => setSlug(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 font-mono text-sm text-gray-900 bg-white"
                                 placeholder="example-article-slug"
                                 required
                             />
@@ -195,7 +195,7 @@ export default function ArticleManager() {
                             <textarea
                                 value={excerpt}
                                 onChange={(e) => setExcerpt(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-20"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-20 text-gray-900 bg-white"
                             />
                         </div>
 
@@ -207,7 +207,7 @@ export default function ArticleManager() {
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-96 font-mono text-sm"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-96 font-mono text-sm text-gray-900 bg-white"
                                 required
                             />
                         </div>
