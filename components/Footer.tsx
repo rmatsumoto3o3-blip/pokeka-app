@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Footer() {
     return (
         <footer className="bg-black/20 border-t border-white/10 mt-12">
@@ -8,18 +10,24 @@ export default function Footer() {
                     </div>
 
                     <div className="flex gap-6 text-sm">
-                        <a
+                        <Link
+                            href="/beta-terms"
+                            className="text-gray-400 hover:text-white transition"
+                        >
+                            ベータテスター募集
+                        </Link>
+                        <Link
                             href="/privacy"
                             className="text-gray-400 hover:text-white transition"
                         >
                             プライバシーポリシー
-                        </a>
-                        <a
+                        </Link>
+                        <Link
                             href="/contact"
                             className="text-gray-400 hover:text-white transition"
                         >
                             お問い合わせ
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
