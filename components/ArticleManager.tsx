@@ -201,8 +201,7 @@ export default function ArticleManager() {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                本文 (Markdown / HTML)
-                                <span className="ml-2 text-xs text-gray-500">※HTMLタグも使用可能です</span>
+                                本文
                             </label>
                             <textarea
                                 value={content}
