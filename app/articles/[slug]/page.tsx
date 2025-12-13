@@ -85,7 +85,7 @@ export default async function ArticleDetailPage({ params }: Props) {
 
                     {/* Content */}
                     <div
-                        className="text-gray-800 leading-relaxed space-y-6"
+                        className="text-gray-800 leading-relaxed space-y-6 whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{ __html: article.content }}
                     />
 
