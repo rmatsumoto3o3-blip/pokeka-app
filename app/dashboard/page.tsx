@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AddDeckForm from '@/components/AddDeckForm'
-import MatchHistory from '@/components/MatchHistory'
+
 import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
@@ -12,11 +12,12 @@ import ArticleManager from '@/components/ArticleManager'
 import SideArticleList from '@/components/SideArticleList'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
+import MatchAnalytics from '@/components/MatchAnalytics'
 
 export default function Dashboard() {
     const [userId, setUserId] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
-    const [activeTab, setActiveTab] = useState('decks') // decks, history, add_deck, reference, articles
+    const [activeTab, setActiveTab] = useState('decks') // decks, analytics, reference, articles
     const [loading, setLoading] = useState(true)
 
     // Usage Limits
@@ -114,7 +115,6 @@ export default function Dashboard() {
 
     // Helper for limits
     const isDeckLimitReached = !isAdmin && deckCount >= MAX_DECKS
-    // const isMatchLimitReached = !isAdmin && matchCount >= MAX_MATCHES // Passed to children
 
     const getDeckUsageColor = () => {
         if (isAdmin) return 'text-purple-600 bg-purple-50'
@@ -144,14 +144,15 @@ export default function Dashboard() {
                                 >
                                     デッキ管理
                                 </button>
+                                {/* History Tab Removed */}
                                 <button
-                                    onClick={() => setActiveTab('history')}
-                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'history'
+                                    onClick={() => setActiveTab('analytics')}
+                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'analytics'
                                         ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
                                         : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                         }`}
                                 >
-                                    戦績履歴
+                                    戦績分析
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('reference')}
@@ -231,10 +232,10 @@ export default function Dashboard() {
                             </div>
                         )}
 
-                        {activeTab === 'history' && (
-                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                                <MatchHistory userId={userId} />
-                            </div>
+
+
+                        {activeTab === 'analytics' && (
+                            <MatchAnalytics userId={userId} />
                         )}
 
                         {activeTab === 'reference' && (
