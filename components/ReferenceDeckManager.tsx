@@ -248,6 +248,7 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* ... (Existing form content unchanged) ... */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Event Type Selection */}
                         <div>
@@ -366,6 +367,144 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                     </button>
                 </form>
             </div>
+
+            <KeyCardManager archetypes={archetypes} />
+        </div>
+    )
+}
+
+// --- Sub Component: Key Card Manager ---
+function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
+    const [selectedArchetypeId, setSelectedArchetypeId] = useState('')
+    const [cardName, setCardName] = useState('')
+    const [adoptionRate, setAdoptionRate] = useState(100)
+    const [category, setCategory] = useState('Pokemon')
+    const [cardImage, setCardImage] = useState<File | null>(null)
+    const [loading, setLoading] = useState(false)
+
+    const handleAddCard = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!selectedArchetypeId) return
+        setLoading(true)
+
+        try {
+            let imageUrl: string | null = null
+
+            if (cardImage) {
+                const fileExt = cardImage.name.split('.').pop()
+                const fileName = `cards/${Date.now()}.${fileExt}`
+                const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, cardImage)
+                if (uploadError) throw uploadError
+                const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
+                imageUrl = data.publicUrl
+            }
+
+            const { error: insertError } = await supabase
+                .from('key_card_adoptions')
+                .insert({
+                    archetype_id: selectedArchetypeId,
+                    card_name: cardName,
+                    adoption_rate: adoptionRate,
+                    category: category,
+                    image_url: imageUrl
+                })
+
+            if (insertError) throw insertError
+
+            alert('キーカードを登録しました')
+            setCardName('')
+            setCardImage(null)
+            // Leave Archetype and Category selected for ease of use
+        } catch (err: any) {
+            alert('エラー: ' + err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <div className="bg-white rounded-2xl p-6 border-2 border-orange-100 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                <span className="bg-orange-100 p-2 rounded-lg mr-2">🔑</span>
+                キーカード採用率 管理
+            </h2>
+
+            <form onSubmit={handleAddCard} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">デッキタイプ</label>
+                    <select
+                        value={selectedArchetypeId}
+                        onChange={(e) => setSelectedArchetypeId(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                        <option value="">選択してください</option>
+                        {archetypes.map(arch => (
+                            <option key={arch.id} value={arch.id}>{arch.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">カード名</label>
+                        <input
+                            type="text"
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value)}
+                            required
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="例: ピジョットex"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
+                        <select
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        >
+                            <option value="Pokemon">Pokemon</option>
+                            <option value="Goods">Goods</option>
+                            <option value="Supporter">Supporter</option>
+                            <option value="Stadium">Stadium</option>
+                            <option value="Energy">Energy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">採用率 (%)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={adoptionRate}
+                            onChange={(e) => setAdoptionRate(Number(e.target.value))}
+                            required
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">カード画像</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setCardImage(e.target.files?.[0] || null)}
+                            className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+                        />
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading || !selectedArchetypeId}
+                    className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow disabled:opacity-50 transition"
+                >
+                    {loading ? '登録中...' : 'キーカードを追加'}
+                </button>
+            </form>
         </div>
     )
 }
