@@ -15,6 +15,7 @@ export default function ArticleManager() {
     const [content, setContent] = useState('')
     const [excerpt, setExcerpt] = useState('')
     const [thumbnailUrl, setThumbnailUrl] = useState('')
+    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
     const [isPublished, setIsPublished] = useState(false)
 
     useEffect(() => {
@@ -47,6 +48,7 @@ export default function ArticleManager() {
         setContent('')
         setExcerpt('')
         setThumbnailUrl('')
+        setThumbnailFile(null)
         setIsPublished(false)
     }
 
@@ -57,6 +59,7 @@ export default function ArticleManager() {
         setContent(article.content)
         setExcerpt(article.excerpt || '')
         setThumbnailUrl(article.thumbnail_url || '')
+        setThumbnailFile(null)
         setIsPublished(article.is_published)
         setIsEditing(true)
     }
@@ -81,12 +84,31 @@ export default function ArticleManager() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         try {
+            let finalThumbnailUrl = thumbnailUrl
+
+            // If user uploaded a file, upload it to Supabase storage
+            if (thumbnailFile) {
+                const fileExt = thumbnailFile.name.split('.').pop()
+                const fileName = `articles/${Date.now()}.${fileExt}`
+                const { error: uploadError } = await supabase.storage
+                    .from('deck-images')
+                    .upload(fileName, thumbnailFile)
+
+                if (uploadError) throw uploadError
+
+                const { data } = supabase.storage
+                    .from('deck-images')
+                    .getPublicUrl(fileName)
+
+                finalThumbnailUrl = data.publicUrl
+            }
+
             const articleData = {
                 title,
                 slug,
                 content,
                 excerpt,
-                thumbnail_url: thumbnailUrl,
+                thumbnail_url: finalThumbnailUrl,
                 is_published: isPublished,
                 updated_at: new Date().toISOString(),
             }
@@ -180,14 +202,53 @@ export default function ArticleManager() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">サムネイルURL (任意)</label>
-                            <input
-                                type="text"
-                                value={thumbnailUrl}
-                                onChange={(e) => setThumbnailUrl(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
-                                placeholder="https://example.com/image.jpg"
-                            />
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                サムネイル画像
+                            </label>
+
+                            {/* Image Preview */}
+                            {(thumbnailUrl || thumbnailFile) && (
+                                <div className="mb-3">
+                                    <div className="w-full max-w-md h-48 bg-gray-100 rounded border border-gray-200 overflow-hidden">
+                                        <img
+                                            src={thumbnailFile ? URL.createObjectURL(thumbnailFile) : thumbnailUrl}
+                                            alt="Thumbnail preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* File Upload */}
+                            <div className="space-y-2">
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) {
+                                            setThumbnailFile(file)
+                                            setThumbnailUrl('') // Clear URL if file is selected
+                                        }
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-sm"
+                                />
+
+                                <div className="text-center text-sm text-gray-500">または</div>
+
+                                {/* URL Input */}
+                                <input
+                                    type="text"
+                                    value={thumbnailUrl}
+                                    onChange={(e) => {
+                                        setThumbnailUrl(e.target.value)
+                                        setThumbnailFile(null) // Clear file if URL is entered
+                                    }}
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-sm"
+                                    placeholder="https://example.com/image.jpg"
+                                    disabled={!!thumbnailFile}
+                                />
+                            </div>
                         </div>
 
                         <div>
