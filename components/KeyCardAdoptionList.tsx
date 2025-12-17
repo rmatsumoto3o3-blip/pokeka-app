@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-interface KeyCard {
+interface KeyCardAdoption {
     id: string
     archetype_id: string
     card_name: string
     image_url: string | null
-    adoption_rate: number
+    adoption_quantity: number
     category: 'Pokemon' | 'Goods' | 'Supporter' | 'Stadium' | 'Energy'
     description: string | null
 }
@@ -36,10 +36,6 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
 
     const fetchKeyCards = async () => {
         try {
-            // First fetch archetypes (DeckArchetype is imported or we can fetch same table)
-            // But actually we can just fetch key_card_adoptions and join archetypes if we had relation, 
-            // but for now since we are grouping by archetype, we need archetypes first.
-
             const { data: archetypesData, error: archError } = await supabase
                 .from('deck_archetypes')
                 .select('*')
@@ -127,9 +123,9 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                                                                     Img
                                                                 </div>
                                                             )}
-                                                            {/* Adoption Rate Badge */}
+                                                            {/* Adoption Quantity Badge */}
                                                             <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white text-xs font-bold py-0.5">
-                                                                {card.adoption_rate}%
+                                                                {card.adoption_quantity}枚
                                                             </div>
                                                         </div>
                                                         {/* Card Name */}
