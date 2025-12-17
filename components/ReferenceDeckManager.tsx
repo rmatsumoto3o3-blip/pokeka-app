@@ -374,6 +374,14 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
 }
 
 // --- Sub Component: Key Card Manager ---
+interface KeyCard {
+    id: string
+    card_name: string
+    adoption_rate: number
+    image_url: string | null
+    category: string
+}
+
 function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const [selectedArchetypeId, setSelectedArchetypeId] = useState('')
     const [cardName, setCardName] = useState('')
@@ -386,11 +394,36 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
     const [isAutoFilled, setIsAutoFilled] = useState(false)
 
-    // Debounce Logic for Auto-fill
+    // Edit/Delete State
+    const [registeredCards, setRegisteredCards] = useState<KeyCard[]>([])
+    const [editingCardId, setEditingCardId] = useState<string | null>(null)
+
     useEffect(() => {
+        if (selectedArchetypeId) {
+            fetchRegisteredCards(selectedArchetypeId)
+        } else {
+            setRegisteredCards([])
+        }
+    }, [selectedArchetypeId])
+
+    const fetchRegisteredCards = async (archetypeId: string) => {
+        const { data, error } = await supabase
+            .from('key_card_adoptions')
+            .select('*')
+            .eq('archetype_id', archetypeId)
+            .order('adoption_rate', { ascending: false })
+
+        if (!error && data) {
+            setRegisteredCards(data)
+        }
+    }
+
+    // Debounce Logic for Auto-fill (Only when NOT editing)
+    useEffect(() => {
+        if (editingCardId) return // Skip auto-fill when editing
+
         const timer = setTimeout(async () => {
             if (!cardName || cardName.length < 2) {
-                // Reset if name is cleared or too short
                 if (cardName === '') {
                     setExistingImageUrl(null)
                     setIsAutoFilled(false)
@@ -399,34 +432,33 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
             }
 
             try {
-                const { data, error } = await supabase
+                const { data } = await supabase
                     .from('key_card_adoptions')
                     .select('*')
                     .eq('card_name', cardName.trim())
-                    .order('created_at', { ascending: false }) // Get latest
+                    .order('created_at', { ascending: false })
                     .limit(1)
                     .maybeSingle()
 
                 if (data) {
-                    setCategory(data.category) // Auto-set category
+                    setCategory(data.category)
                     if (data.image_url) {
-                        setExistingImageUrl(data.image_url) // Store URL to use if no new file is uploaded
+                        setExistingImageUrl(data.image_url)
                         setIsAutoFilled(true)
                     }
                 } else {
-                    // Unique card, no history found
                     setExistingImageUrl(null)
                     setIsAutoFilled(false)
                 }
             } catch (err) {
                 console.error('Auto-fill error', err)
             }
-        }, 800) // 800ms debounce
+        }, 800)
 
         return () => clearTimeout(timer)
-    }, [cardName])
+    }, [cardName, editingCardId])
 
-    const handleAddCard = async (e: React.FormEvent) => {
+    const handleAddOrUpdateCard = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!selectedArchetypeId) return
         setLoading(true)
@@ -434,7 +466,6 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
         try {
             let imageUrl: string | null = existingImageUrl
 
-            // Priority: New File > Existing History > Null
             if (cardImage) {
                 const fileExt = cardImage.name.split('.').pop()
                 const fileName = `cards/${Date.now()}.${fileExt}`
@@ -444,24 +475,39 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                 imageUrl = data.publicUrl
             }
 
-            const { error: insertError } = await supabase
-                .from('key_card_adoptions')
-                .insert({
-                    archetype_id: selectedArchetypeId,
-                    card_name: cardName,
-                    adoption_rate: adoptionRate,
-                    category: category,
-                    image_url: imageUrl
-                })
+            if (editingCardId) {
+                // Update
+                const { error } = await supabase
+                    .from('key_card_adoptions')
+                    .update({
+                        card_name: cardName,
+                        adoption_rate: adoptionRate,
+                        category: category,
+                        image_url: imageUrl // Update image if new one provided or auto-filled logic used (though auto-fill mostly for new)
+                    })
+                    .eq('id', editingCardId)
 
-            if (insertError) throw insertError
+                if (error) throw error
+                alert('更新しました')
+            } else {
+                // Insert
+                const { error } = await supabase
+                    .from('key_card_adoptions')
+                    .insert({
+                        archetype_id: selectedArchetypeId,
+                        card_name: cardName,
+                        adoption_rate: adoptionRate,
+                        category: category,
+                        image_url: imageUrl
+                    })
 
-            alert('キーカードを登録しました')
-            setCardName('')
-            setCardImage(null)
-            setExistingImageUrl(null)
-            setIsAutoFilled(false)
-            // Leave Archetype and Category selected for ease of use (Category might change on next auto-fill)
+                if (error) throw error
+                alert('登録しました')
+            }
+
+            // Reset Form and Refresh List
+            cancelEdit()
+            fetchRegisteredCards(selectedArchetypeId)
         } catch (err: any) {
             alert('エラー: ' + err.message)
         } finally {
@@ -469,21 +515,68 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
         }
     }
 
+    const startEdit = (card: KeyCard) => {
+        setEditingCardId(card.id)
+        setCardName(card.card_name)
+        setAdoptionRate(card.adoption_rate)
+        setCategory(card.category)
+        setExistingImageUrl(card.image_url) // Show current image as "existing"
+        setIsAutoFilled(false)
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+    }
+
+    const cancelEdit = () => {
+        setEditingCardId(null)
+        setCardName('')
+        setAdoptionRate(100)
+        setCategory('Pokemon')
+        setCardImage(null)
+        setExistingImageUrl(null)
+        setIsAutoFilled(false)
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('本当に削除しますか？')) return
+
+        try {
+            const { error } = await supabase
+                .from('key_card_adoptions')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+            fetchRegisteredCards(selectedArchetypeId)
+        } catch (err: any) {
+            alert('削除エラー: ' + err.message)
+        }
+    }
+
     return (
         <div className="bg-white rounded-2xl p-6 border-2 border-orange-100 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <span className="bg-orange-100 p-2 rounded-lg mr-2">🔑</span>
-                キーカード採用率 管理
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
+                <span className="flex items-center">
+                    <span className="bg-orange-100 p-2 rounded-lg mr-2">🔑</span>
+                    キーカード採用率 管理
+                </span>
+                {editingCardId && (
+                    <button
+                        onClick={cancelEdit}
+                        className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded"
+                    >
+                        編集をキャンセル
+                    </button>
+                )}
             </h2>
 
-            <form onSubmit={handleAddCard} className="space-y-4">
+            <form onSubmit={handleAddOrUpdateCard} className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">デッキタイプ</label>
                     <select
                         value={selectedArchetypeId}
                         onChange={(e) => setSelectedArchetypeId(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        disabled={!!editingCardId} // Disable changing archetype while editing a card
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100"
                     >
                         <option value="">選択してください</option>
                         {archetypes.map(arch => (
@@ -530,6 +623,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                             type="number"
                             min="0"
                             max="100"
+                            step="0.01"
                             value={adoptionRate}
                             onChange={(e) => setAdoptionRate(Number(e.target.value))}
                             required
@@ -539,7 +633,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             カード画像
-                            {existingImageUrl && !cardImage && <span className="text-xs text-gray-500 ml-2">（履歴画像を使用中）</span>}
+                            {existingImageUrl && !cardImage && <span className="text-xs text-gray-500 ml-2">（{editingCardId ? '現在の画像' : '履歴画像で使用中'}）</span>}
                         </label>
 
                         <div className="flex gap-4 items-center">
@@ -561,11 +655,54 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                 <button
                     type="submit"
                     disabled={loading || !selectedArchetypeId}
-                    className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow disabled:opacity-50 transition"
+                    className={`w-full py-3 px-4 text-white font-semibold rounded-lg shadow disabled:opacity-50 transition ${editingCardId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-500 hover:bg-orange-600'}`}
                 >
-                    {loading ? '登録中...' : 'キーカードを追加'}
+                    {loading ? '処理中...' : (editingCardId ? '変更を保存（更新）' : 'キーカードを追加')}
                 </button>
             </form>
+
+            {/* Registered Cards List */}
+            {selectedArchetypeId && registeredCards.length > 0 && (
+                <div className="mt-8 border-t border-gray-100 pt-6">
+                    <h3 className="font-bold text-gray-700 mb-4">登録済みカード一覧</h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                        {registeredCards.map(card => (
+                            <div key={card.id} className={`flex items-center gap-3 p-3 rounded-lg border ${editingCardId === card.id ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-300' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className="w-10 h-14 bg-white rounded border border-gray-200 overflow-hidden flex-shrink-0">
+                                    {card.image_url ? (
+                                        <img src={card.image_url} alt={card.card_name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-300">No img</div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-bold text-gray-900 text-sm truncate">{card.card_name}</p>
+                                        <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">{card.category}</span>
+                                    </div>
+                                    <p className="text-sm text-gray-600">採用率: <span className="font-bold text-orange-600">{card.adoption_rate}%</span></p>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={() => startEdit(card)}
+                                        disabled={!!editingCardId}
+                                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                                    >
+                                        編集
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(card.id)}
+                                        disabled={!!editingCardId}
+                                        className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded font-medium disabled:opacity-50"
+                                    >
+                                        削除
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
