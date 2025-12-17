@@ -382,14 +382,59 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const [cardImage, setCardImage] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
 
+    // Auto-fill State
+    const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
+    const [isAutoFilled, setIsAutoFilled] = useState(false)
+
+    // Debounce Logic for Auto-fill
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (!cardName || cardName.length < 2) {
+                // Reset if name is cleared or too short
+                if (cardName === '') {
+                    setExistingImageUrl(null)
+                    setIsAutoFilled(false)
+                }
+                return
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('key_card_adoptions')
+                    .select('*')
+                    .eq('card_name', cardName.trim())
+                    .order('created_at', { ascending: false }) // Get latest
+                    .limit(1)
+                    .maybeSingle()
+
+                if (data) {
+                    setCategory(data.category) // Auto-set category
+                    if (data.image_url) {
+                        setExistingImageUrl(data.image_url) // Store URL to use if no new file is uploaded
+                        setIsAutoFilled(true)
+                    }
+                } else {
+                    // Unique card, no history found
+                    setExistingImageUrl(null)
+                    setIsAutoFilled(false)
+                }
+            } catch (err) {
+                console.error('Auto-fill error', err)
+            }
+        }, 800) // 800ms debounce
+
+        return () => clearTimeout(timer)
+    }, [cardName])
+
     const handleAddCard = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!selectedArchetypeId) return
         setLoading(true)
 
         try {
-            let imageUrl: string | null = null
+            let imageUrl: string | null = existingImageUrl
 
+            // Priority: New File > Existing History > Null
             if (cardImage) {
                 const fileExt = cardImage.name.split('.').pop()
                 const fileName = `cards/${Date.now()}.${fileExt}`
@@ -414,7 +459,9 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
             alert('キーカードを登録しました')
             setCardName('')
             setCardImage(null)
-            // Leave Archetype and Category selected for ease of use
+            setExistingImageUrl(null)
+            setIsAutoFilled(false)
+            // Leave Archetype and Category selected for ease of use (Category might change on next auto-fill)
         } catch (err: any) {
             alert('エラー: ' + err.message)
         } finally {
@@ -447,7 +494,10 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">カード名</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            カード名
+                            {isAutoFilled && <span className="ml-2 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">✨ 履歴から自動入力</span>}
+                        </label>
                         <input
                             type="text"
                             value={cardName}
@@ -487,13 +537,24 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">カード画像</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setCardImage(e.target.files?.[0] || null)}
-                            className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-sm"
-                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            カード画像
+                            {existingImageUrl && !cardImage && <span className="text-xs text-gray-500 ml-2">（履歴画像を使用中）</span>}
+                        </label>
+
+                        <div className="flex gap-4 items-center">
+                            {existingImageUrl && !cardImage && (
+                                <div className="w-12 h-16 bg-gray-100 rounded border border-gray-200 overflow-hidden flex-shrink-0">
+                                    <img src={existingImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setCardImage(e.target.files?.[0] || null)}
+                                className="w-full px-2 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+                            />
+                        </div>
                     </div>
                 </div>
 
