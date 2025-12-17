@@ -9,7 +9,7 @@ interface KeyCardAdoption {
     card_name: string
     image_url: string | null
     adoption_quantity: number
-    category: 'Pokemon' | 'Goods' | 'Supporter' | 'Stadium' | 'Energy'
+    category: 'Pokemon' | 'Goods' | 'Tool' | 'Supporter' | 'Stadium' | 'Energy'
     description: string | null
 }
 
@@ -18,7 +18,7 @@ interface Archetype {
     name: string
 }
 
-const CATEGORIES = ['Pokemon', 'Goods', 'Supporter', 'Stadium', 'Energy'] as const
+const CATEGORIES = ['Pokemon', 'Goods', 'Tool', 'Supporter', 'Stadium', 'Energy'] as const
 
 interface KeyCardAdoptionListProps {
     initialArchetypes?: Archetype[]

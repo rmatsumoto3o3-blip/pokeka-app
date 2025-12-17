@@ -609,6 +609,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                         >
                             <option value="Pokemon">Pokemon</option>
                             <option value="Goods">Goods</option>
+                            <option value="Tool">Tool</option>
                             <option value="Supporter">Supporter</option>
                             <option value="Stadium">Stadium</option>
                             <option value="Energy">Energy</option>
