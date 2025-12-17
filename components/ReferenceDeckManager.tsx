@@ -377,7 +377,7 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
 interface KeyCard {
     id: string
     card_name: string
-    adoption_rate: number
+    adoption_quantity: number
     image_url: string | null
     category: string
 }
@@ -385,7 +385,7 @@ interface KeyCard {
 function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const [selectedArchetypeId, setSelectedArchetypeId] = useState('')
     const [cardName, setCardName] = useState('')
-    const [adoptionRate, setAdoptionRate] = useState(100)
+    const [adoptionQuantity, setAdoptionQuantity] = useState(0) // Default 0
     const [category, setCategory] = useState('Pokemon')
     const [cardImage, setCardImage] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
@@ -411,7 +411,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
             .from('key_card_adoptions')
             .select('*')
             .eq('archetype_id', archetypeId)
-            .order('adoption_rate', { ascending: false })
+            .order('adoption_quantity', { ascending: false })
 
         if (!error && data) {
             setRegisteredCards(data)
@@ -481,7 +481,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                     .from('key_card_adoptions')
                     .update({
                         card_name: cardName,
-                        adoption_rate: adoptionRate,
+                        adoption_quantity: adoptionQuantity,
                         category: category,
                         image_url: imageUrl // Update image if new one provided or auto-filled logic used (though auto-fill mostly for new)
                     })
@@ -496,7 +496,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                     .insert({
                         archetype_id: selectedArchetypeId,
                         card_name: cardName,
-                        adoption_rate: adoptionRate,
+                        adoption_quantity: adoptionQuantity,
                         category: category,
                         image_url: imageUrl
                     })
@@ -518,7 +518,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const startEdit = (card: KeyCard) => {
         setEditingCardId(card.id)
         setCardName(card.card_name)
-        setAdoptionRate(card.adoption_rate)
+        setAdoptionQuantity(card.adoption_quantity)
         setCategory(card.category)
         setExistingImageUrl(card.image_url) // Show current image as "existing"
         setIsAutoFilled(false)
@@ -528,7 +528,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
     const cancelEdit = () => {
         setEditingCardId(null)
         setCardName('')
-        setAdoptionRate(100)
+        setAdoptionQuantity(0)
         setCategory('Pokemon')
         setCardImage(null)
         setExistingImageUrl(null)
@@ -556,7 +556,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center justify-between">
                 <span className="flex items-center">
                     <span className="bg-orange-100 p-2 rounded-lg mr-2">🔑</span>
-                    キーカード採用率 管理
+                    キーカード採用枚数 管理
                 </span>
                 {editingCardId && (
                     <button
@@ -618,16 +618,16 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">採用率 (%)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">採用枚数 (枚)</label>
                         <input
                             type="number"
                             min="0"
-                            max="100"
                             step="0.01"
-                            value={adoptionRate}
-                            onChange={(e) => setAdoptionRate(Number(e.target.value))}
+                            value={adoptionQuantity}
+                            onChange={(e) => setAdoptionQuantity(Number(e.target.value))}
                             required
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            placeholder="例: 2.5"
                         />
                     </div>
                     <div>
@@ -680,7 +680,7 @@ function KeyCardManager({ archetypes }: { archetypes: DeckArchetype[] }) {
                                         <p className="font-bold text-gray-900 text-sm truncate">{card.card_name}</p>
                                         <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">{card.category}</span>
                                     </div>
-                                    <p className="text-sm text-gray-600">採用率: <span className="font-bold text-orange-600">{card.adoption_rate}%</span></p>
+                                    <p className="text-sm text-gray-600">採用: <span className="font-bold text-orange-600">{card.adoption_quantity}枚</span></p>
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <button

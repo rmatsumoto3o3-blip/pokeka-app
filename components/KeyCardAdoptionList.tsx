@@ -26,35 +26,38 @@ interface KeyCardAdoptionListProps {
 
 export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardAdoptionListProps) {
     const [archetypes, setArchetypes] = useState<Archetype[]>(initialArchetypes)
-    const [keyCards, setKeyCards] = useState<KeyCard[]>([])
+    const [keyCards, setKeyCards] = useState<KeyCardAdoption[]>([])
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetchData()
+        fetchKeyCards()
     }, [])
 
-    const fetchData = async () => {
+    const fetchKeyCards = async () => {
         try {
-            // Fetch archetypes if not provided
-            if (archetypes.length === 0) {
-                const { data: archData } = await supabase
-                    .from('deck_archetypes')
-                    .select('id, name')
-                    .order('name')
-                if (archData) setArchetypes(archData)
-            }
+            // First fetch archetypes (DeckArchetype is imported or we can fetch same table)
+            // But actually we can just fetch key_card_adoptions and join archetypes if we had relation, 
+            // but for now since we are grouping by archetype, we need archetypes first.
 
-            // Fetch key cards
-            const { data: cardsData } = await supabase
+            const { data: archetypesData, error: archError } = await supabase
+                .from('deck_archetypes')
+                .select('*')
+                .order('name')
+
+            if (archError) throw archError
+            setArchetypes(archetypesData || [])
+
+            const { data: cardsData, error: cardsError } = await supabase
                 .from('key_card_adoptions')
                 .select('*')
-                .order('adoption_rate', { ascending: false })
+                .order('adoption_quantity', { ascending: false })
 
-            if (cardsData) setKeyCards(cardsData as KeyCard[])
+            if (cardsError) throw cardsError
+            setKeyCards(cardsData || [])
 
-        } catch (error) {
-            console.error('Error fetching key cards:', error)
+        } catch (err) {
+            console.error('Error fetching key cards:', err)
         } finally {
             setLoading(false)
         }
