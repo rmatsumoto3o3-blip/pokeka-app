@@ -443,6 +443,45 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
                 </form>
             </div>
 
+            {/* --- Archetype Sorting Section --- */}
+            <div className="bg-white p-6 rounded-xl border-2 border-purple-100 shadow-sm mt-8">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                        <span className="mr-2">⇅</span> デッキタイプの並び替え
+                    </h3>
+                    <button
+                        onClick={saveOrder}
+                        disabled={loading}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50 transition"
+                    >
+                        {loading ? '保存中...' : '順序を保存'}
+                    </button>
+                </div>
+                <p className="text-sm text-gray-500 mb-4">ドラッグ＆ドロップで表示順を変更し、「順序を保存」を押してください。</p>
+
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 max-h-[400px] overflow-y-auto">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext
+                            items={archetypes.map(a => a.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {archetypes.map((archetype, index) => (
+                                <SortableArchetypeItem
+                                    key={archetype.id}
+                                    id={archetype.id}
+                                    name={archetype.name}
+                                    displayOrder={index} // Just for display, actual update happens on save
+                                />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
+                </div>
+            </div>
+
             <KeyCardManager archetypes={archetypes} />
         </div>
     )
