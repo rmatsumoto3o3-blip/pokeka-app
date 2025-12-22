@@ -32,29 +32,6 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
 
     useEffect(() => {
         fetchKeyCards()
-
-        // Supabaseのリアルタイム購読を設定
-        const channel = supabase
-            .channel('key_card_changes')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*', // INSERT, UPDATE, DELETE全て
-                    schema: 'public',
-                    table: 'key_card_adoptions'
-                },
-                (payload) => {
-                    console.log('Key card changed:', payload)
-                    // データが変更されたら再取得
-                    fetchKeyCards()
-                }
-            )
-            .subscribe()
-
-        // クリーンアップ
-        return () => {
-            supabase.removeChannel(channel)
-        }
     }, [])
 
     const fetchKeyCards = async () => {
