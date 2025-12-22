@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
+import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
@@ -131,6 +132,18 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             initialDecks={decks}
                             initialArchetypes={archetypes}
                         />
+                    </div>
+
+                    <div className="mt-8">
+                        <div className="mb-4">
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                                🔑 キーカード採用率
+                            </h3>
+                            <p className="text-gray-600 mt-1">環境デッキで採用されているカードの採用枚数を確認</p>
+                        </div>
+                        <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
+                            <KeyCardAdoptionList initialArchetypes={archetypes} />
+                        </div>
                     </div>
                 </div>
             </section>
