@@ -3,9 +3,45 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { DeckArchetype } from '@/lib/supabase'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface ReferenceDeckManagerProps {
     userEmail: string
+}
+
+interface SortableItemProps {
+    id: string
+    name: string
+    displayOrder: number
+}
+
+function SortableArchetypeItem({ id, name, displayOrder }: SortableItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    }
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm mb-2 cursor-move hover:shadow-md">
+            <div className="flex items-center">
+                <span className="text-gray-400 mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                </span>
+                <span className="font-medium text-gray-700">{name}</span>
+            </div>
+            <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">Order: {displayOrder}</span>
+        </div>
+    )
 }
 
 const EVENT_TYPES = [
@@ -54,10 +90,49 @@ export default function ReferenceDeckManager({ userEmail }: ReferenceDeckManager
         const { data, error } = await supabase
             .from('deck_archetypes')
             .select('*')
-            .order('name')
+            .order('display_order', { ascending: true }) // Sort by display_order
         if (!error && data) {
             setArchetypes(data)
         }
+    }
+
+    // Sort Logic
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+
+        if (over && active.id !== over.id) {
+            setArchetypes((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id)
+                const newIndex = items.findIndex((item) => item.id === over.id)
+                return arrayMove(items, oldIndex, newIndex)
+            })
+        }
+    }
+
+    const saveOrder = async () => {
+        setLoading(true)
+        const updates = archetypes.map((arch, index) => ({
+            id: arch.id,
+            new_order: index
+        }))
+
+        const { error } = await supabase.rpc('update_archetype_order', { orders: updates })
+
+        if (error) {
+            alert('並び順の保存に失敗しました: ' + error.message)
+        } else {
+            alert('並び順を保存しました！')
+            // Refresh to confirm
+            fetchArchetypes()
+        }
+        setLoading(false)
     }
 
     const handleCreateArchetype = async () => {

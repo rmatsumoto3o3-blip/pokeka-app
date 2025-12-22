@@ -50,6 +50,7 @@ export interface DeckArchetype {
   id: string
   name: string
   cover_image_url?: string | null
+  display_order?: number
   created_at: string
 }
 

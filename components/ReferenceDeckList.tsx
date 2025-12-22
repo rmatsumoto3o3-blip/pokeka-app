@@ -73,7 +73,8 @@ export default function ReferenceDeckList({
         const { data, error } = await supabase
             .from('deck_archetypes')
             .select('*')
-            .order('name')
+            .order('display_order', { ascending: true })
+            .order('name', { ascending: true }) // Fallback
 
         if (!error && data) {
             setArchetypes(data)
@@ -126,8 +127,20 @@ export default function ReferenceDeckList({
         if (aId === 'others') return 1
         if (bId === 'others') return -1
 
-        const aName = archetypes.find(a => a.id === aId)?.name || ''
-        const bName = archetypes.find(a => a.id === bId)?.name || ''
+        const aArch = archetypes.find(a => a.id === aId)
+        const bArch = archetypes.find(a => a.id === bId)
+
+        // Compare by display_order first
+        const aOrder = aArch?.display_order ?? 9999
+        const bOrder = bArch?.display_order ?? 9999
+
+        if (aOrder !== bOrder) {
+            return aOrder - bOrder
+        }
+
+        // Fallback to name
+        const aName = aArch?.name || ''
+        const bName = bArch?.name || ''
         return aName.localeCompare(bName)
     })
 
