@@ -33,6 +33,7 @@ export default function DeckList({
     const [decks, setDecks] = useState<DeckWithStats[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedDeck, setSelectedDeck] = useState<string | null>(null)
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     useEffect(() => {
         fetchDecks()
@@ -115,79 +116,105 @@ export default function DeckList({
     }
 
     return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {decks.map((deck) => (
-                    <div
-                        key={deck.id}
-                        className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
-                    >
-                        {deck.image_url && (
-                            <img
-                                src={deck.image_url}
-                                alt={deck.deck_name}
-                                className="w-full h-48 object-cover"
-                            />
-                        )}
-
-                        <div className="p-4">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
-                            <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
-
-                            <div className="grid grid-cols-2 gap-2 mb-4">
-                                <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">
-                                    <div className="text-2xl font-bold text-gray-900">{deck.total_matches}</div>
-                                    <div className="text-xs text-gray-500">試合数</div>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-2 text-center">
-                                    <div className="text-2xl font-bold text-green-600">
-                                        {deck.win_rate.toFixed(1)}%
-                                    </div>
-                                    <div className="text-xs text-gray-500">勝率</div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2 text-sm mb-4 font-medium">
-                                <span className="text-green-600">{deck.wins}勝</span>
-                                <span className="text-red-600">{deck.losses}敗</span>
-                                <span className="text-gray-600">{deck.draws}分</span>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
-                                    className="flex-1 py-2 px-4 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm"
-                                >
-                                    {selectedDeck === deck.id ? '閉じる' : '試合を記録'}
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(deck.id)}
-                                    className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
-                                >
-                                    削除
-                                </button>
-                            </div>
-
-                            {selectedDeck === deck.id && (
-                                <div className="mt-4 pt-4 border-t border-gray-100">
-                                    <AddMatchForm
-                                        deckId={deck.id}
-                                        userId={userId}
-                                        onSuccess={() => {
-                                            setSelectedDeck(null)
-                                            fetchDecks()
-                                            if (onMatchAdded) onMatchAdded()
-                                        }}
-                                        isLimitReached={isMatchLimitReached}
-                                        matchCount={matchCount}
-                                        maxMatches={maxMatches}
-                                    />
-                                </div>
-                            )}
-                        </div>
+        <>
+            {/* Image Modal */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
+                        <button
+                            className="absolute -top-12 right-0 text-white hover:text-gray-300 transition"
+                            onClick={() => setSelectedImage(null)}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                        <img
+                            src={selectedImage}
+                            alt="Deck Preview"
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
                     </div>
-                ))}
+                </div>
+            )}
+
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {decks.map((deck) => (
+                        <div
+                            key={deck.id}
+                            className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
+                        >
+                            {deck.image_url && (
+                                <img
+                                    src={deck.image_url}
+                                    alt={deck.deck_name}
+                                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition"
+                                    onClick={() => setSelectedImage(deck.image_url)}
+                                />
+                            )}
+
+                            <div className="p-4">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
+                                <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
+
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">
+                                        <div className="text-2xl font-bold text-gray-900">{deck.total_matches}</div>
+                                        <div className="text-xs text-gray-500">試合数</div>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                                        <div className="text-2xl font-bold text-green-600">
+                                            {deck.win_rate.toFixed(1)}%
+                                        </div>
+                                        <div className="text-xs text-gray-500">勝率</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 text-sm mb-4 font-medium">
+                                    <span className="text-green-600">{deck.wins}勝</span>
+                                    <span className="text-red-600">{deck.losses}敗</span>
+                                    <span className="text-gray-600">{deck.draws}分</span>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
+                                        className="flex-1 py-2 px-4 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm"
+                                    >
+                                        {selectedDeck === deck.id ? '閉じる' : '試合を記録'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(deck.id)}
+                                        className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
+                                    >
+                                        削除
+                                    </button>
+                                </div>
+
+                                {selectedDeck === deck.id && (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <AddMatchForm
+                                            deckId={deck.id}
+                                            userId={userId}
+                                            onSuccess={() => {
+                                                setSelectedDeck(null)
+                                                fetchDecks()
+                                                if (onMatchAdded) onMatchAdded()
+                                            }}
+                                            isLimitReached={isMatchLimitReached}
+                                            matchCount={matchCount}
+                                            maxMatches={maxMatches}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
+        </>
     )
 }
