@@ -155,8 +155,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             result: match.result,
             going_first: match.going_first,
             side: match.side || '',
-            mySide: isNaN(mySide as any) ? null : mySide,
-            opSide: isNaN(opSide as any) ? null : opSide,
+            mySide: isNaN(mySide as any) || mySide === null ? 0 : mySide,
+            opSide: isNaN(opSide as any) || opSide === null ? 0 : opSide,
             opponent_name: match.opponent_name || '',
             date: match.date,
             notes: match.notes || ''
@@ -444,12 +444,11 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                     <div className="space-y-1">
                                                         <span className="text-[10px] font-bold text-gray-400 ml-1">自分</span>
                                                         <select
-                                                            value={editForm.mySide ?? ''}
-                                                            onChange={(e) => setEditForm({ ...editForm, mySide: e.target.value === '' ? null : Number(e.target.value) })}
+                                                            value={editForm.mySide ?? 0}
+                                                            onChange={(e) => setEditForm({ ...editForm, mySide: Number(e.target.value) })}
                                                             className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
                                                             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                                                         >
-                                                            <option value="">選択</option>
                                                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                                                 <option key={n} value={n}>{n}枚</option>
                                                             ))}
@@ -458,12 +457,11 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                     <div className="space-y-1">
                                                         <span className="text-[10px] font-bold text-gray-400 ml-1">相手</span>
                                                         <select
-                                                            value={editForm.opSide ?? ''}
-                                                            onChange={(e) => setEditForm({ ...editForm, opSide: e.target.value === '' ? null : Number(e.target.value) })}
+                                                            value={editForm.opSide ?? 0}
+                                                            onChange={(e) => setEditForm({ ...editForm, opSide: Number(e.target.value) })}
                                                             className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
                                                             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                                                         >
-                                                            <option value="">選択</option>
                                                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                                                 <option key={n} value={n}>{n}枚</option>
                                                             ))}

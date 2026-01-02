@@ -22,8 +22,8 @@ export default function AddMatchForm({
 }: AddMatchFormProps) {
     const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win')
     const [goingFirst, setGoingFirst] = useState<'先攻' | '後攻' | null>(null)
-    const [mySide, setMySide] = useState<number | null>(null)
-    const [opponentSide, setOpponentSide] = useState<number | null>(null)
+    const [mySide, setMySide] = useState<number>(0)
+    const [opponentSide, setOpponentSide] = useState<number>(0)
     const [opponentName, setOpponentName] = useState('')
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
     const [notes, setNotes] = useState('')
@@ -64,8 +64,8 @@ export default function AddMatchForm({
 
             // Reset form
             setGoingFirst(null)
-            setMySide(null)
-            setOpponentSide(null)
+            setMySide(0)
+            setOpponentSide(0)
             setOpponentName('')
             setNotes('')
             setDate(new Date().toISOString().split('T')[0])
@@ -164,12 +164,11 @@ export default function AddMatchForm({
                     <div className="space-y-1">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">自分</span>
                         <select
-                            value={mySide ?? ''}
-                            onChange={(e) => setMySide(e.target.value === '' ? null : Number(e.target.value))}
+                            value={mySide}
+                            onChange={(e) => setMySide(Number(e.target.value))}
                             className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
                             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
                         >
-                            <option value="">選択してください</option>
                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                 <option key={n} value={n}>{n}枚</option>
                             ))}
@@ -178,12 +177,11 @@ export default function AddMatchForm({
                     <div className="space-y-1">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">相手</span>
                         <select
-                            value={opponentSide ?? ''}
-                            onChange={(e) => setOpponentSide(e.target.value === '' ? null : Number(e.target.value))}
+                            value={opponentSide}
+                            onChange={(e) => setOpponentSide(Number(e.target.value))}
                             className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
                             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
                         >
-                            <option value="">選択してください</option>
                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                 <option key={n} value={n}>{n}枚</option>
                             ))}
