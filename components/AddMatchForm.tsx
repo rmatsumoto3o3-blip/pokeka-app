@@ -99,8 +99,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setResult('win')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'win'
-                            ? 'bg-green-600 text-white translate-y-[-2px] shadow-green-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
+                            ? 'bg-green-700 text-white translate-y-[-2px] shadow-green-200 ring-2 ring-green-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-green-200 hover:bg-green-50'
                             }`}
                     >
                         勝ち
@@ -109,8 +109,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setResult('loss')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'loss'
-                            ? 'bg-red-600 text-white translate-y-[-2px] shadow-red-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
+                            ? 'bg-red-700 text-white translate-y-[-2px] shadow-red-200 ring-2 ring-red-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-red-200 hover:bg-red-50'
                             }`}
                     >
                         負け
@@ -119,8 +119,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setResult('draw')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'draw'
-                            ? 'bg-gray-600 text-white translate-y-[-2px] shadow-gray-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
+                            ? 'bg-gray-700 text-white translate-y-[-2px] shadow-gray-200 ring-2 ring-gray-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50'
                             }`}
                     >
                         引分
@@ -137,8 +137,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setGoingFirst('先攻')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${goingFirst === '先攻'
-                            ? 'bg-blue-600 text-white translate-y-[-2px] shadow-blue-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
+                            ? 'bg-blue-700 text-white translate-y-[-2px] shadow-blue-200 ring-2 ring-blue-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-blue-200 hover:bg-blue-50'
                             }`}
                     >
                         先攻
@@ -147,8 +147,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setGoingFirst('後攻')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${goingFirst === '後攻'
-                            ? 'bg-purple-600 text-white translate-y-[-2px] shadow-purple-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
+                            ? 'bg-purple-700 text-white translate-y-[-2px] shadow-purple-200 ring-2 ring-purple-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-purple-200 hover:bg-purple-50'
                             }`}
                     >
                         後攻
@@ -156,46 +156,38 @@ export default function AddMatchForm({
                 </div>
             </div>
 
-            <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+            <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border-2 border-gray-100">
                 <label className="block text-sm font-bold text-gray-700">
                     サイド状況 (取った枚数) *
                 </label>
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-gray-500 w-8">自分</span>
-                        <div className="flex flex-wrap gap-1 flex-1">
-                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
-                                <button
-                                    key={`my-${num}`}
-                                    type="button"
-                                    onClick={() => setMySide(num)}
-                                    className={`w-9 h-9 rounded-lg font-bold text-sm transition-all border ${mySide === num
-                                        ? 'bg-pink-500 text-white border-pink-600 shadow-sm'
-                                        : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300'
-                                        }`}
-                                >
-                                    {num}
-                                </button>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">自分</span>
+                        <select
+                            value={mySide ?? ''}
+                            onChange={(e) => setMySide(e.target.value === '' ? null : Number(e.target.value))}
+                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
+                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                        >
+                            <option value="">選択してください</option>
+                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                <option key={n} value={n}>{n}枚</option>
                             ))}
-                        </div>
+                        </select>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-gray-500 w-8">相手</span>
-                        <div className="flex flex-wrap gap-1 flex-1">
-                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
-                                <button
-                                    key={`op-${num}`}
-                                    type="button"
-                                    onClick={() => setOpponentSide(num)}
-                                    className={`w-9 h-9 rounded-lg font-bold text-sm transition-all border ${opponentSide === num
-                                        ? 'bg-gray-700 text-white border-gray-800 shadow-sm'
-                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                                        }`}
-                                >
-                                    {num}
-                                </button>
+                    <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">相手</span>
+                        <select
+                            value={opponentSide ?? ''}
+                            onChange={(e) => setOpponentSide(e.target.value === '' ? null : Number(e.target.value))}
+                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
+                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                        >
+                            <option value="">選択してください</option>
+                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                <option key={n} value={n}>{n}枚</option>
                             ))}
-                        </div>
+                        </select>
                     </div>
                 </div>
             </div>

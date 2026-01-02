@@ -405,9 +405,9 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                                 key={r}
                                                                 type="button"
                                                                 onClick={() => setEditForm({ ...editForm, result: r })}
-                                                                className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all shadow-sm ${editForm.result === r
-                                                                    ? (r === 'win' ? 'bg-green-600 text-white translate-y-[-1px] shadow-green-100' : r === 'loss' ? 'bg-red-600 text-white translate-y-[-1px] shadow-red-100' : 'bg-gray-600 text-white translate-y-[-1px] shadow-gray-100')
-                                                                    : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
+                                                                className={`flex-1 py-3 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.result === r
+                                                                    ? (r === 'win' ? 'bg-green-700 text-white translate-y-[-1px] shadow-green-100 ring-2 ring-green-400' : r === 'loss' ? 'bg-red-700 text-white translate-y-[-1px] shadow-red-100 ring-2 ring-red-400' : 'bg-gray-700 text-white translate-y-[-1px] shadow-gray-100 ring-2 ring-gray-400')
+                                                                    : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-200'
                                                                     }`}
                                                             >
                                                                 {r === 'win' ? '勝ち' : r === 'loss' ? '負け' : '引分'}
@@ -425,9 +425,9 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                                 key={g}
                                                                 type="button"
                                                                 onClick={() => setEditForm({ ...editForm, going_first: g })}
-                                                                className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
-                                                                    ? 'bg-purple-600 text-white translate-y-[-1px] shadow-purple-100'
-                                                                    : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
+                                                                className={`flex-1 py-3 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
+                                                                    ? 'bg-purple-700 text-white translate-y-[-1px] shadow-purple-100 ring-2 ring-purple-400'
+                                                                    : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-purple-200'
                                                                     }`}
                                                             >
                                                                 {g}
@@ -438,44 +438,36 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                             </div>
 
                                             {/* Edit Side */}
-                                            <div className="space-y-2 p-2 bg-white rounded-lg border border-gray-100">
-                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">サイド状況 (取った枚数)</label>
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-bold text-gray-400 w-6">自分</span>
-                                                        <div className="flex flex-wrap gap-1 flex-1">
-                                                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
-                                                                <button
-                                                                    key={`edit-my-${num}`}
-                                                                    type="button"
-                                                                    onClick={() => setEditForm({ ...editForm, mySide: num })}
-                                                                    className={`w-7 h-7 rounded-md font-bold text-[10px] transition-all border ${editForm.mySide === num
-                                                                        ? 'bg-pink-500 text-white border-pink-600 shadow-sm'
-                                                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-pink-300'
-                                                                        }`}
-                                                                >
-                                                                    {num}
-                                                                </button>
+                                            <div className="space-y-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-100">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">サイド状況 (取った枚数)</label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <span className="text-[10px] font-bold text-gray-400 ml-1">自分</span>
+                                                        <select
+                                                            value={editForm.mySide ?? ''}
+                                                            onChange={(e) => setEditForm({ ...editForm, mySide: e.target.value === '' ? null : Number(e.target.value) })}
+                                                            className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
+                                                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
+                                                        >
+                                                            <option value="">選択</option>
+                                                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                                                <option key={n} value={n}>{n}枚</option>
                                                             ))}
-                                                        </div>
+                                                        </select>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-bold text-gray-400 w-6">相手</span>
-                                                        <div className="flex flex-wrap gap-1 flex-1">
-                                                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
-                                                                <button
-                                                                    key={`edit-op-${num}`}
-                                                                    type="button"
-                                                                    onClick={() => setEditForm({ ...editForm, opSide: num })}
-                                                                    className={`w-7 h-7 rounded-md font-bold text-[10px] transition-all border ${editForm.opSide === num
-                                                                        ? 'bg-gray-700 text-white border-gray-800 shadow-sm'
-                                                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-400'
-                                                                        }`}
-                                                                >
-                                                                    {num}
-                                                                </button>
+                                                    <div className="space-y-1">
+                                                        <span className="text-[10px] font-bold text-gray-400 ml-1">相手</span>
+                                                        <select
+                                                            value={editForm.opSide ?? ''}
+                                                            onChange={(e) => setEditForm({ ...editForm, opSide: e.target.value === '' ? null : Number(e.target.value) })}
+                                                            className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
+                                                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
+                                                        >
+                                                            <option value="">選択</option>
+                                                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                                                <option key={n} value={n}>{n}枚</option>
                                                             ))}
-                                                        </div>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>
