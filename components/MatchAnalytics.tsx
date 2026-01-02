@@ -128,39 +128,109 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
     // Editing State
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null)
-    const [editingNote, setEditingNote] = useState('')
+    const [editForm, setEditForm] = useState({
+        result: 'win' as 'win' | 'loss' | 'draw',
+        going_first: null as '先攻' | '後攻' | null,
+        side: '',
+        mySide: null as number | null,
+        opSide: null as number | null,
+        opponent_name: '',
+        date: '',
+        notes: ''
+    })
     const [updating, setUpdating] = useState(false)
 
-    // ... (existing useEffect and functions)
-
     const startEditing = (match: MatchWithDeck) => {
+        // Parse side safely
+        let mySide: number | null = null
+        let opSide: number | null = null
+        if (match.side && match.side.includes('-')) {
+            const parts = match.side.split('-')
+            mySide = parseInt(parts[0])
+            opSide = parseInt(parts[1])
+        }
+
         setEditingMatchId(match.id)
-        setEditingNote(match.notes || '')
+        setEditForm({
+            result: match.result,
+            going_first: match.going_first,
+            side: match.side || '',
+            mySide: isNaN(mySide as any) ? null : mySide,
+            opSide: isNaN(opSide as any) ? null : opSide,
+            opponent_name: match.opponent_name || '',
+            date: match.date,
+            notes: match.notes || ''
+        })
     }
 
     const cancelEditing = () => {
         setEditingMatchId(null)
-        setEditingNote('')
     }
 
-    const saveNote = async (matchId: string) => {
+    const saveMatch = async (matchId: string) => {
         if (updating) return
+        if (!editForm.going_first) {
+            alert('先攻/後攻を選択してください')
+            return
+        }
+        if (editForm.mySide === null || editForm.opSide === null) {
+            alert('サイド枚数を選択してください')
+            return
+        }
+
         setUpdating(true)
         try {
+            const sideFormatted = `${editForm.mySide}-${editForm.opSide}`
             const { error } = await supabase
                 .from('matches')
-                .update({ notes: editingNote })
+                .update({
+                    result: editForm.result,
+                    going_first: editForm.going_first,
+                    side: sideFormatted,
+                    opponent_name: editForm.opponent_name || null,
+                    date: editForm.date,
+                    notes: editForm.notes || null
+                })
                 .eq('id', matchId)
 
             if (error) throw error
 
             // Update local state
             setMatches(matches.map(m =>
-                m.id === matchId ? { ...m, notes: editingNote } : m
+                m.id === matchId ? {
+                    ...m,
+                    result: editForm.result,
+                    going_first: editForm.going_first,
+                    side: sideFormatted,
+                    opponent_name: editForm.opponent_name || null,
+                    date: editForm.date,
+                    notes: editForm.notes || null
+                } : m
             ))
             setEditingMatchId(null)
         } catch (err: any) {
-            alert('メモの更新に失敗しました: ' + err.message)
+            alert('戦績の更新に失敗しました: ' + err.message)
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    const deleteMatch = async (matchId: string) => {
+        if (!confirm('この戦績を削除してもよろしいですか？')) return
+        if (updating) return
+
+        setUpdating(true)
+        try {
+            const { error } = await supabase
+                .from('matches')
+                .delete()
+                .eq('id', matchId)
+
+            if (error) throw error
+
+            setMatches(matches.filter(m => m.id !== matchId))
+        } catch (err: any) {
+            alert('削除に失敗しました: ' + err.message)
         } finally {
             setUpdating(false)
         }
@@ -299,42 +369,165 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => startEditing(match)}
-                                        className="text-gray-400 hover:text-pink-500 p-1"
-                                        title="メモを編集"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                        </svg>
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => startEditing(match)}
+                                            className="text-gray-400 hover:text-pink-500 p-1"
+                                            title="戦績を編集"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => deleteMatch(match.id)}
+                                            className="text-gray-400 hover:text-red-500 p-1"
+                                            title="戦績を削除"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Note Section */}
+                                {/* Note & Edit Section */}
                                 <div className="mt-3 pl-2 border-l-4 border-gray-100">
                                     {editingMatchId === match.id ? (
-                                        <div className="space-y-2">
-                                            <textarea
-                                                value={editingNote}
-                                                onChange={(e) => setEditingNote(e.target.value)}
-                                                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm text-gray-900"
-                                                rows={3}
-                                                placeholder="メモを入力..."
-                                            />
-                                            <div className="flex justify-end gap-2">
+                                        <div className="space-y-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Edit Result */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-1">結果</label>
+                                                    <div className="flex gap-1">
+                                                        {(['win', 'loss', 'draw'] as const).map((r) => (
+                                                            <button
+                                                                key={r}
+                                                                type="button"
+                                                                onClick={() => setEditForm({ ...editForm, result: r })}
+                                                                className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all shadow-sm ${editForm.result === r
+                                                                    ? (r === 'win' ? 'bg-green-600 text-white translate-y-[-1px] shadow-green-100' : r === 'loss' ? 'bg-red-600 text-white translate-y-[-1px] shadow-red-100' : 'bg-gray-600 text-white translate-y-[-1px] shadow-gray-100')
+                                                                    : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
+                                                                    }`}
+                                                            >
+                                                                {r === 'win' ? '勝ち' : r === 'loss' ? '負け' : '引分'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Edit Going First */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-1">先攻/後攻</label>
+                                                    <div className="flex gap-1">
+                                                        {(['先攻', '後攻'] as const).map((g) => (
+                                                            <button
+                                                                key={g}
+                                                                type="button"
+                                                                onClick={() => setEditForm({ ...editForm, going_first: g })}
+                                                                className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
+                                                                    ? 'bg-purple-600 text-white translate-y-[-1px] shadow-purple-100'
+                                                                    : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'
+                                                                    }`}
+                                                            >
+                                                                {g}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Edit Side */}
+                                            <div className="space-y-2 p-2 bg-white rounded-lg border border-gray-100">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">サイド状況 (取った枚数)</label>
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-gray-400 w-6">自分</span>
+                                                        <div className="flex flex-wrap gap-1 flex-1">
+                                                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
+                                                                <button
+                                                                    key={`edit-my-${num}`}
+                                                                    type="button"
+                                                                    onClick={() => setEditForm({ ...editForm, mySide: num })}
+                                                                    className={`w-7 h-7 rounded-md font-bold text-[10px] transition-all border ${editForm.mySide === num
+                                                                        ? 'bg-pink-500 text-white border-pink-600 shadow-sm'
+                                                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-pink-300'
+                                                                        }`}
+                                                                >
+                                                                    {num}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-gray-400 w-6">相手</span>
+                                                        <div className="flex flex-wrap gap-1 flex-1">
+                                                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
+                                                                <button
+                                                                    key={`edit-op-${num}`}
+                                                                    type="button"
+                                                                    onClick={() => setEditForm({ ...editForm, opSide: num })}
+                                                                    className={`w-7 h-7 rounded-md font-bold text-[10px] transition-all border ${editForm.opSide === num
+                                                                        ? 'bg-gray-700 text-white border-gray-800 shadow-sm'
+                                                                        : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-400'
+                                                                        }`}
+                                                                >
+                                                                    {num}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Edit Opponent */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-1">対戦相手</label>
+                                                    <input
+                                                        type="text"
+                                                        value={editForm.opponent_name}
+                                                        onChange={(e) => setEditForm({ ...editForm, opponent_name: e.target.value })}
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                        placeholder="相手のデッキ名など"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 mb-1">日付</label>
+                                                    <input
+                                                        type="date"
+                                                        value={editForm.date}
+                                                        onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1">メモ</label>
+                                                <textarea
+                                                    value={editForm.notes}
+                                                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                                    className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                    rows={2}
+                                                    placeholder="試合のメモ..."
+                                                />
+                                            </div>
+
+                                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                                                 <button
                                                     onClick={cancelEditing}
-                                                    className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded"
+                                                    className="px-4 py-2 text-sm text-gray-500 hover:bg-white rounded-md transition"
                                                     disabled={updating}
                                                 >
                                                     キャンセル
                                                 </button>
                                                 <button
-                                                    onClick={() => saveNote(match.id)}
-                                                    className="px-3 py-1 text-xs bg-pink-500 text-white rounded hover:bg-pink-600 disabled:opacity-50"
+                                                    onClick={() => saveMatch(match.id)}
+                                                    className="px-4 py-2 text-sm font-bold bg-pink-500 text-white rounded-md hover:bg-pink-600 shadow-sm transition disabled:opacity-50"
                                                     disabled={updating}
                                                 >
-                                                    保存
+                                                    {updating ? '保存中...' : '保存'}
                                                 </button>
                                             </div>
                                         </div>

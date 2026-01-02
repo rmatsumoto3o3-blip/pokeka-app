@@ -22,7 +22,8 @@ export default function AddMatchForm({
 }: AddMatchFormProps) {
     const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win')
     const [goingFirst, setGoingFirst] = useState<'先攻' | '後攻' | null>(null)
-    const [side, setSide] = useState('')
+    const [mySide, setMySide] = useState<number | null>(null)
+    const [opponentSide, setOpponentSide] = useState<number | null>(null)
     const [opponentName, setOpponentName] = useState('')
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
     const [notes, setNotes] = useState('')
@@ -32,16 +33,20 @@ export default function AddMatchForm({
         e.preventDefault()
         if (isLimitReached) return
 
-        // ... (existing submit logic) ...
-        // 先政/後攻の選択を必須にする
         if (!goingFirst) {
             alert('先攻/後攻を選択してください')
+            return
+        }
+
+        if (mySide === null || opponentSide === null) {
+            alert('サイド枚数を選択してください')
             return
         }
 
         setLoading(true)
 
         try {
+            const sideFormatted = `${mySide}-${opponentSide}`
             const { error } = await supabase
                 .from('matches')
                 .insert({
@@ -51,7 +56,7 @@ export default function AddMatchForm({
                     opponent_name: opponentName || null,
                     date,
                     notes: notes || null,
-                    side: side || null,
+                    side: sideFormatted,
                     going_first: goingFirst,
                 })
 
@@ -59,7 +64,8 @@ export default function AddMatchForm({
 
             // Reset form
             setGoingFirst(null)
-            setSide('')
+            setMySide(null)
+            setOpponentSide(null)
             setOpponentName('')
             setNotes('')
             setDate(new Date().toISOString().split('T')[0])
@@ -83,19 +89,18 @@ export default function AddMatchForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-3">
-            {/* ... (existing fields) ... */}
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                     結果 *
                 </label>
                 <div className="flex gap-2">
                     <button
                         type="button"
                         onClick={() => setResult('win')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${result === 'win'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'win'
+                            ? 'bg-green-600 text-white translate-y-[-2px] shadow-green-200'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
                             }`}
                     >
                         勝ち
@@ -103,9 +108,9 @@ export default function AddMatchForm({
                     <button
                         type="button"
                         onClick={() => setResult('loss')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${result === 'loss'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'loss'
+                            ? 'bg-red-600 text-white translate-y-[-2px] shadow-red-200'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
                             }`}
                     >
                         負け
@@ -113,27 +118,27 @@ export default function AddMatchForm({
                     <button
                         type="button"
                         onClick={() => setResult('draw')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${result === 'draw'
-                            ? 'bg-gray-600 text-white'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${result === 'draw'
+                            ? 'bg-gray-600 text-white translate-y-[-2px] shadow-gray-200'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
                             }`}
                     >
-                        引き分け
+                        引分
                     </button>
                 </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                     先攻/後攻 *
                 </label>
                 <div className="flex gap-2">
                     <button
                         type="button"
                         onClick={() => setGoingFirst('先攻')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${goingFirst === '先攻'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${goingFirst === '先攻'
+                            ? 'bg-blue-600 text-white translate-y-[-2px] shadow-blue-200'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
                             }`}
                     >
                         先攻
@@ -141,9 +146,9 @@ export default function AddMatchForm({
                     <button
                         type="button"
                         onClick={() => setGoingFirst('後攻')}
-                        className={`flex-1 py-2 px-4 rounded-lg font-semibold transition ${goingFirst === '後攻'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                        className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${goingFirst === '後攻'
+                            ? 'bg-purple-600 text-white translate-y-[-2px] shadow-purple-200'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'
                             }`}
                     >
                         後攻
@@ -151,65 +156,90 @@ export default function AddMatchForm({
                 </div>
             </div>
 
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    サイド
+            <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <label className="block text-sm font-bold text-gray-700">
+                    サイド状況 (取った枚数) *
                 </label>
-                <input
-                    type="text"
-                    value={side}
-                    onChange={(e) => setSide(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="例: 3-6 または 自分3 相手6"
-                />
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-gray-500 w-8">自分</span>
+                        <div className="flex flex-wrap gap-1 flex-1">
+                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
+                                <button
+                                    key={`my-${num}`}
+                                    type="button"
+                                    onClick={() => setMySide(num)}
+                                    className={`w-9 h-9 rounded-lg font-bold text-sm transition-all border ${mySide === num
+                                        ? 'bg-pink-500 text-white border-pink-600 shadow-sm'
+                                        : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300'
+                                        }`}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-gray-500 w-8">相手</span>
+                        <div className="flex flex-wrap gap-1 flex-1">
+                            {[0, 1, 2, 3, 4, 5, 6].map((num) => (
+                                <button
+                                    key={`op-${num}`}
+                                    type="button"
+                                    onClick={() => setOpponentSide(num)}
+                                    className={`w-9 h-9 rounded-lg font-bold text-sm transition-all border ${opponentSide === num
+                                        ? 'bg-gray-700 text-white border-gray-800 shadow-sm'
+                                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                                        }`}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">対戦相手のデッキ</label>
+                    <input
+                        type="text"
+                        value={opponentName}
+                        onChange={(e) => setOpponentName(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        placeholder="デカヌチャンex など"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">日付 *</label>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        required
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                    />
+                </div>
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    対戦相手
-                </label>
-                <input
-                    type="text"
-                    value={opponentName}
-                    onChange={(e) => setOpponentName(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="対戦相手のデッキ名"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    日付 *
-                </label>
-                <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="Select date"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    メモ
-                </label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">メモ</label>
                 <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="試合の詳細など..."
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                    placeholder="試合の重要なポイントなど..."
                 />
             </div>
 
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50"
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all disabled:opacity-50"
             >
-                {loading ? '記録中...' : '試合を記録'}
+                {loading ? '記録中...' : '試合を記録する'}
             </button>
         </form>
     )
