@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 interface AddDeckFormProps {
     userId: string
     onSuccess?: () => void
+    onClose?: () => void
     isLimitReached?: boolean
     deckCount?: number
     maxDecks?: number
@@ -14,6 +15,7 @@ interface AddDeckFormProps {
 export default function AddDeckForm({
     userId,
     onSuccess,
+    onClose,
     isLimitReached = false,
     deckCount = 0,
     maxDecks = 5
@@ -76,11 +78,13 @@ export default function AddDeckForm({
             if (onSuccess) {
                 setTimeout(() => {
                     onSuccess()
+                    if (onClose) onClose()
                 }, 1000)
             } else {
-                // Should not happen in new flow, but fallback
+                // If no onSuccess provided, maybe just close
                 setTimeout(() => {
-                    window.location.reload()
+                    if (onClose) onClose()
+                    else window.location.reload()
                 }, 1000)
             }
         } catch (err: any) {
@@ -90,16 +94,27 @@ export default function AddDeckForm({
         }
     }
 
-    // Color Change: White base
     return (
-        <div className="bg-white rounded-2xl p-6 border-2 border-pink-100 shadow-sm">
-            <div className="flex justify-between items-center mb-4">
+        <div className="bg-white rounded-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">新しいデッキを登録</h2>
-                {isLimitReached && (
-                    <span className="px-3 py-1 bg-red-100 text-red-700 font-bold rounded-full text-sm">
-                        上限到達 ({deckCount}/{maxDecks})
-                    </span>
-                )}
+                <div className="flex items-center gap-3">
+                    {isLimitReached && (
+                        <span className="px-3 py-1 bg-red-100 text-red-700 font-bold rounded-full text-sm">
+                            上限到達 ({deckCount}/{maxDecks})
+                        </span>
+                    )}
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="text-gray-400 hover:text-gray-600 p-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {isLimitReached ? (
@@ -109,6 +124,14 @@ export default function AddDeckForm({
                         ベータ期間中は1ユーザーにつき{maxDecks}個までしかデッキを作成できません。
                         既存のデッキを削除するか、正式リリースをお待ちください。
                     </p>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="mt-4 w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-bold"
+                        >
+                            閉じる
+                        </button>
+                    )}
                 </div>
             ) : (
                 <>
@@ -167,13 +190,24 @@ export default function AddDeckForm({
                             </p>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                        >
-                            {loading ? '登録中...' : 'デッキを登録'}
-                        </button>
+                        <div className="pt-2 flex gap-3">
+                            {onClose && (
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition"
+                                >
+                                    キャンセル
+                                </button>
+                            )}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className={`${onClose ? 'flex-[2]' : 'w-full'} py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+                            >
+                                {loading ? '登録中...' : 'デッキを登録'}
+                            </button>
+                        </div>
                     </form>
                 </>
             )}

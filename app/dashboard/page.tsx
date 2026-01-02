@@ -20,6 +20,7 @@ export default function Dashboard() {
     const [userEmail, setUserEmail] = useState<string>('')
     const [activeTab, setActiveTab] = useState('decks') // decks, analytics, reference, articles
     const [loading, setLoading] = useState(true)
+    const [isAddDeckModalOpen, setIsAddDeckModalOpen] = useState(false)
 
     // Usage Limits
     const [deckCount, setDeckCount] = useState(0)
@@ -209,20 +210,20 @@ export default function Dashboard() {
                     <div className="lg:col-span-3 space-y-6">
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                                    <AddDeckForm
-                                        userId={userId}
-                                        onSuccess={() => {
-                                            setActiveTab('decks')
-                                            refreshCounts()
-                                        }}
-                                        isLimitReached={isDeckLimitReached}
-                                        deckCount={deckCount}
-                                        maxDecks={MAX_DECKS}
-                                    />
-                                </div>
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
-                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">使用デッキ一覧</h2>
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm relative overflow-hidden">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg md:text-xl font-bold text-gray-900">登録済みデッキ</h2>
+                                        <button
+                                            onClick={() => setIsAddDeckModalOpen(true)}
+                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 mr-2">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                            </svg>
+                                            新しいデッキを登録
+                                        </button>
+                                    </div>
+
                                     <DeckList
                                         userId={userId}
                                         matchCount={matchCount}
@@ -230,6 +231,32 @@ export default function Dashboard() {
                                         isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
                                     />
                                 </div>
+
+                                {/* Registration Modal */}
+                                {isAddDeckModalOpen && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                        {/* Backdrop */}
+                                        <div
+                                            className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"
+                                            onClick={() => setIsAddDeckModalOpen(false)}
+                                        />
+                                        {/* Modal Content */}
+                                        <div className="relative w-full max-w-xl animate-in fade-in zoom-in duration-200">
+                                            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-pink-200">
+                                                <AddDeckForm
+                                                    userId={userId}
+                                                    onSuccess={() => {
+                                                        refreshCounts()
+                                                    }}
+                                                    onClose={() => setIsAddDeckModalOpen(false)}
+                                                    isLimitReached={isDeckLimitReached}
+                                                    deckCount={deckCount}
+                                                    maxDecks={MAX_DECKS}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
 
