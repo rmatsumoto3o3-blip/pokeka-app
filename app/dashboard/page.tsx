@@ -26,8 +26,8 @@ export default function Dashboard() {
     const [deckCount, setDeckCount] = useState(0)
     const [matchCount, setMatchCount] = useState(0)
     const [isAdmin, setIsAdmin] = useState(false)
-    const MAX_DECKS = 5
-    const MAX_MATCHES = 100
+    const MAX_DECKS = 20
+    const MAX_MATCHES = 500
 
     const router = useRouter()
 
@@ -121,7 +121,7 @@ export default function Dashboard() {
     const getDeckUsageColor = () => {
         if (isAdmin) return 'text-purple-600 bg-purple-50'
         if (deckCount >= MAX_DECKS) return 'text-red-600 bg-red-50'
-        if (deckCount >= MAX_DECKS - 1) return 'text-yellow-600 bg-yellow-50'
+        if (deckCount >= MAX_DECKS - 2) return 'text-yellow-600 bg-yellow-50'
         return 'text-green-600 bg-green-50'
     }
 
