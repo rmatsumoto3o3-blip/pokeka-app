@@ -296,7 +296,7 @@ export default function ReferenceDeckList({
                     <p className="text-gray-500">該当する参考デッキはありません</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                     {sortedArchetypeIds.map(archetypeId => {
                         const decks = groupedDecks[archetypeId]
 
