@@ -65,6 +65,37 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 </div>
             </section>
 
+            {/* Reference Decks Section (Public Preview) */}
+            <section id="reference-decks" className="py-12 md:py-20 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="mb-6">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                            🏆 環境・優勝デッキ集
+                        </h2>
+                        <p className="text-gray-600 mt-2">大会で結果を残している強力なデッキレシピをチェック</p>
+                    </div>
+                    {/* Unified Reference Deck List */}
+                    <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
+                        <ReferenceDeckList
+                            initialDecks={decks}
+                            initialArchetypes={archetypes}
+                        />
+                    </div>
+
+                    <div className="mt-8">
+                        <div className="mb-4">
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                                🔑 キーカード採用率
+                            </h3>
+                            <p className="text-gray-600 mt-1">環境デッキで採用されているカードの採用枚数を確認</p>
+                        </div>
+                        <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
+                            <KeyCardAdoptionList initialArchetypes={archetypes} />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Featured Articles Carousel Section */}
             <section className="py-12 bg-pink-50/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -113,37 +144,6 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 </div>
                             </Link>
                         ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Reference Decks Section (Public Preview) */}
-            <section id="reference-decks" className="py-12 md:py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="mb-6">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                            🏆 環境・優勝デッキ集
-                        </h2>
-                        <p className="text-gray-600 mt-2">大会で結果を残している強力なデッキレシピをチェック</p>
-                    </div>
-                    {/* Unified Reference Deck List */}
-                    <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
-                        <ReferenceDeckList
-                            initialDecks={decks}
-                            initialArchetypes={archetypes}
-                        />
-                    </div>
-
-                    <div className="mt-8">
-                        <div className="mb-4">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
-                                🔑 キーカード採用率
-                            </h3>
-                            <p className="text-gray-600 mt-1">環境デッキで採用されているカードの採用枚数を確認</p>
-                        </div>
-                        <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6">
-                            <KeyCardAdoptionList initialArchetypes={archetypes} />
-                        </div>
                     </div>
                 </div>
             </section>
