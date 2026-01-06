@@ -95,7 +95,23 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             { name: '引き分け', value: draws, color: COLORS.draw },
         ].filter(d => d.value > 0)
 
-        return { total, pieData, wins, losses, draws }
+        // First/Second turn stats
+        const firstTurnMatches = targetMatches.filter(m => m.going_first === '先攻')
+        const secondTurnMatches = targetMatches.filter(m => m.going_first === '後攻')
+
+        const firstTurnWins = firstTurnMatches.filter(m => m.result === 'win').length
+        const firstTurnTotal = firstTurnMatches.length
+        const firstTurnWinRate = firstTurnTotal > 0 ? (firstTurnWins / firstTurnTotal) * 100 : 0
+
+        const secondTurnWins = secondTurnMatches.filter(m => m.result === 'win').length
+        const secondTurnTotal = secondTurnMatches.length
+        const secondTurnWinRate = secondTurnTotal > 0 ? (secondTurnWins / secondTurnTotal) * 100 : 0
+
+        return {
+            total, pieData, wins, losses, draws,
+            firstTurnWins, firstTurnTotal, firstTurnWinRate,
+            secondTurnWins, secondTurnTotal, secondTurnWinRate
+        }
     }, [matches, selectedDeckId])
 
     // 3. Deck Performance Data (Only for 'All' view)
@@ -294,6 +310,24 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                 </div>
                             )}
                         </div>
+
+                        {/* First/Second Turn Win Rate Badges */}
+                        {graphData.total > 0 && (graphData.firstTurnTotal > 0 || graphData.secondTurnTotal > 0) && (
+                            <div className="flex gap-2 justify-center mt-4">
+                                {graphData.firstTurnTotal > 0 && (
+                                    <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                                        <span className="text-xs font-bold text-blue-700">先攻 {Math.round(graphData.firstTurnWinRate)}%</span>
+                                        <span className="text-xs text-blue-500 ml-1">({graphData.firstTurnWins}/{graphData.firstTurnTotal})</span>
+                                    </div>
+                                )}
+                                {graphData.secondTurnTotal > 0 && (
+                                    <div className="px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full">
+                                        <span className="text-xs font-bold text-purple-700">後攻 {Math.round(graphData.secondTurnWinRate)}%</span>
+                                        <span className="text-xs text-purple-500 ml-1">({graphData.secondTurnWins}/{graphData.secondTurnTotal})</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Bar Chart (Only for All Decks) */}
@@ -340,8 +374,35 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
             {/* List Section */}
             <div className="bg-white rounded-2xl p-6 border-2 border-pink-100 shadow-sm">
-                <div className="flex gap-4 border-b border-gray-100 pb-4 mb-4 overflow-x-auto">
-                    {/* ... Tabs ... (unchanged) */}
+                {/* Result Filter Tabs */}
+                <div className="flex gap-2 mb-4">
+                    <button
+                        onClick={() => setActiveTab('all')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'all'
+                                ? 'bg-gray-900 text-white'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                    >
+                        総合 ({matches.filter(m => selectedDeckId === 'all' || m.deck_id === selectedDeckId).length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('win')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'win'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-green-50 text-green-700 hover:bg-green-100'
+                            }`}
+                    >
+                        勝ち ({matches.filter(m => (selectedDeckId === 'all' || m.deck_id === selectedDeckId) && m.result === 'win').length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('loss')}
+                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'loss'
+                                ? 'bg-red-600 text-white'
+                                : 'bg-red-50 text-red-700 hover:bg-red-100'
+                            }`}
+                    >
+                        負け ({matches.filter(m => (selectedDeckId === 'all' || m.deck_id === selectedDeckId) && m.result === 'loss').length})
+                    </button>
                 </div>
 
                 <div className="space-y-3">
