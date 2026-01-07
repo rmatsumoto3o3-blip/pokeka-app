@@ -155,7 +155,7 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="例: Hレギュ"
                             />
                         </div>
@@ -169,7 +169,7 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
                                 value={formData.start_date}
                                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
 
@@ -181,7 +181,7 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
                                 type="date"
                                 value={formData.end_date}
                                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                             <p className="text-xs text-gray-500 mt-1">空欄の場合は現在進行中</p>
                         </div>
@@ -194,7 +194,7 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
                                 type="text"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="例: Hレギュレーション開始"
                             />
                         </div>
