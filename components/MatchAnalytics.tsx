@@ -143,10 +143,24 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     const deckPerformanceData = useMemo(() => {
         if (selectedDeckId !== 'all') return []
 
+        // Apply environment filter
+        let targetMatches = matches
+        if (selectedEnvironmentId !== 'all') {
+            const env = environments.find(e => e.id === selectedEnvironmentId)
+            if (env) {
+                targetMatches = matches.filter(match => {
+                    const matchDate = new Date(match.date)
+                    const startDate = new Date(env.start_date)
+                    const endDate = env.end_date ? new Date(env.end_date) : new Date()
+                    return matchDate >= startDate && matchDate <= endDate
+                })
+            }
+        }
+
         // Group by deck
         const deckStats: Record<string, { name: string, wins: number, total: number }> = {}
 
-        matches.forEach(match => {
+        targetMatches.forEach(match => {
             if (!match.deck) return
             const id = match.deck_id
             if (!deckStats[id]) {
@@ -163,7 +177,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             }))
             .sort((a, b) => b.winRate - a.winRate)
             .slice(0, 5) // Top 5
-    }, [matches, selectedDeckId])
+    }, [matches, selectedDeckId, selectedEnvironmentId, environments])
 
     // ... (existing imports)
 
