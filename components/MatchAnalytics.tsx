@@ -42,6 +42,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                 .from('matches')
                 .select('*')
                 .eq('user_id', userId)
+                .order('date', { ascending: false })
                 .order('created_at', { ascending: false })
 
             if (matchesError) throw matchesError
