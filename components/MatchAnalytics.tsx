@@ -103,11 +103,25 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
         })
     }, [matches, selectedDeckId, activeTab, selectedEnvironmentId, environments])
 
-    // 2. Stats for Graphs (by Deck only, ignoring Tab)
+
+    // 2. Stats for Graphs (by Deck and Environment, ignoring Tab)
     const graphData = useMemo(() => {
-        const targetMatches = matches.filter(match =>
+        let targetMatches = matches.filter(match =>
             selectedDeckId === 'all' || match.deck_id === selectedDeckId
         )
+
+        // Apply environment filter
+        if (selectedEnvironmentId !== 'all') {
+            const env = environments.find(e => e.id === selectedEnvironmentId)
+            if (env) {
+                targetMatches = targetMatches.filter(match => {
+                    const matchDate = new Date(match.date)
+                    const startDate = new Date(env.start_date)
+                    const endDate = env.end_date ? new Date(env.end_date) : new Date()
+                    return matchDate >= startDate && matchDate <= endDate
+                })
+            }
+        }
 
         const wins = targetMatches.filter(m => m.result === 'win').length
         const losses = targetMatches.filter(m => m.result === 'loss').length
@@ -137,7 +151,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             firstTurnWins, firstTurnTotal, firstTurnWinRate,
             secondTurnWins, secondTurnTotal, secondTurnWinRate
         }
-    }, [matches, selectedDeckId])
+    }, [matches, selectedDeckId, selectedEnvironmentId, environments])
 
     // 3. Deck Performance Data (Only for 'All' view)
     const deckPerformanceData = useMemo(() => {
