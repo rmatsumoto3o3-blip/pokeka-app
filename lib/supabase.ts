@@ -74,6 +74,16 @@ export interface Article {
   updated_at?: string
 }
 
+export interface GameEnvironment {
+  id: string
+  name: string
+  start_date: string
+  end_date: string | null
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
 // Helper function to get deck with match statistics
 export interface DeckWithStats extends Deck {
   total_matches: number

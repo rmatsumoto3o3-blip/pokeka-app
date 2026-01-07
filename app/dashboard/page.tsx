@@ -8,6 +8,7 @@ import AddDeckForm from '@/components/AddDeckForm'
 import DeckList from '@/components/DeckList'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
+import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
 import SideArticleList from '@/components/SideArticleList'
 import AdPlaceholder from '@/components/AdPlaceholder'
@@ -268,12 +269,15 @@ export default function Dashboard() {
 
                         {activeTab === 'reference' && (
                             <div className="space-y-6">
-                                {/* Admin Only: Manager Form */}
+                                {/* Admin Only: Manager Forms */}
                                 {(userEmail === 'player1@pokeka.local' ||
                                     userEmail === 'player2@pokeka.local' ||
                                     userEmail === 'player3@pokeka.local' ||
-                                    isAdmin) && ( // Expanded check just in case, though isAdmin covers it
-                                        <ReferenceDeckManager userEmail={userEmail} />
+                                    isAdmin) && (
+                                        <>
+                                            <EnvironmentManager userEmail={userEmail} />
+                                            <ReferenceDeckManager userEmail={userEmail} />
+                                        </>
                                     )}
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">

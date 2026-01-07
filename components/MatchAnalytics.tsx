@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Match, Deck } from '@/lib/supabase'
+import type { Match, Deck, GameEnvironment } from '@/lib/supabase'
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend
@@ -25,8 +25,10 @@ const COLORS = {
 export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     const [matches, setMatches] = useState<MatchWithDeck[]>([])
     const [decks, setDecks] = useState<Deck[]>([])
+    const [environments, setEnvironments] = useState<GameEnvironment[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedDeckId, setSelectedDeckId] = useState<string>('all')
+    const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('all')
     const [activeTab, setActiveTab] = useState<'all' | 'win' | 'loss'>('all')
 
     useEffect(() => {
@@ -52,6 +54,14 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
             if (decksError) throw decksError
 
+            // Fetch environments
+            const { data: environmentsData, error: environmentsError } = await supabase
+                .from('game_environments')
+                .select('*')
+                .order('start_date', { ascending: false })
+
+            if (environmentsError) throw environmentsError
+
             // Combine
             const matchesWithDecks: MatchWithDeck[] = (matchesData || []).map((match) => ({
                 ...match,
@@ -60,6 +70,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
             setMatches(matchesWithDecks)
             setDecks(decksData || [])
+            setEnvironments(environmentsData || [])
         } catch (err) {
             console.error(err)
         } finally {
@@ -69,14 +80,27 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
     // --- Computed Data ---
 
-    // 1. Filtered Matches (by Deck AND Tab)
+    // 1. Filtered Matches (by Deck AND Tab AND Environment)
     const filteredMatches = useMemo(() => {
         return matches.filter(match => {
             const deckMatch = selectedDeckId === 'all' || match.deck_id === selectedDeckId
             const tabMatch = activeTab === 'all' || match.result === activeTab
-            return deckMatch && tabMatch
+
+            // Environment filter
+            let environmentMatch = true
+            if (selectedEnvironmentId !== 'all') {
+                const env = environments.find(e => e.id === selectedEnvironmentId)
+                if (env) {
+                    const matchDate = new Date(match.date)
+                    const startDate = new Date(env.start_date)
+                    const endDate = env.end_date ? new Date(env.end_date) : new Date()
+                    environmentMatch = matchDate >= startDate && matchDate <= endDate
+                }
+            }
+
+            return deckMatch && tabMatch && environmentMatch
         })
-    }, [matches, selectedDeckId, activeTab])
+    }, [matches, selectedDeckId, activeTab, selectedEnvironmentId, environments])
 
     // 2. Stats for Graphs (by Deck only, ignoring Tab)
     const graphData = useMemo(() => {
@@ -258,18 +282,34 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
         <div className="space-y-8">
             {/* Header / Filter */}
             <div className="bg-white rounded-2xl p-6 border-2 border-purple-100 shadow-sm">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex flex-col gap-4">
                     <h2 className="text-xl font-bold text-gray-900">戦績分析</h2>
-                    <select
-                        value={selectedDeckId}
-                        onChange={(e) => setSelectedDeckId(e.target.value)}
-                        className="w-full md:w-64 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                        <option value="all">すべてのデッキ（月間）</option>
-                        {decks.map(deck => (
-                            <option key={deck.id} value={deck.id}>{deck.deck_name}</option>
-                        ))}
-                    </select>
+
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <select
+                            value={selectedDeckId}
+                            onChange={(e) => setSelectedDeckId(e.target.value)}
+                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="all">すべてのデッキ</option>
+                            {decks.map(deck => (
+                                <option key={deck.id} value={deck.id}>{deck.deck_name}</option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={selectedEnvironmentId}
+                            onChange={(e) => setSelectedEnvironmentId(e.target.value)}
+                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        >
+                            <option value="all">全期間</option>
+                            {environments.map(env => (
+                                <option key={env.id} value={env.id}>
+                                    {env.name} ({env.start_date}～{env.end_date || '現在'})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 {/* Graphs */}
@@ -379,8 +419,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     <button
                         onClick={() => setActiveTab('all')}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'all'
-                                ? 'bg-gray-900 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >
                         総合 ({matches.filter(m => selectedDeckId === 'all' || m.deck_id === selectedDeckId).length})
@@ -388,8 +428,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     <button
                         onClick={() => setActiveTab('win')}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'win'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-green-50 text-green-700 hover:bg-green-100'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-green-50 text-green-700 hover:bg-green-100'
                             }`}
                     >
                         勝ち ({matches.filter(m => (selectedDeckId === 'all' || m.deck_id === selectedDeckId) && m.result === 'win').length})
@@ -397,8 +437,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     <button
                         onClick={() => setActiveTab('loss')}
                         className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'loss'
-                                ? 'bg-red-600 text-white'
-                                : 'bg-red-50 text-red-700 hover:bg-red-100'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-red-50 text-red-700 hover:bg-red-100'
                             }`}
                     >
                         負け ({matches.filter(m => (selectedDeckId === 'all' || m.deck_id === selectedDeckId) && m.result === 'loss').length})
