@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
@@ -118,10 +119,13 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             >
                                 <div className="aspect-video w-full relative">
                                     {article.thumbnail_url ? (
-                                        <img
+                                        <Image
                                             src={article.thumbnail_url}
                                             alt={article.title}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            width={350}
+                                            height={197}
+                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                            loading="lazy"
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center text-4xl">

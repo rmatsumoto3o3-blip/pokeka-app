@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, Article } from '@/lib/supabase'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function SideArticleList() {
     const [articles, setArticles] = useState<Article[]>([])
@@ -47,10 +48,13 @@ export default function SideArticleList() {
                         <div className="flex gap-3">
                             <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden relative">
                                 {article.thumbnail_url ? (
-                                    <img
+                                    <Image
                                         src={article.thumbnail_url}
                                         alt={article.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        width={64}
+                                        height={64}
+                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                        loading="lazy"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-lg">📝</div>
