@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Deck, Match } from '@/lib/supabase'
+import Link from 'next/link'
 import AddMatchForm from './AddMatchForm'
 
 interface DeckListProps {
@@ -182,13 +183,19 @@ export default function DeckList({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
-                                        className="flex-1 py-2 px-4 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm"
+                                        className="flex-1 py-1.5 px-3 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm text-sm"
                                     >
-                                        {selectedDeck === deck.id ? '閉じる' : '試合を記録'}
+                                        {selectedDeck === deck.id ? '閉じる' : '記録'}
                                     </button>
+                                    <Link
+                                        href={`/practice?code1=${deck.deck_code}`}
+                                        className="flex-1 py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm flex items-center justify-center"
+                                    >
+                                        一人回し
+                                    </Link>
                                     <button
                                         onClick={() => handleDelete(deck.id)}
-                                        className="py-2 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition"
+                                        className="py-1.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm"
                                     >
                                         削除
                                     </button>
