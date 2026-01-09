@@ -35,6 +35,18 @@ export function isPokemon(card: Card): boolean {
     return card.supertype === 'Pokémon'
 }
 
+export function isItem(card: Card): boolean {
+    return card.subtypes?.includes('Item') || false
+}
+
+export function isSupporter(card: Card): boolean {
+    return card.subtypes?.includes('Supporter') || false
+}
+
+export function isStadium(card: Card): boolean {
+    return card.subtypes?.includes('Stadium') || false
+}
+
 // Check if a card can be stacked on another
 export function canStack(card: Card, stack: CardStack): boolean {
     const topCard = getTopCard(stack)
