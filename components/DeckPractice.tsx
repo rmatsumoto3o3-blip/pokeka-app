@@ -19,6 +19,7 @@ import {
     defaultDropAnimationSideEffects,
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
+import { snapCenterToCursor } from '@dnd-kit/modifiers'
 
 interface DeckPracticeProps {
     deck: Card[]
@@ -462,6 +463,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            modifiers={[snapCenterToCursor]}
         >
             <div className={`w-full ${compact ? "space-y-2" : "space-y-4"} relative`}>
                 {/* Context Menu */}
@@ -669,8 +671,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
 
                 {/* Bench */}
                 {/* BenchContainer - with horizontal scrolling */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
-
+                <div className="bg-gray-50/50 rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden border border-gray-100">
                     <div className="flex items-center gap-2 mb-2">
                         <h2 className="text-xs sm:text-sm font-bold text-gray-900">ベンチ</h2>
                         <button
@@ -682,7 +683,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         </button>
                         <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
                     </div>
-                    <div className="flex gap-2 sm:gap-3 overflow-x-auto py-8 touch-pan-x items-center">
+                    <div className="flex gap-4 sm:gap-6 overflow-x-auto py-12 touch-pan-x items-center px-4">
                         {bench.slice(0, benchSize).map((stack, i) => (
                             <div key={i} className="flex-shrink-0">
                                 {stack ? (
@@ -715,11 +716,11 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 </div>
 
                 {/* Hand */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
+                <div className="bg-gray-50/50 rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden border border-gray-100">
                     <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">手札 ({hand.length}枚)</h2>
                     {/* Hand Container - Horizontal Scroll enabled */}
                     <div
-                        className="flex overflow-x-auto gap-3 sm:gap-4 py-8 px-2 snap-x items-center"
+                        className="flex overflow-x-auto gap-5 sm:gap-8 py-12 px-6 snap-x items-center"
                         style={{ WebkitOverflowScrolling: 'touch' }}
                     >
                         {hand.map((card, i) => (
@@ -904,14 +905,16 @@ function CascadingStack({ stack, width, height }: { stack: CardStack, width: num
                 // Only render last few cards for performance/visuals if stack is huge
                 if (i < stack.cards.length - maxVisible - 1) return null
 
-                // Actually simpler: just render all with absolute top
+                // Pokemon (index 0) usually sits on top of energy/tools
+                const reversedZIndex = stack.cards.length - i
+
                 return (
                     <div
                         key={i}
                         className="absolute top-0 left-0 transition-all"
                         style={{
-                            top: i * cardOffset, // Use actual index for cascading effect
-                            zIndex: i
+                            top: i * cardOffset,
+                            zIndex: reversedZIndex
                         }}
                     >
                         <Image
@@ -919,7 +922,7 @@ function CascadingStack({ stack, width, height }: { stack: CardStack, width: num
                             alt={card.name}
                             width={width}
                             height={height}
-                            className="rounded shadow-lg bg-white no-touch-menu no-select no-tap-highlight"
+                            className="rounded shadow bg-white no-touch-menu no-select no-tap-highlight ring-1 ring-black/5"
                             draggable={false}
                         />
                     </div>
