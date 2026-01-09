@@ -133,7 +133,7 @@ function PracticeContent() {
 
                 {/* Practice Area - 3 Column Layout */}
                 {(deck1.length > 0 || deck2.length > 0) && (
-                    <div className="w-full overflow-x-auto pb-4">
+                    <div className="bg-white rounded-xl shadow-lg p-4 mb-4 w-full overflow-x-auto">
                         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 sm:gap-4 w-full">
                             {/* Player 1 */}
                             {deck1.length > 0 && (
