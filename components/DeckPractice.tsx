@@ -353,9 +353,35 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{hand.length}</div>
                         <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
                     </div>
-                    <div className="bg-red-50 rounded px-1 py-1">
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600">{trash.length}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-600">トラッシュ</div>
+                    <div
+                        className="bg-red-50 rounded px-1 py-1 cursor-pointer hover:bg-red-100 transition relative"
+                        onDragOver={(e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.add('ring-2', 'ring-red-400')
+                        }}
+                        onDragLeave={(e) => {
+                            e.currentTarget.classList.remove('ring-2', 'ring-red-400')
+                        }}
+                        onDrop={(e) => {
+                            e.preventDefault()
+                            e.currentTarget.classList.remove('ring-2', 'ring-red-400')
+                            const source = e.dataTransfer.getData('source')
+                            const cardIndex = parseInt(e.dataTransfer.getData('cardIndex'))
+
+                            if (source === 'hand' && !isNaN(cardIndex)) {
+                                moveToTrash(cardIndex)
+                            } else if (source === 'battle') {
+                                battleFieldToTrash()
+                            } else if (source === 'bench' && !isNaN(cardIndex)) {
+                                benchToTrash(cardIndex)
+                            }
+                        }}
+                    >
+                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600 pointer-events-none">{trash.length}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-600 pointer-events-none">トラッシュ</div>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 rounded pointer-events-none">
+                            <span className="text-[10px] font-bold text-red-800">DROP</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -385,6 +411,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     {battleField ? (
                         <div
                             draggable
+                            onContextMenu={(e) => e.preventDefault()}
                             onDragStart={(e) => {
                                 handleDragStart(e, 0, 'battle')
                             }}
@@ -488,6 +515,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             {stack ? (
                                 <div
                                     draggable
+                                    onContextMenu={(e) => e.preventDefault()}
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'bench')
                                     }}
@@ -622,9 +650,11 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 <div
                                     key={i}
                                     draggable
+                                    onContextMenu={(e) => e.preventDefault()}
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'hand')
                                     }}
+                                    style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
                                     className="flex-shrink-0 cursor-move"
                                 >
                                     <Image
@@ -673,18 +703,17 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                             onClick={() => setSelectedCard({ card, source: 'hand', index: i })}
                                         />
                                         {selectedCard?.index === i && selectedCard?.source === 'hand' && (
-                                            <div className="absolute top-0 left-full ml-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl p-2 z-20 min-w-[150px]">
+                                            <div className="absolute top-0 left-full ml-2 bg-white rounded-lg shadow-xl p-2 z-[9999] min-w-[200px] border border-gray-200">
                                                 <button
                                                     onClick={() => {
                                                         setHand([...hand, card])
                                                         setRemaining(remaining.filter((_, idx) => idx !== i))
                                                         setSelectedCard(null)
                                                     }}
-                                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 rounded text-sm text-gray-900 dark:text-gray-100"
+                                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 bg-white text-gray-900 rounded text-sm font-bold border-b border-gray-100"
                                                 >
                                                     手札に加える
                                                 </button>
-                                                <div className="border-t my-1"></div>
                                                 <button
                                                     onClick={() => {
                                                         const emptySlot = bench.findIndex(slot => slot === null)
@@ -743,18 +772,17 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                             onClick={() => setSelectedCard({ card, source: 'hand', index: i })}
                                         />
                                         {selectedCard?.index === i && selectedCard?.source === 'hand' && (
-                                            <div className="absolute top-0 left-full ml-2 bg-white rounded-lg shadow-xl p-2 z-20 min-w-[150px]">
+                                            <div className="absolute top-0 left-full ml-2 bg-white rounded-lg shadow-xl p-2 z-[9999] min-w-[200px] border border-gray-200">
                                                 <button
                                                     onClick={() => {
                                                         setRemaining([...remaining, card])
                                                         setTrash(trash.filter((_, idx) => idx !== i))
                                                         setSelectedCard(null)
                                                     }}
-                                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900 rounded text-sm text-gray-900 dark:text-gray-100"
+                                                    className="w-full text-left px-3 py-2 hover:bg-blue-50 bg-white text-gray-900 rounded text-sm font-bold border-b border-gray-100"
                                                 >
                                                     山札へ加える
                                                 </button>
-                                                <div className="border-t my-1"></div>
                                                 <button
                                                     onClick={() => {
                                                         setHand([...hand, card])
@@ -771,7 +799,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 ))}
                             </div>
                         </div>
-                    </div>
+                    </div >
                 )
             }
         </div >
