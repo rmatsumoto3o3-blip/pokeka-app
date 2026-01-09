@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { fetchDeckData, buildDeck, shuffle, type Card } from '@/lib/deckParser'
 import DeckPractice from '../../components/DeckPractice'
 
-export default function PracticePage() {
+function PracticeContent() {
     const searchParams = useSearchParams()
     const [deckCode1, setDeckCode1] = useState(searchParams.get('code1') || '')
     const [deckCode2, setDeckCode2] = useState(searchParams.get('code2') || '')
@@ -266,5 +266,13 @@ export default function PracticePage() {
                 )}
             </div>
         </div>
+    )
+}
+
+export default function PracticePage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">読み込み中...</div>}>
+            <PracticeContent />
+        </Suspense>
     )
 }
