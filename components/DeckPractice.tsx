@@ -429,7 +429,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     }
 
     return (
-        <div className={compact ? "space-y-2" : "space-y-4"}>
+        <div className={`w-full ${compact ? "space-y-2" : "space-y-4"}`}>
             {/* Player Name */}
             {playerName && (
                 <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 text-center">
@@ -847,8 +847,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     }}
 
                                     className={`flex-shrink-0 cursor-move select-none relative transition-all ${selectedCard?.source === 'hand' && selectedCard.index === i
-                                            ? 'ring-4 ring-blue-500 transform -translate-y-2 z-10'
-                                            : 'hover:transform hover:-translate-y-1'
+                                        ? 'ring-4 ring-blue-500 transform -translate-y-2 z-10'
+                                        : 'hover:transform hover:-translate-y-1'
                                         }`}
                                     onClick={() => {
                                         if (selectedCard?.source === 'hand' && selectedCard.index === i) {
