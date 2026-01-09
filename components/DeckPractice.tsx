@@ -98,7 +98,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             // Route based on prefixed target
             const ownPrefix = idPrefix ? `${idPrefix}-` : ""
-            if (!targetId.startsWith(ownPrefix)) return
+            if (!targetId.startsWith(ownPrefix) && targetId !== 'stadium-zone') return
 
             const localTargetId = targetId.startsWith(ownPrefix) ? targetId.slice(ownPrefix.length) : targetId
 
@@ -106,7 +106,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             if (source.type === 'hand' && source.playerPrefix === idPrefix) {
                 const card = hand[source.index]
                 if (localTargetId === 'stadium-zone') {
-                    playStadium(source.index)
+                    if (isStadium(card)) {
+                        playStadium(source.index)
+                    } else {
+                        alert("スタジアムカードではありません")
+                    }
                 } else if (localTargetId === 'battle-field') {
                     if (isPokemon(card)) {
                         if (!battleField || canStack(card, battleField)) {
@@ -490,7 +494,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     const playStadium = (handIndex: number) => {
         const card = hand[handIndex]
-        if (card.supertype !== 'トレーナー' || !card.subtypes?.includes('スタジアム')) {
+        if (!isStadium(card)) {
             alert("スタジアムカードではありません")
             return
         }

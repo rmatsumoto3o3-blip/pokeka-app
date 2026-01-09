@@ -111,7 +111,14 @@ function PracticeContent() {
         if (!over) return
 
         const targetId = over.id as string
-        if (targetId.startsWith('player1-')) {
+        if (targetId === 'stadium-zone') {
+            const source = active.data.current as any
+            if (source?.playerPrefix === 'player1') {
+                player1Ref.current?.handleExternalDragEnd(event)
+            } else if (source?.playerPrefix === 'player2') {
+                player2Ref.current?.handleExternalDragEnd(event)
+            }
+        } else if (targetId.startsWith('player1-')) {
             player1Ref.current?.handleExternalDragEnd(event)
         } else if (targetId.startsWith('player2-')) {
             player2Ref.current?.handleExternalDragEnd(event)
@@ -216,31 +223,29 @@ function PracticeContent() {
                                 {/* Center Column - Stadium & Tools */}
                                 <div className="w-24 sm:w-28 md:w-32 flex-shrink-0 flex flex-col items-center">
                                     <div className="bg-white rounded-lg shadow-lg p-2 sticky top-4 w-full flex flex-col items-center">
-                                        <h2 className="text-[10px] sm:text-xs font-bold text-gray-900 mb-1 text-center w-full">スタジアム</h2>
-                                        {(stadium1 || stadium2) ? (
-                                            <div className="relative group flex justify-center">
-                                                <Image
-                                                    src={(stadium1 || stadium2)!.imageUrl}
-                                                    alt={(stadium1 || stadium2)!.name}
-                                                    width={80}
-                                                    height={112}
-                                                    className="rounded shadow-lg"
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        setStadium1(null)
-                                                        setStadium2(null)
-                                                    }}
-                                                    className="absolute top-0 -right-2 bg-red-500 text-white px-1 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <DroppableZone id="stadium-zone" className="w-[80px] h-[112px] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-2 mx-auto">
-                                                なし
-                                            </DroppableZone>
-                                        )}
+                                        <DroppableZone id="stadium-zone" className="w-[100px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-2 mx-auto overflow-hidden relative group">
+                                            {(stadium1 || stadium2) ? (
+                                                <div className="relative group flex justify-center w-full h-full">
+                                                    <Image
+                                                        src={(stadium1 || stadium2)!.imageUrl}
+                                                        alt={(stadium1 || stadium2)!.name}
+                                                        fill
+                                                        className="rounded shadow-lg object-contain"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            setStadium1(null)
+                                                            setStadium2(null)
+                                                        }}
+                                                        className="absolute top-1 right-1 bg-red-500/80 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition z-10"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <span>なし</span>
+                                            )}
+                                        </DroppableZone>
 
                                         {/* Future: Damage Counters & Coins */}
                                         <div className="mt-4 flex flex-col gap-4 w-full">
