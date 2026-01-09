@@ -46,6 +46,12 @@ interface SwapState {
     sourceType: 'battle' | 'bench'
 }
 
+interface DeckMenuState {
+    index: number
+    x: number
+    y: number
+}
+
 export default function DeckPractice({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange }: DeckPracticeProps) {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
@@ -62,6 +68,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     const [swapMode, setSwapMode] = useState<SwapState | null>(null)
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
+    const [deckCardMenu, setDeckCardMenu] = useState<DeckMenuState | null>(null)
 
     // dnd-kit sensors
     const sensors = useSensors(
@@ -440,6 +447,31 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         setRemaining(remaining.filter((_, i) => i !== index))
     }
 
+    const moveFromDeckToBattleField = (index: number) => {
+        const card = remaining[index]
+        if (!battleField) {
+            setBattleField(createStack(card))
+            setRemaining(remaining.filter((_, i) => i !== index))
+        } else {
+            alert("バトル場が埋まっています")
+        }
+    }
+
+    const updateDamage = (source: 'battle' | 'bench', index: number, delta: number) => {
+        if (source === 'battle') {
+            if (!battleField) return
+            const newDamage = Math.max(0, battleField.damage + delta)
+            setBattleField({ ...battleField, damage: newDamage })
+        } else {
+            const stack = bench[index]
+            if (!stack) return
+            const newDamage = Math.max(0, stack.damage + delta)
+            const newBench = [...bench]
+            newBench[index] = { ...stack, damage: newDamage }
+            setBench(newBench)
+        }
+    }
+
     // Compact mode sizes
     const sizes = compact ? {
         prize: { w: 40, h: 56 },
@@ -683,6 +715,11 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
                             >
                                 <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                                {/* Damage controls for Battle Field */}
+                                <div className="absolute top-0 right-[-40px] flex flex-col gap-1 z-10">
+                                    <button onClick={() => updateDamage('battle', 0, 10)} className="w-8 h-8 bg-red-500 text-white rounded-full font-bold shadow">+</button>
+                                    <button onClick={() => updateDamage('battle', 0, -10)} className="w-8 h-8 bg-gray-500 text-white rounded-full font-bold shadow">-</button>
+                                </div>
                             </DraggableCard>
                         ) : (
                             <div
@@ -719,7 +756,14 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         onClick={(e) => handleCardClick(e, stack, 'bench', i)}
                                         className={swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}
                                     >
-                                        <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
+                                        <div className="relative">
+                                            <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
+                                            {/* Damage controls for Bench */}
+                                            <div className="absolute top-0 right-[-30px] flex flex-col gap-1 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 transition-opacity z-10">
+                                                <button onClick={(e) => { e.stopPropagation(); updateDamage('bench', i, 10); }} className="w-6 h-6 bg-red-400 text-white rounded-full font-bold text-xs">+</button>
+                                                <button onClick={(e) => { e.stopPropagation(); updateDamage('bench', i, -10); }} className="w-6 h-6 bg-gray-400 text-white rounded-full font-bold text-xs">-</button>
+                                            </div>
+                                        </div>
                                     </DraggableCard>
                                 ) : (
                                     <DroppableZone
@@ -781,7 +825,18 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             </div>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-2 gap-y-6">
                                 {remaining.map((card, i) => (
-                                    <div key={i} className="relative group">
+                                    <div
+                                        key={i}
+                                        className="relative group cursor-pointer"
+                                        onClick={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect()
+                                            setDeckCardMenu({
+                                                index: i,
+                                                x: rect.left,
+                                                y: rect.bottom + window.scrollY
+                                            })
+                                        }}
+                                    >
                                         <Image
                                             src={card.imageUrl}
                                             alt={card.name}
@@ -790,26 +845,43 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                             className="rounded shadow no-touch-menu no-select no-tap-highlight"
                                             draggable={false}
                                         />
-                                        <div className="absolute -bottom-5 left-0 right-0 flex justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/80 rounded py-0.5 shadow-sm">
-                                            <button
-                                                onClick={() => moveFromDeckToHand(i)}
-                                                className="bg-blue-500 text-white text-[8px] px-1 rounded hover:bg-blue-600"
-                                                title="手札へ"
-                                            >手札</button>
-                                            <button
-                                                onClick={() => moveFromDeckToBench(i)}
-                                                className="bg-green-500 text-white text-[8px] px-1 rounded hover:bg-green-600"
-                                                title="ベンチへ"
-                                            >ベンチ</button>
-                                            <button
-                                                onClick={() => moveFromDeckToTrash(i)}
-                                                className="bg-red-500 text-white text-[8px] px-1 rounded hover:bg-red-600"
-                                                title="トラッシュへ"
-                                            >トラ</button>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Deck Card Menu */}
+                {deckCardMenu && (
+                    <div
+                        className="fixed inset-0 z-[100]"
+                        onClick={() => setDeckCardMenu(null)}
+                    >
+                        <div
+                            className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[120px]"
+                            style={{
+                                top: deckCardMenu.y,
+                                left: Math.min(deckCardMenu.x, window.innerWidth - 130)
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => { moveFromDeckToHand(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                            >手札へ</button>
+                            <button
+                                onClick={() => { moveFromDeckToBattleField(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                            >バトル場へ</button>
+                            <button
+                                onClick={() => { moveFromDeckToBench(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                            >ベンチへ</button>
+                            <button
+                                onClick={() => { moveFromDeckToTrash(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-2 hover:bg-red-50 text-red-600 text-left text-sm font-bold"
+                            >トラッシュへ</button>
                         </div>
                     </div>
                 )}
@@ -972,6 +1044,7 @@ function CascadingStack({ stack, width, height }: { stack: CardStack, width: num
 
             {/* Stack info badge */}
             <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded flex gap-1 z-50 pointer-events-none">
+                {stack.damage > 0 && <span className="bg-red-600 px-1 rounded font-bold">💥{stack.damage}</span>}
                 {stack.cards.length > 1 && <span>📚{stack.cards.length}</span>}
                 {stack.energyCount > 0 && <span>⚡{stack.energyCount}</span>}
                 {stack.toolCount > 0 && <span>🔧{stack.toolCount}</span>}
