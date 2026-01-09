@@ -34,10 +34,24 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         y: number
     } | null>(null)
 
+
+
     // Touch logic refs for long-press detection
     const touchTimerRef = useRef<NodeJS.Timeout | null>(null)
     const touchStartPosRef = useRef<{ x: number, y: number } | null>(null)
     const touchCurrentPosRef = useRef<{ x: number, y: number } | null>(null)
+
+    // Detect if device supports touch to disable native draggable
+    const [isTouchDevice, setIsTouchDevice] = useState(false)
+
+    useEffect(() => {
+        const checkTouch = () => {
+            setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
+        }
+        checkTouch()
+        window.addEventListener('resize', checkTouch)
+        return () => window.removeEventListener('resize', checkTouch)
+    }, [])
 
     // Drag tracking for long drag detection
     const [dragStartTime, setDragStartTime] = useState<number | null>(null)
@@ -549,10 +563,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
                     {battleField ? (
                         <div
-                            draggable
+                            draggable={!isTouchDevice}
                             onContextMenu={(e) => e.preventDefault()}
                             onDragStart={(e) => {
-                                handleDragStart(e, 0, 'battle')
+                                if (!isTouchDevice) handleDragStart(e, 0, 'battle')
                             }}
                             // Removed touch-none to allow scrolling, logic handled in onTouch handlers
                             className={`relative group inline-block cursor-move select-none ${selectedCard?.source === 'battle' ? 'ring-2 ring-blue-500' : ''}`}
@@ -667,10 +681,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         <div key={i} className="flex-shrink-0">
                             {stack ? (
                                 <div
-                                    draggable
+                                    draggable={!isTouchDevice}
                                     onContextMenu={(e) => e.preventDefault()}
                                     onDragStart={(e) => {
-                                        handleDragStart(e, i, 'bench')
+                                        if (!isTouchDevice) handleDragStart(e, i, 'bench')
                                     }}
 
                                     // Removed touch-none
@@ -811,10 +825,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             {hand.map((card, i) => (
                                 <div
                                     key={i}
-                                    draggable
+                                    draggable={!isTouchDevice}
                                     onContextMenu={(e) => e.preventDefault()}
                                     onDragStart={(e) => {
-                                        handleDragStart(e, i, 'hand')
+                                        if (!isTouchDevice) handleDragStart(e, i, 'hand')
                                     }}
 
                                     className="flex-shrink-0 cursor-move select-none" // Removed touch-none
