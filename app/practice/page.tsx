@@ -64,7 +64,7 @@ function PracticeContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4">
+        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4">
             <div className="max-w-[1800px] mx-auto">
                 {/* Header */}
                 <div className="mb-4">
@@ -134,7 +134,7 @@ function PracticeContent() {
                 {/* Practice Area - 3 Column Layout */}
                 {(deck1.length > 0 || deck2.length > 0) && (
                     <div className="w-full overflow-x-auto pb-4">
-                        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 min-w-[1000px] md:min-w-0">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 sm:gap-4 min-w-[1000px] md:min-w-0">
                             {/* Player 1 */}
                             {deck1.length > 0 && (
                                 <DeckPractice

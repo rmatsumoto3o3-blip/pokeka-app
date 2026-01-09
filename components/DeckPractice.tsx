@@ -19,9 +19,20 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     const [remaining, setRemaining] = useState<Card[]>(deck)
     const [trash, setTrash] = useState<Card[]>([])
     const [battleField, setBattleField] = useState<CardStack | null>(null)
-    const [bench, setBench] = useState<(CardStack | null)[]>([null, null, null, null, null])
+    const [benchSize, setBenchSize] = useState(5)
+    // Initialize bench with 8 slots but valid based on benchSize
+    const [bench, setBench] = useState<(CardStack | null)[]>(new Array(8).fill(null))
     const [prizeCards, setPrizeCards] = useState<Card[]>([])
     const [initialized, setInitialized] = useState(false)
+
+    // Touch Drag Support State
+    const [touchDragItem, setTouchDragItem] = useState<{
+        card: Card | CardStack,
+        source: 'hand' | 'bench' | 'battle',
+        index: number,
+        x: number,
+        y: number
+    } | null>(null)
 
     // Drag tracking for long drag detection
     const [dragStartTime, setDragStartTime] = useState<number | null>(null)
@@ -85,6 +96,12 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         setRemaining(newDeck.slice(7))
     }
 
+    const increaseBenchSize = () => {
+        if (benchSize < 8) {
+            setBenchSize(prev => Math.min(prev + 1, 8))
+        }
+    }
+
     const moveToTrash = (index: number) => {
         const card = hand[index]
         setTrash([...trash, card])
@@ -103,6 +120,82 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 setIsLongDrag(true)
             }
         }, 1000)
+    }
+
+    // Touch Handling for Android
+    const handleTouchStart = (e: React.TouchEvent, item: any, index: number, source: string) => {
+        // Prevent default only if necessary, but we need scrolling. 
+        // We'll use a timer to detect "hold to drag" vs "scroll" vs "tap"
+        // For simplicity, let's try immediate drag capture if it looks like a distinct interaction? 
+        // No, standard is: Hold -> Drag. 
+        // User wants "Drag". We will set state.
+        const touch = e.touches[0]
+        setTouchDragItem({
+            card: item,
+            source: source as any,
+            index,
+            x: touch.clientX,
+            y: touch.clientY
+        })
+    }
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchDragItem) {
+            e.preventDefault() // Stop scrolling while dragging
+            const touch = e.touches[0]
+            setTouchDragItem(prev => prev ? { ...prev, x: touch.clientX, y: touch.clientY } : null)
+        }
+    }
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchDragItem) {
+            const touch = e.changedTouches[0]
+            const target = document.elementFromPoint(touch.clientX, touch.clientY)
+
+            // Find drop zone attributes from target or parents
+            let dropZone = target?.closest('[data-drop-zone]') as HTMLElement
+
+            if (dropZone) {
+                const zoneType = dropZone.dataset.dropZone
+                const zoneIndex = dropZone.dataset.index ? parseInt(dropZone.dataset.index) : undefined
+
+                // Trigger drop logic
+                if (touchDragItem.source === 'hand' && !isNaN(touchDragItem.index)) {
+                    if (zoneType === 'battle') {
+                        playToBattleField(touchDragItem.index)
+                    } else if (zoneType === 'bench' && typeof zoneIndex === 'number') {
+                        playToBench(touchDragItem.index, zoneIndex)
+                    } else if (zoneType === 'trash') {
+                        moveToTrash(touchDragItem.index)
+                    }
+                } else if (touchDragItem.source === 'bench' && typeof touchDragItem.index === 'number') {
+                    if (zoneType === 'battle') {
+                        benchToBattleField(touchDragItem.index)
+                    } else if (zoneType === 'bench' && typeof zoneIndex === 'number' && zoneIndex !== touchDragItem.index) {
+                        // Swap or move logic (simplified copy from onDrop)
+                        const newBench = [...bench]
+                        const temp = newBench[zoneIndex]
+                        newBench[zoneIndex] = newBench[touchDragItem.index]
+                        newBench[touchDragItem.index] = temp
+                        setBench(newBench)
+                    } else if (zoneType === 'trash') {
+                        benchToTrash(touchDragItem.index)
+                    }
+                } else if (touchDragItem.source === 'battle') {
+                    if (zoneType === 'trash') {
+                        battleFieldToTrash()
+                    } else if (zoneType === 'bench' && typeof zoneIndex === 'number') {
+                        // Move battle to bench (swap/move)
+                        const newBench = [...bench]
+                        newBench[zoneIndex] = battleField!
+                        setBench(newBench)
+                        setBattleField(null)
+                    }
+                }
+            }
+
+            setTouchDragItem(null)
+        }
     }
 
     // Listen for custom event 'stadium-dropped' from parent page
@@ -268,7 +361,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     } : {
         prize: { w: 60, h: 84 },
         stadium: { w: 150, h: 210 },
-        battle: { w: 180, h: 252 },
+        battle: { w: 120, h: 168 }, // Resized to match Bench (was 180x252)
         bench: { w: 120, h: 168 },
         hand: { w: 150, h: 210 },
         trash: { w: 100, h: 140 }
@@ -353,8 +446,34 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{hand.length}</div>
                         <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
                     </div>
+                    {/* Trash removed from here, moved below */}
+                </div>
+            </div>
+
+            {/* Prizes, Trash & Battle Field - 2 Column Layout */}
+            <div className="flex gap-2 sm:gap-3">
+                {/* Left Column: Prizes & Trash */}
+                <div className="flex flex-col gap-2 h-full justify-between" style={{ height: (sizes.battle.h + 24) }}> {/* Approximate height match + padding */}
+                    {/* Prize Cards */}
+                    <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full">
+                        <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">サイド ({prizeCards.length}枚)</h2>
+                        <div className="flex items-center">
+                            {prizeCards.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => takePrizeCard(i)}
+                                    className="w-8 h-12 sm:w-10 sm:h-14 md:w-12 md:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow-md hover:shadow-xl hover:scale-105 transition flex items-center justify-center text-white font-bold text-sm sm:text-base"
+                                    style={{ marginLeft: i > 0 ? '-16px' : '0', zIndex: prizeCards.length - i }}
+                                >
+                                    ?
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Trash (Moved here) */}
                     <div
-                        className="bg-red-50 rounded px-1 py-1 cursor-pointer hover:bg-red-100 transition relative"
+                        className="bg-red-50 rounded-lg shadow-lg p-2 sm:p-3 relative cursor-pointer hover:bg-red-100 transition w-full"
                         onDragOver={(e) => {
                             e.preventDefault()
                             e.currentTarget.classList.add('ring-2', 'ring-red-400')
@@ -376,38 +495,21 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 benchToTrash(cardIndex)
                             }
                         }}
+                        onClick={() => setShowTrashViewer(true)}
+                        // Add Touch Drop Zone Attributes
+                        data-drop-zone="trash"
                     >
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-red-600 pointer-events-none">{trash.length}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-600 pointer-events-none">トラッシュ</div>
+                        <h2 className="text-xs sm:text-sm font-bold text-black mb-1">トラッシュ</h2>
+                        <div className="text-lg sm:text-xl font-bold text-red-600 pointer-events-none">{trash.length}枚</div>
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 rounded pointer-events-none">
                             <span className="text-[10px] font-bold text-red-800">DROP</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Prizes & Battle Field - Horizontal Layout */}
-            <div className="flex gap-2 sm:gap-3">
-                {/* Prize Cards */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3" style={{ width: 'fit-content' }}>
-                    <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">サイド ({prizeCards.length}枚)</h2>
-                    <div className="flex items-center">
-                        {prizeCards.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => takePrizeCard(i)}
-                                className="w-8 h-12 sm:w-10 sm:h-14 md:w-12 md:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow-md hover:shadow-xl hover:scale-105 transition flex items-center justify-center text-white font-bold text-sm sm:text-base"
-                                style={{ marginLeft: i > 0 ? '-16px' : '0', zIndex: prizeCards.length - i }}
-                            >
-                                ?
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Battle Field */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 flex-1">
-                    <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">バトル場</h2>
+                {/* Battle Field (Right Column) */}
+                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 flex-1 flex flex-col items-center justify-center">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
                     {battleField ? (
                         <div
                             draggable
@@ -415,7 +517,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             onDragStart={(e) => {
                                 handleDragStart(e, 0, 'battle')
                             }}
-                            className={`relative group inline-block cursor-move ${selectedCard?.source === 'battle' ? 'ring-2 ring-blue-500' : ''}`}
+                            className={`relative group inline-block cursor-move touch-none select-none ${selectedCard?.source === 'battle' ? 'ring-2 ring-blue-500' : ''}`}
                             onClick={() => {
                                 if (selectedCard?.source === 'bench' && selectedCard.index !== undefined) {
                                     benchToBattleField(selectedCard.index)
@@ -498,6 +600,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 setDragStartTime(null)
                                 setIsLongDrag(false)
                             }}
+                            // Touch Drop Zone
+                            data-drop-zone="battle"
                         >
                             なし
                         </div>
@@ -506,11 +610,22 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
             </div>
 
             {/* Bench */}
-            {/* Bench */}
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3">
-                <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">ベンチ</h2>
+            {/* BenchContainer - with horizontal scrolling */}
+            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
+
+                <div className="flex items-center gap-2 mb-2">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-900">ベンチ</h2>
+                    <button
+                        onClick={increaseBenchSize}
+                        disabled={benchSize >= 8}
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs sm:text-sm shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        +
+                    </button>
+                    <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
+                </div>
                 <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1">
-                    {bench.map((stack, i) => (
+                    {bench.slice(0, benchSize).map((stack, i) => (
                         <div key={i} className="flex-shrink-0">
                             {stack ? (
                                 <div
@@ -519,7 +634,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'bench')
                                     }}
-                                    className={`relative group inline-block cursor-move ${selectedCard?.source === 'bench' && selectedCard.index === i ? 'ring-2 ring-blue-500' : ''}`}
+                                    className={`relative group inline-block cursor-move touch-none select-none ${selectedCard?.source === 'bench' && selectedCard.index === i ? 'ring-2 ring-blue-500' : ''}`}
                                     onClick={() => setSelectedCard({ card: getTopCard(stack), source: 'bench', index: i })}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => {
@@ -567,6 +682,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         setDragStartTime(null)
                                         setIsLongDrag(false)
                                     }}
+                                    // Touch Handlers
+                                    onTouchStart={(e) => handleTouchStart(e, stack, i, 'bench')}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
                                 >
                                     <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
                                     <button
@@ -628,6 +747,9 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         setDragStartTime(null)
                                         setIsLongDrag(false)
                                     }}
+                                    // Touch Drop Zone
+                                    data-drop-zone="bench"
+                                    data-index={i}
                                 >
                                     空き
                                 </div>
@@ -654,8 +776,11 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'hand')
                                     }}
-                                    style={{ WebkitTouchCallout: 'none', userSelect: 'none' }}
-                                    className="flex-shrink-0 cursor-move"
+                                    className="flex-shrink-0 cursor-move touch-none select-none"
+                                    // Touch Handlers
+                                    onTouchStart={(e) => handleTouchStart(e, card, i, 'hand')}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
                                 >
                                     <Image
                                         src={card.imageUrl}
@@ -669,7 +794,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         </div>
                     )
                 }
-            </div >
+            </div>
 
             {/* Deck Viewer Modal */}
             {
@@ -800,6 +925,25 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             </div>
                         </div>
                     </div >
+                )
+            }
+            {/* Drag Proxy for Touch Devices */}
+            {
+                touchDragItem && (
+                    <div
+                        className="fixed pointer-events-none z-[9999] opacity-80"
+                        style={{
+                            left: touchDragItem.x,
+                            top: touchDragItem.y,
+                            transform: 'translate(-50%, -50%)',
+                            width: sizes.hand.w, // Approximate size
+                        }}
+                    >
+                        {/* Simple visual proxy */}
+                        <div className="bg-blue-500 text-white p-2 rounded shadow-lg text-xs font-bold">
+                            Moving...
+                        </div>
+                    </div>
                 )
             }
         </div >
