@@ -414,6 +414,32 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         }
     }
 
+    // Deck movement functions
+    const moveFromDeckToHand = (index: number) => {
+        const card = remaining[index]
+        setHand([...hand, card])
+        setRemaining(remaining.filter((_, i) => i !== index))
+    }
+
+    const moveFromDeckToBench = (index: number) => {
+        const card = remaining[index]
+        const firstEmptyIndex = bench.findIndex(s => s === null)
+        if (firstEmptyIndex !== -1 && firstEmptyIndex < benchSize) {
+            const newBench = [...bench]
+            newBench[firstEmptyIndex] = createStack(card)
+            setBench(newBench)
+            setRemaining(remaining.filter((_, i) => i !== index))
+        } else {
+            alert("ベンチに空きがありません")
+        }
+    }
+
+    const moveFromDeckToTrash = (index: number) => {
+        const card = remaining[index]
+        setTrash([...trash, card])
+        setRemaining(remaining.filter((_, i) => i !== index))
+    }
+
     // Compact mode sizes
     const sizes = compact ? {
         prize: { w: 40, h: 56 },
@@ -753,9 +779,9 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
                                 <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
                             </div>
-                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-2 gap-y-6">
                                 {remaining.map((card, i) => (
-                                    <div key={i} className="relative">
+                                    <div key={i} className="relative group">
                                         <Image
                                             src={card.imageUrl}
                                             alt={card.name}
@@ -764,8 +790,22 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                             className="rounded shadow no-touch-menu no-select no-tap-highlight"
                                             draggable={false}
                                         />
-                                        <div className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1 rounded">
-                                            {i + 1}
+                                        <div className="absolute -bottom-5 left-0 right-0 flex justify-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white/80 rounded py-0.5 shadow-sm">
+                                            <button
+                                                onClick={() => moveFromDeckToHand(i)}
+                                                className="bg-blue-500 text-white text-[8px] px-1 rounded hover:bg-blue-600"
+                                                title="手札へ"
+                                            >手札</button>
+                                            <button
+                                                onClick={() => moveFromDeckToBench(i)}
+                                                className="bg-green-500 text-white text-[8px] px-1 rounded hover:bg-green-600"
+                                                title="ベンチへ"
+                                            >ベンチ</button>
+                                            <button
+                                                onClick={() => moveFromDeckToTrash(i)}
+                                                className="bg-red-500 text-white text-[8px] px-1 rounded hover:bg-red-600"
+                                                title="トラッシュへ"
+                                            >トラ</button>
                                         </div>
                                     </div>
                                 ))}
@@ -902,19 +942,20 @@ function CascadingStack({ stack, width, height }: { stack: CardStack, width: num
             }}
         >
             {stack.cards.map((card, i) => {
-                // Only render last few cards for performance/visuals if stack is huge
-                if (i < stack.cards.length - maxVisible - 1) return null
-
-                // Pokemon (index 0) usually sits on top of energy/tools
-                const reversedZIndex = stack.cards.length - i
+                // Pokémon (index 0) sits underneath with z-index, Energy/Tools on top peeking out
+                // BUT user wants Pokemon on TOP of the z-order, and others peek out ABOVE (top offset)
+                // So Pokemon is index 0, zIndex = high, top = 0
+                // Energy is index 1+, zIndex = lower, top = -i * cardOffset
+                const zIndexValue = stack.cards.length - i
 
                 return (
                     <div
                         key={i}
-                        className="absolute top-0 left-0 transition-all"
+                        className="absolute left-0 transition-all"
                         style={{
-                            top: i * cardOffset,
-                            zIndex: reversedZIndex
+                            bottom: 0, // Align all to bottom of container
+                            marginBottom: i * cardOffset, // Peek out from TOP
+                            zIndex: zIndexValue
                         }}
                     >
                         <Image
