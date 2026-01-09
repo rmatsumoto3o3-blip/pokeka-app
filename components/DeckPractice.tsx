@@ -71,7 +71,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         }),
         useSensor(TouchSensor, {
             activationConstraint: {
-                delay: 200,
+                delay: 250,
                 tolerance: 5,
             },
         })
@@ -682,7 +682,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         </button>
                         <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
                     </div>
-                    <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1 touch-pan-x">
+                    <div className="flex gap-2 sm:gap-3 overflow-x-auto py-8 touch-pan-x items-center">
                         {bench.slice(0, benchSize).map((stack, i) => (
                             <div key={i} className="flex-shrink-0">
                                 {stack ? (
@@ -719,7 +719,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">手札 ({hand.length}枚)</h2>
                     {/* Hand Container - Horizontal Scroll enabled */}
                     <div
-                        className="flex overflow-x-auto gap-1 sm:gap-2 pb-2 px-1 snap-x"
+                        className="flex overflow-x-auto gap-3 sm:gap-4 py-8 px-2 snap-x items-center"
                         style={{ WebkitOverflowScrolling: 'touch' }}
                     >
                         {hand.map((card, i) => (
@@ -851,7 +851,9 @@ function DraggableCard({ id, data, children, className = "", onClick }: { id: st
 
     const style = {
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.4 : undefined,
+        opacity: isDragging ? 0 : undefined, // Hide the original when dragging (the overlay shows the ghost)
+        zIndex: isDragging ? 100 : 1,
+        scale: isDragging ? '1.05' : '1',
     }
 
     return (
