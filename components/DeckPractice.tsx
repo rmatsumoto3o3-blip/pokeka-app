@@ -846,7 +846,17 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         if (!isTouchDevice) handleDragStart(e, i, 'hand')
                                     }}
 
-                                    className="flex-shrink-0 cursor-move select-none" // Removed touch-none
+                                    className={`flex-shrink-0 cursor-move select-none relative transition-all ${selectedCard?.source === 'hand' && selectedCard.index === i
+                                            ? 'ring-4 ring-blue-500 transform -translate-y-2 z-10'
+                                            : 'hover:transform hover:-translate-y-1'
+                                        }`}
+                                    onClick={() => {
+                                        if (selectedCard?.source === 'hand' && selectedCard.index === i) {
+                                            setSelectedCard(null) // Deselect if already selected
+                                        } else {
+                                            setSelectedCard({ card, source: 'hand', index: i })
+                                        }
+                                    }}
                                     // Touch Handlers
                                     onTouchStart={(e) => handleTouchStart(e, card, i, 'hand')}
                                     onTouchMove={handleTouchMove}
