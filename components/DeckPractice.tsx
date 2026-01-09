@@ -52,6 +52,12 @@ interface DeckMenuState {
     y: number
 }
 
+interface AttachMode {
+    active: boolean
+    card: Card
+    sourceIndex: number // Index in trash
+}
+
 export default function DeckPractice({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange }: DeckPracticeProps) {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
@@ -69,6 +75,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
     const [deckCardMenu, setDeckCardMenu] = useState<DeckMenuState | null>(null)
+    const [trashCardMenu, setTrashCardMenu] = useState<DeckMenuState | null>(null)
+    const [attachMode, setAttachMode] = useState<AttachMode | null>(null)
 
     // dnd-kit sensors
     const sensors = useSensors(
@@ -151,6 +159,13 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     // Menu Actions
     const handleCardClick = (e: React.MouseEvent, card: Card | CardStack, source: 'hand' | 'battle' | 'bench', index: number) => {
         e.stopPropagation()
+
+        // If in Attach Mode, perform attachment instead of opening menu
+        if (attachMode && (source === 'battle' || source === 'bench')) {
+            handleAttach(source, index)
+            return
+        }
+
         // If in swap mode and clicking a valid target (Bench), perform swap
         if (swapMode && swapMode.active && source === 'bench') {
             performSwap(index)
@@ -479,6 +494,66 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         }
     }
 
+    // Trash Menu Actions
+    const moveFromTrashToHand = (index: number) => {
+        const card = trash[index]
+        setHand([...hand, card])
+        setTrash(trash.filter((_, i) => i !== index))
+        setTrashCardMenu(null)
+    }
+
+    const moveFromTrashToDeck = (index: number) => {
+        const card = trash[index]
+        const newDeck = [...remaining, card].sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setTrash(trash.filter((_, i) => i !== index))
+        setTrashCardMenu(null)
+        alert("山札に戻してシャッフルしました")
+    }
+
+    const startAttachFromTrash = (index: number) => {
+        const card = trash[index]
+        setAttachMode({ active: true, card, sourceIndex: index })
+        setShowTrashViewer(false)
+        setTrashCardMenu(null)
+    }
+
+    const handleAttach = (targetType: 'battle' | 'bench', targetIndex: number) => {
+        if (!attachMode) return
+
+        const card = attachMode.card
+        if (targetType === 'battle') {
+            if (battleField && canStack(card, battleField)) {
+                setBattleField({
+                    ...battleField,
+                    cards: [...battleField.cards, card],
+                    energyCount: battleField.energyCount + (isEnergy(card) ? 1 : 0),
+                    toolCount: battleField.toolCount + (isTool(card) ? 1 : 0)
+                })
+                setTrash(trash.filter((_, i) => i !== attachMode.sourceIndex))
+                setAttachMode(null)
+            } else {
+                alert("このカードはバトル場のポケモンに付けられません")
+            }
+        } else {
+            const stack = bench[targetIndex]
+            if (stack && canStack(card, stack)) {
+                const newBench = [...bench]
+                newBench[targetIndex] = {
+                    ...stack,
+                    cards: [...stack.cards, card],
+                    energyCount: stack.energyCount + (isEnergy(card) ? 1 : 0),
+                    toolCount: stack.toolCount + (isTool(card) ? 1 : 0)
+                }
+                setBench(newBench)
+                setTrash(trash.filter((_, i) => i !== attachMode.sourceIndex))
+                setAttachMode(null)
+            } else {
+                alert("このカードは選択したポケモンに付けられません")
+            }
+        }
+    }
+
     // Compact mode sizes
     const sizes = compact ? {
         prize: { w: 40, h: 56 },
@@ -598,6 +673,17 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     </div>
                 )}
 
+                {/* Attach Prompt */}
+                {attachMode && (
+                    <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-xl z-50 animate-bounce font-bold flex items-center gap-3">
+                        <span>付ける先のポケモンを選択してください: {attachMode.card.name}</span>
+                        <button
+                            onClick={() => setAttachMode(null)}
+                            className="bg-white/20 hover:bg-white/30 px-2 py-0.5 rounded text-xs"
+                        >キャンセル</button>
+                    </div>
+                )}
+
 
                 {/* Player Name */}
                 {playerName && (
@@ -689,8 +775,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     className="touch-none"
                                 >
                                     <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-md border-2 hover:scale-110 transition-transform ${amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
-                                            amount === 50 ? 'bg-red-500 border-red-700 text-white' :
-                                                'bg-red-700 border-red-900 text-white animate-pulse'
+                                        amount === 50 ? 'bg-red-500 border-red-700 text-white' :
+                                            'bg-red-700 border-red-900 text-white animate-pulse'
                                         }`}>
                                         {amount}
                                     </div>
@@ -744,7 +830,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     </div>
 
                     {/* Battle Field (Right Column) */}
-                    <DroppableZone id="battle-field" className="flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-2 sm:p-3">
+                    <DroppableZone id="battle-field" className={`flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-2 sm:p-3 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''}`}>
                         <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
                         {battleField ? (
                             <DraggableCard
@@ -782,7 +868,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     </div>
                     <div className="flex gap-4 sm:gap-6 overflow-x-auto py-12 touch-pan-x items-center px-4">
                         {bench.slice(0, benchSize).map((stack, i) => (
-                            <div key={i} className="flex-shrink-0">
+                            <div key={i} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                 {stack ? (
                                     <DraggableCard
                                         id={`bench-card-${i}`}
@@ -926,7 +1012,14 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             </div>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                                 {trash.map((card, i) => (
-                                    <div key={i} className="relative group">
+                                    <div key={i} className="relative group cursor-pointer" onClick={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect()
+                                        setTrashCardMenu({
+                                            index: i,
+                                            x: rect.left,
+                                            y: rect.bottom + window.scrollY
+                                        })
+                                    }}>
                                         <Image
                                             src={card.imageUrl}
                                             alt={card.name}
@@ -935,18 +1028,41 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                             className="rounded shadow no-touch-menu no-select no-tap-highlight"
                                             draggable={false}
                                         />
-                                        <button
-                                            onClick={() => {
-                                                setHand([...hand, card])
-                                                setTrash(trash.filter((_, idx) => idx !== i))
-                                            }}
-                                            className="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition"
-                                        >
-                                            回収
-                                        </button>
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Trash Card Menu */}
+                {trashCardMenu && (
+                    <div
+                        className="fixed inset-0 z-[100]"
+                        onClick={() => setTrashCardMenu(null)}
+                    >
+                        <div
+                            className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[140px]"
+                            style={{
+                                top: Math.min(trashCardMenu.y, window.innerHeight - 150),
+                                left: Math.min(trashCardMenu.x, window.innerWidth - 150)
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => moveFromTrashToHand(trashCardMenu.index)}
+                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                            >手札に加える</button>
+                            <button
+                                onClick={() => moveFromTrashToDeck(trashCardMenu.index)}
+                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                            >山札に戻す</button>
+                            {(isEnergy(trash[trashCardMenu.index]) || isTool(trash[trashCardMenu.index])) && (
+                                <button
+                                    onClick={() => startAttachFromTrash(trashCardMenu.index)}
+                                    className="px-4 py-2 hover:bg-green-50 text-green-600 text-left text-sm font-bold"
+                                >ポケモンにつける</button>
+                            )}
                         </div>
                     </div>
                 )}
