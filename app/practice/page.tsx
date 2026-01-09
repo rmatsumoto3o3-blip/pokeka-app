@@ -90,7 +90,7 @@ function PracticeContent() {
                                         type="text"
                                         value={deckCode1}
                                         onChange={(e) => setDeckCode1(e.target.value)}
-                                        placeholder="例: 88DxcK-XABYY4-88xYxK"
+                                        placeholder="デッキコードを入力"
                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
                                         disabled={loading}
                                     />
@@ -107,7 +107,7 @@ function PracticeContent() {
                                         type="text"
                                         value={deckCode2}
                                         onChange={(e) => setDeckCode2(e.target.value)}
-                                        placeholder="例: 88DxcK-XABYY4-88xYxK"
+                                        placeholder="デッキコードを入力"
                                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
                                         disabled={loading}
                                     />
@@ -134,7 +134,7 @@ function PracticeContent() {
                 {/* Practice Area - 3 Column Layout */}
                 {(deck1.length > 0 || deck2.length > 0) && (
                     <div className="w-full overflow-x-auto pb-4">
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 sm:gap-4 min-w-[1000px] md:min-w-0">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 sm:gap-4 w-full">
                             {/* Player 1 */}
                             {deck1.length > 0 && (
                                 <DeckPractice
