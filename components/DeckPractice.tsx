@@ -325,8 +325,26 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
             if (menu) closeMenu()
         }
         window.addEventListener('click', handleClickOutside)
-        return () => window.removeEventListener('click', handleClickOutside)
+
+        // Prevent context menu (long press menu)
+        const preventContextMenu = (e: MouseEvent) => {
+            e.preventDefault()
+        }
+        window.addEventListener('contextmenu', preventContextMenu)
+
+        return () => {
+            window.removeEventListener('click', handleClickOutside)
+            window.removeEventListener('contextmenu', preventContextMenu)
+        }
     }, [menu])
+
+    // Scroll lock utilities
+    const lockScroll = () => {
+        document.body.style.overflow = 'hidden'
+    }
+    const unlockScroll = () => {
+        document.body.style.overflow = 'auto'
+    }
 
     return (
         <div className={`w-full ${compact ? "space-y-2" : "space-y-4"} relative`}>
@@ -514,8 +532,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
                     {battleField ? (
                         <div
-                            className={`relative group inline-block cursor-pointer select-none`}
+                            className={`relative group inline-block cursor-pointer select-none no-touch-menu no-select no-tap-highlight touch-none`}
                             onClick={(e) => handleCardClick(e, battleField, 'battle', 0)}
+                            onTouchStart={lockScroll}
+                            onTouchEnd={unlockScroll}
                         >
                             <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
                         </div>
@@ -545,13 +565,15 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     </button>
                     <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
                 </div>
-                <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1">
+                <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1 touch-pan-x">
                     {bench.slice(0, benchSize).map((stack, i) => (
                         <div key={i} className="flex-shrink-0">
                             {stack ? (
                                 <div
-                                    className={`relative group inline-block cursor-pointer select-none ${swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}`}
+                                    className={`relative group inline-block cursor-pointer select-none no-touch-menu no-select no-tap-highlight touch-none ${swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}`}
                                     onClick={(e) => handleCardClick(e, stack, 'bench', i)}
+                                    onTouchStart={lockScroll}
+                                    onTouchEnd={unlockScroll}
                                 >
                                     <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
                                 </div>
@@ -585,8 +607,10 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     {hand.map((card, i) => (
                         <div
                             key={`${card.name}-${i}`}
-                            className="flex-shrink-0 relative group snap-start cursor-pointer transition-transform active:scale-95"
+                            className="flex-shrink-0 relative group snap-start cursor-pointer transition-transform active:scale-95 no-touch-menu no-select no-tap-highlight touch-none"
                             onClick={(e) => handleCardClick(e, card, 'hand', i)}
+                            onTouchStart={lockScroll}
+                            onTouchEnd={unlockScroll}
                         >
                             <Image
                                 src={card.imageUrl}
@@ -618,7 +642,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         alt={card.name}
                                         width={80}
                                         height={112}
-                                        className="rounded shadow"
+                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                        draggable={false}
                                     />
                                     <div className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1 rounded">
                                         {i + 1}
@@ -646,7 +671,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                         alt={card.name}
                                         width={80}
                                         height={112}
-                                        className="rounded shadow"
+                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                        draggable={false}
                                     />
                                     <button
                                         onClick={() => {
@@ -699,7 +725,7 @@ function CascadingStack({ stack, width, height }: { stack: CardStack, width: num
                             alt={card.name}
                             width={width}
                             height={height}
-                            className="rounded shadow-lg bg-white"
+                            className="rounded shadow-lg bg-white no-touch-menu no-select no-tap-highlight"
                             draggable={false}
                         />
                     </div>

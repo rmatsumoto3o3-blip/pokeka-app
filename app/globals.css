@@ -24,3 +24,25 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Solo-Play Mobile Optimizations */
+.no-touch-menu {
+  -webkit-touch-callout: none;
+}
+
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-none {
+  touch-action: none;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
