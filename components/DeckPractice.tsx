@@ -100,7 +100,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             const ownPrefix = idPrefix ? `${idPrefix}-` : ""
             if (!targetId.startsWith(ownPrefix) && targetId !== 'stadium-zone') return
 
-            const localTargetId = targetId.startsWith(ownPrefix) ? targetId.slice(ownPrefix.length) : targetId
+            let localTargetId = targetId.startsWith(ownPrefix) ? targetId.slice(ownPrefix.length) : targetId
+
+            // Normalize card targets to zone targets for damage counters and attachments
+            if (localTargetId === 'battle-card') localTargetId = 'battle-field'
+            if (localTargetId.startsWith('bench-card-')) {
+                localTargetId = localTargetId.replace('bench-card-', 'bench-slot-')
+            }
 
             // Hand logic (card plays)
             if (source.type === 'hand' && source.playerPrefix === idPrefix) {
