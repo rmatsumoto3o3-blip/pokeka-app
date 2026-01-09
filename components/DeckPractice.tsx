@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { type Card } from '@/lib/deckParser'
-import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool } from '@/lib/cardStack'
+import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium } from '@/lib/cardStack'
 import {
     DndContext,
     DragOverlay,
@@ -193,13 +193,14 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     const playToBattleField = (handIndex: number) => {
         const card = hand[handIndex]
         if (battleField) {
-            // Stack logic (simplified: always stack on top for menu action if valid?)
-            // Or replace? The requirement didn't specify stacking logic for menu, but let's assume standard "Play" might stack if valid.
             if (canStack(card, battleField)) {
-                const newStack = { ...battleField, cards: [...battleField.cards, card] }
-                setBattleField(newStack)
+                setBattleField({
+                    ...battleField,
+                    cards: [...battleField.cards, card],
+                    energyCount: battleField.energyCount + (isEnergy(card) ? 1 : 0),
+                    toolCount: battleField.toolCount + (isTool(card) ? 1 : 0)
+                })
             } else {
-                // Replace - send old to trash
                 setTrash([...trash, ...battleField.cards])
                 setBattleField(createStack(card))
             }
@@ -210,18 +211,39 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         closeMenu()
     }
 
-    const playToBench = (handIndex: number) => {
-        // Find first empty slot
-        const emptySlotIndex = bench.findIndex((slot, i) => i < benchSize && slot === null)
-        if (emptySlotIndex !== -1) {
-            const card = hand[handIndex]
-            const newBench = [...bench]
-            newBench[emptySlotIndex] = createStack(card)
-            setBench(newBench)
-            setHand(hand.filter((_, i) => i !== handIndex))
+    const playToBench = (handIndex: number, targetIndex?: number) => {
+        const card = hand[handIndex]
+        const newBench = [...bench]
+
+        if (targetIndex !== undefined) {
+            const stack = bench[targetIndex]
+            if (stack) {
+                if (canStack(card, stack)) {
+                    newBench[targetIndex] = {
+                        ...stack,
+                        cards: [...stack.cards, card],
+                        energyCount: stack.energyCount + (isEnergy(card) ? 1 : 0),
+                        toolCount: stack.toolCount + (isTool(card) ? 1 : 0)
+                    }
+                } else {
+                    setTrash([...trash, ...stack.cards])
+                    newBench[targetIndex] = createStack(card)
+                }
+            } else {
+                newBench[targetIndex] = createStack(card)
+            }
         } else {
-            alert("ベンチがいっぱいです")
+            const emptySlotIndex = bench.findIndex((slot, i) => i < benchSize && slot === null)
+            if (emptySlotIndex !== -1) {
+                newBench[emptySlotIndex] = createStack(card)
+            } else {
+                alert("ベンチがいっぱいです")
+                return
+            }
         }
+
+        setBench(newBench)
+        setHand(hand.filter((_, i) => i !== handIndex))
         closeMenu()
     }
 
@@ -422,8 +444,50 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
                 updateDamage('bench', targetIndex, source.amount)
             }
-        } else if (source.type === 'hand' && targetId === 'stadium-zone') {
-            playStadium(source.index)
+        } else if (source.type === 'hand') {
+            const card = source.card
+            if (targetId === 'stadium-zone') {
+                playStadium(source.index)
+            } else if (targetId === 'battle-field') {
+                if (isPokemon(card)) {
+                    if (!battleField) {
+                        playToBattleField(source.index)
+                    } else if (canStack(card, battleField)) {
+                        playToBattleField(source.index) // Attachment/Evolution logic is inside playToBattleField
+                    } else {
+                        alert("このカードはバトル場のポケモンに付けられません")
+                    }
+                } else if ((isEnergy(card) || isTool(card)) && battleField) {
+                    if (canStack(card, battleField)) {
+                        playToBattleField(source.index)
+                    } else {
+                        alert("このカードはバトル場のポケモンに付けられません")
+                    }
+                } else {
+                    alert("ポケモン以外のカードは直接場に出せません")
+                }
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                const targetStack = bench[targetIndex]
+
+                if (isPokemon(card)) {
+                    if (!targetStack || canStack(card, targetStack)) {
+                        playToBench(source.index, targetIndex)
+                    } else {
+                        alert("このカードは選択したポケモンに重ねられません")
+                    }
+                } else if ((isEnergy(card) || isTool(card)) && targetStack) {
+                    if (canStack(card, targetStack)) {
+                        playToBench(source.index, targetIndex)
+                    } else {
+                        alert("このカードは選択したポケモンに付けられません")
+                    }
+                } else if (!targetStack) {
+                    alert("空のベンチにはポケモンのみ置けます")
+                }
+            } else if (targetId === 'trash-zone') {
+                trashFromHand(source.index)
+            }
         }
     }
 
@@ -639,12 +703,21 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         <div className="flex flex-col">
                             {menu.source === 'hand' && (
                                 <>
-                                    <button onClick={() => playToBattleField(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
-                                        バトル場に出す
-                                    </button>
-                                    <button onClick={() => playToBench(menu.index)} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
-                                        ベンチに出す
-                                    </button>
+                                    {isPokemon(menu.card as Card) && (
+                                        <>
+                                            <button onClick={() => playToBattleField(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black font-bold">
+                                                バトル場に出す
+                                            </button>
+                                            <button onClick={() => playToBench(menu.index)} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black font-bold">
+                                                ベンチに出す
+                                            </button>
+                                        </>
+                                    )}
+                                    {isStadium(menu.card as Card) && (
+                                        <button onClick={() => { playStadium(menu.index); closeMenu(); }} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-green-700 font-bold">
+                                            スタジアムを出す
+                                        </button>
+                                    )}
                                     <button onClick={() => trashFromHand(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
                                         トラッシュする
                                     </button>
@@ -811,6 +884,38 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         </div>
                         <div className="text-[8px] sm:text-[10px] text-gray-400 text-center mt-1 uppercase tracking-tighter">Drag counters to cards</div>
                     </div>
+
+                    {/* Stadium Slot - Moved to Center Column */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                        <DroppableZone id="stadium-zone" className="w-full">
+                            <div
+                                className={`bg-green-50/30 rounded-lg p-2 sm:p-3 relative border-2 border-dashed flex flex-col items-center justify-center transition ${externalStadium ? 'border-green-300' : 'border-gray-200'}`}
+                                style={{ minHeight: sizes.stadium.h / 3 + 40 }}
+                            >
+                                <h2 className="text-[10px] sm:text-xs font-bold text-gray-400 mb-1 absolute top-1 left-2 uppercase tracking-tight">Stadium</h2>
+                                {externalStadium ? (
+                                    <div className="flex items-center gap-3">
+                                        <Image
+                                            src={externalStadium.imageUrl}
+                                            alt={externalStadium.name}
+                                            width={sizes.stadium.w / 2.5}
+                                            height={sizes.stadium.h / 2.5}
+                                            className="rounded shadow-sm"
+                                        />
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] font-bold text-green-700 max-w-[80px] truncate">{externalStadium.name}</span>
+                                            <button
+                                                onClick={() => onStadiumChange?.(null)}
+                                                className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded hover:bg-red-200 transition font-bold"
+                                            >トラッシュ</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="text-[10px] text-gray-400 py-2">スタジアムをここにドラッグ</span>
+                                )}
+                            </div>
+                        </DroppableZone>
+                    </div>
                 </div>
 
                 {/* Prizes, Trash & Battle Field - 2 Column Layout */}
@@ -833,33 +938,6 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 ))}
                             </div>
                         </div>
-
-                        {/* Stadium Slot - Added */}
-                        <DroppableZone id="stadium-zone" className="w-full">
-                            <div
-                                className={`bg-green-50 rounded-lg shadow-lg p-2 sm:p-3 relative border-2 border-dashed flex flex-col items-center justify-center transition ${externalStadium ? 'border-green-300' : 'border-gray-300'}`}
-                                style={{ height: sizes.stadium.h / 2 + 40 }} // Adjusted height for layout
-                            >
-                                <h2 className="text-[10px] sm:text-xs font-bold text-gray-500 mb-1 absolute top-1 left-2 uppercase tracking-tight">Stadium</h2>
-                                {externalStadium ? (
-                                    <div className="flex flex-col items-center gap-1">
-                                        <Image
-                                            src={externalStadium.imageUrl}
-                                            alt={externalStadium.name}
-                                            width={sizes.stadium.w / 1.5}
-                                            height={sizes.stadium.h / 1.5}
-                                            className="rounded shadow-sm"
-                                        />
-                                        <button
-                                            onClick={() => onStadiumChange?.(null)}
-                                            className="text-[8px] bg-red-100 text-red-600 px-1 rounded hover:bg-red-200 transition"
-                                        >トラッシュ</button>
-                                    </div>
-                                ) : (
-                                    <span className="text-[10px] text-gray-400">スタジアムなし</span>
-                                )}
-                            </div>
-                        </DroppableZone>
 
                         {/* Trash (Moved here) */}
                         <DroppableZone id="trash-zone" className="w-full">
