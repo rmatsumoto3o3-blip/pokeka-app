@@ -779,10 +779,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <div className="h-4 w-px bg-gray-200 mx-1"></div>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-gray-400 font-bold uppercase">Deck</span>
-                                <span className="text-sm font-black text-blue-600">{remaining.length}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-gray-400 font-bold uppercase">Hand</span>
                                 <span className="text-sm font-black text-green-600">{hand.length}</span>
                             </div>
@@ -802,26 +798,61 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
 
                 <div className="flex flex-col gap-4">
-                    <div className="flex gap-4">
-                        {/* Prizes & Trash */}
-                        <div className="flex flex-col gap-3 w-[100px] sm:w-[120px]">
-                            <div className="bg-white rounded-lg shadow p-2 border border-gray-100">
-                                <h2 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
-                                <div className="flex flex-col gap-[-20px] items-center">
-                                    {prizeCards.map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => takePrizeCard(i)}
-                                            className="w-10 h-14 sm:w-12 sm:h-18 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow hover:scale-105 transition flex items-center justify-center text-white font-bold text-lg mb-[-30px] border border-white"
-                                            style={{ zIndex: prizeCards.length - i }}
-                                        >
-                                            ?
-                                        </button>
-                                    ))}
-                                </div>
+                    {/* Top Section: Prizes, Battle Field, Trash/Deck */}
+                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                        {/* Prizes */}
+                        <div className="bg-white rounded-lg shadow p-2 border border-gray-100 min-w-[140px]">
+                            <h2 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
+                            <div className="flex -space-x-8 sm:-space-x-10 px-2 py-4 h-32 items-center">
+                                {prizeCards.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => takePrizeCard(i)}
+                                        className="w-12 h-18 sm:w-14 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 hover:-translate-y-2 transition flex items-center justify-center text-white font-bold text-lg border border-white/20 transform"
+                                        style={{ zIndex: prizeCards.length - i }}
+                                    >
+                                        ?
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Battle Field */}
+                        <div className="flex-1 flex justify-center">
+                            <DroppableZone id={`${idPrefix}-battle-field`} className={`bg-white rounded-lg shadow-lg p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} min-w-[180px] flex flex-col items-center`}>
+                                <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase mb-2 w-full text-center">バトル場</h2>
+                                {battleField ? (
+                                    <DraggableCard
+                                        id={`${idPrefix}-battle-card`}
+                                        data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
+                                        onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                                    >
+                                        <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                                    </DraggableCard>
+                                ) : (
+                                    <div
+                                        className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer hover:border-blue-400"
+                                        style={{ width: sizes.battle.w, height: sizes.battle.h }}
+                                    >
+                                        Active Pokemon
+                                    </div>
+                                )}
+                            </DroppableZone>
+                        </div>
+
+                        {/* Trash & Deck */}
+                        <div className="flex flex-col gap-2 w-[100px] sm:w-[120px]">
+                            {/* Visual Deck */}
+                            <div
+                                className="bg-blue-50 rounded-lg shadow p-2 border-2 border-blue-200 h-[80px] sm:h-[100px] flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition"
+                                onClick={() => setShowDeckViewer(true)}
+                            >
+                                <h2 className="text-[10px] font-bold text-blue-500 mb-1 uppercase tracking-tight">Deck</h2>
+                                <div className="text-xl font-black text-blue-700">{remaining.length}</div>
                             </div>
 
-                            <DroppableZone id={`${idPrefix}-trash-zone`} className="w-full mt-auto">
+                            {/* Trash */}
+                            <DroppableZone id={`${idPrefix}-trash-zone`} className="w-full">
                                 <div
                                     className="bg-red-50 rounded-lg shadow p-2 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[80px] sm:h-[100px] flex flex-col items-center justify-center"
                                     onClick={() => setShowTrashViewer(true)}
@@ -831,27 +862,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 </div>
                             </DroppableZone>
                         </div>
-
-                        {/* Battle Field */}
-                        <DroppableZone id={`${idPrefix}-battle-field`} className={`flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''}`}>
-                            <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase mb-2 w-full">バトル場</h2>
-                            {battleField ? (
-                                <DraggableCard
-                                    id={`${idPrefix}-battle-card`}
-                                    data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
-                                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
-                                >
-                                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
-                                </DraggableCard>
-                            ) : (
-                                <div
-                                    className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer hover:border-blue-400"
-                                    style={{ width: sizes.battle.w, height: sizes.battle.h }}
-                                >
-                                    Active Pokemon
-                                </div>
-                            )}
-                        </DroppableZone>
                     </div>
 
                     {/* Bench */}
