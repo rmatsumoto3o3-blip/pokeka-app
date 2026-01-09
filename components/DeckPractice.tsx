@@ -400,60 +400,13 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
 
         // Logic to route the drag result
         if (source.type === 'hand') {
-            if (targetId === 'battle-field') {
-                playToBattleField(source.index)
-            } else if (targetId.startsWith('bench-slot-')) {
-                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
-                // Original playToBench finds first empty slot, let's adapt for specific slot if empty
-                if (bench[targetIndex] === null) {
-                    const card = hand[source.index]
-                    const newBench = [...bench]
-                    newBench[targetIndex] = createStack(card)
-                    setBench(newBench)
-                    setHand(hand.filter((_, i) => i !== source.index))
-                } else {
-                    // If target is occupied, maybe stack if valid or just do nothing
-                    alert("空いている枠に置いてください")
-                }
-            } else if (targetId === 'trash-zone') {
-                trashFromHand(source.index)
-            }
-        } else if (source.type === 'battle') {
-            if (targetId.startsWith('bench-slot-')) {
-                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
-                // Perform swap logic
-                performSwapFromDnd('battle', 0, targetIndex)
-            } else if (targetId === 'trash-zone') {
-                battleToTrash()
-            }
-        } else if (source.type === 'bench') {
-            if (targetId === 'battle-field') {
-                swapBenchToBattle(source.index)
-            } else if (targetId === 'trash-zone') {
-                benchToTrash(source.index)
-            } else if (targetId.startsWith('bench-slot-')) {
-                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
-                if (targetIndex !== source.index) {
-                    performSwapFromDnd('bench', source.index, targetIndex)
-                }
-            }
-        } else if (source.type === 'counter') {
-            if (targetId === 'battle-field') {
-                updateDamage('battle', 0, source.amount)
-            } else if (targetId.startsWith('bench-slot-')) {
-                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
-                updateDamage('bench', targetIndex, source.amount)
-            }
-        } else if (source.type === 'hand') {
-            const card = source.card
+            const card = hand[source.index]
             if (targetId === 'stadium-zone') {
                 playStadium(source.index)
             } else if (targetId === 'battle-field') {
                 if (isPokemon(card)) {
-                    if (!battleField) {
+                    if (!battleField || canStack(card, battleField)) {
                         playToBattleField(source.index)
-                    } else if (canStack(card, battleField)) {
-                        playToBattleField(source.index) // Attachment/Evolution logic is inside playToBattleField
                     } else {
                         alert("このカードはバトル場のポケモンに付けられません")
                     }
@@ -487,6 +440,31 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 }
             } else if (targetId === 'trash-zone') {
                 trashFromHand(source.index)
+            }
+        } else if (source.type === 'battle') {
+            if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                performSwapFromDnd('battle', 0, targetIndex)
+            } else if (targetId === 'trash-zone') {
+                battleToTrash()
+            }
+        } else if (source.type === 'bench') {
+            if (targetId === 'battle-field') {
+                swapBenchToBattle(source.index)
+            } else if (targetId === 'trash-zone') {
+                benchToTrash(source.index)
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                if (targetIndex !== source.index) {
+                    performSwapFromDnd('bench', source.index, targetIndex)
+                }
+            }
+        } else if (source.type === 'counter') {
+            if (targetId === 'battle-field') {
+                updateDamage('battle', 0, source.amount)
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                updateDamage('bench', targetIndex, source.amount)
             }
         }
     }
@@ -988,7 +966,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         </button>
                         <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
                     </div>
-                    <div className="flex gap-4 sm:gap-6 overflow-x-auto py-12 touch-pan-x items-center px-4">
+                    <div className="flex gap-4 sm:gap-6 overflow-x-auto py-12 touch-pan-x items-center px-4 scrollbar-black">
                         {bench.slice(0, benchSize).map((stack, i) => (
                             <div key={i} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                 {stack ? (
@@ -1028,7 +1006,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">手札 ({hand.length}枚)</h2>
                     {/* Hand Container - Horizontal Scroll enabled */}
                     <div
-                        className="flex overflow-x-auto gap-5 sm:gap-8 py-12 px-6 snap-x items-center"
+                        className="flex overflow-x-auto gap-5 sm:gap-8 py-12 px-6 snap-x items-center scrollbar-black"
                         style={{ WebkitOverflowScrolling: 'touch' }}
                     >
                         {hand.map((card, i) => (
