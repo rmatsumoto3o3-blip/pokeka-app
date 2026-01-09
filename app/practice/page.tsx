@@ -76,55 +76,53 @@ function PracticeContent() {
                     </p>
                 </div>
 
-                {/* Deck Code Input - Aligned with Practice Area */}
+                {/* Deck Code Input */}
                 {(!deck1.length || !deck2.length) && (
-                    <div className="w-full mb-4">
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-2 sm:gap-4 w-full">
-                            {/* Input 1 Card */}
-                            <div className="bg-white rounded-xl shadow-lg p-4">
+                    <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Deck 1 Input */}
+                            <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     デッキ1（自分）
                                 </label>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex gap-2">
                                     <input
                                         type="text"
                                         value={deckCode1}
                                         onChange={(e) => setDeckCode1(e.target.value)}
                                         placeholder="デッキコードを入力"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
                                         disabled={loading}
                                     />
                                 </div>
                             </div>
 
-                            {/* Center Action */}
-                            <div className="w-24 sm:w-28 md:w-32 flex-shrink-0 flex items-center justify-center">
-                                <button
-                                    onClick={() => loadDecks()}
-                                    disabled={loading || (!deckCode1 && !deckCode2)}
-                                    className="w-full h-full min-h-[50px] px-2 bg-purple-500 text-white rounded-lg font-bold hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition text-xs sm:text-sm shadow-md flex items-center justify-center"
-                                >
-                                    {loading ? '...' : '読み込み'}
-                                </button>
-                            </div>
-
-                            {/* Input 2 Card */}
-                            <div className="bg-white rounded-xl shadow-lg p-4">
+                            {/* Deck 2 Input */}
+                            <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     デッキ2（相手）
                                 </label>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex gap-2">
                                     <input
                                         type="text"
                                         value={deckCode2}
                                         onChange={(e) => setDeckCode2(e.target.value)}
                                         placeholder="デッキコードを入力"
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 text-sm"
                                         disabled={loading}
                                     />
                                 </div>
                             </div>
                         </div>
+
+                        <button
+                            onClick={() => loadDecks()}
+                            disabled={loading || (!deckCode1 && !deckCode2)}
+                            className="mt-4 w-full px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            {loading ? '読み込み中...' : 'デッキを読み込む'}
+                        </button>
+
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                                 {error}
