@@ -1079,25 +1079,32 @@ export default DeckPractice
 
 // Helpers for D&D
 function DraggableCard({ id, data, children, className = "", onClick }: { id: string, data: any, children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void }) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
         id,
         data,
     })
 
+    const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+        id,
+    })
+
     const style = {
         transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0 : undefined, // Hide the original when dragging (the overlay shows the ghost)
+        opacity: isDragging ? 0 : undefined,
         zIndex: isDragging ? 100 : 1,
         scale: isDragging ? '1.05' : '1',
     }
 
     return (
         <div
-            ref={setNodeRef}
+            ref={(node) => {
+                setDraggableRef(node)
+                setDroppableRef(node)
+            }}
             style={style}
             {...listeners}
             {...attributes}
-            className={`relative group inline-block cursor-grab active:cursor-grabbing select-none no-touch-menu no-select no-tap-highlight touch-none ${className}`}
+            className={`relative group inline-block cursor-grab active:cursor-grabbing select-none no-touch-menu no-select no-tap-highlight touch-none ${className} ${isOver ? 'ring-4 ring-red-400 rounded-lg' : ''}`}
             onClick={onClick}
         >
             {children}

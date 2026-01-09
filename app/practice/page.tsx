@@ -344,8 +344,8 @@ function PracticeContent() {
 
 // Sub-components for D&D in Practice Page
 function DraggableDamageCounter({ amount }: { amount: number }) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: `damage-counter-${amount}-${Math.random()}`,
+    const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
+        id: amount === -999 ? 'damage-counter-clr' : `damage-counter-${amount}`,
         data: {
             type: 'counter',
             amount: amount,
@@ -359,7 +359,7 @@ function DraggableDamageCounter({ amount }: { amount: number }) {
 
     return (
         <div
-            ref={setNodeRef}
+            ref={setDraggableRef}
             style={style}
             {...listeners}
             {...attributes}
