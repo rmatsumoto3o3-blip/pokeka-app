@@ -1,9 +1,24 @@
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { type Card } from '@/lib/deckParser'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool } from '@/lib/cardStack'
+import {
+    DndContext,
+    DragOverlay,
+    useSensor,
+    useSensors,
+    PointerSensor,
+    TouchSensor,
+    DragEndEvent,
+    DragStartEvent,
+    useDraggable,
+    useDroppable,
+    defaultDropAnimationSideEffects,
+} from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 
 interface DeckPracticeProps {
     deck: Card[]
@@ -44,6 +59,23 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     // Menu & Swap State
     const [menu, setMenu] = useState<MenuState | null>(null)
     const [swapMode, setSwapMode] = useState<SwapState | null>(null)
+    const [activeDragId, setActiveDragId] = useState<string | null>(null)
+    const [activeDragData, setActiveDragData] = useState<any>(null)
+
+    // dnd-kit sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 200,
+                tolerance: 5,
+            },
+        })
+    )
 
     // Auto-setup prize cards and draw initial hand when deck is first loaded
     useEffect(() => {
@@ -302,6 +334,85 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     // Trash Viewer
     const [showTrashViewer, setShowTrashViewer] = useState(false)
 
+    // D&D Handlers
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event
+        setActiveDragId(active.id as string)
+        setActiveDragData(active.data.current)
+        lockScroll()
+    }
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+        setActiveDragId(null)
+        setActiveDragData(null)
+        unlockScroll()
+
+        if (!over) return
+
+        const source = active.data.current as any
+        const targetId = over.id as string
+
+        // Logic to route the drag result
+        if (source.type === 'hand') {
+            if (targetId === 'battle-field') {
+                playToBattleField(source.index)
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                // Original playToBench finds first empty slot, let's adapt for specific slot if empty
+                if (bench[targetIndex] === null) {
+                    const card = hand[source.index]
+                    const newBench = [...bench]
+                    newBench[targetIndex] = createStack(card)
+                    setBench(newBench)
+                    setHand(hand.filter((_, i) => i !== source.index))
+                } else {
+                    // If target is occupied, maybe stack if valid or just do nothing
+                    alert("空いている枠に置いてください")
+                }
+            } else if (targetId === 'trash-zone') {
+                trashFromHand(source.index)
+            }
+        } else if (source.type === 'battle') {
+            if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                // Perform swap logic
+                performSwapFromDnd('battle', 0, targetIndex)
+            } else if (targetId === 'trash-zone') {
+                battleToTrash()
+            }
+        } else if (source.type === 'bench') {
+            if (targetId === 'battle-field') {
+                swapBenchToBattle(source.index)
+            } else if (targetId === 'trash-zone') {
+                benchToTrash(source.index)
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                if (targetIndex !== source.index) {
+                    performSwapFromDnd('bench', source.index, targetIndex)
+                }
+            }
+        }
+    }
+
+    const performSwapFromDnd = (sourceType: 'battle' | 'bench', sourceIndex: number, targetIndex: number) => {
+        if (sourceType === 'battle') {
+            const currentBattle = battleField
+            const targetBench = bench[targetIndex]
+            setBattleField(targetBench)
+            const newBench = [...bench]
+            newBench[targetIndex] = currentBattle
+            setBench(newBench)
+        } else if (sourceType === 'bench') {
+            const sourceStack = bench[sourceIndex]
+            const targetStack = bench[targetIndex]
+            const newBench = [...bench]
+            newBench[sourceIndex] = targetStack
+            newBench[targetIndex] = sourceStack
+            setBench(newBench)
+        }
+    }
+
     // Compact mode sizes
     const sizes = compact ? {
         prize: { w: 40, h: 56 },
@@ -347,348 +458,429 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
     }
 
     return (
-        <div className={`w-full ${compact ? "space-y-2" : "space-y-4"} relative`}>
-            {/* Context Menu */}
-            {menu && (
-                <div
-                    className="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[160px]"
-                    style={{
-                        top: Math.min(menu.y, window.innerHeight - 200), // Prevent overflow bottom
-                        left: Math.min(menu.x, window.innerWidth - 170)  // Prevent overflow right
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-700">
-                        {menu.source === 'hand' ? '手札 ' : menu.source === 'battle' ? 'バトル場 ' : 'ベンチ '}: {(menu.card as any).name || 'カード'}
-                    </div>
-                    <div className="flex flex-col">
-                        {menu.source === 'hand' && (
-                            <>
-                                <button onClick={() => playToBattleField(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
-                                    バトル場に出す
-                                </button>
-                                <button onClick={() => playToBench(menu.index)} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
-                                    ベンチに出す
-                                </button>
-                                <button onClick={() => trashFromHand(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                        {menu.source === 'battle' && (
-                            <>
-                                <button onClick={startSwapWithBench} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
-                                    ベンチと入替
-                                </button>
-                                <button onClick={battleToHand} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
-                                    手札に戻す
-                                </button>
-                                <button onClick={battleToTrash} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                        {menu.source === 'bench' && (
-                            <>
-                                <button onClick={() => swapBenchToBattle(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
-                                    バトル場へ
-                                </button>
-                                <button onClick={() => benchToHand(menu.index)} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
-                                    手札に戻す
-                                </button>
-                                <button onClick={() => benchToTrash(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    <button onClick={closeMenu} className="w-full py-2 bg-gray-100 text-xs text-gray-500 hover:bg-gray-200">
-                        閉じる
-                    </button>
-                </div>
-            )}
-
-            {/* Swap Prompt */}
-            {swapMode && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-xl z-50 animate-bounce font-bold">
-                    入れ替えるベンチを選択してください
-                </div>
-            )}
-
-
-            {/* Player Name */}
-            {playerName && (
-                <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 text-center">
-                    {playerName}
-                </h3>
-            )}
-
-            {/* Controls & Stats Combined */}
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3">
-                {/* Buttons row */}
-                <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-                    <button
-                        onClick={mulligan}
-                        className="flex-1 min-w-[80px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-blue-600 transition"
-                    >
-                        引き直し
-                    </button>
-                    <button
-                        onClick={() => drawCards(1)}
-                        disabled={remaining.length === 0}
-                        className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        1枚引く
-                    </button>
-                    <button
-                        onClick={shuffleDeck}
-                        className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-purple-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-purple-600 transition"
-                    >
-                        シャッフル
-                    </button>
-                    <button
-                        onClick={onReset}
-                        className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 transition"
-                    >
-                        リセット
-                    </button>
-                </div>
-                {/* Supporter & Deck Viewer row */}
-                <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-                    <button
-                        onClick={useNanjamo}
-                        disabled={hand.length === 0}
-                        className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-pink-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        ナンジャモ
-                    </button>
-                    <button
-                        onClick={useJudge}
-                        disabled={hand.length === 0}
-                        className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        ジャッジマン
-                    </button>
-                    <button
-                        onClick={() => setShowDeckViewer(true)}
-                        className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-amber-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-amber-600 transition"
-                    >
-                        山札確認
-                    </button>
-                    <button
-                        onClick={() => setShowTrashViewer(true)}
-                        disabled={trash.length === 0}
-                        className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                    >
-                        トラッシュ確認
-                    </button>
-                </div>
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
-                    <div className="bg-blue-50 rounded px-1 py-1">
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{remaining.length}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-600">山札</div>
-                    </div>
-                    <div className="bg-green-50 rounded px-1 py-1">
-                        <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{hand.length}</div>
-                        <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Prizes, Trash & Battle Field - 2 Column Layout */}
-            <div className="flex gap-2 sm:gap-3">
-                {/* Left Column: Prizes & Trash */}
-                <div className="flex flex-col gap-2 h-full justify-between" style={{ height: (sizes.battle.h + 24) }}> {/* Approximate height match + padding */}
-                    {/* Prize Cards */}
-                    <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full">
-                        <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">サイド ({prizeCards.length}枚)</h2>
-                        <div className="flex items-center">
-                            {prizeCards.map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => takePrizeCard(i)}
-                                    className="w-8 h-12 sm:w-10 sm:h-14 md:w-12 md:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow-md hover:shadow-xl hover:scale-105 transition flex items-center justify-center text-white font-bold text-sm sm:text-base"
-                                    style={{ marginLeft: i > 0 ? '-16px' : '0', zIndex: prizeCards.length - i }}
-                                >
-                                    ?
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Trash (Moved here) */}
+        <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
+            <div className={`w-full ${compact ? "space-y-2" : "space-y-4"} relative`}>
+                {/* Context Menu */}
+                {menu && (
                     <div
-                        className="bg-red-50 rounded-lg shadow-lg p-2 sm:p-3 relative cursor-pointer hover:bg-red-100 transition w-full"
-                        onClick={() => setShowTrashViewer(true)}
+                        className="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[160px]"
+                        style={{
+                            top: Math.min(menu.y, window.innerHeight - 200), // Prevent overflow bottom
+                            left: Math.min(menu.x, window.innerWidth - 170)  // Prevent overflow right
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <h2 className="text-xs sm:text-sm font-bold text-black mb-1">トラッシュ</h2>
-                        <div className="text-lg sm:text-xl font-bold text-red-600">{trash.length}枚</div>
-                    </div>
-                </div>
-
-                {/* Battle Field (Right Column) */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 flex-1 flex flex-col items-center justify-center">
-                    <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
-                    {battleField ? (
-                        <div
-                            className={`relative group inline-block cursor-pointer select-none no-touch-menu no-select no-tap-highlight touch-none`}
-                            onClick={(e) => handleCardClick(e, battleField, 'battle', 0)}
-                            onTouchStart={lockScroll}
-                            onTouchEnd={unlockScroll}
-                        >
-                            <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                        <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-700">
+                            {menu.source === 'hand' ? '手札 ' : menu.source === 'battle' ? 'バトル場 ' : 'ベンチ '}: {(menu.card as any).name || 'カード'}
                         </div>
-                    ) : (
-                        <div
-                            className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
-                            style={{ width: sizes.battle.w, height: sizes.battle.h }}
-                        >
-                            なし
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Bench */}
-            {/* BenchContainer - with horizontal scrolling */}
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
-
-                <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-xs sm:text-sm font-bold text-gray-900">ベンチ</h2>
-                    <button
-                        onClick={increaseBenchSize}
-                        disabled={benchSize >= 8}
-                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs sm:text-sm shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        +
-                    </button>
-                    <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
-                </div>
-                <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1 touch-pan-x">
-                    {bench.slice(0, benchSize).map((stack, i) => (
-                        <div key={i} className="flex-shrink-0">
-                            {stack ? (
-                                <div
-                                    className={`relative group inline-block cursor-pointer select-none no-touch-menu no-select no-tap-highlight touch-none ${swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}`}
-                                    onClick={(e) => handleCardClick(e, stack, 'bench', i)}
-                                    onTouchStart={lockScroll}
-                                    onTouchEnd={unlockScroll}
-                                >
-                                    <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
-                                </div>
-                            ) : (
-                                <div
-                                    className={`rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400 ${swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse bg-blue-50' : ''}`}
-                                    style={{ width: sizes.bench.w, height: sizes.bench.h }}
-                                    onClick={(e) => {
-                                        if (swapMode?.active) {
-                                            e.stopPropagation()
-                                            performSwap(i)
-                                        }
-                                    }}
-                                >
-                                    {swapMode?.active ? 'ここへ移動' : '空き'}
-                                </div>
+                        <div className="flex flex-col">
+                            {menu.source === 'hand' && (
+                                <>
+                                    <button onClick={() => playToBattleField(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
+                                        バトル場に出す
+                                    </button>
+                                    <button onClick={() => playToBench(menu.index)} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
+                                        ベンチに出す
+                                    </button>
+                                    <button onClick={() => trashFromHand(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
+                                        トラッシュする
+                                    </button>
+                                </>
+                            )}
+                            {menu.source === 'battle' && (
+                                <>
+                                    <button onClick={startSwapWithBench} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
+                                        ベンチと入替
+                                    </button>
+                                    <button onClick={battleToHand} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
+                                        手札に戻す
+                                    </button>
+                                    <button onClick={battleToTrash} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
+                                        トラッシュする
+                                    </button>
+                                </>
+                            )}
+                            {menu.source === 'bench' && (
+                                <>
+                                    <button onClick={() => swapBenchToBattle(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
+                                        バトル場へ
+                                    </button>
+                                    <button onClick={() => benchToHand(menu.index)} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
+                                        手札に戻す
+                                    </button>
+                                    <button onClick={() => benchToTrash(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
+                                        トラッシュする
+                                    </button>
+                                </>
                             )}
                         </div>
-                    ))}
+                        <button onClick={closeMenu} className="w-full py-2 bg-gray-100 text-xs text-gray-500 hover:bg-gray-200">
+                            閉じる
+                        </button>
+                    </div>
+                )}
+
+                {/* Swap Prompt */}
+                {swapMode && (
+                    <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-full shadow-xl z-50 animate-bounce font-bold">
+                        入れ替えるベンチを選択してください
+                    </div>
+                )}
+
+
+                {/* Player Name */}
+                {playerName && (
+                    <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 text-center">
+                        {playerName}
+                    </h3>
+                )}
+
+                {/* Controls & Stats Combined */}
+                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3">
+                    {/* Buttons row */}
+                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
+                        <button
+                            onClick={mulligan}
+                            className="flex-1 min-w-[80px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-blue-600 transition"
+                        >
+                            引き直し
+                        </button>
+                        <button
+                            onClick={() => drawCards(1)}
+                            disabled={remaining.length === 0}
+                            className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            1枚引く
+                        </button>
+                        <button
+                            onClick={shuffleDeck}
+                            className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-purple-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-purple-600 transition"
+                        >
+                            シャッフル
+                        </button>
+                        <button
+                            onClick={onReset}
+                            className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 transition"
+                        >
+                            リセット
+                        </button>
+                    </div>
+                    {/* Supporter & Deck Viewer row */}
+                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
+                        <button
+                            onClick={useNanjamo}
+                            disabled={hand.length === 0}
+                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-pink-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            ナンジャモ
+                        </button>
+                        <button
+                            onClick={useJudge}
+                            disabled={hand.length === 0}
+                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            ジャッジマン
+                        </button>
+                        <button
+                            onClick={() => setShowDeckViewer(true)}
+                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-amber-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-amber-600 transition"
+                        >
+                            山札確認
+                        </button>
+                        <button
+                            onClick={() => setShowTrashViewer(true)}
+                            disabled={trash.length === 0}
+                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                        >
+                            トラッシュ確認
+                        </button>
+                    </div>
+                    {/* Stats row */}
+                    <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
+                        <div className="bg-blue-50 rounded px-1 py-1">
+                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{remaining.length}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-600">山札</div>
+                        </div>
+                        <div className="bg-green-50 rounded px-1 py-1">
+                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{hand.length}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Prizes, Trash & Battle Field - 2 Column Layout */}
+                <div className="flex gap-2 sm:gap-3">
+                    {/* Left Column: Prizes & Trash */}
+                    <div className="flex flex-col gap-2 h-full justify-between" style={{ height: (sizes.battle.h + 24) }}> {/* Approximate height match + padding */}
+                        {/* Prize Cards */}
+                        <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full">
+                            <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">サイド ({prizeCards.length}枚)</h2>
+                            <div className="flex items-center">
+                                {prizeCards.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => takePrizeCard(i)}
+                                        className="w-8 h-12 sm:w-10 sm:h-14 md:w-12 md:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow-md hover:shadow-xl hover:scale-105 transition flex items-center justify-center text-white font-bold text-sm sm:text-base"
+                                        style={{ marginLeft: i > 0 ? '-16px' : '0', zIndex: prizeCards.length - i }}
+                                    >
+                                        ?
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Trash (Moved here) */}
+                        <DroppableZone id="trash-zone" className="w-full">
+                            <div
+                                className="bg-red-50 rounded-lg shadow-lg p-2 sm:p-3 relative cursor-pointer hover:bg-red-100 transition w-full"
+                                onClick={() => setShowTrashViewer(true)}
+                            >
+                                <h2 className="text-xs sm:text-sm font-bold text-black mb-1">トラッシュ</h2>
+                                <div className="text-lg sm:text-xl font-bold text-red-600">{trash.length}枚</div>
+                            </div>
+                        </DroppableZone>
+                    </div>
+
+                    {/* Battle Field (Right Column) */}
+                    <DroppableZone id="battle-field" className="flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-2 sm:p-3">
+                        <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
+                        {battleField ? (
+                            <DraggableCard
+                                id="battle-card"
+                                data={{ type: 'battle', index: 0, card: battleField }}
+                                onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                            >
+                                <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                            </DraggableCard>
+                        ) : (
+                            <div
+                                className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
+                                style={{ width: sizes.battle.w, height: sizes.battle.h }}
+                            >
+                                なし
+                            </div>
+                        )}
+                    </DroppableZone>
+                </div>
+
+                {/* Bench */}
+                {/* BenchContainer - with horizontal scrolling */}
+                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
+
+                    <div className="flex items-center gap-2 mb-2">
+                        <h2 className="text-xs sm:text-sm font-bold text-gray-900">ベンチ</h2>
+                        <button
+                            onClick={increaseBenchSize}
+                            disabled={benchSize >= 8}
+                            className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs sm:text-sm shadow hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            +
+                        </button>
+                        <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
+                    </div>
+                    <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1 touch-pan-x">
+                        {bench.slice(0, benchSize).map((stack, i) => (
+                            <div key={i} className="flex-shrink-0">
+                                {stack ? (
+                                    <DraggableCard
+                                        id={`bench-card-${i}`}
+                                        data={{ type: 'bench', index: i, card: stack }}
+                                        onClick={(e) => handleCardClick(e, stack, 'bench', i)}
+                                        className={swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}
+                                    >
+                                        <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
+                                    </DraggableCard>
+                                ) : (
+                                    <DroppableZone
+                                        id={`bench-slot-${i}`}
+                                        className={`rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400 ${swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse bg-blue-50' : ''}`}
+                                        style={{ width: sizes.bench.w, height: sizes.bench.h }}
+                                        onClick={(e) => {
+                                            if (swapMode?.active) {
+                                                e.stopPropagation()
+                                                performSwap(i)
+                                            }
+                                        }}
+                                    >
+                                        {swapMode?.active ? 'ここへ移動' : '空き'}
+                                    </DroppableZone>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Hand */}
+                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">手札 ({hand.length}枚)</h2>
+                    {/* Hand Container - Horizontal Scroll enabled */}
+                    <div
+                        className="flex overflow-x-auto gap-1 sm:gap-2 pb-2 px-1 snap-x"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
+                        {hand.map((card, i) => (
+                            <DraggableCard
+                                key={`${card.name}-${i}`}
+                                id={`hand-card-${i}`}
+                                data={{ type: 'hand', index: i, card }}
+                                className="flex-shrink-0 snap-start"
+                                onClick={(e) => handleCardClick(e, card, 'hand', i)}
+                            >
+                                <Image
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    width={sizes.hand.w}
+                                    height={sizes.hand.h}
+                                    className="rounded shadow-md hover:shadow-xl transition"
+                                    draggable={false}
+                                />
+                            </DraggableCard>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Modals */}
+                {/* Deck Viewer Modal */}
+                {showDeckViewer && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeckViewer(false)}>
+                        <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
+                                <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                {remaining.map((card, i) => (
+                                    <div key={i} className="relative">
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={80}
+                                            height={112}
+                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            draggable={false}
+                                        />
+                                        <div className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1 rounded">
+                                            {i + 1}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Trash Viewer Modal */}
+                {showTrashViewer && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTrashViewer(false)}>
+                        <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-red-600">トラッシュ ({trash.length}枚)</h2>
+                                <button onClick={() => setShowTrashViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                {trash.map((card, i) => (
+                                    <div key={i} className="relative group">
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={80}
+                                            height={112}
+                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            draggable={false}
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                setHand([...hand, card])
+                                                setTrash(trash.filter((_, idx) => idx !== i))
+                                            }}
+                                            className="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition"
+                                        >
+                                            回収
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Hand */}
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full overflow-hidden">
-                <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">手札 ({hand.length}枚)</h2>
-                {/* Hand Container - Horizontal Scroll enabled */}
-                <div
-                    className="flex overflow-x-auto gap-1 sm:gap-2 pb-2 px-1 snap-x"
-                    style={{ WebkitOverflowScrolling: 'touch' }}
-                >
-                    {hand.map((card, i) => (
-                        <div
-                            key={`${card.name}-${i}`}
-                            className="flex-shrink-0 relative group snap-start cursor-pointer transition-transform active:scale-95 no-touch-menu no-select no-tap-highlight touch-none"
-                            onClick={(e) => handleCardClick(e, card, 'hand', i)}
-                            onTouchStart={lockScroll}
-                            onTouchEnd={unlockScroll}
-                        >
+            <DragOverlay dropAnimation={{
+                sideEffects: defaultDropAnimationSideEffects({
+                    styles: {
+                        active: {
+                            opacity: '0.4',
+                        },
+                    },
+                }),
+            }}>
+                {activeDragId ? (
+                    <div className="opacity-80 scale-105 pointer-events-none">
+                        {activeDragData.type === 'hand' ? (
                             <Image
-                                src={card.imageUrl}
-                                alt={card.name}
+                                src={activeDragData.card.imageUrl}
+                                alt={activeDragData.card.name}
                                 width={sizes.hand.w}
                                 height={sizes.hand.h}
-                                className="rounded shadow-md hover:shadow-xl transition"
-                                draggable={false}
+                                className="rounded shadow-2xl"
                             />
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Modals */}
-            {/* Deck Viewer Modal */}
-            {showDeckViewer && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeckViewer(false)}>
-                    <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
-                            <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
-                        </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                            {remaining.map((card, i) => (
-                                <div key={i} className="relative">
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={80}
-                                        height={112}
-                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
-                                        draggable={false}
-                                    />
-                                    <div className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1 rounded">
-                                        {i + 1}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        ) : (
+                            <CascadingStack
+                                stack={activeDragData.card}
+                                width={activeDragData.type === 'battle' ? sizes.battle.w : sizes.bench.w}
+                                height={activeDragData.type === 'battle' ? sizes.battle.h : sizes.bench.h}
+                            />
+                        )}
                     </div>
-                </div>
-            )}
+                ) : null}
+            </DragOverlay>
+        </DndContext>
+    )
+}
 
-            {/* Trash Viewer Modal */}
-            {showTrashViewer && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTrashViewer(false)}>
-                    <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-red-600">トラッシュ ({trash.length}枚)</h2>
-                            <button onClick={() => setShowTrashViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
-                        </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                            {trash.map((card, i) => (
-                                <div key={i} className="relative group">
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={80}
-                                        height={112}
-                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
-                                        draggable={false}
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            setHand([...hand, card])
-                                            setTrash(trash.filter((_, idx) => idx !== i))
-                                        }}
-                                        className="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition"
-                                    >
-                                        回収
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+// Helpers for D&D
+function DraggableCard({ id, data, children, className = "", onClick }: { id: string, data: any, children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id,
+        data,
+    })
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.4 : undefined,
+    }
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...listeners}
+            {...attributes}
+            className={`relative group inline-block cursor-grab active:cursor-grabbing select-none no-touch-menu no-select no-tap-highlight touch-none ${className}`}
+            onClick={onClick}
+        >
+            {children}
+        </div>
+    )
+}
+
+function DroppableZone({ id, children, className = "", style = {}, onClick }: { id: string, children: React.ReactNode, className?: string, style?: any, onClick?: (e: React.MouseEvent) => void }) {
+    const { isOver, setNodeRef } = useDroppable({
+        id,
+    })
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`${className} ${isOver ? 'ring-4 ring-blue-300 bg-blue-50/50' : ''} transition-all`}
+            style={style}
+            onClick={onClick}
+        >
+            {children}
         </div>
     )
 }
