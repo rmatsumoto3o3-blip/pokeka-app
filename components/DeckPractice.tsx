@@ -422,6 +422,23 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
                 updateDamage('bench', targetIndex, source.amount)
             }
+        } else if (source.type === 'hand' && targetId === 'stadium-zone') {
+            playStadium(source.index)
+        }
+    }
+
+    const playStadium = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (card.supertype !== 'トレーナー' || !card.subtypes?.includes('スタジアム')) {
+            alert("スタジアムカードではありません")
+            return
+        }
+
+        if (onStadiumChange) {
+            onStadiumChange(card)
+            setHand(hand.filter((_, i) => i !== handIndex))
+        } else {
+            alert("スタジアムの設定ができません（Props未定義）")
         }
     }
 
@@ -817,6 +834,33 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             </div>
                         </div>
 
+                        {/* Stadium Slot - Added */}
+                        <DroppableZone id="stadium-zone" className="w-full">
+                            <div
+                                className={`bg-green-50 rounded-lg shadow-lg p-2 sm:p-3 relative border-2 border-dashed flex flex-col items-center justify-center transition ${externalStadium ? 'border-green-300' : 'border-gray-300'}`}
+                                style={{ height: sizes.stadium.h / 2 + 40 }} // Adjusted height for layout
+                            >
+                                <h2 className="text-[10px] sm:text-xs font-bold text-gray-500 mb-1 absolute top-1 left-2 uppercase tracking-tight">Stadium</h2>
+                                {externalStadium ? (
+                                    <div className="flex flex-col items-center gap-1">
+                                        <Image
+                                            src={externalStadium.imageUrl}
+                                            alt={externalStadium.name}
+                                            width={sizes.stadium.w / 1.5}
+                                            height={sizes.stadium.h / 1.5}
+                                            className="rounded shadow-sm"
+                                        />
+                                        <button
+                                            onClick={() => onStadiumChange?.(null)}
+                                            className="text-[8px] bg-red-100 text-red-600 px-1 rounded hover:bg-red-200 transition"
+                                        >トラッシュ</button>
+                                    </div>
+                                ) : (
+                                    <span className="text-[10px] text-gray-400">スタジアムなし</span>
+                                )}
+                            </div>
+                        </DroppableZone>
+
                         {/* Trash (Moved here) */}
                         <DroppableZone id="trash-zone" className="w-full">
                             <div
@@ -984,19 +1028,19 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         >
                             <button
                                 onClick={() => { moveFromDeckToHand(deckCardMenu.index); setDeckCardMenu(null); }}
-                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
                             >手札へ</button>
                             <button
                                 onClick={() => { moveFromDeckToBattleField(deckCardMenu.index); setDeckCardMenu(null); }}
-                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
                             >バトル場へ</button>
                             <button
                                 onClick={() => { moveFromDeckToBench(deckCardMenu.index); setDeckCardMenu(null); }}
-                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
                             >ベンチへ</button>
                             <button
                                 onClick={() => { moveFromDeckToTrash(deckCardMenu.index); setDeckCardMenu(null); }}
-                                className="px-4 py-2 hover:bg-red-50 text-red-600 text-left text-sm font-bold"
+                                className="px-4 py-3 hover:bg-red-50 text-red-600 text-left text-sm font-black"
                             >トラッシュへ</button>
                         </div>
                     </div>
@@ -1051,16 +1095,16 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         >
                             <button
                                 onClick={() => moveFromTrashToHand(trashCardMenu.index)}
-                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
                             >手札に加える</button>
                             <button
                                 onClick={() => moveFromTrashToDeck(trashCardMenu.index)}
-                                className="px-4 py-2 hover:bg-blue-50 text-left text-sm font-medium border-b border-gray-100"
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
                             >山札に戻す</button>
-                            {(isEnergy(trash[trashCardMenu.index]) || isTool(trash[trashCardMenu.index])) && (
+                            {isEnergy(trash[trashCardMenu.index]) && (
                                 <button
                                     onClick={() => startAttachFromTrash(trashCardMenu.index)}
-                                    className="px-4 py-2 hover:bg-green-50 text-green-600 text-left text-sm font-bold"
+                                    className="px-4 py-3 hover:bg-green-50 text-green-700 text-left text-sm font-black"
                                 >ポケモンにつける</button>
                             )}
                         </div>
