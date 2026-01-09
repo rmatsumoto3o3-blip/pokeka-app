@@ -212,10 +212,20 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
 
                 // Trigger drop logic
                 if (touchDragItem.source === 'hand' && !isNaN(touchDragItem.index)) {
+                    const card = (touchDragItem.card as any).card || touchDragItem.card // handle potential wrapped object
+
                     if (zoneType === 'battle') {
-                        playToBattleField(touchDragItem.index)
+                        if (battleField && canStack(card, battleField)) {
+                            stackOnBattleField(touchDragItem.index, false) // Default to top stack for touch
+                        } else {
+                            playToBattleField(touchDragItem.index)
+                        }
                     } else if (zoneType === 'bench' && typeof zoneIndex === 'number') {
-                        playToBench(touchDragItem.index, zoneIndex)
+                        if (bench[zoneIndex] && canStack(card, bench[zoneIndex]!)) {
+                            stackOnBench(touchDragItem.index, zoneIndex, false)
+                        } else {
+                            playToBench(touchDragItem.index, zoneIndex)
+                        }
                     } else if (zoneType === 'trash') {
                         moveToTrash(touchDragItem.index)
                     }
@@ -579,6 +589,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     setSelectedCard({ card: getTopCard(battleField), source: 'battle' })
                                 }
                             }}
+                            // Touch Drop Zone for Occupied Battle
+                            data-drop-zone="battle"
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                                 e.preventDefault()
@@ -690,6 +702,9 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     // Removed touch-none
                                     className={`relative group inline-block cursor-move select-none ${selectedCard?.source === 'bench' && selectedCard.index === i ? 'ring-2 ring-blue-500' : ''}`}
                                     onClick={() => setSelectedCard({ card: getTopCard(stack), source: 'bench', index: i })}
+                                    // Touch Drop Zone for Occupied Bench
+                                    data-drop-zone="bench"
+                                    data-index={i}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => {
                                         e.preventDefault()
