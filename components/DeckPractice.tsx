@@ -34,6 +34,11 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         y: number
     } | null>(null)
 
+    // Touch logic refs for long-press detection
+    const touchTimerRef = useRef<NodeJS.Timeout | null>(null)
+    const touchStartPosRef = useRef<{ x: number, y: number } | null>(null)
+    const touchCurrentPosRef = useRef<{ x: number, y: number } | null>(null)
+
     // Drag tracking for long drag detection
     const [dragStartTime, setDragStartTime] = useState<number | null>(null)
     const [isLongDrag, setIsLongDrag] = useState(false)
@@ -122,33 +127,65 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         }, 1000)
     }
 
-    // Touch Handling for Android
+    // Unified Touch Handling for Android
+    // 1. touchStart: Start timer & record pos
+    // 2. touchMove: If moved > 10px before timer, cancel timer (it's a scroll). If timer fired, move drag item.
+    // 3. touchEnd: Clear timer. If dragging, drop.
+
     const handleTouchStart = (e: React.TouchEvent, item: any, index: number, source: string) => {
-        // Prevent default only if necessary, but we need scrolling. 
-        // We'll use a timer to detect "hold to drag" vs "scroll" vs "tap"
-        // For simplicity, let's try immediate drag capture if it looks like a distinct interaction? 
-        // No, standard is: Hold -> Drag. 
-        // User wants "Drag". We will set state.
         const touch = e.touches[0]
-        setTouchDragItem({
-            card: item,
-            source: source as any,
-            index,
-            x: touch.clientX,
-            y: touch.clientY
-        })
+        touchStartPosRef.current = { x: touch.clientX, y: touch.clientY }
+        touchCurrentPosRef.current = { x: touch.clientX, y: touch.clientY }
+
+        // Start long-press timer
+        touchTimerRef.current = setTimeout(() => {
+            // Timer fired: It's a drag!
+            setTouchDragItem({
+                card: item,
+                source: source as any,
+                index,
+                x: touchCurrentPosRef.current!.x,
+                y: touchCurrentPosRef.current!.y
+            })
+            // Navigator vibrate for feedback if available
+            if (navigator.vibrate) navigator.vibrate(50)
+        }, 200) // 200ms delay to detect scroll vs drag
     }
 
     const handleTouchMove = (e: React.TouchEvent) => {
+        const touch = e.touches[0]
+        touchCurrentPosRef.current = { x: touch.clientX, y: touch.clientY }
+
         if (touchDragItem) {
-            e.preventDefault() // Stop scrolling while dragging
-            const touch = e.touches[0]
+            // Already dragging: prevent scroll and update pos
+            if (e.cancelable) e.preventDefault()
             setTouchDragItem(prev => prev ? { ...prev, x: touch.clientX, y: touch.clientY } : null)
+        } else {
+            // Not dragging yet: check if we moved too much (scrolling)
+            if (touchStartPosRef.current) {
+                const dx = Math.abs(touch.clientX - touchStartPosRef.current.x)
+                const dy = Math.abs(touch.clientY - touchStartPosRef.current.y)
+                if (dx > 10 || dy > 10) {
+                    // User is scrolling, cancel timer
+                    if (touchTimerRef.current) {
+                        clearTimeout(touchTimerRef.current)
+                        touchTimerRef.current = null
+                    }
+                }
+            }
         }
     }
 
     const handleTouchEnd = (e: React.TouchEvent) => {
+        // Clear timer first thing
+        if (touchTimerRef.current) {
+            clearTimeout(touchTimerRef.current)
+            touchTimerRef.current = null
+        }
+        touchStartPosRef.current = null
+
         if (touchDragItem) {
+            if (e.cancelable) e.preventDefault()
             const touch = e.changedTouches[0]
             const target = document.elementFromPoint(touch.clientX, touch.clientY)
 
@@ -517,7 +554,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             onDragStart={(e) => {
                                 handleDragStart(e, 0, 'battle')
                             }}
-                            className={`relative group inline-block cursor-move touch-none select-none ${selectedCard?.source === 'battle' ? 'ring-2 ring-blue-500' : ''}`}
+                            // Removed touch-none to allow scrolling, logic handled in onTouch handlers
+                            className={`relative group inline-block cursor-move select-none ${selectedCard?.source === 'battle' ? 'ring-2 ring-blue-500' : ''}`}
                             onClick={() => {
                                 if (selectedCard?.source === 'bench' && selectedCard.index !== undefined) {
                                     benchToBattleField(selectedCard.index)
@@ -634,7 +672,9 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'bench')
                                     }}
-                                    className={`relative group inline-block cursor-move touch-none select-none ${selectedCard?.source === 'bench' && selectedCard.index === i ? 'ring-2 ring-blue-500' : ''}`}
+
+                                    // Removed touch-none
+                                    className={`relative group inline-block cursor-move select-none ${selectedCard?.source === 'bench' && selectedCard.index === i ? 'ring-2 ring-blue-500' : ''}`}
                                     onClick={() => setSelectedCard({ card: getTopCard(stack), source: 'bench', index: i })}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => {
@@ -776,7 +816,8 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     onDragStart={(e) => {
                                         handleDragStart(e, i, 'hand')
                                     }}
-                                    className="flex-shrink-0 cursor-move touch-none select-none"
+
+                                    className="flex-shrink-0 cursor-move select-none" // Removed touch-none
                                     // Touch Handlers
                                     onTouchStart={(e) => handleTouchStart(e, card, i, 'hand')}
                                     onTouchMove={handleTouchMove}
