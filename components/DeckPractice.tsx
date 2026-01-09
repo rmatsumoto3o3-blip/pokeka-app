@@ -400,6 +400,13 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                     performSwapFromDnd('bench', source.index, targetIndex)
                 }
             }
+        } else if (source.type === 'counter') {
+            if (targetId === 'battle-field') {
+                updateDamage('battle', 0, source.amount)
+            } else if (targetId.startsWith('bench-slot-')) {
+                const targetIndex = parseInt(targetId.replace('bench-slot-', ''))
+                updateDamage('bench', targetIndex, source.amount)
+            }
         }
     }
 
@@ -670,6 +677,37 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
                         </div>
                     </div>
+
+                    {/* Damage Counter Pool - Added as requested */}
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex justify-center gap-2 sm:gap-4">
+                            {[10, 50, 100].map(amount => (
+                                <DraggableCard
+                                    key={`counter-${amount}`}
+                                    id={`counter-${amount}`}
+                                    data={{ type: 'counter', amount }}
+                                    className="touch-none"
+                                >
+                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-md border-2 hover:scale-110 transition-transform ${amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
+                                            amount === 50 ? 'bg-red-500 border-red-700 text-white' :
+                                                'bg-red-700 border-red-900 text-white animate-pulse'
+                                        }`}>
+                                        {amount}
+                                    </div>
+                                </DraggableCard>
+                            ))}
+                            <DraggableCard
+                                id="counter-clear"
+                                data={{ type: 'counter', amount: -999 }}
+                                className="touch-none"
+                            >
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-gray-400 flex items-center justify-center text-xs sm:text-sm font-bold text-gray-500 shadow-md hover:scale-110 transition-transform">
+                                    CLR
+                                </div>
+                            </DraggableCard>
+                        </div>
+                        <div className="text-[8px] sm:text-[10px] text-gray-400 text-center mt-1 uppercase tracking-tighter">Drag counters to cards</div>
+                    </div>
                 </div>
 
                 {/* Prizes, Trash & Battle Field - 2 Column Layout */}
@@ -715,11 +753,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                 onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
                             >
                                 <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
-                                {/* Damage controls for Battle Field */}
-                                <div className="absolute top-0 right-[-40px] flex flex-col gap-1 z-10">
-                                    <button onClick={() => updateDamage('battle', 0, 10)} className="w-8 h-8 bg-red-500 text-white rounded-full font-bold shadow">+</button>
-                                    <button onClick={() => updateDamage('battle', 0, -10)} className="w-8 h-8 bg-gray-500 text-white rounded-full font-bold shadow">-</button>
-                                </div>
+                                {/* Damage controls removed as requested by new D&D design */}
                             </DraggableCard>
                         ) : (
                             <div
@@ -758,11 +792,7 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                                     >
                                         <div className="relative">
                                             <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
-                                            {/* Damage controls for Bench */}
-                                            <div className="absolute top-0 right-[-30px] flex flex-col gap-1 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 transition-opacity z-10">
-                                                <button onClick={(e) => { e.stopPropagation(); updateDamage('bench', i, 10); }} className="w-6 h-6 bg-red-400 text-white rounded-full font-bold text-xs">+</button>
-                                                <button onClick={(e) => { e.stopPropagation(); updateDamage('bench', i, -10); }} className="w-6 h-6 bg-gray-400 text-white rounded-full font-bold text-xs">-</button>
-                                            </div>
+                                            {/* Damage controls removed as requested by new D&D design */}
                                         </div>
                                     </DraggableCard>
                                 ) : (
@@ -933,20 +963,24 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
             }}>
                 {activeDragId ? (
                     <div className="opacity-80 scale-105 pointer-events-none">
-                        {activeDragData.type === 'hand' ? (
-                            <Image
-                                src={activeDragData.card.imageUrl}
-                                alt={activeDragData.card.name}
-                                width={sizes.hand.w}
-                                height={sizes.hand.h}
-                                className="rounded shadow-2xl"
-                            />
-                        ) : (
-                            <CascadingStack
-                                stack={activeDragData.card}
-                                width={activeDragData.type === 'battle' ? sizes.battle.w : sizes.bench.w}
-                                height={activeDragData.type === 'battle' ? sizes.battle.h : sizes.bench.h}
-                            />
+                        {activeDragData && (
+                            <div className="pointer-events-none">
+                                {activeDragData.type === 'counter' ? (
+                                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-2xl border-2 scale-125 ${activeDragData.amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
+                                        activeDragData.amount === 50 ? 'bg-red-500 border-red-700 text-white' :
+                                            activeDragData.amount === -999 ? 'bg-white border-gray-400 text-gray-500' :
+                                                'bg-red-700 border-red-900 text-white'
+                                        }`}>
+                                        {activeDragData.amount === -999 ? 'CLR' : activeDragData.amount}
+                                    </div>
+                                ) : activeDragData.card ? (
+                                    <CascadingStack
+                                        stack={activeDragData.card.cards ? activeDragData.card : createStack(activeDragData.card)}
+                                        width={sizes.hand.w}
+                                        height={sizes.hand.h}
+                                    />
+                                ) : null}
+                            </div>
                         )}
                     </div>
                 ) : null}
