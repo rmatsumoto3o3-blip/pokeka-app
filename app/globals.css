@@ -54,14 +54,14 @@ body {
 }
 
 .scrollbar-black::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #ffffff;
   border-radius: 5px;
 }
 
 .scrollbar-black::-webkit-scrollbar-thumb {
-  background-color: #000;
+  background-color: #888;
   border-radius: 10px;
-  border: 2px solid #f1f1f1;
+  border: 2px solid #ffffff;
 }
 
 .scrollbar-black:hover::-webkit-scrollbar-thumb {

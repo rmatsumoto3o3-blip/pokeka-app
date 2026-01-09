@@ -37,6 +37,14 @@ interface MenuState {
     index: number
     x: number
     y: number
+    rect?: {
+        top: number
+        left: number
+        right: number
+        bottom: number
+        width: number
+        height: number
+    }
 }
 
 // Track if we are in "Swap Mode" (selecting a target to swap with)
@@ -173,14 +181,22 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
         }
 
         // Otherwise open menu
-        // Check window position to adjust menu direction if needed (simplified: fixed max width/height handling)
+        const rect = e.currentTarget.getBoundingClientRect()
         setMenu({
             isOpen: true,
             card,
             source,
             index,
             x: e.clientX,
-            y: e.clientY
+            y: e.clientY,
+            rect: {
+                top: rect.top,
+                left: rect.left,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height
+            }
         })
         setSwapMode(null) // Cancel any existing swap mode if menu opened elsewhere
     }
@@ -668,10 +684,16 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                 {/* Context Menu */}
                 {menu && (
                     <div
-                        className="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[160px]"
+                        className="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[170px]"
                         style={{
-                            top: Math.min(menu.y, window.innerHeight - 200), // Prevent overflow bottom
-                            left: Math.min(menu.x, window.innerWidth - 170)  // Prevent overflow right
+                            top: menu.rect ? Math.min(menu.rect.top, window.innerHeight - 250) : Math.min(menu.y, window.innerHeight - 200),
+                            left: menu.rect
+                                ? (menu.rect.right + 180 < window.innerWidth
+                                    ? menu.rect.right + 10
+                                    : (menu.rect.left - 180 > 0
+                                        ? menu.rect.left - 180
+                                        : Math.max(10, window.innerWidth - 180)))
+                                : Math.min(menu.x, window.innerWidth - 170)
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
