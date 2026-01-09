@@ -773,165 +773,49 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                         >キャンセル</button>
                     </div>
                 )}
-
-
-                {/* Player Name */}
-                {playerName && (
-                    <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 text-center">
-                        {playerName}
-                    </h3>
-                )}
-
-                {/* Controls & Stats Combined */}
-                <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3">
-                    {/* Buttons row */}
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-                        <button
-                            onClick={mulligan}
-                            className="flex-1 min-w-[80px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-blue-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-blue-600 transition"
-                        >
-                            引き直し
-                        </button>
-                        <button
-                            onClick={() => drawCards(1)}
-                            disabled={remaining.length === 0}
-                            className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-green-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            1枚引く
-                        </button>
-                        <button
-                            onClick={shuffleDeck}
-                            className="flex-1 min-w-[70px] px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-purple-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-purple-600 transition"
-                        >
-                            シャッフル
-                        </button>
-                        <button
-                            onClick={onReset}
-                            className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 transition"
-                        >
-                            リセット
-                        </button>
-                    </div>
-                    {/* Supporter & Deck Viewer row */}
-                    <div className="flex flex-wrap gap-1 sm:gap-2 mb-2">
-                        <button
-                            onClick={useNanjamo}
-                            disabled={hand.length === 0}
-                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-pink-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            ナンジャモ
-                        </button>
-                        <button
-                            onClick={useJudge}
-                            disabled={hand.length === 0}
-                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-indigo-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            ジャッジマン
-                        </button>
-                        <button
-                            onClick={() => setShowDeckViewer(true)}
-                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-amber-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-amber-600 transition"
-                        >
-                            山札確認
-                        </button>
-                        <button
-                            onClick={() => setShowTrashViewer(true)}
-                            disabled={trash.length === 0}
-                            className="flex-1 min-w-[80px] px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-500 text-white rounded text-xs sm:text-sm font-semibold hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                        >
-                            トラッシュ確認
-                        </button>
-                    </div>
-                    {/* Stats row */}
-                    <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
-                        <div className="bg-blue-50 rounded px-1 py-1">
-                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{remaining.length}</div>
-                            <div className="text-[10px] sm:text-xs text-gray-600">山札</div>
-                        </div>
-                        <div className="bg-green-50 rounded px-1 py-1">
-                            <div className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{hand.length}</div>
-                            <div className="text-[10px] sm:text-xs text-gray-600">手札</div>
-                        </div>
-                    </div>
-
-                    {/* Damage Counter Pool - Added as requested */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="flex justify-center gap-2 sm:gap-4">
-                            {[10, 50, 100].map(amount => (
-                                <DraggableCard
-                                    key={`counter-${amount}`}
-                                    id={`counter-${amount}`}
-                                    data={{ type: 'counter', amount }}
-                                    className="touch-none"
-                                >
-                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-md border-2 hover:scale-110 transition-transform ${amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
-                                        amount === 50 ? 'bg-red-500 border-red-700 text-white' :
-                                            'bg-red-700 border-red-900 text-white animate-pulse'
-                                        }`}>
-                                        {amount}
-                                    </div>
-                                </DraggableCard>
-                            ))}
-                            <DraggableCard
-                                id="counter-clear"
-                                data={{ type: 'counter', amount: -999 }}
-                                className="touch-none"
-                            >
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-gray-400 flex items-center justify-center text-xs sm:text-sm font-bold text-gray-500 shadow-md hover:scale-110 transition-transform">
-                                    CLR
-                                </div>
-                            </DraggableCard>
-                        </div>
-                        <div className="text-[8px] sm:text-[10px] text-gray-400 text-center mt-1 uppercase tracking-tighter">Drag counters to cards</div>
-                    </div>
-
-                    {/* Stadium Slot - Moved to Center Column */}
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                        <DroppableZone id="stadium-zone" className="w-full">
-                            <div
-                                className={`bg-green-50/30 rounded-lg p-2 sm:p-3 relative border-2 border-dashed flex flex-col items-center justify-center transition ${externalStadium ? 'border-green-300' : 'border-gray-200'}`}
-                                style={{ minHeight: sizes.stadium.h / 3 + 40 }}
-                            >
-                                <h2 className="text-[10px] sm:text-xs font-bold text-gray-400 mb-1 absolute top-1 left-2 uppercase tracking-tight">Stadium</h2>
-                                {externalStadium ? (
-                                    <div className="flex items-center gap-3">
-                                        <Image
-                                            src={externalStadium.imageUrl}
-                                            alt={externalStadium.name}
-                                            width={sizes.stadium.w / 2.5}
-                                            height={sizes.stadium.h / 2.5}
-                                            className="rounded shadow-sm"
-                                        />
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold text-green-700 max-w-[80px] truncate">{externalStadium.name}</span>
-                                            <button
-                                                onClick={() => onStadiumChange?.(null)}
-                                                className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded hover:bg-red-200 transition font-bold"
-                                            >トラッシュ</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-[10px] text-gray-400 py-2">スタジアムをここにドラッグ</span>
-                                )}
+                {/* Compact Control Header */}
+                <div className="bg-white rounded-lg shadow-sm p-2 sm:p-3 border border-gray-100 flex flex-wrap items-center gap-2 sm:gap-4 justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{playerName}</span>
+                        <div className="h-4 w-px bg-gray-200 mx-1"></div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">Deck</span>
+                                <span className="text-sm font-black text-blue-600">{remaining.length}</span>
                             </div>
-                        </DroppableZone>
+                            <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">Hand</span>
+                                <span className="text-sm font-black text-green-600">{hand.length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                        <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50">引く</button>
+                        <button onClick={shuffleDeck} className="px-3 py-1 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600 transition tracking-tighter">シャッフル</button>
+                        <button onClick={mulligan} className="px-3 py-1 bg-cyan-600 text-white rounded text-xs font-bold hover:bg-cyan-700 transition tracking-tighter">引き直し</button>
+                        <button onClick={useNanjamo} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition">ナンジャモ</button>
+                        <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition">ジャッジマン</button>
+                        <button onClick={() => setShowDeckViewer(true)} className="px-3 py-1 bg-amber-500 text-white rounded text-xs font-bold hover:bg-amber-600 transition">山札</button>
+                        <button onClick={() => setShowTrashViewer(true)} disabled={trash.length === 0} className="px-3 py-1 bg-red-400 text-white rounded text-xs font-bold hover:bg-red-500 transition disabled:opacity-50">トラッシュ</button>
+                        <button onClick={onReset} className="px-3 py-1 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600 transition">リセット</button>
                     </div>
                 </div>
 
-                {/* Prizes, Trash & Battle Field - 2 Column Layout */}
-                <div className="flex gap-2 sm:gap-3">
-                    {/* Left Column: Prizes & Trash */}
-                    <div className="flex flex-col gap-2 h-full justify-between" style={{ height: (sizes.battle.h + 24) }}> {/* Approximate height match + padding */}
-                        {/* Prize Cards */}
-                        <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 w-full">
-                            <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2">サイド ({prizeCards.length}枚)</h2>
-                            <div className="flex items-center">
+                {/* Main Board Area - 3 Column Layout */}
+                <div className="grid grid-cols-[auto_auto_1fr] gap-3 sm:gap-4">
+                    {/* Column 1: Prizes & Trash */}
+                    <div className="flex flex-col gap-3 w-[100px] sm:w-[130px]">
+                        {/* Prizes */}
+                        <div className="bg-white rounded-lg shadow p-2 border border-gray-100">
+                            <h2 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
+                            <div className="flex flex-col gap-[-20px] items-center">
                                 {prizeCards.map((_, i) => (
                                     <button
                                         key={i}
                                         onClick={() => takePrizeCard(i)}
-                                        className="w-8 h-12 sm:w-10 sm:h-14 md:w-12 md:h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow-md hover:shadow-xl hover:scale-105 transition flex items-center justify-center text-white font-bold text-sm sm:text-base"
-                                        style={{ marginLeft: i > 0 ? '-16px' : '0', zIndex: prizeCards.length - i }}
+                                        className="w-10 h-14 sm:w-14 sm:h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded shadow hover:scale-105 transition flex items-center justify-center text-white font-bold text-lg mb-[-40px] border border-white"
+                                        style={{ zIndex: prizeCards.length - i }}
                                     >
                                         ?
                                     </button>
@@ -939,40 +823,123 @@ export default function DeckPractice({ deck, onReset, playerName = "プレイヤ
                             </div>
                         </div>
 
-                        {/* Trash (Moved here) */}
-                        <DroppableZone id="trash-zone" className="w-full">
+                        {/* Trash */}
+                        <DroppableZone id="trash-zone" className="w-full mt-auto">
                             <div
-                                className="bg-red-50 rounded-lg shadow-lg p-2 sm:p-3 relative cursor-pointer hover:bg-red-100 transition w-full"
+                                className="bg-red-50 rounded-lg shadow p-2 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[80px] sm:h-[100px] flex flex-col items-center justify-center"
                                 onClick={() => setShowTrashViewer(true)}
                             >
-                                <h2 className="text-xs sm:text-sm font-bold text-black mb-1">トラッシュ</h2>
-                                <div className="text-lg sm:text-xl font-bold text-red-600">{trash.length}枚</div>
+                                <h2 className="text-[10px] font-bold text-red-400 mb-1 uppercase tracking-tight">Trash</h2>
+                                <div className="text-xl font-black text-red-600">{trash.length}</div>
                             </div>
                         </DroppableZone>
                     </div>
 
-                    {/* Battle Field (Right Column) */}
-                    <DroppableZone id="battle-field" className={`flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-2 sm:p-3 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''}`}>
-                        <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 w-full text-left">バトル場</h2>
-                        {battleField ? (
-                            <DraggableCard
-                                id="battle-card"
-                                data={{ type: 'battle', index: 0, card: battleField }}
-                                onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
-                            >
-                                <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
-                                {/* Damage controls removed as requested by new D&D design */}
-                            </DraggableCard>
-                        ) : (
-                            <div
-                                className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
-                                style={{ width: sizes.battle.w, height: sizes.battle.h }}
-                            >
-                                なし
+                    {/* Column 2: Stadium & Damage Counter Pool - The "Center Column" requested */}
+                    <div className="flex flex-col gap-3 w-[100px] sm:w-[140px] items-center">
+                        {/* Damage Counter Pool - Vertical as requested */}
+                        <div className="bg-gray-50 rounded-xl p-2 sm:p-3 w-full border border-gray-200 flex flex-col items-center gap-3">
+                            <h2 className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Counters</h2>
+                            <div className="flex flex-col gap-3">
+                                {[10, 50, 100].map(amount => (
+                                    <DraggableCard
+                                        key={`counter-${amount}`}
+                                        id={`counter-${amount}`}
+                                        data={{ type: 'counter', amount }}
+                                        className="touch-none"
+                                    >
+                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-md border-2 hover:scale-110 transition-transform ${amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
+                                            amount === 50 ? 'bg-red-500 border-red-700 text-white' :
+                                                'bg-red-700 border-red-900 text-white animate-pulse'
+                                            }`}>
+                                            {amount}
+                                        </div>
+                                    </DraggableCard>
+                                ))}
+                                <DraggableCard
+                                    id="counter-clear"
+                                    data={{ type: 'counter', amount: -999 }}
+                                    className="touch-none"
+                                >
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white border-2 border-gray-400 flex items-center justify-center text-xs sm:text-sm font-bold text-gray-500 shadow-sm hover:scale-110 transition-transform">
+                                        CLR
+                                    </div>
+                                </DraggableCard>
                             </div>
-                        )}
-                    </DroppableZone>
+                        </div>
+
+                        {/* Stadium Slot */}
+                        <DroppableZone id="stadium-zone" className="w-full">
+                            <div
+                                className={`bg-green-50/30 rounded-lg p-2 relative border-2 border-dashed flex flex-col items-center justify-center transition ${externalStadium ? 'border-green-300' : 'border-gray-200'}`}
+                                style={{ minHeight: sizes.stadium.h / 3 + 20 }}
+                            >
+                                <h2 className="text-[10px] font-bold text-gray-400 mb-1 absolute top-1 left-2 uppercase tracking-tight">Stadium</h2>
+                                {externalStadium ? (
+                                    <div className="flex flex-col items-center gap-1 pt-4">
+                                        <Image
+                                            src={externalStadium.imageUrl}
+                                            alt={externalStadium.name}
+                                            width={sizes.stadium.w / 3}
+                                            height={sizes.stadium.h / 3}
+                                            className="rounded shadow-sm"
+                                        />
+                                        <button
+                                            onClick={() => onStadiumChange?.(null)}
+                                            className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded hover:bg-red-200 transition font-bold"
+                                        >破棄</button>
+                                    </div>
+                                ) : (
+                                    <div className="text-[8px] text-gray-400 text-center uppercase py-4">Stadium<br />Zone</div>
+                                )}
+                            </div>
+                        </DroppableZone>
+                    </div>
+
+                    {/* Column 3: Battle Field & Deck */}
+                    <div className="flex flex-col gap-3">
+                        {/* Battle Field */}
+                        <DroppableZone id="battle-field" className={`flex-1 flex flex-col items-center justify-center bg-white rounded-lg shadow-lg p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''}`}>
+                            <div className="w-full flex justify-between items-center mb-2">
+                                <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase">バトル場</h2>
+                            </div>
+                            {battleField ? (
+                                <DraggableCard
+                                    id="battle-card"
+                                    data={{ type: 'battle', index: 0, card: battleField }}
+                                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                                >
+                                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                                </DraggableCard>
+                            ) : (
+                                <div
+                                    className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer hover:border-blue-400"
+                                    style={{ width: sizes.battle.w, height: sizes.battle.h }}
+                                >
+                                    Active Pokemon
+                                </div>
+                            )}
+                        </DroppableZone>
+
+                        {/* Player Deck Visual (Placeholder for a visual deck stack) */}
+                        <div className="bg-white rounded-lg shadow p-2 border border-gray-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-14 sm:w-14 sm:h-20 bg-blue-600 rounded-sm shadow border border-blue-700 flex items-center justify-center">
+                                    <span className="text-white text-[10px] font-black">DECK</span>
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black text-blue-600">{remaining.length}枚</div>
+                                    <div className="text-[10px] text-gray-400 font-bold uppercase">Remaining</div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowDeckViewer(true)}
+                                className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded text-[10px] font-bold uppercase transition"
+                            >View</button>
+                        </div>
+                    </div>
                 </div>
+
 
                 {/* Bench */}
                 {/* BenchContainer - with horizontal scrolling */}
