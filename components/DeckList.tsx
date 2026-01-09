@@ -189,6 +189,8 @@ export default function DeckList({
                                     </button>
                                     <Link
                                         href={`/practice?code1=${deck.deck_code}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="flex-1 py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm flex items-center justify-center"
                                     >
                                         一人回し

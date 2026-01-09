@@ -133,135 +133,137 @@ function PracticeContent() {
 
                 {/* Practice Area - 3 Column Layout */}
                 {(deck1.length > 0 || deck2.length > 0) && (
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4">
-                        {/* Player 1 */}
-                        {deck1.length > 0 && (
-                            <DeckPractice
-                                deck={deck1}
-                                onReset={() => setDeck1([])}
-                                playerName="自分"
-                                compact={true}
-                                stadium={stadium1}
-                                onStadiumChange={(card: Card | null) => {
-                                    setStadium1(card)
-                                    setStadium2(null)
-                                }}
-                            />
-                        )}
+                    <div className="w-full overflow-x-auto pb-4">
+                        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 min-w-[1000px] md:min-w-0">
+                            {/* Player 1 */}
+                            {deck1.length > 0 && (
+                                <DeckPractice
+                                    deck={deck1}
+                                    onReset={() => setDeck1([])}
+                                    playerName="自分"
+                                    compact={true}
+                                    stadium={stadium1}
+                                    onStadiumChange={(card: Card | null) => {
+                                        setStadium1(card)
+                                        setStadium2(null)
+                                    }}
+                                />
+                            )}
 
-                        {/* Center Column - Stadium & Tools */}
-                        <div className="w-24 sm:w-28 md:w-32 flex-shrink-0 flex flex-col items-center">
-                            <div className="bg-white rounded-lg shadow-lg p-2 sticky top-4 w-full flex flex-col items-center">
-                                <h2 className="text-[10px] sm:text-xs font-bold text-gray-900 mb-1 text-center w-full">スタジアム</h2>
-                                {(stadium1 || stadium2) ? (
-                                    <div className="relative group flex justify-center">
-                                        <Image
-                                            src={(stadium1 || stadium2)!.imageUrl}
-                                            alt={(stadium1 || stadium2)!.name}
-                                            width={80}
-                                            height={112}
-                                            className="rounded shadow-lg"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                setStadium1(null)
-                                                setStadium2(null)
+                            {/* Center Column - Stadium & Tools */}
+                            <div className="w-24 sm:w-28 md:w-32 flex-shrink-0 flex flex-col items-center">
+                                <div className="bg-white rounded-lg shadow-lg p-2 sticky top-4 w-full flex flex-col items-center">
+                                    <h2 className="text-[10px] sm:text-xs font-bold text-gray-900 mb-1 text-center w-full">スタジアム</h2>
+                                    {(stadium1 || stadium2) ? (
+                                        <div className="relative group flex justify-center">
+                                            <Image
+                                                src={(stadium1 || stadium2)!.imageUrl}
+                                                alt={(stadium1 || stadium2)!.name}
+                                                width={80}
+                                                height={112}
+                                                className="rounded shadow-lg"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    setStadium1(null)
+                                                    setStadium2(null)
+                                                }}
+                                                className="absolute top-0 -right-2 bg-red-500 text-white px-1 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-2 mx-auto"
+                                            style={{ width: '80px', height: '112px' }}
+                                            onDragOver={(e) => e.preventDefault()}
+                                            onDrop={(e) => {
+                                                e.preventDefault()
+                                                const source = e.dataTransfer.getData('source')
+                                                const cardIndex = parseInt(e.dataTransfer.getData('cardIndex'))
+                                                const playerName = e.dataTransfer.getData('playerName')
+
+                                                if (source === 'hand' && !isNaN(cardIndex) && playerName) {
+                                                    // Dispatch custom event to let DeckPractice handle the logic
+                                                    const event = new CustomEvent('stadium-dropped', {
+                                                        detail: { playerName, cardIndex }
+                                                    })
+                                                    window.dispatchEvent(event)
+                                                }
                                             }}
-                                            className="absolute top-0 -right-2 bg-red-500 text-white px-1 py-0.5 rounded text-[10px] opacity-0 group-hover:opacity-100 transition"
                                         >
-                                            ×
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-2 mx-auto"
-                                        style={{ width: '80px', height: '112px' }}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={(e) => {
-                                            e.preventDefault()
-                                            const source = e.dataTransfer.getData('source')
-                                            const cardIndex = parseInt(e.dataTransfer.getData('cardIndex'))
-                                            const playerName = e.dataTransfer.getData('playerName')
+                                            なし
+                                        </div>
+                                    )}
 
-                                            if (source === 'hand' && !isNaN(cardIndex) && playerName) {
-                                                // Dispatch custom event to let DeckPractice handle the logic
-                                                const event = new CustomEvent('stadium-dropped', {
-                                                    detail: { playerName, cardIndex }
-                                                })
-                                                window.dispatchEvent(event)
-                                            }
-                                        }}
-                                    >
-                                        なし
-                                    </div>
-                                )}
-
-                                {/* Future: Damage Counters & Coins */}
-                                <div className="mt-4 flex flex-col gap-4">
-                                    {/* Coin Flip */}
-                                    <div className="bg-gray-50 rounded p-2 text-center">
-                                        <h3 className="text-[10px] font-bold text-gray-500 mb-1">コイン</h3>
-                                        <div className="flex justify-center mb-1">
-                                            <div className={`w-12 h-12 rounded-full border-4 shadow-inner flex items-center justify-center transition-all duration-500 ${coinResult === 'heads' ? 'bg-red-500 border-gray-800' : coinResult === 'tails' ? 'bg-white border-gray-800' : 'bg-gray-200 border-gray-400'}`}>
-                                                <div className={`w-4 h-4 rounded-full border-2 ${coinResult === 'heads' ? 'bg-white border-gray-800' : coinResult === 'tails' ? 'bg-gray-800 border-gray-400' : 'bg-gray-400 border-gray-300'}`}></div>
+                                    {/* Future: Damage Counters & Coins */}
+                                    <div className="mt-4 flex flex-col gap-4">
+                                        {/* Coin Flip */}
+                                        <div className="bg-gray-50 rounded p-2 text-center">
+                                            <h3 className="text-[10px] font-bold text-gray-500 mb-1">コイン</h3>
+                                            <div className="flex justify-center mb-1">
+                                                <div className={`w-12 h-12 rounded-full border-4 shadow-inner flex items-center justify-center transition-all duration-500 ${coinResult === 'heads' ? 'bg-red-500 border-gray-800' : coinResult === 'tails' ? 'bg-white border-gray-800' : 'bg-gray-200 border-gray-400'}`}>
+                                                    <div className={`w-4 h-4 rounded-full border-2 ${coinResult === 'heads' ? 'bg-white border-gray-800' : coinResult === 'tails' ? 'bg-gray-800 border-gray-400' : 'bg-gray-400 border-gray-300'}`}></div>
+                                                </div>
                                             </div>
+                                            <div className="text-[10px] font-bold text-black h-4 mb-1">
+                                                {coinResult === 'heads' ? 'オモテ' : coinResult === 'tails' ? 'ウラ' : '-'}
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const result = Math.random() < 0.5 ? 'heads' : 'tails'
+                                                    setCoinResult(result)
+                                                }}
+                                                className="w-full bg-blue-500 text-white text-[10px] py-1 rounded hover:bg-blue-600 transition"
+                                            >
+                                                投げる
+                                            </button>
                                         </div>
-                                        <div className="text-[10px] font-bold text-black h-4 mb-1">
-                                            {coinResult === 'heads' ? 'オモテ' : coinResult === 'tails' ? 'ウラ' : '-'}
-                                        </div>
-                                        <button
-                                            onClick={() => {
-                                                const result = Math.random() < 0.5 ? 'heads' : 'tails'
-                                                setCoinResult(result)
-                                            }}
-                                            className="w-full bg-blue-500 text-white text-[10px] py-1 rounded hover:bg-blue-600 transition"
-                                        >
-                                            投げる
-                                        </button>
-                                    </div>
 
-                                    {/* Damage Counters */}
-                                    <div className="bg-gray-50 rounded p-2 text-center">
-                                        <h3 className="text-[10px] font-bold text-gray-500 mb-2">ダメカン</h3>
-                                        <div className="flex flex-col items-center gap-2">
-                                            {[100, 50, 10].map((value) => (
-                                                <div
-                                                    key={value}
-                                                    draggable
-                                                    onDragStart={(e) => {
-                                                        e.dataTransfer.setData('source', 'damage')
-                                                        e.dataTransfer.setData('value', value.toString())
-                                                    }}
-                                                    className={`
+                                        {/* Damage Counters */}
+                                        <div className="bg-gray-50 rounded p-2 text-center">
+                                            <h3 className="text-[10px] font-bold text-gray-500 mb-2">ダメカン</h3>
+                                            <div className="flex flex-col items-center gap-2">
+                                                {[100, 50, 10].map((value) => (
+                                                    <div
+                                                        key={value}
+                                                        draggable
+                                                        onDragStart={(e) => {
+                                                            e.dataTransfer.setData('source', 'damage')
+                                                            e.dataTransfer.setData('value', value.toString())
+                                                        }}
+                                                        className={`
                                                         rounded-full shadow-md flex items-center justify-center font-bold text-black border-2 border-white cursor-move hover:scale-110 transition
                                                         ${value === 100 ? 'w-10 h-10 bg-red-400 text-xs' : ''}
                                                         ${value === 50 ? 'w-8 h-8 bg-orange-300 text-[10px]' : ''}
                                                         ${value === 10 ? 'w-6 h-6 bg-yellow-300 text-[9px]' : ''}
                                                     `}
-                                                >
-                                                    {value}
-                                                </div>
-                                            ))}
-                                            <p className="text-[8px] text-gray-400 mt-1">ドラッグして配置</p>
+                                                    >
+                                                        {value}
+                                                    </div>
+                                                ))}
+                                                <p className="text-[8px] text-gray-400 mt-1">ドラッグして配置</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            {/* Player 2 */}
+                            {deck2.length > 0 && (
+                                <DeckPractice
+                                    deck={deck2}
+                                    onReset={() => setDeck2([])}
+                                    playerName="相手"
+                                    compact={true}
+                                    stadium={stadium2}
+                                    onStadiumChange={(card: Card | null) => {
+                                        setStadium2(card)
+                                        setStadium1(null)
+                                    }}
+                                />
+                            )}
                         </div>
-                        {/* Player 2 */}
-                        {deck2.length > 0 && (
-                            <DeckPractice
-                                deck={deck2}
-                                onReset={() => setDeck2([])}
-                                playerName="相手"
-                                compact={true}
-                                stadium={stadium2}
-                                onStadiumChange={(card: Card | null) => {
-                                    setStadium2(card)
-                                    setStadium1(null)
-                                }}
-                            />
-                        )}
                     </div>
                 )}
             </div>

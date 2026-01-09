@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import AddDeckForm from '@/components/AddDeckForm'
 
 import DeckList from '@/components/DeckList'
@@ -166,6 +167,14 @@ export default function Dashboard() {
                                 >
                                     参考デッキ
                                 </button>
+                                <Link
+                                    href="/practice"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition ml-2 shadow-sm"
+                                >
+                                    🎮 一人回し
+                                </Link>
                                 {isAdmin && (
                                     <button
                                         onClick={() => setActiveTab('articles')}
