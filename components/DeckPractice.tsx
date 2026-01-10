@@ -646,6 +646,25 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // --- UI Helpers ---
 
+    // Dynamic Mobile Scaling
+    const [mobileScale, setMobileScale] = useState(1)
+
+    useEffect(() => {
+        if (!mobile) return
+
+        const updateScale = () => {
+            // Base reference: iPhone SE/8 width (375px) and reasonable height (667px)
+            // We prioritize width fit but check height to avoid overflow
+            const wRatio = window.innerWidth / 375
+            const hRatio = window.innerHeight / 750 // conservative height
+            setMobileScale(Math.min(wRatio, hRatio, 1.2)) // Cap at 1.2x zoom
+        }
+
+        updateScale()
+        window.addEventListener('resize', updateScale)
+        return () => window.removeEventListener('resize', updateScale)
+    }, [mobile])
+
     const SIZES = {
         standard: {
             battle: { w: 100, h: 140 },
@@ -653,9 +672,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             hand: { w: 90, h: 126 }
         },
         mobile: {
-            battle: { w: 50, h: 70 },
-            bench: { w: 40, h: 56 },
-            hand: { w: 45, h: 63 }
+            // Apply scale to base sizes
+            battle: { w: Math.floor(50 * mobileScale), h: Math.floor(70 * mobileScale) },
+            bench: { w: Math.floor(40 * mobileScale), h: Math.floor(56 * mobileScale) },
+            hand: { w: Math.floor(45 * mobileScale), h: Math.floor(63 * mobileScale) }
         }
     }
     const sizes = mobile ? SIZES.mobile : SIZES.standard
