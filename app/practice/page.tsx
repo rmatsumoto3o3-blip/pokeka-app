@@ -138,7 +138,7 @@ function PracticeContent() {
     }, [])
 
     return (
-        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4 overflow-hidden md:overflow-auto flex flex-col">
+        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col">
             <div className="max-w-[1800px] mx-auto w-full">
                 {/* Header - Hidden on mobile for space */}
                 <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
