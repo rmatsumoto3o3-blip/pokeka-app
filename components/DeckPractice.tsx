@@ -383,6 +383,16 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         closeMenu()
     }
 
+    const battleToDeck = () => {
+        if (battleField) {
+            const newDeck = [...remaining, ...battleField.cards].sort(() => Math.random() - 0.5)
+            setRemaining(newDeck)
+            setBattleField(null)
+            alert("山札に戻してシャッフルしました")
+        }
+        closeMenu()
+    }
+
     const startSwapWithBench = () => {
         setSwapMode({ active: true, sourceType: 'battle', sourceIndex: 0 })
         closeMenu()
@@ -760,6 +770,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 </button>
                                 <button onClick={battleToHand} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
                                     手札に戻す
+                                </button>
+                                <button onClick={battleToDeck} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-blue-700">
+                                    山札に戻す
                                 </button>
                                 <button onClick={battleToTrash} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
                                     トラッシュする

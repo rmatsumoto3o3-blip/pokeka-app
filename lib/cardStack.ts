@@ -50,14 +50,16 @@ export function isStadium(card: Card): boolean {
 // Check if a card can be stacked on another
 export function canStack(card: Card, stack: CardStack): boolean {
     const topCard = getTopCard(stack)
+    // Find the top-most Pokemon in the stack (ignoring Energy/Tools for check)
+    const topPokemon = [...stack.cards].reverse().find(c => isPokemon(c))
 
     // Energy can be attached to Pokémon
-    if (isEnergy(card) && isPokemon(topCard)) {
+    if (isEnergy(card) && topPokemon) {
         return true
     }
 
     // Tools can be attached to Pokémon
-    if (isTool(card) && isPokemon(topCard)) {
+    if (isTool(card) && topPokemon) {
         return true
     }
 
