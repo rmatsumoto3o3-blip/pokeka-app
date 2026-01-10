@@ -808,8 +808,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
 
                 <div className="flex flex-col gap-4">
-                    {/* Top Section: Prizes, Battle Field, Trash/Deck */}
-                    <div className="flex flex-col md:flex-row gap-4 items-start">
+                    {/* Top Section: Prizes, Battle Field, Trash/Deck - Force Horizontal Side-by-Side */}
+                    <div className="flex flex-row gap-4 items-start min-w-max overflow-x-auto pb-4">
                         {/* Prizes */}
                         <div className="bg-white rounded-lg shadow p-2 border border-gray-100 min-w-[140px]">
                             <h2 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
