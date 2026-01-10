@@ -125,17 +125,31 @@ function PracticeContent() {
         }
     }
 
+    // Mobile detection
+    const [isMobile, setIsMobile] = useState(false)
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768)
+        }
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4">
-            <div className="max-w-[1800px] mx-auto">
-                {/* Header */}
-                <div className="mb-4">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                        🎮 1人回し練習
-                    </h1>
-                    <p className="text-sm text-gray-600">
-                        デッキコードを入力して、対戦練習を始めましょう
-                    </p>
+        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4 overflow-hidden md:overflow-auto flex flex-col">
+            <div className="max-w-[1800px] mx-auto w-full">
+                {/* Header - Hidden on mobile for space */}
+                <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
+                    <div>
+                        <h1 className="text-lg md:text-3xl font-bold text-gray-900">
+                            🎮 1人回し練習
+                        </h1>
+                        <p className="text-xs md:text-sm text-gray-600 hidden md:block">
+                            デッキコードを入力して、対戦練習を始めましょう
+                        </p>
+                    </div>
                 </div>
 
                 {/* Deck Code Input */}
@@ -202,28 +216,32 @@ function PracticeContent() {
                         onDragEnd={handleDragEnd}
                     >
                         <div className="w-full overflow-x-auto pb-4">
-                            <div className="grid grid-cols-[1fr_auto_1fr] gap-2 sm:gap-4 w-full min-w-[1000px]">
-                                {/* Player 1 */}
+                            <div className="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] gap-1 sm:gap-4 w-full h-full max-w-[1400px]">
+                                {/* Player 1 - Mobile Order 3 (Bottom) */}
                                 {deck1.length > 0 && (
-                                    <DeckPractice
-                                        ref={player1Ref}
-                                        idPrefix="player1"
-                                        deck={deck1}
-                                        onReset={() => setDeck1([])}
-                                        playerName="自分"
-                                        compact={true}
-                                        stadium={stadium1}
-                                        onStadiumChange={(card: Card | null) => {
-                                            setStadium1(card)
-                                            setStadium2(null)
-                                        }}
-                                    />
+                                    <div className="order-3 md:order-none w-full">
+                                        <DeckPractice
+                                            ref={player1Ref}
+                                            idPrefix="player1"
+                                            deck={deck1}
+                                            onReset={() => setDeck1([])}
+                                            playerName="自分"
+                                            compact={true}
+                                            mobile={isMobile}
+                                            stadium={stadium1}
+                                            onStadiumChange={(card: Card | null) => {
+                                                setStadium1(card)
+                                                setStadium2(null)
+                                            }}
+                                        />
+                                    </div>
                                 )}
 
-                                {/* Center Column - Stadium & Tools */}
-                                <div className="w-24 sm:w-28 md:w-32 flex-shrink-0 flex flex-col items-center">
-                                    <div className="bg-white rounded-lg shadow-lg p-2 sticky top-4 w-full flex flex-col items-center">
-                                        <DroppableZone id="stadium-zone" className="w-[100px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-2 mx-auto overflow-hidden relative group">
+                                {/* Center Column - Stadium & Tools - Mobile Order 2 (Middle) */}
+                                <div className="order-2 md:order-none w-full md:w-32 flex-shrink-0 flex flex-col items-center">
+                                    {/* Mobile: Horizontal Row, PC: Vertical Column */}
+                                    <div className="bg-white rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 w-full flex flex-row md:flex-col items-center justify-center gap-2 md:gap-0">
+                                        <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-hidden relative group">
                                             {(stadium1 || stadium2) ? (
                                                 <div className="relative group flex justify-center w-full h-full">
                                                     <Image
@@ -248,15 +266,15 @@ function PracticeContent() {
                                         </DroppableZone>
 
                                         {/* Future: Damage Counters & Coins */}
-                                        <div className="mt-4 flex flex-col gap-4 w-full">
+                                        <div className="md:mt-4 flex flex-row md:flex-col gap-1 md:gap-4 items-center">
                                             {/* Coin Flip */}
-                                            <div className="bg-gray-50 rounded p-2 text-center">
-                                                <h3 className="text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-tight">Coin</h3>
-                                                <div className="flex justify-center mb-1">
-                                                    <div className={`w-10 h-10 rounded-full border-4 shadow-inner flex items-center justify-center transition-all duration-500 ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600' : coinResult === 'tails' ? 'bg-white border-gray-400' : 'bg-gray-200 border-gray-300'}`}>
+                                            <div className="bg-gray-50 rounded p-1 sm:p-2 text-center">
+                                                <h3 className="text-[8px] sm:text-[10px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight">Coin</h3>
+                                                <div className="flex justify-center mb-0.5">
+                                                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-4 shadow-inner flex items-center justify-center transition-all duration-500 ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600' : coinResult === 'tails' ? 'bg-white border-gray-400' : 'bg-gray-200 border-gray-300'}`}>
                                                     </div>
                                                 </div>
-                                                <div className="text-[10px] font-black text-black h-4 mb-2">
+                                                <div className="text-[8px] sm:text-[10px] font-black text-black h-3 mb-1">
                                                     {coinResult === 'heads' ? 'オモテ' : coinResult === 'tails' ? 'ウラ' : '-'}
                                                 </div>
                                                 <button
@@ -264,16 +282,16 @@ function PracticeContent() {
                                                         const result = Math.random() < 0.5 ? 'heads' : 'tails'
                                                         setCoinResult(result)
                                                     }}
-                                                    className="w-full bg-gray-800 text-white text-[10px] py-1 rounded font-bold hover:bg-black transition uppercase"
+                                                    className="w-full bg-gray-800 text-white text-[8px] sm:text-[10px] py-0.5 rounded font-bold hover:bg-black transition uppercase"
                                                 >
                                                     Flip
                                                 </button>
                                             </div>
 
                                             {/* Damage Counters */}
-                                            <div className="bg-gray-50 rounded p-2 text-center w-full">
-                                                <h3 className="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-tight">Damage</h3>
-                                                <div className="flex flex-col items-center gap-2">
+                                            <div className="bg-gray-50 rounded p-1 sm:p-2 text-center w-full">
+                                                <h3 className="text-[8px] sm:text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-tight">Damage</h3>
+                                                <div className="flex flex-row md:flex-col items-center gap-1">
                                                     {[100, 50, 10].map((value) => (
                                                         <DraggableDamageCounter key={value} amount={value} />
                                                     ))}
@@ -284,21 +302,25 @@ function PracticeContent() {
                                     </div>
                                 </div>
 
-                                {/* Player 2 */}
+                                {/* Player 2 - Mobile Order 1 (Top) */}
                                 {deck2.length > 0 && (
-                                    <DeckPractice
-                                        ref={player2Ref}
-                                        idPrefix="player2"
-                                        deck={deck2}
-                                        onReset={() => setDeck2([])}
-                                        playerName="相手"
-                                        compact={true}
-                                        stadium={stadium2}
-                                        onStadiumChange={(card: Card | null) => {
-                                            setStadium2(card)
-                                            setStadium1(null)
-                                        }}
-                                    />
+                                    <div className="order-1 md:order-none w-full">
+                                        <DeckPractice
+                                            ref={player2Ref}
+                                            idPrefix="player2"
+                                            deck={deck2}
+                                            onReset={() => setDeck2([])}
+                                            playerName="相手"
+                                            compact={true}
+                                            mobile={isMobile}
+                                            isOpponent={true}
+                                            stadium={stadium2}
+                                            onStadiumChange={(card: Card | null) => {
+                                                setStadium2(card)
+                                                setStadium1(null)
+                                            }}
+                                        />
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -336,9 +358,10 @@ function PracticeContent() {
                             ) : null}
                         </DragOverlay>
                     </DndContext>
-                )}
-            </div>
-        </div>
+                )
+                }
+            </div >
+        </div >
     )
 }
 

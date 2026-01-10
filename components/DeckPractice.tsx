@@ -25,6 +25,8 @@ interface DeckPracticeProps {
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
     idPrefix?: string
+    mobile?: boolean
+    isOpponent?: boolean
 }
 
 export interface DeckPracticeRef {
@@ -68,7 +70,7 @@ interface AttachMode {
     sourceIndex: number // Index in trash
 }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "" }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
     const [trash, setTrash] = useState<Card[]>([])
@@ -642,22 +644,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
     }
 
-    // Compact mode sizes
-    const sizes = compact ? {
-        prize: { w: 40, h: 56 },
-        stadium: { w: 80, h: 112 },
-        battle: { w: 100, h: 140 },
-        bench: { w: 70, h: 98 },
-        hand: { w: 90, h: 126 },
-        trash: { w: 60, h: 84 }
-    } : {
-        prize: { w: 60, h: 84 },
-        stadium: { w: 150, h: 210 },
-        battle: { w: 120, h: 168 }, // Resized to match Bench (was 180x252)
-        bench: { w: 120, h: 168 },
-        hand: { w: 150, h: 210 },
-        trash: { w: 100, h: 140 }
+    // --- UI Helpers ---
+
+    const SIZES = {
+        standard: {
+            battle: { w: 100, h: 140 },
+            bench: { w: 80, h: 112 },
+            hand: { w: 90, h: 126 }
+        },
+        mobile: {
+            battle: { w: 50, h: 70 },
+            bench: { w: 40, h: 56 },
+            hand: { w: 45, h: 63 }
+        }
     }
+    const sizes = mobile ? SIZES.mobile : SIZES.standard
+
+
 
     // Click outside to close menu
     useEffect(() => {
@@ -687,7 +690,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     return (
-        <div className={`w-full ${compact ? "space-y-2" : "space-y-4"} relative`}>
+        <div className={`w-full ${compact ? "space-y-0.5 sm:space-y-2" : "space-y-4"} relative`}>
             {/* Context Menu */}
             {menu && (
                 <div
@@ -807,18 +810,56 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    {/* Top Section: Prizes, Battle Field, Trash/Deck - Force Horizontal Side-by-Side */}
-                    <div className="flex flex-row gap-4 items-start min-w-max overflow-x-auto pb-4">
-                        {/* Prizes */}
-                        <div className="bg-white rounded-lg shadow p-2 border border-gray-100 min-w-[140px]">
-                            <h2 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
-                            <div className="flex -space-x-8 sm:-space-x-10 px-2 py-4 h-32 items-center">
+            </div>
+
+            {/* Hand - Top for Opponent */}
+            {/* Hand - Top for Opponent (Mobile Only) */}
+            {(mobile && isOpponent) && (
+                <div className="bg-white rounded-lg shadow p-0.5 sm:p-3 border border-gray-100 overflow-hidden mb-1">
+                    <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
+                    <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
+                        {hand.map((card, i) => (
+                            <DraggableCard
+                                key={i}
+                                id={`${idPrefix}-hand-card-${i}`}
+                                data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
+                                onClick={(e) => handleCardClick(e, card, 'hand', i)}
+                                className="flex-shrink-0"
+                            >
+                                <div className="relative hover:scale-105 transition-transform cursor-pointer shadow-md rounded">
+                                    <Image
+                                        src={card.imageUrl}
+                                        alt={card.name}
+                                        width={sizes.hand.w}
+                                        height={sizes.hand.h}
+                                        className="rounded"
+                                    />
+                                </div>
+                            </DraggableCard>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Main Battle Area: Dynamically ordered based on isOpponent */}
+            {/* 
+                   Normal (P1): Main Row (Battle/Prizes) -> Bench Row
+                   Opponent (P2): Bench Row -> Main Row (Battle/Prizes)
+                */}
+            <div className={`flex flex-col gap-0.5 sm:gap-2 ${(mobile && isOpponent) ? 'flex-col-reverse' : ''}`}>
+
+                {/* Main Row: Prizes, Battle */}
+                <div className="flex flex-row gap-0.5 sm:gap-4 items-start justify-center order-none">
+                    {/* Prizes - Desktop Only */}
+                    {!mobile && (
+                        <div className={`bg-white rounded-lg shadow p-0.5 sm:p-2 border border-gray-100 min-w-[140px]`}>
+                            <h2 className="text-[8px] sm:text-[10px] font-bold text-gray-400 mb-0.5 sm:mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
+                            <div className="flex -space-x-8 sm:-space-x-10 px-1 sm:px-2 py-1 sm:py-4 h-20 sm:h-32 items-center">
                                 {prizeCards.map((_, i) => (
                                     <button
                                         key={i}
                                         onClick={() => takePrizeCard(i)}
-                                        className="w-12 h-18 sm:w-14 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 hover:-translate-y-2 transition flex items-center justify-center text-white font-bold text-lg border border-white/20 transform"
+                                        className="w-8 h-12 sm:w-14 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 hover:-translate-y-2 transition flex items-center justify-center text-white font-bold text-xs sm:text-lg border border-white/20 transform"
                                         style={{ zIndex: prizeCards.length - i }}
                                     >
                                         ?
@@ -826,35 +867,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 ))}
                             </div>
                         </div>
+                    )}
 
-                        {/* Battle Field */}
-                        <div className="flex-1 flex justify-center">
-                            <DroppableZone id={`${idPrefix}-battle-field`} className={`bg-white rounded-lg shadow-lg p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} min-w-[180px] flex flex-col items-center`}>
-                                <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase mb-2 w-full text-center">バトル場</h2>
-                                {battleField ? (
-                                    <DraggableCard
-                                        id={`${idPrefix}-battle-card`}
-                                        data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
-                                        onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
-                                    >
-                                        <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
-                                    </DraggableCard>
-                                ) : (
-                                    <div
-                                        className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer hover:border-blue-400"
-                                        style={{ width: sizes.battle.w, height: sizes.battle.h }}
-                                    >
-                                        Active Pokemon
-                                    </div>
-                                )}
-                            </DroppableZone>
-                        </div>
+                    {/* Battle Field */}
+                    <div className="flex-1 flex justify-center">
+                        <DroppableZone id={`${idPrefix}-battle-field`} className={`bg-white rounded-lg shadow-lg p-1 sm:p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} ${mobile ? 'min-w-[70px]' : 'min-w-[180px]'} flex flex-col items-center`}>
+                            <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 uppercase mb-1 sm:mb-2 w-full text-center">バトル場</h2>
+                            {battleField ? (
+                                <DraggableCard
+                                    id={`${idPrefix}-battle-card`}
+                                    data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
+                                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                                >
+                                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                                </DraggableCard>
+                            ) : (
+                                <div
+                                    className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
+                                    style={{ width: sizes.battle.w, height: sizes.battle.h }}
+                                >
+                                    Active Pokemon
+                                </div>
+                            )}
+                        </DroppableZone>
+                    </div>
 
-                        {/* Trash & Deck */}
-                        <div className="flex flex-col gap-2 w-[100px] sm:w-[120px]">
+                    {/* Deck & Trash - Desktop Only (Restored PC Layout) */}
+                    {!mobile && (
+                        <div className={`flex flex-col gap-2 w-[120px]`}>
                             {/* Visual Deck */}
                             <div
-                                className="bg-blue-50 rounded-lg shadow p-2 border-2 border-blue-200 h-[80px] sm:h-[100px] flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition"
+                                className={`bg-blue-50 rounded-lg shadow p-2 border-2 border-blue-200 h-[100px] flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition`}
                                 onClick={() => setShowDeckViewer(true)}
                             >
                                 <h2 className="text-[10px] font-bold text-blue-500 mb-1 uppercase tracking-tight">Deck</h2>
@@ -864,7 +907,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             {/* Trash */}
                             <DroppableZone id={`${idPrefix}-trash-zone`} className="w-full">
                                 <div
-                                    className="bg-red-50 rounded-lg shadow p-2 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[80px] sm:h-[100px] flex flex-col items-center justify-center"
+                                    className={`bg-red-50 rounded-lg shadow p-2 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[100px] flex flex-col items-center justify-center`}
                                     onClick={() => setShowTrashViewer(true)}
                                 >
                                     <h2 className="text-[10px] font-bold text-red-400 mb-1 uppercase tracking-tight">Trash</h2>
@@ -872,16 +915,43 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 </div>
                             </DroppableZone>
                         </div>
-                    </div>
+                    )}
+                </div>
 
-                    {/* Bench */}
-                    <div className="bg-gray-50/50 rounded-lg shadow p-2 sm:p-3 w-full overflow-hidden border border-gray-100">
-                        <div className="flex items-center gap-2 mb-2">
-                            <h2 className="text-xs sm:text-sm font-bold text-gray-900 uppercase">ベンチ</h2>
-                            <button onClick={increaseBenchSize} disabled={benchSize >= 8} className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs shadow hover:bg-blue-600">+</button>
-                            <span className="text-[10px] text-gray-500">Max: {benchSize}</span>
+                {/* Bench Row: Includes Deck/Trash on the Right */}
+                <div className="bg-gray-50/50 rounded-lg shadow p-1 sm:p-3 w-full overflow-hidden border border-gray-100 order-none flex flex-row">
+                    {/* Mobile Only: Side (Prizes) on Left of Bench */}
+                    {/* Mobile Only: Side (Prizes) on Left of Bench - True Absolute Stack */}
+                    {mobile && (
+                        <div className="flex flex-col items-center justify-center pr-1 border-r border-gray-200 mr-1 h-[80px]">
+                            {/* Stack Container - Relative, fixed size */}
+                            <div className="relative w-8 h-12 mb-1">
+                                {prizeCards.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => takePrizeCard(i)}
+                                        className="absolute left-0 w-8 h-10 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 transition flex items-center justify-center text-white font-bold text-[8px] border border-white/20 transform rotate-90 origin-center"
+                                        style={{
+                                            zIndex: prizeCards.length - i,
+                                            top: `${i * 3}px` // 3px vertical offset per card
+                                        }}
+                                    >
+                                        ?
+                                    </button>
+                                ))}
+                            </div>
+                            <h2 className="text-[8px] font-bold text-gray-400 text-center leading-none mt-1">サイド</h2>
                         </div>
-                        <div className="flex gap-4 sm:gap-6 overflow-x-auto py-10 px-4 scrollbar-black">
+                    )}
+
+                    {/* Left: Bench Cards (Scrollable) */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 uppercase">ベンチ</h2>
+                            <button onClick={increaseBenchSize} disabled={benchSize >= 8} className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8px] shadow hover:bg-blue-600">+</button>
+                            <span className="text-[8px] text-gray-500">Max: {benchSize}</span>
+                        </div>
+                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[80px] sm:h-auto">
                             {bench.slice(0, benchSize).map((stack, i) => (
                                 <DroppableZone key={i} id={`${idPrefix}-bench-slot-${i}`} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                     {stack ? (
@@ -895,10 +965,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         </DraggableCard>
                                     ) : (
                                         <div
-                                            className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] hover:border-blue-400 cursor-pointer"
+                                            className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[8px] hover:border-blue-400 cursor-pointer"
                                             style={{ width: sizes.bench.w, height: sizes.bench.h }}
                                         >
-                                            ベンチ {i + 1}
+                                            {i + 1}
                                         </div>
                                     )}
                                 </DroppableZone>
@@ -906,172 +976,209 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     </div>
 
-                    {/* Hand */}
-                    <div className="bg-white rounded-lg shadow p-2 sm:p-3 border border-gray-100 overflow-hidden">
-                        <h2 className="text-xs sm:text-sm font-bold text-gray-900 mb-2 uppercase">手札 ({hand.length}枚)</h2>
-                        <div className="flex overflow-x-auto gap-3 py-10 px-4 scrollbar-black">
-                            {hand.map((card, i) => (
-                                <DraggableCard
-                                    key={i}
-                                    id={`${idPrefix}-hand-card-${i}`}
-                                    data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
-                                    onClick={(e) => handleCardClick(e, card, 'hand', i)}
-                                    className="flex-shrink-0"
+                    {/* Right: Deck & Trash (Compact Column) - Mobile Only */}
+                    {mobile && (
+                        <div className={`flex flex-col gap-1 ml-1 flex-shrink-0 w-[50px]`}>
+                            {/* Visual Deck */}
+                            <div
+                                className={`bg-blue-50 rounded shadow p-0.5 border-2 border-blue-200 h-[40px] flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition`}
+                                onClick={() => setShowDeckViewer(true)}
+                            >
+                                <h2 className="text-[8px] font-bold text-blue-500 uppercase tracking-tight leading-none">Deck</h2>
+                                <div className="text-xs font-black text-blue-700 leading-none">{remaining.length}</div>
+                            </div>
+
+                            {/* Trash */}
+                            <DroppableZone id={`${idPrefix}-trash-zone`} className="w-full">
+                                <div
+                                    className={`bg-red-50 rounded shadow p-0.5 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[40px] flex flex-col items-center justify-center`}
+                                    onClick={() => setShowTrashViewer(true)}
                                 >
-                                    <div className="relative hover:scale-105 transition-transform cursor-pointer shadow-md rounded">
-                                        <Image
-                                            src={card.imageUrl}
-                                            alt={card.name}
-                                            width={sizes.hand.w}
-                                            height={sizes.hand.h}
-                                            className="rounded"
-                                        />
-                                    </div>
-                                </DraggableCard>
-                            ))}
+                                    <h2 className="text-[8px] font-bold text-red-400 uppercase tracking-tight leading-none">Trash</h2>
+                                    <div className="text-xs font-black text-red-600 leading-none">{trash.length}</div>
+                                </div>
+                            </DroppableZone>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
+
+            {/* Hand - Keep at bottom or hide for opponent */}
+            {/* Hand - Keep at bottom for Self, or for Opponent on Desktop */}
+            {!(mobile && isOpponent) && (
+                <div className="bg-white rounded-lg shadow p-0.5 sm:p-3 border border-gray-100 overflow-hidden mt-1">
+                    <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
+                    <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
+                        {hand.map((card, i) => (
+                            <DraggableCard
+                                key={i}
+                                id={`${idPrefix}-hand-card-${i}`}
+                                data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
+                                onClick={(e) => handleCardClick(e, card, 'hand', i)}
+                                className="flex-shrink-0"
+                            >
+                                <div className="relative hover:scale-105 transition-transform cursor-pointer shadow-md rounded">
+                                    <Image
+                                        src={card.imageUrl}
+                                        alt={card.name}
+                                        width={sizes.hand.w}
+                                        height={sizes.hand.h}
+                                        className="rounded"
+                                    />
+                                </div>
+                            </DraggableCard>
+                        ))}
+                    </div>
+                </div>
+            )}
+
 
 
             {/* Modals */}
             {/* Deck Viewer Modal */}
-            {showDeckViewer && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeckViewer(false)}>
-                    <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
-                            <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+            {
+                showDeckViewer && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowDeckViewer(false)}>
+                        <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
+                                <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-2 gap-y-6">
+                                {remaining.map((card, i) => (
+                                    <div
+                                        key={i}
+                                        className="relative group cursor-pointer"
+                                        onClick={(e) => {
+                                            const rect = e.currentTarget.getBoundingClientRect()
+                                            setDeckCardMenu({
+                                                index: i,
+                                                x: rect.left,
+                                                y: rect.bottom + window.scrollY
+                                            })
+                                        }}
+                                    >
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={80}
+                                            height={112}
+                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            draggable={false}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-2 gap-y-6">
-                            {remaining.map((card, i) => (
-                                <div
-                                    key={i}
-                                    className="relative group cursor-pointer"
-                                    onClick={(e) => {
+                    </div>
+                )
+            }
+
+            {/* Deck Card Menu */}
+            {
+                deckCardMenu && (
+                    <div
+                        className="fixed inset-0 z-[100]"
+                        onClick={() => setDeckCardMenu(null)}
+                    >
+                        <div
+                            className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[120px]"
+                            style={{
+                                top: deckCardMenu.y,
+                                left: Math.min(deckCardMenu.x, window.innerWidth - 130)
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => { moveFromDeckToHand(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
+                            >手札へ</button>
+                            <button
+                                onClick={() => { moveFromDeckToBattleField(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
+                            >バトル場へ</button>
+                            <button
+                                onClick={() => { moveFromDeckToBench(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
+                            >ベンチへ</button>
+                            <button
+                                onClick={() => { moveFromDeckToTrash(deckCardMenu.index); setDeckCardMenu(null); }}
+                                className="px-4 py-3 hover:bg-red-50 text-red-600 text-left text-sm font-black"
+                            >トラッシュへ</button>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Trash Viewer Modal */}
+            {
+                showTrashViewer && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTrashViewer(false)}>
+                        <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-red-600">トラッシュ ({trash.length}枚)</h2>
+                                <button onClick={() => setShowTrashViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+                            </div>
+                            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                                {trash.map((card, i) => (
+                                    <div key={i} className="relative group cursor-pointer" onClick={(e) => {
                                         const rect = e.currentTarget.getBoundingClientRect()
-                                        setDeckCardMenu({
+                                        setTrashCardMenu({
                                             index: i,
                                             x: rect.left,
                                             y: rect.bottom + window.scrollY
                                         })
-                                    }}
-                                >
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={80}
-                                        height={112}
-                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
-                                        draggable={false}
-                                    />
-                                </div>
-                            ))}
+                                    }}>
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={80}
+                                            height={112}
+                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            draggable={false}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Deck Card Menu */}
-            {deckCardMenu && (
-                <div
-                    className="fixed inset-0 z-[100]"
-                    onClick={() => setDeckCardMenu(null)}
-                >
-                    <div
-                        className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[120px]"
-                        style={{
-                            top: deckCardMenu.y,
-                            left: Math.min(deckCardMenu.x, window.innerWidth - 130)
-                        }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <button
-                            onClick={() => { moveFromDeckToHand(deckCardMenu.index); setDeckCardMenu(null); }}
-                            className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
-                        >手札へ</button>
-                        <button
-                            onClick={() => { moveFromDeckToBattleField(deckCardMenu.index); setDeckCardMenu(null); }}
-                            className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
-                        >バトル場へ</button>
-                        <button
-                            onClick={() => { moveFromDeckToBench(deckCardMenu.index); setDeckCardMenu(null); }}
-                            className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
-                        >ベンチへ</button>
-                        <button
-                            onClick={() => { moveFromDeckToTrash(deckCardMenu.index); setDeckCardMenu(null); }}
-                            className="px-4 py-3 hover:bg-red-50 text-red-600 text-left text-sm font-black"
-                        >トラッシュへ</button>
-                    </div>
-                </div>
-            )}
-
-            {/* Trash Viewer Modal */}
-            {showTrashViewer && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTrashViewer(false)}>
-                    <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-red-600">トラッシュ ({trash.length}枚)</h2>
-                            <button onClick={() => setShowTrashViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
-                        </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                            {trash.map((card, i) => (
-                                <div key={i} className="relative group cursor-pointer" onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect()
-                                    setTrashCardMenu({
-                                        index: i,
-                                        x: rect.left,
-                                        y: rect.bottom + window.scrollY
-                                    })
-                                }}>
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={80}
-                                        height={112}
-                                        className="rounded shadow no-touch-menu no-select no-tap-highlight"
-                                        draggable={false}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Trash Card Menu */}
-            {trashCardMenu && (
-                <div
-                    className="fixed inset-0 z-[100]"
-                    onClick={() => setTrashCardMenu(null)}
-                >
+            {
+                trashCardMenu && (
                     <div
-                        className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[140px]"
-                        style={{
-                            top: Math.min(trashCardMenu.y, window.innerHeight - 150),
-                            left: Math.min(trashCardMenu.x, window.innerWidth - 150)
-                        }}
-                        onClick={e => e.stopPropagation()}
+                        className="fixed inset-0 z-[100]"
+                        onClick={() => setTrashCardMenu(null)}
                     >
-                        <button
-                            onClick={() => moveFromTrashToHand(trashCardMenu.index)}
-                            className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
-                        >手札に加える</button>
-                        <button
-                            onClick={() => moveFromTrashToDeck(trashCardMenu.index)}
-                            className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
-                        >山札に戻す</button>
-                        {isEnergy(trash[trashCardMenu.index]) && (
+                        <div
+                            className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[140px]"
+                            style={{
+                                top: Math.min(trashCardMenu.y, window.innerHeight - 150),
+                                left: Math.min(trashCardMenu.x, window.innerWidth - 150)
+                            }}
+                            onClick={e => e.stopPropagation()}
+                        >
                             <button
-                                onClick={() => startAttachFromTrash(trashCardMenu.index)}
-                                className="px-4 py-3 hover:bg-green-50 text-green-700 text-left text-sm font-black"
-                            >ポケモンにつける</button>
-                        )}
+                                onClick={() => moveFromTrashToHand(trashCardMenu.index)}
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
+                            >手札に加える</button>
+                            <button
+                                onClick={() => moveFromTrashToDeck(trashCardMenu.index)}
+                                className="px-4 py-3 hover:bg-gray-100 text-left text-sm font-bold border-b border-gray-100 text-black"
+                            >山札に戻す</button>
+                            {isEnergy(trash[trashCardMenu.index]) && (
+                                <button
+                                    onClick={() => startAttachFromTrash(trashCardMenu.index)}
+                                    className="px-4 py-3 hover:bg-green-50 text-green-700 text-left text-sm font-black"
+                                >ポケモンにつける</button>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 })
 
