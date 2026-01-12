@@ -62,6 +62,7 @@ interface DeckMenuState {
     index: number
     x: number
     y: number
+    align?: 'up' | 'down'
 }
 
 interface AttachMode {
@@ -684,7 +685,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         mobile: {
             // Apply scale to base sizes
             battle: { w: Math.floor(50 * mobileScale), h: Math.floor(70 * mobileScale) },
-            bench: { w: Math.floor(40 * mobileScale), h: Math.floor(56 * mobileScale) },
+            bench: { w: Math.floor(48 * mobileScale), h: Math.floor(67 * mobileScale) },
             hand: { w: Math.floor(45 * mobileScale), h: Math.floor(63 * mobileScale) }
         }
     }
@@ -1084,10 +1085,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         className="relative group cursor-pointer"
                                         onClick={(e) => {
                                             const rect = e.currentTarget.getBoundingClientRect()
+                                            const spaceBelow = window.innerHeight - rect.bottom
+                                            const alignUp = spaceBelow < 220 // Threshold for menu visibility
+
                                             setDeckCardMenu({
                                                 index: i,
                                                 x: rect.left,
-                                                y: rect.bottom + window.scrollY
+                                                y: alignUp ? rect.top + window.scrollY : rect.bottom + window.scrollY,
+                                                align: alignUp ? 'up' : 'down'
                                             })
                                         }}
                                     >
@@ -1117,8 +1122,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <div
                             className="absolute bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col min-w-[120px]"
                             style={{
-                                top: deckCardMenu.y,
-                                left: Math.min(deckCardMenu.x, window.innerWidth - 130)
+                                left: Math.min(deckCardMenu.x, window.innerWidth - 130),
+                                // If align is 'up', position bottom at Y. If 'down', position top at Y.
+                                ...(deckCardMenu.align === 'up'
+                                    ? { bottom: window.innerHeight - (deckCardMenu.y - window.scrollY) }
+                                    : { top: deckCardMenu.y - window.scrollY }
+                                )
                             }}
                             onClick={e => e.stopPropagation()}
                         >
@@ -1329,12 +1338,9 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
                 )
             })}
 
-            {/* Stack info badge */}
-            <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded flex gap-1 z-50 pointer-events-none">
-                {stack.damage > 0 && <span className="bg-red-600 px-1 rounded font-bold">💥{stack.damage}</span>}
-                {stack.cards.length > 1 && <span>📚{stack.cards.length}</span>}
-                {stack.energyCount > 0 && <span>⚡{stack.energyCount}</span>}
-                {stack.toolCount > 0 && <span>🔧{stack.toolCount}</span>}
+            {/* Stack info badge - Simplified to Damage Only */}
+            <div className="absolute bottom-1 right-1 pointer-events-none z-50">
+                {stack.damage > 0 && <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20">💥{stack.damage}</span>}
             </div>
         </div>
     )
