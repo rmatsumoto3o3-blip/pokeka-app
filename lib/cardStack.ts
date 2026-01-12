@@ -63,8 +63,10 @@ export function canStack(card: Card, stack: CardStack): boolean {
         return true
     }
 
-    // Pokémon can evolve (simplified - in real game would check evolution chain)
-    if (isPokemon(card) && isPokemon(topCard)) {
+    // Pokémon can evolve (stack on top of existing Pokemon)
+    // We check topPokemon instead of topCard because the Pokemon might have tools/energy on top of it in the stack array
+    // but semantically the new Pokemon evolves the underlying Pokemon.
+    if (isPokemon(card) && topPokemon) {
         return true
     }
 

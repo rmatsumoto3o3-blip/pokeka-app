@@ -1274,6 +1274,19 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
     const cardOffset = 15 // pixels to show of card below
     const maxVisible = 5
 
+    // Find the index of the top-most Pokemon (the operational active card)
+    // This handles Evolution: The evolved pokemon (last in array) should be visually ON TOP.
+    // While attached tools/energy (also in array) should be visually UNDERNEATH.
+    let topPokemonIndex = -1
+    for (let i = stack.cards.length - 1; i >= 0; i--) {
+        if (isPokemon(stack.cards[i])) {
+            topPokemonIndex = i
+            break
+        }
+    }
+    // Fallback if no pokemon found (shouldn't happen for valid stack but safety first)
+    if (topPokemonIndex === -1 && stack.cards.length > 0) topPokemonIndex = 0
+
     return (
         <div
             className="relative"
@@ -1283,11 +1296,16 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
             }}
         >
             {stack.cards.map((card, i) => {
-                // Pokémon (index 0) sits underneath with z-index, Energy/Tools on top peeking out
-                // BUT user wants Pokemon on TOP of the z-order, and others peek out ABOVE (top offset)
-                // So Pokemon is index 0, zIndex = high, top = 0
-                // Energy is index 1+, zIndex = lower, top = -i * cardOffset
-                const zIndexValue = stack.cards.length - i
+                const isTopPokemon = i === topPokemonIndex
+
+                // If this is the Active (Top) Pokemon, it goes to the FRONT (Highest Z).
+                // All other cards (Pre-evos, Energy, Tools) go BEHIND it (Lower Z).
+                // We use (stack.cards.length - i) for the others to maintain relative order among themselves.
+                const zIndexValue = isTopPokemon ? (stack.cards.length + 10) : (stack.cards.length - i)
+
+                // The Top Pokemon sits at the base (0 offset).
+                // Others are offset upwards to peek out.
+                const marginBottomValue = isTopPokemon ? 0 : (i * cardOffset)
 
                 return (
                     <div
@@ -1295,7 +1313,7 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
                         className="absolute left-0 transition-all"
                         style={{
                             bottom: 0, // Align all to bottom of container
-                            marginBottom: i * cardOffset, // Peek out from TOP
+                            marginBottom: marginBottomValue,
                             zIndex: zIndexValue
                         }}
                     >
