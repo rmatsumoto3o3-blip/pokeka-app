@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { type Card } from '@/lib/deckParser'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium } from '@/lib/cardStack'
@@ -77,6 +78,20 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [trash, setTrash] = useState<Card[]>([])
     const [battleField, setBattleField] = useState<CardStack | null>(null)
     const [benchSize, setBenchSize] = useState(5)
+
+    // UI Theme based on Player
+    const isSelf = idPrefix === 'player1'
+    const theme = isSelf ? {
+        bg: 'bg-blue-50/50',
+        border: 'border-blue-100',
+        accent: 'bg-blue-100',
+        active: 'border-blue-300'
+    } : {
+        bg: 'bg-red-50/50',
+        border: 'border-red-100',
+        accent: 'bg-red-100',
+        active: 'border-red-300'
+    }
     // Initialize bench with 8 slots but valid based on benchSize
     const [bench, setBench] = useState<(CardStack | null)[]>(new Array(8).fill(null))
     const [prizeCards, setPrizeCards] = useState<Card[]>([])
@@ -183,11 +198,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             }
             // Damage Counter logic (shared)
             if (source.type === 'counter') {
+                const delta = source.amount === -999 ? -99999 : source.amount
                 if (localTargetId === 'battle-field') {
-                    updateDamage('battle', 0, source.amount)
+                    updateDamage('battle', 0, delta)
                 } else if (localTargetId.startsWith('bench-slot-')) {
                     const targetIndex = parseInt(localTargetId.replace('bench-slot-', ''))
-                    updateDamage('bench', targetIndex, source.amount)
+                    updateDamage('bench', targetIndex, delta)
                 }
             }
         },
@@ -466,6 +482,24 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     // Supporter Card Effects
+    const useLillie = () => {
+        // 1. Return hand to deck and shuffle
+        const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
+
+        // 2. Check prize count and determine draw amount
+        // If prizes are full (6) -> Draw 8
+        // If prizes are 5 or less -> Draw 6
+        const drawCount = prizeCards.length === 6 ? 8 : 6
+
+        // 3. Draw cards
+        const drawn = newDeck.slice(0, drawCount)
+        const newRemaining = newDeck.slice(drawCount)
+
+        setHand(drawn)
+        setRemaining(newRemaining)
+        alert(`手札を山札に戻してシャッフルし、${drawCount}枚引きました。\n(サイド残数: ${prizeCards.length})`)
+    }
+
     const useNanjamo = () => {
         // Shuffle hand to bottom of deck
         const shuffledHand = [...hand].sort(() => Math.random() - 0.5)
@@ -499,6 +533,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // Trash Viewer
     const [showTrashViewer, setShowTrashViewer] = useState(false)
+
+    // Action Menu Toggle for compact view
+    const [showActionMenu, setShowActionMenu] = useState(false)
 
     const handleDragStart = (event: DragStartEvent) => {
         // Parent will handle global start if needed,
@@ -720,6 +757,44 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         document.body.style.overflow = 'auto'
     }
 
+    // Portal Target for Mobile
+    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+
+    useEffect(() => {
+        if (mobile) {
+            // Map idPrefix to portal slot ID
+            // player1 -> mobile-battle-p1 (Self)
+            // player2 -> mobile-battle-p2 (Opponent)
+            const targetId = idPrefix === 'player1' ? 'mobile-battle-p1' : 'mobile-battle-p2'
+            const el = document.getElementById(targetId)
+            setPortalTarget(el)
+        } else {
+            setPortalTarget(null)
+        }
+    }, [mobile, idPrefix])
+
+    const BattleFieldContent = (
+        <DroppableZone id={`${idPrefix}-battle-field`} className={`${theme.bg} rounded-lg shadow-lg p-1 sm:p-3 ${theme.border} border ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} ${mobile ? 'w-full h-full min-w-[60px]' : 'min-w-[180px]'} flex flex-col items-center justify-center`}>
+            <h2 className={`text-[10px] sm:text-sm font-bold text-gray-900 uppercase mb-1 sm:mb-2 w-full text-center ${mobile ? 'hidden' : ''}`}>バトル場</h2>
+            {battleField ? (
+                <DraggableCard
+                    id={`${idPrefix}-battle-card`}
+                    data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
+                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                >
+                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                </DraggableCard>
+            ) : (
+                <div
+                    className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
+                    style={{ width: sizes.battle.w, height: sizes.battle.h }}
+                >
+                    {mobile ? (isSelf ? '自分' : '相手') : (isSelf ? 'バトル場(自分)' : 'バトル場(相手)')}
+                </div>
+            )}
+        </DroppableZone>
+    )
+
     return (
         <div className={`w-full ${compact ? "space-y-0.5 sm:space-y-2" : "space-y-4"} relative`}>
             {/* Context Menu */}
@@ -832,15 +907,43 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1 sm:gap-2">
-                        <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50">引く</button>
-                        <button onClick={shuffleDeck} className="px-3 py-1 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600 transition tracking-tighter">シャッフル</button>
-                        <button onClick={mulligan} className="px-3 py-1 bg-cyan-600 text-white rounded text-xs font-bold hover:bg-cyan-700 transition tracking-tighter">引き直し</button>
-                        <button onClick={useNanjamo} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition">ナンジャモ</button>
-                        <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition">ジャッジマン</button>
-                        <button onClick={() => setShowDeckViewer(true)} className="px-3 py-1 bg-amber-500 text-white rounded text-xs font-bold hover:bg-amber-600 transition">山札</button>
-                        <button onClick={() => setShowTrashViewer(true)} disabled={trash.length === 0} className="px-3 py-1 bg-red-400 text-white rounded text-xs font-bold hover:bg-red-500 transition disabled:opacity-50">トラッシュ</button>
-                        <button onClick={onReset} className="px-3 py-1 bg-gray-500 text-white rounded text-xs font-bold hover:bg-gray-600 transition">リセット</button>
+                    <div className="flex items-center gap-1 sm:gap-2 relative">
+                        <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
+                        <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
+                        <button onClick={useNanjamo} className="px-3 py-1 bg-purple-100 text-purple-700 text-xs sm:text-sm font-bold rounded hover:bg-purple-200 transition whitespace-nowrap">ナンジャモ</button>
+                        <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition whitespace-nowrap">ジャッジマン</button>
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowActionMenu(!showActionMenu)}
+                                className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs font-bold hover:bg-gray-300 transition whitespace-nowrap"
+                            >
+                                その他 ▼
+                            </button>
+                            {showActionMenu && (
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden flex flex-col p-1">
+                                    <button
+                                        onClick={() => { shuffleDeck(); setShowActionMenu(false); }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-xs text-gray-700 font-bold rounded"
+                                    >
+                                        シャッフル
+                                    </button>
+                                    <button
+                                        onClick={() => { mulligan(); setShowActionMenu(false); }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-xs text-gray-700 font-bold rounded"
+                                    >
+                                        引き直し
+                                    </button>
+                                    <div className="h-px bg-gray-100 my-1"></div>
+                                    <button
+                                        onClick={() => { onReset(); setShowActionMenu(false); }}
+                                        className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs text-red-600 font-bold rounded"
+                                    >
+                                        リセット
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -849,7 +952,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Hand - Top for Opponent */}
             {/* Hand - Top for Opponent (Mobile Only) */}
             {(mobile && isOpponent) && (
-                <div className="bg-white rounded-lg shadow p-0.5 sm:p-3 border border-gray-100 overflow-hidden mb-1">
+                <div className={`${theme.bg} rounded-lg shadow p-0.5 sm:p-3 ${theme.border} border overflow-hidden mb-1`}>
                     <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
                     <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
                         {hand.map((card, i) => (
@@ -883,7 +986,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             <div className={`flex flex-col gap-0.5 sm:gap-2 ${(mobile && isOpponent) ? 'flex-col-reverse' : ''}`}>
 
                 {/* Main Row: Prizes, Battle */}
-                <div className="flex flex-row gap-0.5 sm:gap-4 items-start justify-center order-none">
+                {/* Main Row: Prizes, Battle */}
+                <div className={`flex flex-row gap-0.5 sm:gap-4 items-start justify-center order-none ${mobile && portalTarget ? 'hidden' : ''}`}>
                     {/* Prizes - Desktop Only */}
                     {!mobile && (
                         <div className={`bg-white rounded-lg shadow p-0.5 sm:p-2 border border-gray-100 min-w-[140px]`}>
@@ -905,25 +1009,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                     {/* Battle Field */}
                     <div className="flex-1 flex justify-center">
-                        <DroppableZone id={`${idPrefix}-battle-field`} className={`bg-white rounded-lg shadow-lg p-1 sm:p-3 border border-gray-100 ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} ${mobile ? 'min-w-[70px]' : 'min-w-[180px]'} flex flex-col items-center`}>
-                            <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 uppercase mb-1 sm:mb-2 w-full text-center">バトル場</h2>
-                            {battleField ? (
-                                <DraggableCard
-                                    id={`${idPrefix}-battle-card`}
-                                    data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
-                                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
-                                >
-                                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
-                                </DraggableCard>
-                            ) : (
-                                <div
-                                    className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] sm:text-xs cursor-pointer hover:border-blue-400"
-                                    style={{ width: sizes.battle.w, height: sizes.battle.h }}
-                                >
-                                    Active Pokemon
-                                </div>
-                            )}
-                        </DroppableZone>
+                        {mobile && portalTarget ? createPortal(BattleFieldContent, portalTarget) : BattleFieldContent}
                     </div>
 
                     {/* Deck & Trash - Desktop Only (Restored PC Layout) */}
@@ -953,7 +1039,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
 
                 {/* Bench Row: Includes Deck/Trash on the Right */}
-                <div className="bg-gray-50/50 rounded-lg shadow p-1 sm:p-3 w-full overflow-hidden border border-gray-100 order-none flex flex-row">
+                <div className={`${theme.bg} rounded-lg shadow p-1 sm:p-3 w-full overflow-hidden ${theme.border} border order-none flex flex-row`}>
                     {/* Mobile Only: Side (Prizes) on Left of Bench */}
                     {/* Mobile Only: Side (Prizes) on Left of Bench - True Absolute Stack */}
                     {mobile && (
@@ -985,7 +1071,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={increaseBenchSize} disabled={benchSize >= 8} className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8px] shadow hover:bg-blue-600">+</button>
                             <span className="text-[8px] text-gray-500">Max: {benchSize}</span>
                         </div>
-                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[80px] sm:h-auto">
+                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[140px] sm:h-auto">
                             {bench.slice(0, benchSize).map((stack, i) => (
                                 <DroppableZone key={i} id={`${idPrefix}-bench-slot-${i}`} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                     {stack ? (

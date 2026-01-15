@@ -20,6 +20,7 @@ import {
     defaultDropAnimationSideEffects,
 } from '@dnd-kit/core'
 import { snapCenterToCursor } from '@dnd-kit/modifiers'
+import { CSS } from '@dnd-kit/utilities'
 
 function PracticeContent() {
     const searchParams = useSearchParams()
@@ -237,67 +238,73 @@ function PracticeContent() {
                                     </div>
                                 )}
 
-                                {/* Center Column - Stadium & Tools - Mobile Order 2 (Middle) */}
-                                <div className="order-2 md:order-none w-full md:w-32 flex-shrink-0 flex flex-col items-center">
-                                    {/* Mobile: Horizontal Row, PC: Vertical Column */}
-                                    <div className="bg-white rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 w-full flex flex-row md:flex-col items-center justify-center gap-2 md:gap-0">
-                                        <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-hidden relative group">
-                                            {(stadium1 || stadium2) ? (
-                                                <div className="relative group flex justify-center w-full h-full">
-                                                    <Image
-                                                        src={(stadium1 || stadium2)!.imageUrl}
-                                                        alt={(stadium1 || stadium2)!.name}
-                                                        fill
-                                                        className="rounded shadow-lg object-contain"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            setStadium1(null)
-                                                            setStadium2(null)
-                                                        }}
-                                                        className="absolute top-1 right-1 bg-red-500/80 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition z-10"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <span>なし</span>
-                                            )}
-                                        </DroppableZone>
+                                {/* Center Column - Stadium & Tools */}
+                                <div className="order-2 md:order-none w-full md:w-32 flex-shrink-0 flex flex-col items-center z-10">
+                                    {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
+                                    <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 w-full flex flex-col items-center justify-center gap-1 md:gap-0 border border-white/50">
 
-                                        {/* Future: Damage Counters & Coins */}
-                                        <div className="md:mt-4 flex flex-row md:flex-col gap-1 md:gap-4 items-center">
-                                            {/* Coin Flip */}
-                                            <div className="bg-gray-50 rounded p-1 sm:p-2 text-center">
-                                                <h3 className="text-[8px] sm:text-[10px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight">Coin</h3>
-                                                <div className="flex justify-center mb-0.5">
-                                                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-4 shadow-inner flex items-center justify-center transition-all duration-500 ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600' : coinResult === 'tails' ? 'bg-white border-gray-400' : 'bg-gray-200 border-gray-300'}`}>
+                                        {/* Main Battle Row: Opponent - Stadium - Coin/Dmg - Self */}
+                                        <div className="flex flex-row items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
+                                            {/* Mobile Portal Slot: Opponent Battle (P2) */}
+                                            <div id="mobile-battle-p2" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
+
+                                            {/* Stadium Zone */}
+                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-hidden relative group bg-white/50 flex-shrink-0">
+                                                {(stadium1 || stadium2) ? (
+                                                    <div className="relative group flex justify-center w-full h-full">
+                                                        <Image
+                                                            src={(stadium1 || stadium2)!.imageUrl}
+                                                            alt={(stadium1 || stadium2)!.name}
+                                                            fill
+                                                            className="rounded shadow-lg object-contain"
+                                                        />
+                                                        <button
+                                                            onClick={() => {
+                                                                setStadium1(null)
+                                                                setStadium2(null)
+                                                            }}
+                                                            className="absolute top-1 right-1 bg-red-500/80 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition z-10"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold text-gray-300">スタジアム</span>
+                                                )}
+                                            </DroppableZone>
+
+                                            {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
+                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5">
+                                                {/* Coin */}
+                                                <div className="bg-gray-50 rounded p-0.5 text-center w-[40px] md:w-full">
+                                                    <h3 className="text-[6px] sm:text-[8px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight md:block hidden">Coin</h3>
+                                                    <div className="flex justify-center mb-0.5">
+                                                        <div
+                                                            onClick={() => setCoinResult(Math.random() < 0.5 ? 'heads' : 'tails')}
+                                                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 cursor-pointer transition-all duration-500 flex items-center justify-center text-[10px] font-bold ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600 text-white' : coinResult === 'tails' ? 'bg-white border-gray-400 text-black' : 'bg-gray-200 border-gray-300'}`}
+                                                        >
+                                                            {/* Tiny indicator */}
+                                                            {coinResult === 'heads' ? '表' : coinResult === 'tails' ? '裏' : ''}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className="text-[8px] sm:text-[10px] font-black text-black h-3 mb-1">
-                                                    {coinResult === 'heads' ? 'オモテ' : coinResult === 'tails' ? 'ウラ' : '-'}
-                                                </div>
-                                                <button
-                                                    onClick={() => {
-                                                        const result = Math.random() < 0.5 ? 'heads' : 'tails'
-                                                        setCoinResult(result)
-                                                    }}
-                                                    className="w-full bg-gray-800 text-white text-[8px] sm:text-[10px] py-0.5 rounded font-bold hover:bg-black transition uppercase"
-                                                >
-                                                    Flip
-                                                </button>
-                                            </div>
 
-                                            {/* Damage Counters */}
-                                            <div className="bg-gray-50 rounded p-1 sm:p-2 text-center w-full">
-                                                <h3 className="text-[8px] sm:text-[10px] font-bold text-gray-500 mb-1 uppercase tracking-tight">Damage</h3>
-                                                <div className="flex flex-row md:flex-col items-center gap-1">
-                                                    {[100, 50, 10].map((value) => (
-                                                        <DraggableDamageCounter key={value} amount={value} />
-                                                    ))}
+                                                {/* Damage */}
+                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full flex flex-row md:flex-col flex-wrap justify-center items-center gap-0.5">
+                                                    <DraggableDamageCounter amount={100} />
+                                                    <DraggableDamageCounter amount={50} />
+                                                    <DraggableDamageCounter amount={10} />
                                                     <DraggableDamageCounter amount={-999} />
                                                 </div>
                                             </div>
+
+                                            {/* Mobile Portal Slot: Self Battle (P1) */}
+                                            <div id="mobile-battle-p1" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
+                                        </div>
+
+                                        {/* PC Only Tools Area (Hidden on Mobile) */}
+                                        <div className="hidden md:flex flex-col gap-1 items-center justify-center w-full md:mt-4">
+                                            {/* Standard PC Coin & Damage logic */}
                                         </div>
                                     </div>
                                 </div>
@@ -340,7 +347,7 @@ function PracticeContent() {
                                             {activeDragData.type === 'counter' ? (
                                                 <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xs sm:text-sm font-black shadow-2xl border-2 scale-125 ${activeDragData.amount === 10 ? 'bg-orange-500 border-orange-700 text-white' :
                                                     activeDragData.amount === 50 ? 'bg-red-500 border-red-700 text-white' :
-                                                        activeDragData.amount === -999 ? 'bg-white border-gray-400 text-gray-500' :
+                                                        activeDragData.amount === -999 ? 'bg-white border-gray-400 text-black' :
                                                             'bg-red-700 border-red-900 text-white'
                                                     }`}>
                                                     {activeDragData.amount === -999 ? 'CLR' : activeDragData.amount}
@@ -387,11 +394,11 @@ function DraggableDamageCounter({ amount }: { amount: number }) {
             {...listeners}
             {...attributes}
             className={`
-                rounded-full shadow-md flex items-center justify-center font-black text-white border-2 border-white cursor-move hover:scale-110 transition select-none touch-none
-                ${amount === 100 ? 'w-10 h-10 bg-red-600 text-xs' : ''}
-                ${amount === 50 ? 'w-8 h-8 bg-orange-500 text-[10px]' : ''}
+                rounded-full shadow-md flex items-center justify-center font-black border-2 border-white cursor-move hover:scale-110 transition select-none touch-none
+                ${amount === 100 ? 'w-10 h-10 bg-red-600 text-xs text-white' : ''}
+                ${amount === 50 ? 'w-8 h-8 bg-orange-500 text-[10px] text-white' : ''}
                 ${amount === 10 ? 'w-6 h-6 bg-yellow-500 text-black text-[9px]' : ''}
-                ${amount === -999 ? 'w-8 h-8 bg-white text-gray-400 text-[8px] border-gray-200' : ''}
+                ${amount === -999 ? 'w-8 h-8 bg-white text-black text-[8px] border-gray-200' : ''}
                 ${isDragging ? 'opacity-0' : ''}
             `}
         >
@@ -422,5 +429,3 @@ export default function PracticePage() {
         </Suspense>
     )
 }
-
-import { CSS } from '@dnd-kit/utilities'
