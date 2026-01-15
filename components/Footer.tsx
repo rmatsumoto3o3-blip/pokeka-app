@@ -6,7 +6,7 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-gray-600 text-sm font-medium">
-                        © 2025 ポケカ戦績管理. All rights reserved.
+                        © 株式会社3O3 / Rii
                     </div>
 
                     <div className="flex gap-6 text-sm">
@@ -16,12 +16,22 @@ export default function Footer() {
                         >
                             ベータテスター募集
                         </Link>
-                        <Link
-                            href="/privacy"
+                        <a
+                            href="https://3o3.tech/?page_id=1581"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-700 hover:text-gray-900 transition font-medium"
+                        >
+                            利用規約
+                        </a>
+                        <a
+                            href="https://3o3.tech/?page_id=1575"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-gray-700 hover:text-gray-900 transition font-medium"
                         >
                             プライバシーポリシー
-                        </Link>
+                        </a>
                         <a
                             href="https://x.com/sakuya_neouni"
                             target="_blank"
