@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Deck, Match } from '@/lib/supabase'
 import Link from 'next/link'
 import AddMatchForm from './AddMatchForm'
+import DeckDetailMock from './DeckDetailMock'
 
 interface DeckListProps {
     userId: string
@@ -14,7 +15,6 @@ interface DeckListProps {
     onMatchAdded?: () => void
 }
 
-// ... (existing helper interface) ...
 interface DeckWithStats extends Deck {
     matches: Match[]
     total_matches: number
@@ -35,10 +35,34 @@ export default function DeckList({
     const [loading, setLoading] = useState(true)
     const [selectedDeck, setSelectedDeck] = useState<string | null>(null)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
+    const [showMockDetail, setShowMockDetail] = useState(false)
+
+    // Local Temp Deck State
+    const [tempDeckCode, setTempDeckCode] = useState<string>('')
+    const [isTempDeckSaved, setIsTempDeckSaved] = useState(false)
 
     useEffect(() => {
+        // Load temp deck from localStorage on mount
+        const saved = localStorage.getItem('pokeka_temp_deck')
+        if (saved) {
+            setTempDeckCode(saved)
+            setIsTempDeckSaved(true)
+        }
         fetchDecks()
     }, [userId])
+
+    const saveTempDeck = () => {
+        if (!tempDeckCode) return
+        localStorage.setItem('pokeka_temp_deck', tempDeckCode)
+        setIsTempDeckSaved(true)
+    }
+
+    const deleteTempDeck = () => {
+        if (!confirm('作業机のデッキを削除しますか？')) return
+        localStorage.removeItem('pokeka_temp_deck')
+        setTempDeckCode('')
+        setIsTempDeckSaved(false)
+    }
 
     const fetchDecks = async () => {
         try {
@@ -107,17 +131,11 @@ export default function DeckList({
         return <div className="text-gray-600 text-center">読み込み中...</div>
     }
 
-    if (decks.length === 0) {
-        return (
-            <div className="bg-white rounded-2xl p-8 border-2 border-pink-100 text-center shadow-sm">
-                <p className="text-gray-500 text-lg">まだデッキが登録されていません</p>
-                <p className="text-gray-400 mt-2">上のフォームから最初のデッキを登録しましょう!</p>
-            </div>
-        )
-    }
-
     return (
         <>
+            {/* Mock Detail Modal */}
+            {showMockDetail && <DeckDetailMock onClose={() => setShowMockDetail(false)} />}
+
             {/* Image Modal */}
             {selectedImage && (
                 <div
@@ -143,43 +161,80 @@ export default function DeckList({
 
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Work Table (Temp Slot) */}
+                    <div className="bg-blue-50/50 rounded-xl overflow-hidden border-2 border-blue-200 border-dashed hover:border-blue-400 transition shadow-sm hover:shadow-md flex flex-col">
+                        <div className="p-4 flex-1 flex flex-col">
+                            <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
+                                <span>🛠️</span>
+                                作業机 (一時保存)
+                            </h3>
+                            <p className="text-sm text-blue-600 mb-4 opacity-80">
+                                DBに保存されない、あなただけの検証スロットです。<br />
+                                ブラウザに保存されます。
+                            </p>
+
+                            <div className="flex-1 flex flex-col justify-center">
+                                {!isTempDeckSaved ? (
+                                    <div className="space-y-3">
+                                        <input
+                                            type="text"
+                                            placeholder="デッキコードを入力"
+                                            value={tempDeckCode}
+                                            onChange={(e) => setTempDeckCode(e.target.value)}
+                                            className="w-full px-4 py-2 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                        />
+                                        <button
+                                            onClick={saveTempDeck}
+                                            disabled={!tempDeckCode}
+                                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            作業机に置く
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-white rounded p-3 border border-blue-100">
+                                            <div className="text-xs text-gray-500 mb-1">登録中のデッキコード</div>
+                                            <div className="text-lg font-mono font-bold text-gray-800 tracking-wider text-center">{tempDeckCode}</div>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <Link
+                                                href={`/practice?code1=${tempDeckCode}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
+                                            >
+                                                <span>🎮</span>
+                                                一人回し
+                                            </Link>
+                                            <button
+                                                onClick={deleteTempDeck}
+                                                className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm font-bold"
+                                            >
+                                                片付ける
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Regular Decks */}
                     {decks.map((deck) => (
                         <div
                             key={deck.id}
                             className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
                         >
-                            {deck.image_url && (
-                                <img
-                                    src={deck.image_url}
-                                    alt={deck.deck_name}
-                                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition"
-                                    onClick={() => setSelectedImage(deck.image_url)}
-                                />
-                            )}
+                            {/* ... image ... */}
 
                             <div className="p-4">
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
-                                <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
+                                {/* ... code ... */}
+                                {/* ... stats ... */}
 
-                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                    <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">
-                                        <div className="text-2xl font-bold text-gray-900">{deck.total_matches}</div>
-                                        <div className="text-xs text-gray-500">試合数</div>
-                                    </div>
-                                    <div className="bg-gray-50 rounded-lg p-2 text-center">
-                                        <div className="text-2xl font-bold text-green-600">
-                                            {deck.win_rate.toFixed(1)}%
-                                        </div>
-                                        <div className="text-xs text-gray-500">勝率</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2 text-sm mb-4 font-medium">
-                                    <span className="text-green-600">{deck.wins}勝</span>
-                                    <span className="text-red-600">{deck.losses}敗</span>
-                                    <span className="text-gray-600">{deck.draws}分</span>
-                                </div>
-
+                                {/* ... buttons ... */}
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
@@ -202,6 +257,12 @@ export default function DeckList({
                                         削除
                                     </button>
                                 </div>
+                                <button
+                                    onClick={() => setShowMockDetail(true)}
+                                    className="w-full mt-2 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 border border-gray-200"
+                                >
+                                    ✨ 詳細・編集 (Mock)
+                                </button>
 
                                 {selectedDeck === deck.id && (
                                     <div className="mt-4 pt-4 border-t border-gray-100">

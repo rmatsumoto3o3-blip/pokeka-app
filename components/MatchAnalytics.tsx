@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Match, Deck, GameEnvironment } from '@/lib/supabase'
+import type { Match, Deck, GameEnvironment, DeckArchetype } from '@/lib/supabase'
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend
@@ -25,6 +25,7 @@ const COLORS = {
 export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     const [matches, setMatches] = useState<MatchWithDeck[]>([])
     const [decks, setDecks] = useState<Deck[]>([])
+    const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])
     const [environments, setEnvironments] = useState<GameEnvironment[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedDeckId, setSelectedDeckId] = useState<string>('all')
@@ -55,6 +56,15 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
             if (decksError) throw decksError
 
+            // Fetch Archetypes
+            const { data: archData } = await supabase
+                .from('user_deck_archetypes')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+
+            setArchetypes(archData || [])
+
             // Fetch environments
             const { data: environmentsData, error: environmentsError } = await supabase
                 .from('game_environments')
@@ -84,7 +94,19 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     // 1. Filtered Matches (by Deck AND Tab AND Environment)
     const filteredMatches = useMemo(() => {
         return matches.filter(match => {
-            const deckMatch = selectedDeckId === 'all' || match.deck_id === selectedDeckId
+            let deckMatch = true
+
+            if (selectedDeckId === 'all') {
+                deckMatch = true
+            } else if (selectedDeckId.startsWith('arch_')) {
+                // Filter by Archetype (Folder)
+                const targetArchId = selectedDeckId.replace('arch_', '')
+                deckMatch = match.deck.archetype_id === targetArchId
+            } else {
+                // Filter by Specific Deck
+                deckMatch = match.deck_id === selectedDeckId
+            }
+
             const tabMatch = activeTab === 'all' || match.result === activeTab
 
             // Environment filter
@@ -106,9 +128,14 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
     // 2. Stats for Graphs (by Deck and Environment, ignoring Tab)
     const graphData = useMemo(() => {
-        let targetMatches = matches.filter(match =>
-            selectedDeckId === 'all' || match.deck_id === selectedDeckId
-        )
+        let targetMatches = matches.filter(match => {
+            if (selectedDeckId === 'all') return true
+            if (selectedDeckId.startsWith('arch_')) {
+                const targetArchId = selectedDeckId.replace('arch_', '')
+                return match.deck.archetype_id === targetArchId
+            }
+            return match.deck_id === selectedDeckId
+        })
 
         // Apply environment filter
         if (selectedEnvironmentId !== 'all') {
@@ -321,9 +348,26 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                             className="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="all">すべてのデッキ</option>
-                            {decks.map(deck => (
-                                <option key={deck.id} value={deck.id}>{deck.deck_name}</option>
-                            ))}
+
+                            {/* Archetypes (Folders) */}
+                            {archetypes.length > 0 && (
+                                <optgroup label="📁 フォルダ (アーキタイプ集計)">
+                                    {archetypes.map(arch => (
+                                        <option key={`arch_${arch.id}`} value={`arch_${arch.id}`}>
+                                            {arch.name} (合計)
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            )}
+
+                            {/* Individual Decks */}
+                            <optgroup label="🃏 個別デッキ">
+                                {decks.map(deck => (
+                                    <option key={deck.id} value={deck.id}>
+                                        {deck.deck_name} {deck.version_label ? `(${deck.version_label})` : ''}
+                                    </option>
+                                ))}
+                            </optgroup>
                         </select>
 
                         <select

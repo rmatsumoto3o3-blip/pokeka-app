@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import AddDeckForm from '@/components/AddDeckForm'
 
-import DeckList from '@/components/DeckList'
+import DeckManager from '@/components/DeckManager'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
@@ -234,11 +234,12 @@ export default function Dashboard() {
                                         </button>
                                     </div>
 
-                                    <DeckList
+                                    <DeckManager
                                         userId={userId}
                                         matchCount={matchCount}
                                         maxMatches={MAX_MATCHES}
                                         isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
+                                        onMatchAdded={refreshCounts}
                                     />
                                 </div>
 

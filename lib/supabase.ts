@@ -13,13 +13,26 @@ export interface User {
   created_at: string
 }
 
+export interface DeckArchetype {
+  id: string
+  user_id: string
+  name: string
+  created_at: string
+}
+
 export interface Deck {
   id: string
   user_id: string
-  deck_code: string | null  // デッキコードは任意に変更
+  deck_code: string | null
   deck_name: string
   image_url: string | null
   created_at: string
+  // New Fields for Phase 23
+  archetype_id: string | null
+  version_label: string | null // e.g., 'v1.0'
+  memo: string | null
+  sideboard_cards: any[] | null // JSONB
+  is_current: boolean
 }
 
 export interface Match {
@@ -27,11 +40,11 @@ export interface Match {
   deck_id: string
   user_id: string
   result: 'win' | 'loss' | 'draw'
-  opponent_name: string | null  // 任意項目に変更
+  opponent_name: string | null
   date: string
   notes: string | null
-  side: string | null  // サイドカード枚数（例: "3-6"）
-  going_first: '先攻' | '後攻' | null  // 先攻/後攻の選択
+  side: string | null
+  going_first: '先攻' | '後攻' | null
   created_at: string
 }
 
@@ -43,14 +56,6 @@ export interface ReferenceDeck {
   image_url: string | null
   event_type: 'City League' | 'Championship' | 'Worldwide' | 'Gym Battle' | null
   archetype_id: string | null
-  created_at: string
-}
-
-export interface DeckArchetype {
-  id: string
-  name: string
-  cover_image_url?: string | null
-  display_order?: number
   created_at: string
 }
 

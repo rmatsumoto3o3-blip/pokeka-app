@@ -241,7 +241,7 @@ function PracticeContent() {
                                 {/* Center Column - Stadium & Tools */}
                                 <div className="order-2 md:order-none w-full md:w-32 flex-shrink-0 flex flex-col items-center z-10">
                                     {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
-                                    <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 w-full flex flex-col items-center justify-center gap-1 md:gap-0 border border-white/50">
+                                    <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0 border border-white/50">
 
                                         {/* Main Battle Row: Opponent - Stadium - Coin/Dmg - Self */}
                                         <div className="flex flex-row items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
