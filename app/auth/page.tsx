@@ -87,15 +87,14 @@ function AuthContent() {
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    招待コード <span className="text-red-500 text-xs">(ベータ版必須)</span>
+                                    招待コード <span className="text-gray-400 text-xs">(お持ちの方のみ)</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={inviteCode}
                                     onChange={(e) => setInviteCode(e.target.value)}
-                                    required
                                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-                                    placeholder="POKE-BETA-..."
+                                    placeholder="コードをお持ちの方"
                                 />
                             </div>
                             <div>

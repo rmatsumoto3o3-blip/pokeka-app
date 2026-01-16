@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import AddDeckForm from '@/components/AddDeckForm'
+import { getOrCreateProfileAction } from '@/app/actions'
+import InvitationCodeInput from '@/components/InvitationCodeInput'
 
+import AddDeckForm from '@/components/AddDeckForm'
 import DeckManager from '@/components/DeckManager'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import ReferenceDeckManager from '@/components/ReferenceDeckManager'
@@ -24,12 +26,14 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true)
     const [isAddDeckModalOpen, setIsAddDeckModalOpen] = useState(false)
 
-    // Usage Limits
+    // Usage Limits (Now Dynamic)
     const [deckCount, setDeckCount] = useState(0)
     const [matchCount, setMatchCount] = useState(0)
+    const [maxDecks, setMaxDecks] = useState(3) // Default Free
+    const [maxMatches, setMaxMatches] = useState(100) // Default Free
+    const [userPlan, setUserPlan] = useState<'free' | 'invited'>('free')
+
     const [isAdmin, setIsAdmin] = useState(false)
-    const MAX_DECKS = 20
-    const MAX_MATCHES = 500
 
     const router = useRouter()
 
@@ -46,6 +50,14 @@ export default function Dashboard() {
                     // Admin Check
                     if (['player1@pokeka.local', 'player2@pokeka.local', 'player3@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
                         setIsAdmin(true)
+                    }
+
+                    // Fetch Profile Limits (Phase 26)
+                    const profileResult = await getOrCreateProfileAction(session.user.id)
+                    if (profileResult.success && profileResult.profile) {
+                        setMaxDecks(profileResult.profile.max_decks)
+                        setMaxMatches(profileResult.profile.max_matches)
+                        setUserPlan(profileResult.profile.plan_type)
                     }
 
                     // Fetch Counts
@@ -118,12 +130,12 @@ export default function Dashboard() {
     if (!userId) return null
 
     // Helper for limits
-    const isDeckLimitReached = !isAdmin && deckCount >= MAX_DECKS
+    const isDeckLimitReached = !isAdmin && deckCount >= maxDecks
 
     const getDeckUsageColor = () => {
         if (isAdmin) return 'text-purple-600 bg-purple-50'
-        if (deckCount >= MAX_DECKS) return 'text-red-600 bg-red-50'
-        if (deckCount >= MAX_DECKS - 2) return 'text-yellow-600 bg-yellow-50'
+        if (deckCount >= maxDecks) return 'text-red-600 bg-red-50'
+        if (deckCount >= maxDecks - 2) return 'text-yellow-600 bg-yellow-50'
         return 'text-green-600 bg-green-50'
     }
 
@@ -192,7 +204,7 @@ export default function Dashboard() {
                             {/* Usage Counter (Mobile/Desktop) */}
                             <div className={`hidden md:flex items-center px-3 py-1 rounded-full text-xs font-bold mr-4 ${getDeckUsageColor()}`}>
                                 <span className="mr-1">🔥</span>
-                                {isAdmin ? '無制限' : `デッキ: ${deckCount}/${MAX_DECKS}`}
+                                {isAdmin ? '無制限' : `デッキ: ${deckCount}/${maxDecks}`}
                             </div>
 
                             <button
@@ -210,7 +222,7 @@ export default function Dashboard() {
             <div className="md:hidden bg-white border-b border-pink-100 px-4 py-2 flex justify-end">
                 <div className={`flex items-center px-3 py-1 rounded-full text-xs font-bold ${getDeckUsageColor()}`}>
                     <span className="mr-1">🔥</span>
-                    {isAdmin ? '無制限' : `デッキ: ${deckCount}/${MAX_DECKS}`}
+                    {isAdmin ? '無制限' : `デッキ: ${deckCount}/${maxDecks}`}
                 </div>
             </div>
 
@@ -218,6 +230,21 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     {/* Main Content Column */}
                     <div className="lg:col-span-3 space-y-6">
+                        {/* Invitation Banner (Shown only for Free Plan Users) */}
+                        {userPlan === 'free' && (
+                            <div className="bg-white rounded-xl p-4 border-2 border-purple-100 shadow-sm">
+                                <InvitationCodeInput
+                                    userId={userId}
+                                    onSuccess={() => {
+                                        // Update local state to reflect upgrade immediately
+                                        setUserPlan('invited')
+                                        setMaxDecks(20)
+                                        setMaxMatches(500)
+                                    }}
+                                />
+                            </div>
+                        )}
+
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm relative overflow-hidden">
@@ -237,8 +264,8 @@ export default function Dashboard() {
                                     <DeckManager
                                         userId={userId}
                                         matchCount={matchCount}
-                                        maxMatches={MAX_MATCHES}
-                                        isMatchLimitReached={!isAdmin && matchCount >= MAX_MATCHES}
+                                        maxMatches={maxMatches} // Dynamic
+                                        isMatchLimitReached={!isAdmin && matchCount >= maxMatches}
                                         onMatchAdded={refreshCounts}
                                     />
                                 </div>
@@ -262,7 +289,7 @@ export default function Dashboard() {
                                                     onClose={() => setIsAddDeckModalOpen(false)}
                                                     isLimitReached={isDeckLimitReached}
                                                     deckCount={deckCount}
-                                                    maxDecks={MAX_DECKS}
+                                                    maxDecks={maxDecks} // Dynamic
                                                 />
                                             </div>
                                         </div>

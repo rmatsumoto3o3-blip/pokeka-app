@@ -13,6 +13,15 @@ export interface User {
   created_at: string
 }
 
+export interface UserProfile {
+  id: string
+  user_id: string
+  max_decks: number
+  max_matches: number
+  plan_type: 'free' | 'invited'
+  created_at: string
+}
+
 export interface DeckArchetype {
   id: string
   user_id: string
