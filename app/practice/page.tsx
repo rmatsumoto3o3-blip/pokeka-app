@@ -162,6 +162,28 @@ function PracticeContent() {
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
 
+    // Stadium Menu
+    const [stadiumMenuAnchor, setStadiumMenuAnchor] = useState<{ x: number, y: number } | null>(null)
+
+    const handleStadiumClick = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        e.preventDefault()
+        const rect = e.currentTarget.getBoundingClientRect()
+        setStadiumMenuAnchor({ x: rect.left, y: rect.bottom })
+    }
+
+    const trashStadium = () => {
+        if (stadium1) setStadium1(null)
+        if (stadium2) setStadium2(null)
+        setStadiumMenuAnchor(null)
+    }
+
+    useEffect(() => {
+        const handleClickOutside = () => setStadiumMenuAnchor(null)
+        window.addEventListener('click', handleClickOutside)
+        return () => window.removeEventListener('click', handleClickOutside)
+    }, [])
+
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768)
@@ -284,27 +306,61 @@ function PracticeContent() {
                                             {/* Stadium Zone */}
                                             <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-hidden relative group bg-white/50 flex-shrink-0">
                                                 {(stadium1 || stadium2) ? (
-                                                    <div className="relative group flex justify-center w-full h-full">
-                                                        <Image
-                                                            src={(stadium1 || stadium2)!.imageUrl}
-                                                            alt={(stadium1 || stadium2)!.name}
-                                                            fill
-                                                            className="rounded shadow-lg object-contain"
-                                                        />
-                                                        <button
-                                                            onClick={() => {
-                                                                setStadium1(null)
-                                                                setStadium2(null)
-                                                            }}
-                                                            className="absolute top-1 right-1 bg-red-500/80 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition z-10"
-                                                        >
-                                                            ×
-                                                        </button>
+                                                    <div
+                                                        onClick={(e) => {
+                                                            // If clicking X button specifically (handled by X button itself if prevented)
+                                                            // But here we want the whole card to open menu
+                                                            handleStadiumClick(e)
+                                                        }}
+                                                        className="relative w-full h-full"
+                                                    >
+                                                        {(() => {
+                                                            const activeStadium = stadium1 || stadium2;
+                                                            return activeStadium ? (
+                                                                <>
+                                                                    <Image
+                                                                        src={activeStadium.imageUrl}
+                                                                        alt={activeStadium.name}
+                                                                        fill
+                                                                        className="rounded shadow-lg object-contain"
+                                                                    />
+                                                                    {/* Keep X button as quick shortcut, but add menu to card tap */}
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            setStadium1(null)
+                                                                            setStadium2(null)
+                                                                        }}
+                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-red-600 z-10"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </>
+                                                            ) : null;
+                                                        })()}
                                                     </div>
                                                 ) : (
                                                     <span className="text-[10px] font-bold text-gray-300">スタジアム</span>
                                                 )}
                                             </DroppableZone>
+                                            {/* Stadium Menu */}
+                                            {stadiumMenuAnchor && (stadium1 || stadium2) && (
+                                                <div
+                                                    className="fixed z-[9999] bg-white rounded shadow-xl border overflow-hidden min-w-[120px]"
+                                                    style={{
+                                                        top: stadiumMenuAnchor.y,
+                                                        left: Math.min(stadiumMenuAnchor.x, window.innerWidth - 120)
+                                                    }}
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    <button
+                                                        onClick={trashStadium}
+                                                        className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold transition-colors"
+                                                    >
+                                                        トラッシュする
+                                                    </button>
+                                                </div>
+                                            )}
 
                                             {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
                                             <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5">

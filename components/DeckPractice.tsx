@@ -72,6 +72,11 @@ interface AttachMode {
     sourceIndex: number // Index in trash
 }
 
+interface AttachmentTarget {
+    type: 'battle' | 'bench'
+    index: number
+}
+
 const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
@@ -105,6 +110,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [attachMode, setAttachMode] = useState<AttachMode | null>(null)
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
+    const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null)
 
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
@@ -692,6 +698,59 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
     }
 
+
+    // Attachment Management
+    const handleRemoveAttachment = (cardIndex: number) => {
+        if (!attachmentTarget) return
+
+        const { type, index } = attachmentTarget
+        if (type === 'battle') {
+            if (!battleField) return
+
+            const cardToRemove = battleField.cards[cardIndex]
+
+            // Cannot remove the base Pokemon (index 0) directly via this manager usually, 
+            // but let's allow it if user really wants, or restrict to attachments (index > 0).
+            // User said "Attached cards energy/tools", so usually attachments.
+            // But if they remove the base pokemon, the whole stack should probably go or logical error.
+            // Let's assume this is for attachments (index > 0) usually, but we implement generic removal.
+
+            const newCards = battleField.cards.filter((_, i) => i !== cardIndex)
+
+            if (newCards.length === 0) {
+                setBattleField(null)
+            } else {
+                setBattleField({
+                    ...battleField,
+                    cards: newCards,
+                    energyCount: battleField.energyCount - (isEnergy(cardToRemove) ? 1 : 0),
+                    toolCount: battleField.toolCount - (isTool(cardToRemove) ? 1 : 0)
+                })
+            }
+            setTrash([...trash, cardToRemove])
+        } else {
+            const stack = bench[index]
+            if (!stack) return
+
+            const cardToRemove = stack.cards[cardIndex]
+            const newCards = stack.cards.filter((_, i) => i !== cardIndex)
+
+            const newBench = [...bench]
+            if (newCards.length === 0) {
+                newBench[index] = null
+            } else {
+                newBench[index] = {
+                    ...stack,
+                    cards: newCards,
+                    energyCount: stack.energyCount - (isEnergy(cardToRemove) ? 1 : 0),
+                    toolCount: stack.toolCount - (isTool(cardToRemove) ? 1 : 0)
+                }
+            }
+            setBench(newBench)
+            setTrash([...trash, cardToRemove])
+        }
+    }
+
     // --- UI Helpers ---
 
     // Dynamic Mobile Scaling
@@ -863,6 +922,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 <button onClick={() => benchToHand(menu.index)} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
                                     手札に戻す
                                 </button>
+                                {((bench[menu.index]?.cards.length || 0) > 1) && (
+                                    <button onClick={() => { setAttachmentTarget({ type: 'bench', index: menu.index }); closeMenu(); }} className="text-left px-4 py-3 hover:bg-yellow-50 text-sm border-b transition-colors text-black font-bold">
+                                        装備・エネルギー管理
+                                    </button>
+                                )}
                                 <button onClick={() => benchToTrash(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
                                     トラッシュする
                                 </button>
@@ -1306,6 +1370,55 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
                 )
             }
+
+            {/* Attachment Manager Modal */}
+            {attachmentTarget && (
+                <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4" onClick={() => setAttachmentTarget(null)}>
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
+                            <h3 className="font-bold text-gray-800">カード管理</h3>
+                            <button onClick={() => setAttachmentTarget(null)} className="text-gray-500 hover:text-gray-700 font-bold">✕</button>
+                        </div>
+                        <div className="p-4 max-h-[60vh] overflow-y-auto">
+                            <p className="text-xs text-gray-500 mb-2">トラッシュしたいカードを選択してください</p>
+                            <div className="space-y-2">
+                                {(() => {
+                                    const stack = attachmentTarget.type === 'battle' ? battleField : bench[attachmentTarget.index]
+                                    if (!stack) return <div className="text-gray-500">カードがありません</div>
+
+                                    return stack.cards.map((card, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 border rounded bg-gray-50">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative w-10 h-14">
+                                                    <Image
+                                                        src={card.imageUrl}
+                                                        alt={card.name}
+                                                        fill
+                                                        className="object-contain rounded"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold">{card.name}</span>
+                                                    <span className="text-xs text-gray-500">{idx === 0 ? '（ベース）' : '（カード）'}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveAttachment(idx)}
+                                                className="bg-red-100 text-red-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-red-200 transition"
+                                            >
+                                                トラッシュ
+                                            </button>
+                                        </div>
+                                    ))
+                                })()}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-4 py-2 border-t flex justify-end">
+                            <button onClick={() => setAttachmentTarget(null)} className="px-4 py-2 bg-gray-200 rounded text-sm font-bold text-gray-700 hover:bg-gray-300">閉じる</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     )
 })
