@@ -33,12 +33,31 @@ export async function getOrCreateProfileAction(userId: string) {
 
         if (profile) return { success: true, profile }
 
-        // 2. If not found, create default free profile
+        // 2. If not found, create default profile
+        // SMART CHECK: If user was created before today (Legacy User), give them Premium
+        const { data: userAuth, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+
+        // Default to 'free'
+        let initialPlan: 'free' | 'invited' = 'free'
+        let initialMaxDecks = 3
+        let initialMaxMatches = 100
+
+        if (userAuth?.user?.created_at) {
+            const createdAt = new Date(userAuth.user.created_at)
+            const cutoffDate = new Date('2025-01-17T00:00:00Z') // Set to roughly now/tomorrow
+            // If created before cutoff, they are a legacy user => Premium
+            if (createdAt < cutoffDate) {
+                initialPlan = 'invited'
+                initialMaxDecks = 20
+                initialMaxMatches = 500
+            }
+        }
+
         const newProfile = {
             user_id: userId,
-            max_decks: 3,
-            max_matches: 100,
-            plan_type: 'free'
+            max_decks: initialMaxDecks,
+            max_matches: initialMaxMatches,
+            plan_type: initialPlan
         }
 
         const { data: created, error: createError } = await supabaseAdmin
