@@ -23,15 +23,14 @@ export async function fetchDeckData(deckCode: string): Promise<CardData[]> {
     }
 
     const html = await response.text()
-    const doc = new DOMParser().parseFromString(html, 'text/html')
+    // const doc = new DOMParser().parseFromString(html, 'text/html') // DOMParser is client-side only
 
-    return extractCards(doc)
+    return extractCardsFromHtml(html)
 }
 
-function extractCards(doc: Document): CardData[] {
+function extractCardsFromHtml(html: string): CardData[] {
     const cards: CardData[] = []
 
-    // Card data is stored in hidden input fields
     // Map input IDs to types
     const inputTypeMap: Record<string, { supertype: string, subtype?: string }> = {
         'deck_pke': { supertype: 'Pokémon' },
@@ -40,56 +39,72 @@ function extractCards(doc: Document): CardData[] {
         'deck_sup': { supertype: 'Trainer', subtype: 'Supporter' },
         'deck_sta': { supertype: 'Trainer', subtype: 'Stadium' },
         'deck_ene': { supertype: 'Energy' },
-        'deck_tech': { supertype: 'Trainer', subtype: 'Technical Machine' }, // Guessing 'deck_tech' is TM
-        'deck_ajs': { supertype: 'Trainer', subtype: 'Item' } // ACESPEC or similiar? Treat as Item for now
+        'deck_tech': { supertype: 'Trainer', subtype: 'Technical Machine' },
+        'deck_ajs': { supertype: 'Trainer', subtype: 'Item' }
     }
 
     const inputIds = Object.keys(inputTypeMap)
 
-    // Extract PCGDECK object from script tags
-    const scripts = Array.from(doc.querySelectorAll('script'))
+    // 1. Extract PCGDECK object maps from the HTML string
+    // We look for patterns like: PCGDECK.searchItemName[123]='Name';
     const searchItemName: Record<string, string> = {}
     const searchItemCardPict: Record<string, string> = {}
     const searchItemNameAlt: Record<string, string> = {}
 
-    for (const script of scripts) {
-        const content = script.textContent || ''
-        if (content.includes('PCGDECK')) {
-            // Extract individual assignments line by line
-            // Pattern: PCGDECK.searchItemName[12345]='Card Name';
-            const nameMatches = content.matchAll(/PCGDECK\.searchItemName\[(\d+)\]='([^']+)';/g)
-            for (const match of nameMatches) {
-                searchItemName[match[1]] = match[2]
-            }
+    // Regex global match for each property
+    // Name
+    const nameMatches = html.matchAll(/PCGDECK\.searchItemName\[(\d+)\]='([^']+)';/g)
+    for (const match of nameMatches) {
+        searchItemName[match[1]] = match[2]
+    }
 
-            // Pattern: PCGDECK.searchItemCardPict[12345]='/path/to/image.jpg';
-            const pictMatches = content.matchAll(/PCGDECK\.searchItemCardPict\[(\d+)\]='([^']+)';/g)
-            for (const match of pictMatches) {
-                searchItemCardPict[match[1]] = match[2]
-            }
+    // Pict
+    const pictMatches = html.matchAll(/PCGDECK\.searchItemCardPict\[(\d+)\]='([^']+)';/g)
+    for (const match of pictMatches) {
+        searchItemCardPict[match[1]] = match[2]
+    }
 
-            // Pattern: PCGDECK.searchItemNameAlt[12345]='Short Name';
-            const altNameMatches = content.matchAll(/PCGDECK\.searchItemNameAlt\[(\d+)\]='([^']+)';/g)
-            for (const match of altNameMatches) {
-                searchItemNameAlt[match[1]] = match[2]
-            }
-        }
+    // NameAlt
+    const altNameMatches = html.matchAll(/PCGDECK\.searchItemNameAlt\[(\d+)\]='([^']+)';/g)
+    for (const match of altNameMatches) {
+        searchItemNameAlt[match[1]] = match[2]
     }
 
     if (Object.keys(searchItemName).length === 0) {
-        console.error('PCGDECK object not found')
+        console.error('PCGDECK object not found in HTML')
         return cards
     }
 
-    console.log(`Found ${Object.keys(searchItemName).length} cards in PCGDECK`)
+    // 2. Extract values from hidden inputs
+    // <input type="hidden" name="deck_pke" id="deck_pke" value="123_2_123-456_1_456">
+    // Regex to match: id="deck_pke" ... value="VALUE" OR value="VALUE" ... id="deck_pke"
+    // Simplified strategy: Find the specific input tag pattern for each ID
 
-    // Extract card IDs and quantities from hidden inputs
     inputIds.forEach(inputId => {
-        const input = doc.getElementById(inputId) as HTMLInputElement
-        if (input && input.value) {
-            console.log(`Processing ${inputId}: ${input.value}`)
+        // Regex needs to be fairly robust to attributes order, but usually they are consistent.
+        // Let's try to find value="..." where the tag also contains id="inputId"
+        // But doing it generally on the whole HTML is safer with a specific RegExp for each input.
+
+        // Pattern: <input [^>]*id="deck_pke"[^>]*value="([^"]*)"
+        // Note: standard HTML from PHP usually uses double quotes.
+
+        const inputRegex = new RegExp(`<input[^>]*id=["']${inputId}["'][^>]*value=["']([^"']*)["']`, 'i')
+        const match = html.match(inputRegex)
+
+        // Also check if id comes AFTER value
+        const inputRegexReverse = new RegExp(`<input[^>]*value=["']([^"']*)["'][^>]*id=["']${inputId}["']`, 'i')
+
+        let val = ''
+        if (match && match[1]) {
+            val = match[1]
+        } else {
+            const matchRev = html.match(inputRegexReverse)
+            if (matchRev && matchRev[1]) val = matchRev[1]
+        }
+
+        if (val) {
             // Format: "id_quantity_index-id_quantity_index"
-            input.value.split('-').forEach(entry => {
+            val.split('-').forEach(entry => {
                 const parts = entry.split('_')
                 if (parts.length >= 2) {
                     const id = parts[0]
@@ -109,8 +124,6 @@ function extractCards(doc: Document): CardData[] {
             })
         }
     })
-
-    console.log(`Extracted ${cards.length} card types, total ${cards.reduce((sum, c) => sum + c.quantity, 0)} cards`)
 
     return cards
 }
