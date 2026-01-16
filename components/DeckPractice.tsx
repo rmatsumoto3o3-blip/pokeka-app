@@ -907,7 +907,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1 sm:gap-2 relative">
+                    <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 relative">
                         <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
                         <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
                         <button onClick={useNanjamo} className="px-3 py-1 bg-purple-100 text-purple-700 text-xs sm:text-sm font-bold rounded hover:bg-purple-200 transition whitespace-nowrap">ナンジャモ</button>
