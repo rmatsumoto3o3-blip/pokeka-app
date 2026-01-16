@@ -185,9 +185,9 @@ export default function DeckDetailManager({
 
             setSideboardImportCode('')
             loadData() // Reload
-        } catch (e) {
+        } catch (e: any) {
             console.error(e)
-            alert('コードの読み込みに失敗しました')
+            alert(`コードの読み込みに失敗しました: ${e.message || '不明なエラー'}`)
         } finally {
             setImportLoading(false)
         }
@@ -346,7 +346,7 @@ export default function DeckDetailManager({
                                             value={sideboardImportCode}
                                             onChange={(e) => setSideboardImportCode(e.target.value)}
                                             placeholder="デッキコードから候補を追加"
-                                            className="w-full text-xs px-2 py-1.5 rounded border border-orange-200 focus:outline-none focus:border-orange-400"
+                                            className="w-full text-xs px-2 py-1.5 rounded border border-orange-200 focus:outline-none focus:border-orange-400 text-gray-900 bg-white"
                                         />
                                         <button
                                             onClick={handleImportSideboard}
@@ -393,7 +393,7 @@ export default function DeckDetailManager({
                                 <div className="space-y-3 relative max-h-48 overflow-y-auto">
                                     {variants.map((v, i) => (
                                         <div key={v.id} className={`relative pl-3 text-sm border-l-2 ${currentVariantId === v.id ? 'border-blue-500 bg-blue-50/50' : 'border-gray-200'}`}>
-                                            <div className="font-bold text-xs">{v.version_label || 'v1.0'}</div>
+                                            <div className="font-bold text-xs text-gray-900">{v.version_label || 'v1.0'}</div>
                                             <div className="text-[10px] text-gray-500">{new Date(v.created_at).toLocaleString()}</div>
                                             {v.memo && <div className="text-xs text-gray-600 mt-1">{v.memo}</div>}
                                         </div>
