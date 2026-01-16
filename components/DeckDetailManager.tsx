@@ -306,10 +306,23 @@ export default function DeckDetailManager({
 
                             {/* Deck Content Parsed */}
                             <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex justify-between">
-                                    <span>メインデッキ</span>
-                                    {currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>}
-                                </h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                        <span>メインデッキ</span>
+                                        {currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>}
+                                    </h3>
+                                    <button
+                                        onClick={() => {
+                                            if (deckCards.length === 0) return
+                                            localStorage.setItem('pokeka_practice_custom_deck', JSON.stringify(deckCards))
+                                            window.open('/practice?mode=custom', '_blank')
+                                        }}
+                                        disabled={loading || cardsLoading || deckCards.length === 0}
+                                        className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 shadow-sm"
+                                    >
+                                        <span>🎮</span> 現在の構成で一人回し
+                                    </button>
+                                </div>
 
                                 {cardsLoading ? (
                                     <div className="h-64 flex items-center justify-center text-gray-400">カード情報を読み込み中...</div>

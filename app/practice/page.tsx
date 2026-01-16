@@ -55,9 +55,39 @@ function PracticeContent() {
 
     // Auto-load if deck codes are in URL
     useEffect(() => {
+        const mode = searchParams.get('mode')
         const code1 = searchParams.get('code1')
         const code2 = searchParams.get('code2')
-        if (code1 && !deck1.length) {
+
+        const loadCustomDeck = () => {
+            try {
+                const customDeckJson = localStorage.getItem('pokeka_practice_custom_deck')
+                if (customDeckJson) {
+                    const cards = JSON.parse(customDeckJson)
+                    // Validate card structure partially if needed, or rely on trust for local dev
+                    // Build deck (expand quantities)
+                    const fullDeck = buildDeck(cards)
+                    if (fullDeck.length !== 60) {
+                        setError(`カスタムデッキは60枚である必要があります（現在: ${fullDeck.length}枚）`)
+                        return
+                    }
+                    setDeck1(shuffle(fullDeck))
+                } else {
+                    setError('カスタムデッキデータが見つかりませんでした')
+                }
+            } catch (e) {
+                console.error('Failed to load custom deck', e)
+                setError('カスタムデッキの読み込みに失敗しました')
+            }
+        }
+
+        if (mode === 'custom') {
+            loadCustomDeck()
+            // If code2 is present, load it normally as opponent
+            if (code2) {
+                loadDecks(undefined, code2)
+            }
+        } else if (code1 && !deck1.length) {
             setDeckCode1(code1)
             loadDecks(code1, code2 || '')
         }
@@ -66,6 +96,9 @@ function PracticeContent() {
     const loadDecks = async (code1?: string, code2?: string) => {
         const targetCode1 = code1 || deckCode1
         const targetCode2 = code2 || deckCode2
+
+        // If in custom mode, we might not have code1, so only skip if NEITHER exists and NOT custom mode
+        // But simplified: just load what is requested.
 
         if (!targetCode1 && !targetCode2) return
 
