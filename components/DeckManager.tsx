@@ -75,7 +75,6 @@ export default function DeckManager({
     }
 
     const deleteTempDeck = () => {
-        if (!confirm('作業机のデッキを削除しますか？')) return
         localStorage.removeItem('pokeka_temp_deck')
         setTempDeckCode('')
         setIsTempDeckSaved(false)

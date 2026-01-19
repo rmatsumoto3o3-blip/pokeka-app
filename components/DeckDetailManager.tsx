@@ -345,7 +345,65 @@ export default function DeckDetailManager({
         }
     }
 
+    // Mobile Swap State
+    const [selectedSwapSourceIndex, setSelectedSwapSourceIndex] = useState<number | null>(null)
+    const [swapTarget, setSwapTarget] = useState<{ index: number, card: CardData } | null>(null)
+    const [swapQuantity, setSwapQuantity] = useState(1)
+
+    const handleSideboardClick = (index: number) => {
+        if (selectedSwapSourceIndex === index) {
+            setSelectedSwapSourceIndex(null) // Deselect
+        } else {
+            setSelectedSwapSourceIndex(index)
+        }
+    }
+
+    const handleMainCardClick = (index: number, card: CardData) => {
+        if (selectedSwapSourceIndex === null) return
+
+        // Open Swap Modal
+        setSwapTarget({ index, card })
+        setSwapQuantity(1) // Reset to 1
+    }
+
+    const handleSwapExecute = () => {
+        if (selectedSwapSourceIndex === null || !swapTarget) return
+
+        const variant = variants.find(v => v.id === currentVariantId)
+        if (!variant) return
+        const sourceCard = variant.sideboard_cards[selectedSwapSourceIndex]
+        if (!sourceCard) return
+
+        const newDeckCards = [...deckCards]
+        const targetIndex = swapTarget.index
+
+        // 1. Decrement/Remove Target (Main) based on Quantity
+        if (newDeckCards[targetIndex].quantity > swapQuantity) {
+            newDeckCards[targetIndex].quantity -= swapQuantity
+        } else {
+            // Remove completely
+            newDeckCards.splice(targetIndex, 1)
+        }
+
+        // 2. Increment/Add Source (Sideboard Card) - Same Quantity
+        const existingSourceIndex = newDeckCards.findIndex(c => c.name === sourceCard.name)
+
+        if (existingSourceIndex !== -1) {
+            newDeckCards[existingSourceIndex].quantity += swapQuantity
+        } else {
+            newDeckCards.push({ ...sourceCard, quantity: swapQuantity })
+        }
+
+        setDeckCards(newDeckCards)
+
+        // Reset State
+        setSelectedSwapSourceIndex(null)
+        setSwapTarget(null)
+    }
+
     const currentVariant = variants.find(v => v.id === currentVariantId)
+    const totalDeckCards = deckCards.reduce((acc, c) => acc + c.quantity, 0)
+    const isDeckValid = totalDeckCards === 60
 
     if (loading) return null
 
@@ -356,7 +414,62 @@ export default function DeckDetailManager({
             onDragEnd={handleDragEnd}
         >
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 overflow-hidden flex flex-col max-h-[90vh] relative">
+
+                    {/* Swap Quantity Modal (Overlay) */}
+                    {swapTarget && selectedSwapSourceIndex !== null && (
+                        <div className="absolute inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-xl p-6 shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <span>🔄</span> カード入れ替え
+                                </h3>
+
+                                <div className="flex items-center justify-between mb-4 text-sm">
+                                    <div className="text-center w-1/3">
+                                        <div className="font-bold text-red-600 mb-1">OUT (メイン)</div>
+                                        <div className="truncate">{swapTarget.card.name}</div>
+                                    </div>
+                                    <div className="text-gray-400 font-bold">➡</div>
+                                    <div className="text-center w-1/3">
+                                        <div className="font-bold text-green-600 mb-1">IN (サイド)</div>
+                                        <div className="truncate">{variants.find(v => v.id === currentVariantId)?.sideboard_cards[selectedSwapSourceIndex]?.name}</div>
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                                        入れ替える枚数 (最大 {swapTarget.card.quantity}枚)
+                                    </label>
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max={swapTarget.card.quantity}
+                                            value={swapQuantity}
+                                            onChange={(e) => setSwapQuantity(parseInt(e.target.value))}
+                                            className="flex-1"
+                                        />
+                                        <div className="text-2xl font-bold w-12 text-center text-blue-600">{swapQuantity}</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setSwapTarget(null)}
+                                        className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200"
+                                    >
+                                        キャンセル
+                                    </button>
+                                    <button
+                                        onClick={handleSwapExecute}
+                                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transform active:scale-95 transition"
+                                    >
+                                        入れ替え実行
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Header */}
                     <div className="bg-blue-600 text-white p-4 flex justify-between items-start">
@@ -420,8 +533,9 @@ export default function DeckDetailManager({
                                             {currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>}
                                         </h3>
                                         <div className="flex items-center gap-2">
-                                            <div className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                {deckCards.reduce((acc, c) => acc + c.quantity, 0)}枚
+                                            <div className={`text-xs font-bold px-2 py-1 rounded border ${isDeckValid ? 'bg-gray-100 text-gray-500 border-transparent' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}>
+                                                {totalDeckCards}枚
+                                                {!isDeckValid && <span className="ml-1">⚠️</span>}
                                             </div>
                                             <button
                                                 onClick={() => {
@@ -443,13 +557,25 @@ export default function DeckDetailManager({
                                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
                                             {deckCards.map((card, i) => (
                                                 <DroppableMainCard key={`${i}-${card.name}`} card={card} index={i}>
-                                                    <div className="aspect-[2/3] bg-gray-200 rounded flex items-center justify-center relative group cursor-pointer hover:ring-2 ring-blue-400 overflow-hidden">
+                                                    <div
+                                                        onClick={() => handleMainCardClick(i, card)}
+                                                        className={`aspect-[2/3] bg-gray-200 rounded flex items-center justify-center relative group cursor-pointer overflow-hidden transition-all ${selectedSwapSourceIndex !== null ? 'ring-2 ring-green-400 hover:ring-green-500 hover:scale-105' : 'hover:ring-2 hover:ring-blue-400'
+                                                            }`}
+                                                    >
                                                         {card.imageUrl ? (
                                                             <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <div className="text-[10px] text-center p-1 leading-tight">{card.name}</div>
                                                         )}
                                                         <div className="absolute bottom-0 right-0 bg-black/70 text-white text-xs px-1.5 rounded-tl font-bold">{card.quantity}</div>
+
+                                                        {selectedSwapSourceIndex !== null && (
+                                                            <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                                <div className="bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-lg transform scale-110">
+                                                                    入れ替え
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </DroppableMainCard>
                                             ))}
@@ -462,8 +588,8 @@ export default function DeckDetailManager({
                             <div className="space-y-6">
 
                                 {/* Sideboard */}
-                                <div className="bg-orange-50 p-4 rounded-lg shadow-sm border-2 border-orange-100">
-                                    <h3 className="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
+                                <div className={`bg-orange-50 p-4 rounded-lg shadow-sm border-2 transition-colors ${selectedSwapSourceIndex !== null ? 'border-green-400 bg-green-50' : 'border-orange-100'}`}>
+                                    <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${selectedSwapSourceIndex !== null ? 'text-green-700' : 'text-orange-800'}`}>
                                         <span>🗂️</span> サイドボード (採用検討)
                                     </h3>
 
@@ -494,7 +620,16 @@ export default function DeckDetailManager({
                                             currentVariant.sideboard_cards.map((card, i) => (
                                                 <DraggableSideboardCard key={i} card={card} index={i}>
                                                     <div
-                                                        className="aspect-[2/3] bg-white rounded flex items-center justify-center relative cursor-grab active:cursor-grabbing border border-orange-200 shadow-sm hover:scale-105 transition overflow-hidden group"
+                                                        onClick={(e) => {
+                                                            // e.stopPropagation() // Don't stop propagation, DnD might need it? Actually drag sensors are separate.
+                                                            // DnD kit usually grabs clicks for drag? 
+                                                            // With activationConstraint on DndContext (which uses PointerSensor distance), click should pass through.
+                                                            handleSideboardClick(i)
+                                                        }}
+                                                        className={`aspect-[2/3] bg-white rounded flex items-center justify-center relative cursor-grab active:cursor-grabbing shadow-sm transition overflow-hidden group ${selectedSwapSourceIndex === i
+                                                            ? 'ring-4 ring-green-500 scale-105 border-transparent z-10'
+                                                            : 'border border-orange-200 hover:scale-105'
+                                                            }`}
                                                     >
                                                         {card.imageUrl ? (
                                                             <img src={card.imageUrl} alt={card.name} className="w-full h-full object-cover" />
@@ -512,6 +647,12 @@ export default function DeckDetailManager({
                                                         >
                                                             削除
                                                         </button>
+
+                                                        {selectedSwapSourceIndex === i && (
+                                                            <div className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-white shadow-sm flex items-center justify-center">
+                                                                <span className="text-[8px] text-white">✓</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </DraggableSideboardCard>
                                             ))
@@ -520,8 +661,10 @@ export default function DeckDetailManager({
                                         )}
                                     </div>
                                     {/* Valid Drop Hint */}
-                                    <div className="mt-2 text-[10px] text-orange-400 text-center bg-orange-100/50 p-1 rounded">
-                                        👆 ドラッグしてメインデッキのカードと入れ替え
+                                    <div className={`mt-2 text-[10px] text-center p-1 rounded transition-colors ${selectedSwapSourceIndex !== null ? 'bg-green-100 text-green-700 font-bold animate-pulse' : 'bg-orange-100/50 text-orange-400'}`}>
+                                        {selectedSwapSourceIndex !== null
+                                            ? '👆 入れ替えるメインデッキのカードを選択してください'
+                                            : '👆 ドラッグ または タップして選択・入れ替え'}
                                     </div>
                                 </div>
 
