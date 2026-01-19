@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Deck, DeckArchetype } from '@/lib/supabase'
-import { getDeckDataAction } from '@/app/actions'
+import { getDeckDataAction, saveDeckVersionAction } from '@/app/actions'
 import type { CardData } from '@/lib/deckParser'
 import {
     DndContext,
@@ -25,18 +25,22 @@ interface DeckVariant extends Deck {
     is_current: boolean
     version_label: string | null
     memo: string | null
-    sideboard_cards: CardData[] // stored as JSONB but parsed to CardData[] in app
+    sideboard_cards: CardData[]
+    custom_cards: CardData[] | null // [NEW] JSONB
 }
 
 interface DeckDetailManagerProps {
     onClose: () => void
     archetypeId?: string | null     // If managing a folder
     initialDeckId?: string | null   // If managing a specific deck (start point)
+    initialDeckCode?: string        // [NEW] For Local Mode (Work Table)
     userId: string
     onUpdate?: () => void           // Callback to refresh parent list
 }
 
-// Draggable Wrapper for Sideboard Cards
+// ... (Draggable components skipped for brevity)
+
+// Droppable Wrapper for Main Deck Cards
 function DraggableSideboardCard({ card, index, children }: { card: CardData, index: number, children: React.ReactNode }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `sideboard-${index}-${card.name}`,
@@ -81,6 +85,7 @@ export default function DeckDetailManager({
     onClose,
     archetypeId,
     initialDeckId,
+    initialDeckCode,
     userId,
     onUpdate
 }: DeckDetailManagerProps) {
@@ -89,6 +94,9 @@ export default function DeckDetailManager({
     const [allArchetypes, setAllArchetypes] = useState<DeckArchetype[]>([]) // For moving
     const [variants, setVariants] = useState<DeckVariant[]>([])
     const [currentVariantId, setCurrentVariantId] = useState<string | null>(null)
+
+    // Local Mode State
+    const isLocalMode = !!initialDeckCode && !initialDeckId
 
     // UI State
     const [loading, setLoading] = useState(true)
@@ -111,12 +119,19 @@ export default function DeckDetailManager({
     // Initialize
     useEffect(() => {
         loadData()
-    }, [archetypeId, initialDeckId])
+    }, [archetypeId, initialDeckId, initialDeckCode])
 
     // Fetch Cards when variant changes
     useEffect(() => {
         const loadCards = async () => {
             const variant = variants.find(v => v.id === currentVariantId)
+
+            // PRIORITIZE CUSTOM CARDS
+            if (variant?.custom_cards && Array.isArray(variant.custom_cards) && variant.custom_cards.length > 0) {
+                setDeckCards(variant.custom_cards)
+                return
+            }
+
             if (!variant || !variant.deck_code) {
                 setDeckCards([])
                 return
@@ -141,6 +156,38 @@ export default function DeckDetailManager({
     const loadData = async () => {
         setLoading(true)
         try {
+            // Local Mode Handling
+            if (isLocalMode && initialDeckCode) {
+                // Mock a variant
+                const localSideboardJson = localStorage.getItem('pokeka_temp_sideboard')
+                let localSideboard: CardData[] = []
+                if (localSideboardJson) {
+                    try {
+                        localSideboard = JSON.parse(localSideboardJson)
+                    } catch (e) { console.error('Failed to parse local sideboard') }
+                }
+
+                const mockVariant: DeckVariant = {
+                    id: 'TEMP_LOCAL_VARIANT', // Special ID
+                    user_id: userId,
+                    deck_code: initialDeckCode,
+                    deck_name: '作業中のデッキ',
+                    image_url: null,
+                    archetype_id: null,
+                    is_current: true,
+                    version_label: 'Draft',
+                    memo: '保存前の下書き',
+                    sideboard_cards: localSideboard,
+                    custom_cards: null, // [NEW]
+                    created_at: new Date().toISOString()
+                }
+
+                setVariants([mockVariant])
+                setCurrentVariantId(mockVariant.id)
+                setLoading(false)
+                return
+            }
+
             let archId = archetypeId
             let targetVariantId = initialDeckId
 
@@ -232,6 +279,17 @@ export default function DeckDetailManager({
 
             const newSideboard = [...(variant.sideboard_cards || []), ...res.data]
 
+            // Local Mode Handling
+            if (isLocalMode) {
+                // Update Local State
+                setVariants(prev => prev.map(v => v.id === currentVariantId ? { ...v, sideboard_cards: newSideboard } : v))
+                // Save to LocalStorage
+                localStorage.setItem('pokeka_temp_sideboard', JSON.stringify(newSideboard))
+                setSideboardImportCode('')
+                setImportLoading(false)
+                return
+            }
+
             // Update DB
             const { error } = await supabase
                 .from('decks')
@@ -257,6 +315,13 @@ export default function DeckDetailManager({
         const newSideboard = [...variant.sideboard_cards]
         newSideboard.splice(index, 1)
 
+        // Local Mode Handling
+        if (isLocalMode) {
+            setVariants(prev => prev.map(v => v.id === currentVariantId ? { ...v, sideboard_cards: newSideboard } : v))
+            localStorage.setItem('pokeka_temp_sideboard', JSON.stringify(newSideboard))
+            return
+        }
+
         const { error } = await supabase
             .from('decks')
             .update({ sideboard_cards: newSideboard })
@@ -267,6 +332,56 @@ export default function DeckDetailManager({
             return
         }
         loadData()
+    }
+
+    // [NEW] Save Custom Version Handler
+    const handleSaveVersion = async () => {
+        const variant = variants.find(v => v.id === currentVariantId)
+
+        // 1. Check if Loose Deck (No Folder)
+        if (!archetype && (!variant?.archetype_id)) {
+            alert('バージョン管理機能を使用するには、まずこのデッキを「フォルダ」に移動してください。\n(左上のプルダウンからフォルダを選択・移動できます)')
+            return
+        }
+
+        // 2. Prompt for Name
+        const defaultLabel = variant?.version_label ? `${variant.version_label}.1` : `v${variants.length + 1}.0`
+        const label = prompt('新しいバージョンの名前 (例: v1.1)', defaultLabel)
+        if (!label) return
+
+        const memo = prompt('変更内容のメモ (任意)', '') || ''
+
+        try {
+            // 3. Call Server Action
+            const parentId = archetype?.id || variant?.archetype_id || null
+            if (!parentId) {
+                alert('フォルダIDの取得に失敗しました')
+                return
+            }
+
+            const res = await saveDeckVersionAction(
+                userId,
+                parentId,
+                deckCards, // Current State (Custom)
+                label,
+                memo,
+                variant?.id // Original Code/Image source
+            )
+
+            if (!res.success) {
+                alert(res.error || '保存に失敗しました')
+                return
+            }
+
+            // Success
+            alert('新しいバージョンとして保存しました！')
+            if (onUpdate) onUpdate()
+            loadData() // Refresh list
+
+        } catch (e) {
+            console.error(e)
+            alert('エラーが発生しました')
+        }
     }
 
     // Create new variant (clone current)
@@ -516,11 +631,14 @@ export default function DeckDetailManager({
                                                 {currentVariantId === v.id && <span>✓</span>}
                                             </button>
                                         ))}
+
+                                        {/* New Save Button */}
                                         <button
-                                            onClick={handleCloneVariant}
-                                            className="px-3 py-2 rounded-lg bg-gray-100 text-gray-400 hover:bg-gray-200 font-bold border-2 border-dashed border-gray-300"
+                                            onClick={handleSaveVersion}
+                                            className="px-3 py-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-bold border-2 border-green-300 flex items-center gap-1 shadow-sm"
+                                            title={!archetype ? "フォルダ未所属のため保存できません" : "変更を新しいバージョンとして保存"}
                                         >
-                                            + 複製
+                                            <span>💾</span> 保存
                                         </button>
                                     </div>
                                 </div>
@@ -528,10 +646,18 @@ export default function DeckDetailManager({
                                 {/* Deck Content Parsed */}
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
                                     <div className="flex justify-between items-center mb-2">
-                                        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                            <span>メインデッキ</span>
-                                            {currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>}
-                                        </h3>
+                                        <div className="flex flex-col">
+                                            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                                <span>メインデッキ</span>
+                                                {currentVariant?.custom_cards ? (
+                                                    <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded border border-green-200">Custom Build</span>
+                                                ) : (
+                                                    currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>
+                                                )}
+                                            </h3>
+                                            {/* Show Memo if exists */}
+                                            {currentVariant?.memo && <div className="text-xs text-gray-500">{currentVariant.memo}</div>}
+                                        </div>
 
                                         <div className={`text-xs font-bold px-2 py-1 rounded border ${isDeckValid ? 'bg-gray-100 text-gray-500 border-transparent' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}>
                                             {totalDeckCards}枚
@@ -539,17 +665,31 @@ export default function DeckDetailManager({
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => {
-                                            if (deckCards.length === 0) return
-                                            localStorage.setItem('pokeka_practice_custom_deck', JSON.stringify(deckCards))
-                                            window.open('/practice?mode=custom', '_blank')
-                                        }}
-                                        disabled={loading || cardsLoading || deckCards.length === 0}
-                                        className="w-full md:w-auto mb-4 text-xs bg-purple-600 text-white px-3 py-2 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
-                                    >
-                                        <span>🎮</span> 現在の構成で一人回し
-                                    </button>
+                                    <div className="flex gap-2 mb-4">
+                                        <button
+                                            onClick={() => {
+                                                if (deckCards.length === 0) return
+                                                localStorage.setItem('pokeka_practice_custom_deck', JSON.stringify(deckCards))
+                                                window.open('/practice?mode=custom', '_blank')
+                                            }}
+                                            disabled={loading || cardsLoading || deckCards.length === 0}
+                                            className="flex-1 md:flex-none text-xs bg-purple-600 text-white px-3 py-2 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
+                                        >
+                                            <span>🎮</span> 現在の構成で一人回し
+                                        </button>
+
+                                        {/* Copy Text Button */}
+                                        <button
+                                            onClick={() => {
+                                                const text = deckCards.map(c => `${c.name} ${c.quantity}`).join('\n')
+                                                navigator.clipboard.writeText(text)
+                                                alert('デッキリストをコピーしました！')
+                                            }}
+                                            className="text-xs bg-gray-100 text-gray-600 px-3 py-2 rounded font-bold hover:bg-gray-200 border border-gray-300"
+                                        >
+                                            📋 テキストコピー
+                                        </button>
+                                    </div>
 
                                     {cardsLoading ? (
                                         <div className="h-64 flex items-center justify-center text-gray-400">カード情報を読み込み中...</div>

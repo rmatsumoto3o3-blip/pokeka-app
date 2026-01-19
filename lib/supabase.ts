@@ -41,6 +41,7 @@ export interface Deck {
   version_label: string | null // e.g., 'v1.0'
   memo: string | null
   sideboard_cards: any[] | null // JSONB
+  custom_cards: any[] | null // [NEW] JSONB for custom deck lists
   is_current: boolean
 }
 

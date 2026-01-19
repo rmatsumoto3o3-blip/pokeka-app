@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Deck, Match, DeckArchetype } from '@/lib/supabase'
+import { createFolderAction, createDeckVariantAction } from '@/app/actions' // [NEW]
+
 import Link from 'next/link'
 import AddMatchForm from './AddMatchForm'
 import DeckDetailManager from './DeckDetailManager'
@@ -41,6 +43,9 @@ export default function DeckManager({
     // The detail modal will now potentially need the real deck ID later, but for now it's a mock
     const [showMockDetail, setShowMockDetail] = useState(false)
     const [mockDetailTargetDeck, setMockDetailTargetDeck] = useState<DeckWithStats | null>(null)
+
+    // Local Detail State (Work Table)
+    const [showLocalDetail, setShowLocalDetail] = useState(false)
 
     // Folder Expansion State
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
@@ -140,19 +145,22 @@ export default function DeckManager({
 
     const handleCreateFolder = async () => {
         if (!newFolderName.trim()) return
-        try {
-            const { error } = await supabase
-                .from('user_deck_archetypes')
-                .insert([{ user_id: userId, name: newFolderName }])
 
-            if (error) throw error
+        try {
+            // [MODIFIED] Use Server Action
+            const res = await createFolderAction(userId, newFolderName)
+
+            if (!res.success) {
+                alert(res.error || 'フォルダ作成に失敗しました')
+                return
+            }
 
             setNewFolderName('')
             setIsCreatingFolder(false)
             fetchData()
         } catch (err) {
             console.error('Error creating folder:', err)
-            alert('フォルダの作成に失敗しました')
+            alert('エラーが発生しました')
         }
     }
 
@@ -164,23 +172,26 @@ export default function DeckManager({
             const arch = archetypes.find(a => a.id === archId)
             const defaultName = arch ? arch.name : '新規デッキ'
 
-            const { error } = await supabase.from('decks').insert([{
-                user_id: userId,
-                archetype_id: archId,
-                deck_code: newDeckCode,
-                version_label: newVersionLabel || 'v1.0',
-                deck_name: defaultName,
-                is_current: false // Default
-            }])
+            // [MODIFIED] Use Server Action
+            const res = await createDeckVariantAction(
+                userId,
+                archId,
+                newDeckCode,
+                newVersionLabel || 'v1.0',
+                defaultName
+            )
 
-            if (error) throw error
+            if (!res.success) {
+                alert(res.error || 'デッキ作成に失敗しました')
+                return
+            }
 
             setAddingVariationToArchId(null)
             setNewDeckCode('')
             setNewVersionLabel('')
             fetchData()
         } catch (err) {
-            alert('デッキの追加に失敗しました')
+            alert('エラーが発生しました')
             console.error(err)
         }
     }
@@ -227,7 +238,7 @@ export default function DeckManager({
 
     return (
         <>
-            {/* Detail Manager Modal */}
+            {/* Detail Manager Modal (Mock/DB) */}
             {showMockDetail && mockDetailTargetDeck && (
                 <DeckDetailManager
                     onClose={() => setShowMockDetail(false)}
@@ -235,6 +246,16 @@ export default function DeckManager({
                     initialDeckId={mockDetailTargetDeck.id}
                     archetypeId={mockDetailTargetDeck.archetype_id}
                     onUpdate={() => fetchData()}
+                />
+            )}
+
+            {/* Detail Manager Modal (Local / Work Table) */}
+            {showLocalDetail && tempDeckCode && (
+                <DeckDetailManager
+                    onClose={() => setShowLocalDetail(false)}
+                    userId={userId}
+                    initialDeckCode={tempDeckCode}
+                    onUpdate={() => { }} // No parent update needed for local
                 />
             )}
 
@@ -325,6 +346,15 @@ export default function DeckManager({
                                             <div className="bg-white rounded p-3 border border-blue-100">
                                                 <div className="text-xs text-gray-500 mb-1">登録中のデッキコード</div>
                                                 <div className="text-lg font-mono font-bold text-gray-800 tracking-wider text-center">{tempDeckCode}</div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setShowLocalDetail(true)}
+                                                    className="w-full py-2 px-3 bg-white hover:bg-gray-50 text-blue-600 border border-blue-200 rounded-lg transition shadow-sm text-sm font-bold flex items-center justify-center gap-2"
+                                                >
+                                                    <span>📝</span> 詳細・編集
+                                                </button>
                                             </div>
 
                                             <div className="flex gap-2">
