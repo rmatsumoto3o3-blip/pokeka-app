@@ -46,17 +46,17 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                     </p>
                     <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
                         <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
-                            <Link
-                                href="/articles"
+                            <a
+                                href="#key-card-adoption"
                                 className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-center"
                             >
                                 <span className="flex items-center justify-center">
                                     カード採用率
                                     <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </span>
-                            </Link>
+                            </a>
                             <a
                                 href="#reference-decks"
                                 className="px-8 py-4 rounded-xl bg-white text-gray-700 font-bold text-lg border-2 border-gray-100 hover:border-pink-200 hover:bg-pink-50 transition-all duration-200 shadow-sm"
@@ -95,7 +95,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         />
                     </div>
 
-                    <div className="mt-8">
+                    <div className="mt-8" id="key-card-adoption">
                         <div className="mb-4">
                             <h3 className="text-xl md:text-2xl font-bold text-gray-900">
                                 🔑 キーカード採用率
