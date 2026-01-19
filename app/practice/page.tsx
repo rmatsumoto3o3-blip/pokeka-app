@@ -163,23 +163,22 @@ function PracticeContent() {
     const [isMobile, setIsMobile] = useState(false)
 
     // Stadium Menu
-    const [stadiumMenuAnchor, setStadiumMenuAnchor] = useState<{ x: number, y: number } | null>(null)
+    const [showStadiumMenu, setShowStadiumMenu] = useState(false)
 
     const handleStadiumClick = (e: React.MouseEvent) => {
         e.stopPropagation()
         e.preventDefault()
-        const rect = e.currentTarget.getBoundingClientRect()
-        setStadiumMenuAnchor({ x: rect.left, y: rect.bottom })
+        setShowStadiumMenu(!showStadiumMenu)
     }
 
     const trashStadium = () => {
         if (stadium1) setStadium1(null)
         if (stadium2) setStadium2(null)
-        setStadiumMenuAnchor(null)
+        setShowStadiumMenu(false)
     }
 
     useEffect(() => {
-        const handleClickOutside = () => setStadiumMenuAnchor(null)
+        const handleClickOutside = () => setShowStadiumMenu(false)
         window.addEventListener('click', handleClickOutside)
         return () => window.removeEventListener('click', handleClickOutside)
     }, [])
@@ -304,12 +303,10 @@ function PracticeContent() {
                                             <div id="mobile-battle-p2" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
 
                                             {/* Stadium Zone */}
-                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-hidden relative group bg-white/50 flex-shrink-0">
+                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-visible relative group bg-white/50 flex-shrink-0">
                                                 {(stadium1 || stadium2) ? (
                                                     <div
                                                         onClick={(e) => {
-                                                            // If clicking X button specifically (handled by X button itself if prevented)
-                                                            // But here we want the whole card to open menu
                                                             handleStadiumClick(e)
                                                         }}
                                                         className="relative w-full h-full"
@@ -324,7 +321,7 @@ function PracticeContent() {
                                                                         fill
                                                                         className="rounded shadow-lg object-contain"
                                                                     />
-                                                                    {/* Keep X button as quick shortcut, but add menu to card tap */}
+                                                                    {/* Keep X button as quick shortcut */}
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation()
@@ -335,6 +332,21 @@ function PracticeContent() {
                                                                     >
                                                                         ×
                                                                     </button>
+
+                                                                    {/* Stadium Action Menu - Absolute Positioned */}
+                                                                    {showStadiumMenu && (
+                                                                        <div
+                                                                            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[9999] bg-white rounded shadow-xl border overflow-hidden min-w-[120px]"
+                                                                            onClick={e => e.stopPropagation()}
+                                                                        >
+                                                                            <button
+                                                                                onClick={trashStadium}
+                                                                                className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold transition-colors whitespace-nowrap"
+                                                                            >
+                                                                                トラッシュする
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </>
                                                             ) : null;
                                                         })()}
@@ -343,24 +355,6 @@ function PracticeContent() {
                                                     <span className="text-[10px] font-bold text-gray-300">スタジアム</span>
                                                 )}
                                             </DroppableZone>
-                                            {/* Stadium Menu */}
-                                            {stadiumMenuAnchor && (stadium1 || stadium2) && (
-                                                <div
-                                                    className="fixed z-[9999] bg-white rounded shadow-xl border overflow-hidden min-w-[120px]"
-                                                    style={{
-                                                        top: stadiumMenuAnchor.y,
-                                                        left: Math.min(stadiumMenuAnchor.x, window.innerWidth - 120)
-                                                    }}
-                                                    onClick={e => e.stopPropagation()}
-                                                >
-                                                    <button
-                                                        onClick={trashStadium}
-                                                        className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold transition-colors"
-                                                    >
-                                                        トラッシュする
-                                                    </button>
-                                                </div>
-                                            )}
 
                                             {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
                                             <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5">
@@ -379,7 +373,7 @@ function PracticeContent() {
                                                 </div>
 
                                                 {/* Damage */}
-                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full flex flex-row md:flex-col flex-wrap justify-center items-center gap-0.5">
+                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full grid grid-cols-2 place-items-center md:flex md:flex-col md:flex-wrap justify-center gap-0.5">
                                                     <DraggableDamageCounter amount={100} />
                                                     <DraggableDamageCounter amount={50} />
                                                     <DraggableDamageCounter amount={10} />

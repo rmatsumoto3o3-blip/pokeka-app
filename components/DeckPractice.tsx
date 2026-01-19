@@ -903,12 +903,25 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 <button onClick={startSwapWithBench} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
                                     ベンチと入替
                                 </button>
+                                <button onClick={() => updateDamage('battle', 0, 10)} className="text-left px-4 py-3 hover:bg-orange-50 text-sm border-b transition-colors text-orange-600 font-bold">
+                                    ダメージ加算 (+10)
+                                </button>
+                                {battleField && battleField.damage > 0 && (
+                                    <button onClick={() => updateDamage('battle', 0, -10)} className="text-left px-4 py-3 hover:bg-pink-50 text-sm border-b transition-colors text-pink-600 font-bold">
+                                        ダメージ回復 (-10)
+                                    </button>
+                                )}
                                 <button onClick={battleToHand} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
                                     手札に戻す
                                 </button>
                                 <button onClick={battleToDeck} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-blue-700">
                                     山札に戻す
                                 </button>
+                                {((battleField?.cards.length || 0) > 1) && (
+                                    <button onClick={() => { setAttachmentTarget({ type: 'battle', index: 0 }); closeMenu(); }} className="text-left px-4 py-3 hover:bg-yellow-50 text-sm border-b transition-colors text-black font-bold">
+                                        道具・エネルギー管理
+                                    </button>
+                                )}
                                 <button onClick={battleToTrash} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
                                     トラッシュする
                                 </button>
@@ -919,12 +932,20 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 <button onClick={() => swapBenchToBattle(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
                                     バトル場へ
                                 </button>
+                                <button onClick={() => updateDamage('bench', menu.index, 10)} className="text-left px-4 py-3 hover:bg-orange-50 text-sm border-b transition-colors text-orange-600 font-bold">
+                                    ダメージ加算 (+10)
+                                </button>
+                                {bench[menu.index] && bench[menu.index]!.damage > 0 && (
+                                    <button onClick={() => updateDamage('bench', menu.index, -10)} className="text-left px-4 py-3 hover:bg-pink-50 text-sm border-b transition-colors text-pink-600 font-bold">
+                                        ダメージ回復 (-10)
+                                    </button>
+                                )}
                                 <button onClick={() => benchToHand(menu.index)} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
                                     手札に戻す
                                 </button>
                                 {((bench[menu.index]?.cards.length || 0) > 1) && (
                                     <button onClick={() => { setAttachmentTarget({ type: 'bench', index: menu.index }); closeMenu(); }} className="text-left px-4 py-3 hover:bg-yellow-50 text-sm border-b transition-colors text-black font-bold">
-                                        装備・エネルギー管理
+                                        道具・エネルギー管理
                                     </button>
                                 )}
                                 <button onClick={() => benchToTrash(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
