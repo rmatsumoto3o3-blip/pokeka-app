@@ -527,29 +527,29 @@ export default function DeckDetailManager({
 
                                 {/* Deck Content Parsed */}
                                 <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
-                                    <div className="flex justify-between items-center mb-4">
+                                    <div className="flex justify-between items-center mb-2">
                                         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                             <span>メインデッキ</span>
                                             {currentVariant?.deck_code && <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded select-all">{currentVariant.deck_code}</span>}
                                         </h3>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`text-xs font-bold px-2 py-1 rounded border ${isDeckValid ? 'bg-gray-100 text-gray-500 border-transparent' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}>
-                                                {totalDeckCards}枚
-                                                {!isDeckValid && <span className="ml-1">⚠️</span>}
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    if (deckCards.length === 0) return
-                                                    localStorage.setItem('pokeka_practice_custom_deck', JSON.stringify(deckCards))
-                                                    window.open('/practice?mode=custom', '_blank')
-                                                }}
-                                                disabled={loading || cardsLoading || deckCards.length === 0}
-                                                className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-1 shadow-sm"
-                                            >
-                                                <span>🎮</span> 現在の構成で一人回し
-                                            </button>
+
+                                        <div className={`text-xs font-bold px-2 py-1 rounded border ${isDeckValid ? 'bg-gray-100 text-gray-500 border-transparent' : 'bg-red-50 text-red-600 border-red-200 animate-pulse'}`}>
+                                            {totalDeckCards}枚
+                                            {!isDeckValid && <span className="ml-1">⚠️</span>}
                                         </div>
                                     </div>
+
+                                    <button
+                                        onClick={() => {
+                                            if (deckCards.length === 0) return
+                                            localStorage.setItem('pokeka_practice_custom_deck', JSON.stringify(deckCards))
+                                            window.open('/practice?mode=custom', '_blank')
+                                        }}
+                                        disabled={loading || cardsLoading || deckCards.length === 0}
+                                        className="w-full md:w-auto mb-4 text-xs bg-purple-600 text-white px-3 py-2 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
+                                    >
+                                        <span>🎮</span> 現在の構成で一人回し
+                                    </button>
 
                                     {cardsLoading ? (
                                         <div className="h-64 flex items-center justify-center text-gray-400">カード情報を読み込み中...</div>
