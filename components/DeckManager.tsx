@@ -579,17 +579,38 @@ function DeckCard({
             className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
         >
             {deck.image_url && (
-                <img
-                    src={deck.image_url}
-                    alt={deck.deck_name}
-                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition"
-                    onClick={() => onImageClick(deck.image_url)}
-                />
+                <div className="relative">
+                    <img
+                        src={deck.image_url}
+                        alt={deck.deck_name}
+                        className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition"
+                        onClick={() => onImageClick(deck.image_url)}
+                    />
+                    {/* Custom Badge Overlay */}
+                    {deck.custom_cards && (
+                        <div className="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg border border-white/20">
+                            CUSTOM
+                        </div>
+                    )}
+                </div>
             )}
 
             <div className="p-4">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
-                <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2 truncate" title={deck.deck_name}>{deck.deck_name}</h3>
+
+                {/* Deck Code or Version/Memo */}
+                {deck.custom_cards ? (
+                    <div className="text-sm mb-4 font-mono flex items-center gap-2">
+                        <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-bold">
+                            {deck.version_label || '派生'}
+                        </span>
+                        <span className="text-gray-600 truncate" title={deck.memo || 'Custom Edit'}>
+                            {deck.memo || '編集済みデッキ'}
+                        </span>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
+                )}
 
                 <div className="grid grid-cols-2 gap-2 mb-4">
                     <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">

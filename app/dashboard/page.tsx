@@ -60,18 +60,24 @@ export default function Dashboard() {
                         setUserPlan(profileResult.profile.plan_type)
                     }
 
-                    // Fetch Counts
-                    const { count: dCount } = await supabase
+                    // Fetch Counts (Corrected for Parent Limit: Folders + Loose Decks)
+                    const { count: folderCount } = await supabase
+                        .from('user_deck_archetypes')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', session.user.id)
+
+                    const { count: looseDeckCount } = await supabase
                         .from('decks')
                         .select('*', { count: 'exact', head: true })
                         .eq('user_id', session.user.id)
+                        .is('archetype_id', null)
 
                     const { count: mCount } = await supabase
                         .from('matches')
                         .select('*', { count: 'exact', head: true })
                         .eq('user_id', session.user.id)
 
-                    setDeckCount(dCount || 0)
+                    setDeckCount((folderCount || 0) + (looseDeckCount || 0))
                     setMatchCount(mCount || 0)
                 }
             } catch (error) {
@@ -113,9 +119,26 @@ export default function Dashboard() {
     // Refresh counts when actions happen
     const refreshCounts = async () => {
         if (!userId) return
-        const { count: dCount } = await supabase.from('decks').select('*', { count: 'exact', head: true }).eq('user_id', userId)
-        const { count: mCount } = await supabase.from('matches').select('*', { count: 'exact', head: true }).eq('user_id', userId)
-        setDeckCount(dCount || 0)
+
+        // Count Folders
+        const { count: fCount } = await supabase
+            .from('user_deck_archetypes')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+
+        // Count Loose Decks
+        const { count: lCount } = await supabase
+            .from('decks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .is('archetype_id', null)
+
+        const { count: mCount } = await supabase
+            .from('matches')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+
+        setDeckCount((fCount || 0) + (lCount || 0))
         setMatchCount(mCount || 0)
     }
 
