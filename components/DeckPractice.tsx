@@ -111,6 +111,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
     const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null)
+    const [teisatsuCards, setTeisatsuCards] = useState<Card[] | null>(null)
 
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
@@ -532,6 +533,35 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const drawn = newDeck.slice(0, 4)
         setHand(drawn)
         setRemaining(newDeck.slice(4))
+
+    }
+
+    const useTeisatsuShirei = () => {
+        if (remaining.length === 0) {
+            alert("山札がありません")
+            return
+        }
+        // Look at top 2
+        const cards = remaining.slice(0, 2)
+        setTeisatsuCards(cards)
+        // Remove them from deck temporarily to prevent other actions
+        setRemaining(remaining.slice(cards.length))
+    }
+
+    const handleTeisatsuSelect = (selectedIndex: number) => {
+        if (!teisatsuCards) return
+
+        const selected = teisatsuCards[selectedIndex]
+        const unselected = teisatsuCards.filter((_, i) => i !== selectedIndex)
+
+        // Add selected to hand
+        setHand([...hand, selected])
+
+        // Add unselected to bottom of deck
+        setRemaining([...remaining, ...unselected])
+
+        setTeisatsuCards(null)
+        alert(`1枚を手札に加え、残りを山札の下に戻しました`)
     }
 
     // Deck Viewer
@@ -997,6 +1027,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
                         <button onClick={useNanjamo} className="px-3 py-1 bg-purple-100 text-purple-700 text-xs sm:text-sm font-bold rounded hover:bg-purple-200 transition whitespace-nowrap">ナンジャモ</button>
                         <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition whitespace-nowrap">ジャッジマン</button>
+                        <button onClick={useTeisatsuShirei} className="px-3 py-1 bg-teal-500 text-white rounded text-xs font-bold hover:bg-teal-600 transition whitespace-nowrap">ていさつしれい</button>
 
                         <div className="relative">
                             <button
@@ -1318,6 +1349,40 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 onClick={() => { moveFromDeckToTrash(deckCardMenu.index); setDeckCardMenu(null); }}
                                 className="px-4 py-3 hover:bg-red-50 text-red-600 text-left text-sm font-black"
                             >トラッシュへ</button>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Teisatsu Shirei Modal */}
+            {
+                teisatsuCards && (
+                    <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-2xl animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center">ていさつしれい</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">手札に加えるカードを1枚選んでください。<br />（選ばなかったカードは山札の下に戻ります）</p>
+
+                            <div className="flex justify-center gap-6 sm:gap-10">
+                                {teisatsuCards.map((card, i) => (
+                                    <div
+                                        key={i}
+                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                        onClick={() => handleTeisatsuSelect(i)}
+                                    >
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            手札に加える
+                                        </div>
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={140}
+                                            height={196}
+                                            className="rounded-lg shadow-lg border-2 border-transparent hover:border-blue-500"
+                                        />
+                                        <div className="mt-2 text-center text-sm font-bold text-gray-700">{card.name}</div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )
