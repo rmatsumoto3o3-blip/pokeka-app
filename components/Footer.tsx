@@ -16,6 +16,12 @@ export default function Footer() {
                         >
                             ベータテスター募集
                         </Link>
+                        <Link
+                            href="/guide"
+                            className="text-gray-700 hover:text-gray-900 transition font-medium"
+                        >
+                            活用ガイド
+                        </Link>
                         <a
                             href="https://3o3.tech/?page_id=1581"
                             target="_blank"
