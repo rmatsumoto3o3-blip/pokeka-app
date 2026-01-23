@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getGlobalDeckAnalyticsAction } from '@/app/actions'
 
 interface KeyCardAdoption {
     id: string
-    archetype_id: string
     card_name: string
     image_url: string | null
-    adoption_quantity: number
-    category: 'Pokemon' | 'Goods' | 'Tool' | 'Supporter' | 'Stadium' | 'Energy'
-    description: string | null
+    adoption_quantity: string // string because of toFixed
+    adoption_rate: string // string because of toFixed
+    category: string
 }
 
 interface Archetype {
@@ -26,7 +26,7 @@ interface KeyCardAdoptionListProps {
 
 export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardAdoptionListProps) {
     const [archetypes, setArchetypes] = useState<Archetype[]>(initialArchetypes)
-    const [keyCards, setKeyCards] = useState<KeyCardAdoption[]>([])
+    const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>({})
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -36,6 +36,7 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
 
     const fetchKeyCards = async () => {
         try {
+            // Fetch Archetypes
             const { data: archetypesData, error: archError } = await supabase
                 .from('deck_archetypes')
                 .select('*')
@@ -44,13 +45,11 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
             if (archError) throw archError
             setArchetypes(archetypesData || [])
 
-            const { data: cardsData, error: cardsError } = await supabase
-                .from('key_card_adoptions')
-                .select('*')
-                .order('adoption_quantity', { ascending: false })
-
-            if (cardsError) throw cardsError
-            setKeyCards(cardsData || [])
+            // Fetch Global Analytics (Automated)
+            const result = await getGlobalDeckAnalyticsAction()
+            if (result.success && result.analyticsByArchetype) {
+                setAnalyticsData(result.analyticsByArchetype)
+            }
 
         } catch (err) {
             console.error('Error fetching key cards:', err)
@@ -72,7 +71,7 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
     return (
         <div className="space-y-4">
             {archetypes.map((archetype) => {
-                const archetypeCards = keyCards.filter(c => c.archetype_id === archetype.id)
+                const archetypeCards = analyticsData[archetype.id] || []
                 if (archetypeCards.length === 0) return null // Skip empty archetypes
 
                 const isExpanded = expandedArchetypeId === archetype.id
@@ -108,8 +107,8 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
 
                                             {/* Horizontal Scroll Container */}
                                             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                                                {categoryCards.map((card) => (
-                                                    <div key={card.id} className="flex-shrink-0 w-24 md:w-28 text-center group">
+                                                {categoryCards.map((card, i) => (
+                                                    <div key={i} className="flex-shrink-0 w-24 md:w-28 text-center group">
                                                         {/* Card Image */}
                                                         <div className="relative aspect-[3/4] mb-1.5 rounded-lg overflow-hidden shadow-sm border border-gray-100 group-hover:shadow-md transition bg-gray-100">
                                                             {card.image_url ? (
@@ -126,6 +125,10 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                                                             {/* Adoption Quantity Badge */}
                                                             <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white text-xs font-bold py-0.5">
                                                                 {card.adoption_quantity}枚
+                                                            </div>
+                                                            {/* Adoption Rate Badge (Top Right) */}
+                                                            <div className="absolute top-0 right-0 bg-blue-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-lg">
+                                                                {card.adoption_rate}%
                                                             </div>
                                                         </div>
                                                         {/* Card Name */}
@@ -144,11 +147,13 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                 )
             })}
 
-            {keyCards.length === 0 && (
+            {Object.keys(analyticsData).length === 0 && (
                 <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                    データがありません
+                    自動分析データがありません。<br />
+                    <span className="text-xs">管理者画面からデッキコードを登録してください。</span>
                 </div>
             )}
         </div>
     )
 }
+

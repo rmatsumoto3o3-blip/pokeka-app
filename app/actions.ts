@@ -340,3 +340,259 @@ export async function saveDeckVersionAction(
         return { success: false, error: (error as Error).message || '保存に失敗しました' }
     }
 }
+// --- Phase 36: Deck Analytics Automation ---
+
+export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string) {
+    try {
+        // 1. Check permissions (Admin only)
+        const ADMIN_EMAILS = [
+            'player1@pokeka.local',
+            'player2@pokeka.local',
+            'player3@pokeka.local',
+            'r.matsumoto.3o3@gmail.com',
+            'nexpure.event@gmail.com',
+            'admin@pokeka.local'
+        ]
+
+        const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (userError || !user.user || !user.user.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        // 2. Fetch Deck Data from Official Site
+        // Reuse the existing fetchDeckData logic which parses the HTML
+        let cards: CardData[] = []
+        try {
+            cards = await fetchDeckData(deckCode)
+        } catch (e) {
+            console.error("Fetch Error", e)
+            return { success: false, error: 'デッキデータの取得に失敗しました。コードを確認してください。' }
+        }
+
+        if (cards.length === 0) {
+            return { success: false, error: 'カード情報を取得できませんでした。' }
+        }
+
+        // 3. Save to DB
+        // Check for duplicate deck_code in this archetype to prevent double counting? 
+        // Or allow it? Let's check duplicate deck_code globally/per archetype.
+        // Usually duplicate codes are bad for analytics.
+        const { data: existing } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('id')
+            .eq('deck_code', deckCode)
+            .eq('archetype_id', archetypeId)
+            .single()
+
+        if (existing) {
+            return { success: false, error: 'このデッキコードは既にこのアーキタイプに登録されています。' }
+        }
+
+        const { error: insertError } = await supabaseAdmin
+            .from('analyzed_decks')
+            .insert([{
+                user_id: userId,
+                deck_code: deckCode,
+                archetype_id: archetypeId,
+                cards_json: cards
+            }])
+
+        if (insertError) throw insertError
+
+        return { success: true }
+
+    } catch (error) {
+        console.error('Add Analytics Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+export async function removeDeckFromAnalyticsAction(id: string, userId: string) {
+    try {
+        // Admin permission check (simplified by reusing the list logic or assuming UI hides it, but robust check is better)
+        const ADMIN_EMAILS = [
+            'player1@pokeka.local',
+            'player2@pokeka.local',
+            'player3@pokeka.local',
+            'r.matsumoto.3o3@gmail.com',
+            'nexpure.event@gmail.com',
+            'admin@pokeka.local'
+        ]
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        const { error } = await supabaseAdmin
+            .from('analyzed_decks')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+        return { success: true }
+
+    } catch (error) {
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+export async function getDeckAnalyticsAction(archetypeId: string) {
+    try {
+        // 1. Fetch all decks for this archetype
+        const { data: decks, error } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('*')
+            .eq('archetype_id', archetypeId)
+            .order('created_at', { ascending: false })
+
+        if (error) throw error
+        if (!decks || decks.length === 0) {
+            return { success: true, decks: [], analytics: [], totalDecks: 0 }
+        }
+
+        // 2. Aggregate Data
+        const totalDecks = decks.length
+        const cardStats: Record<string, {
+            name: string,
+            imageUrl: string,
+            supertype: string,
+            totalQty: number,
+            adoptionCount: number,
+            subtypes?: string[]
+        }> = {}
+
+        decks.forEach(deck => {
+            const cards = deck.cards_json as CardData[]
+            // Use a Set to track "adoption" (1 per deck max)
+            const seenInThisDeck = new Set<string>()
+
+            cards.forEach(card => {
+                const key = card.name // Group by Name
+                if (!cardStats[key]) {
+                    cardStats[key] = {
+                        name: card.name,
+                        imageUrl: card.imageUrl, // Use the image from the first occurrence
+                        supertype: card.supertype,
+                        subtypes: card.subtypes,
+                        totalQty: 0,
+                        adoptionCount: 0
+                    }
+                }
+
+                cardStats[key].totalQty += card.quantity
+
+                if (!seenInThisDeck.has(key)) {
+                    cardStats[key].adoptionCount += 1
+                    seenInThisDeck.add(key)
+                }
+            })
+        })
+
+        // 3. Format Result
+        const analytics = Object.values(cardStats).map(stat => ({
+            name: stat.name,
+            imageUrl: stat.imageUrl,
+            supertype: stat.supertype,
+            subtypes: stat.subtypes,
+            adoptionRate: (stat.adoptionCount / totalDecks) * 100,
+            avgQuantity: (stat.totalQty / stat.adoptionCount) // Avg quantity WHEN adopted (common in TCG analysis) 
+            // OR (stat.totalQty / totalDecks) for Avg per deck overall.
+            // Usually "Avg copies (when played)" is more useful for deck building, 
+            // but "Avg copies (overall)" is strictly statistical.
+            // Let's return both or stick to standard. 
+            // User likely wants "If I play this, how many do I put?". So Avg per Adoption is good.
+            // Let's verify standard TCG sites. Limitless uses "Avg" (overall/adoption).
+            // Let's provide "avgQuantity" as (totalQty / adoptionCount) to say "Adopting decks usually play X copies".
+        })).sort((a, b) => b.adoptionRate - a.adoptionRate) // Sort by popularity
+
+        return { success: true, decks, analytics, totalDecks }
+
+    } catch (error) {
+        console.error('Get Analytics Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+export async function getGlobalDeckAnalyticsAction() {
+    try {
+        // 1. Fetch all analyzed decks
+        const { data: decks, error } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('*')
+
+        if (error) throw error
+        if (!decks) return { success: true, analyticsByArchetype: {} }
+
+        // 2. Aggregate per Archetype
+        const analyticsByArchetype: Record<string, any[]> = {}
+        const deckCountsByArchetype: Record<string, number> = {}
+
+        // Group decks by archetype
+        decks.forEach(deck => {
+            if (!deckCountsByArchetype[deck.archetype_id]) deckCountsByArchetype[deck.archetype_id] = 0
+            deckCountsByArchetype[deck.archetype_id]++
+        })
+
+        // Temporary storage for stats per archetype
+        const statsByArchetype: Record<string, Record<string, any>> = {}
+
+        decks.forEach(deck => {
+            const archId = deck.archetype_id
+            if (!statsByArchetype[archId]) statsByArchetype[archId] = {}
+
+            const cards = deck.cards_json as CardData[]
+            const seenInThisDeck = new Set<string>()
+
+            cards.forEach(card => {
+                const key = card.name
+                if (!statsByArchetype[archId][key]) {
+                    statsByArchetype[archId][key] = {
+                        name: card.name,
+                        imageUrl: card.imageUrl,
+                        supertype: card.supertype,
+                        subtypes: card.subtypes,
+                        totalQty: 0,
+                        adoptionCount: 0
+                    }
+                }
+                statsByArchetype[archId][key].totalQty += card.quantity
+                if (!seenInThisDeck.has(key)) {
+                    statsByArchetype[archId][key].adoptionCount += 1
+                    seenInThisDeck.add(key)
+                }
+            })
+        })
+
+        // Format
+        Object.keys(statsByArchetype).forEach(archId => {
+            const totalDecks = deckCountsByArchetype[archId]
+            analyticsByArchetype[archId] = Object.values(statsByArchetype[archId]).map(stat => ({
+                id: stat.name, // Use name as ID for display
+                card_name: stat.name,
+                image_url: stat.imageUrl,
+                category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
+                adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1), // Average Quantity
+                adoption_rate: ((stat.adoptionCount / totalDecks) * 100).toFixed(0) // Adoption Rate %
+            })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
+        })
+
+        return { success: true, analyticsByArchetype }
+
+    } catch (error) {
+        console.error('Global Analytics Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+function mapSupertypeToCategory(supertype: string, subtypes?: string[]): string {
+    if (supertype === 'Pokémon') return 'Pokemon'
+    if (supertype === 'Energy') return 'Energy'
+    if (supertype === 'Trainer') {
+        if (subtypes?.includes('Item')) return 'Goods'
+        if (subtypes?.includes('Pokémon Tool')) return 'Tool'
+        if (subtypes?.includes('Supporter')) return 'Supporter'
+        if (subtypes?.includes('Stadium')) return 'Stadium'
+        return 'Goods' // Fallback
+    }
+    return 'Goods'
+}

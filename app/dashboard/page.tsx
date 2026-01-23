@@ -336,7 +336,7 @@ export default function Dashboard() {
                                     isAdmin) && (
                                         <>
                                             <EnvironmentManager userEmail={userEmail} />
-                                            <ReferenceDeckManager userEmail={userEmail} />
+                                            <ReferenceDeckManager userId={userId} userEmail={userEmail} />
                                         </>
                                     )}
 
