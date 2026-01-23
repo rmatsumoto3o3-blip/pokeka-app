@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, syncAnalyzedDecksToReferencesAction } from '@/app/actions'
 import Image from 'next/image'
 
 type Archetype = {
@@ -56,6 +56,21 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
             setError('エラーが発生しました')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const handleSync = async () => {
+        if (!confirm('全ての分析済みデッキをトップページ（参照デッキ）に同期しますか？\n※まだ登録されていないデッキのみ追加されます。')) return
+
+        try {
+            const res = await syncAnalyzedDecksToReferencesAction(userId)
+            if (res.success) {
+                alert(`同期完了しました！\n追加されたデッキ数: ${res.count}`)
+            } else {
+                alert(`エラー: ${res.error}`)
+            }
+        } catch (e) {
+            alert('通信エラーが発生しました')
         }
     }
 
@@ -242,12 +257,21 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                      */}
                     <div className="bg-blue-50 p-4 rounded text-sm text-blue-800">
                         <h4 className="font-bold mb-2">💡 分析のヒント</h4>
-                        <ul className="list-disc list-inside space-y-1">
-                            <li>公式デッキ作成ツールや公式サイトのデッキコードを入力してください。</li>
-                            <li>「追加」ボタンを押すと、自動的にカード情報が解析・保存されます。</li>
-                            <li>明らかに異なるデッキタイプが混ざった場合は、ゴミ箱アイコンで除外してください。</li>
-                            <li>下のエリアに、全登録デッキから算出された「採用率」と「平均枚数」が表示されます。</li>
+                        <ul className="list-disc list-inside space-y-1 mb-4">
+                            <li>公式デッキコードを入力して「追加」を押すと、採用率などが自動計算されます。</li>
+                            <li>ゴミ箱アイコンで除外できます。</li>
                         </ul>
+
+                        <div className="border-t border-blue-200 pt-4 mt-4">
+                            <h4 className="font-bold mb-2">⚡️ 管理者ツール</h4>
+                            <p className="mb-2 text-xs">過去の分析データをトップページに反映させたい場合はこちら</p>
+                            <button
+                                onClick={handleSync}
+                                className="w-full bg-white border border-blue-300 text-blue-700 font-bold py-2 px-4 rounded hover:bg-blue-100 transition shadow-sm"
+                            >
+                                🔄 トップページと同期する
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

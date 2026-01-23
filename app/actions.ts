@@ -624,3 +624,74 @@ function mapSupertypeToCategory(supertype: string, subtypes?: string[]): string 
     }
     return 'Goods'
 }
+
+export async function syncAnalyzedDecksToReferencesAction(userId: string) {
+    try {
+        // 1. Admin Check
+        const ADMIN_EMAILS = [
+            'player1@pokeka.local',
+            'player2@pokeka.local',
+            'player3@pokeka.local',
+            'r.matsumoto.3o3@gmail.com',
+            'nexpure.event@gmail.com',
+            'admin@pokeka.local'
+        ]
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        // 2. Fetch all analyzed decks
+        const { data: analyzedDecks, error: fetchError } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('*')
+
+        if (fetchError) throw fetchError
+        if (!analyzedDecks) return { success: true, count: 0 }
+
+        // 3. Sync Loop
+        let addedCount = 0
+        for (const deck of analyzedDecks) {
+            // Check existence
+            const { data: existing } = await supabaseAdmin
+                .from('reference_decks')
+                .select('id')
+                .eq('deck_code', deck.deck_code)
+                .single()
+
+            if (!existing) {
+                // Fetch archetype name
+                const { data: arch } = await supabaseAdmin
+                    .from('deck_archetypes')
+                    .select('name')
+                    .eq('id', deck.archetype_id)
+                    .single()
+
+                const deckName = arch?.name || 'Analyzed Deck'
+
+                // Parse cards to get image
+                const cards = deck.cards_json as CardData[] // Cast safely
+                const imageUrl = (cards && cards.length > 0) ? cards[0].imageUrl : null
+
+                // Insert
+                await supabaseAdmin
+                    .from('reference_decks')
+                    .insert([{
+                        deck_name: deckName,
+                        deck_code: deck.deck_code,
+                        deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`,
+                        image_url: imageUrl,
+                        event_type: 'Gym Battle',
+                        archetype_id: deck.archetype_id
+                    }])
+                addedCount++
+            }
+        }
+
+        return { success: true, count: addedCount }
+
+    } catch (error) {
+        console.error('Sync Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
