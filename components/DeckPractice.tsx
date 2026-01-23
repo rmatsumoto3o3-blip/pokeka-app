@@ -507,21 +507,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         alert(`手札を山札に戻してシャッフルし、${drawCount}枚引きました。\n(サイド残数: ${prizeCards.length})`)
     }
 
-    const useNanjamo = () => {
-        // Shuffle hand to bottom of deck
-        const shuffledHand = [...hand].sort(() => Math.random() - 0.5)
-        const newDeck = [...remaining, ...shuffledHand]
-        setRemaining(newDeck)
-        setHand([])
-
-        // Draw cards equal to prize count
-        const drawCount = prizeCards.length
-        if (drawCount > 0) {
-            const drawn = newDeck.slice(0, drawCount)
-            setHand(drawn)
-            setRemaining(newDeck.slice(drawCount))
-        }
-    }
 
     const useJudge = () => {
         // Return hand to deck and shuffle
@@ -1025,7 +1010,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 relative">
                         <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
                         <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
-                        <button onClick={useNanjamo} className="px-3 py-1 bg-purple-100 text-purple-700 text-xs sm:text-sm font-bold rounded hover:bg-purple-200 transition whitespace-nowrap">ナンジャモ</button>
                         <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition whitespace-nowrap">ジャッジマン</button>
                         <button onClick={useTeisatsuShirei} className="px-3 py-1 bg-teal-500 text-white rounded text-xs font-bold hover:bg-teal-600 transition whitespace-nowrap">ていさつしれい</button>
 
