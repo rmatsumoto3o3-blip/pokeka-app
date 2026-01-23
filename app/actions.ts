@@ -399,6 +399,34 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
 
         if (insertError) throw insertError
 
+        // 4. [Sync] Add to reference_decks for Top Page Display
+        // Fetch archetype name for deck_name
+        const { data: archetypeData } = await supabaseAdmin
+            .from('deck_archetypes')
+            .select('name')
+            .eq('id', archetypeId)
+            .single()
+
+        const deckName = archetypeData?.name || 'New Deck'
+        // Use the first card (usually a Pokemon) as the thumbnail
+        const imageUrl = cards.length > 0 ? cards[0].imageUrl : null
+
+        const { error: refError } = await supabaseAdmin
+            .from('reference_decks')
+            .insert([{
+                deck_name: deckName,
+                deck_code: deckCode,
+                deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
+                image_url: imageUrl,
+                event_type: 'Gym Battle', // Default category
+                archetype_id: archetypeId
+            }])
+
+        if (refError) {
+            console.warn('Reference Deck Sync Failed:', refError)
+            // Do not fail the whole action, just log it. The analytics part succeeded.
+        }
+
         return { success: true }
 
     } catch (error) {
