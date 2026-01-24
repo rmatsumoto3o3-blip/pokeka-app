@@ -52,6 +52,14 @@ export default function ReferenceDeckList({
     const [loading, setLoading] = useState(initialDecks.length === 0)
     const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Modal State
 
+    // Edit State
+    const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
+    const [editName, setEditName] = useState('')
+    const [editImageUrl, setEditImageUrl] = useState('')
+    const [editImageFile, setEditImageFile] = useState<File | null>(null)
+    const [editEventType, setEditEventType] = useState('')
+    const [isSaving, setIsSaving] = useState(false)
+
     // Admin Check (Safe for guest)
     const isAdmin = userEmail === 'player1@pokeka.local' ||
         userEmail === 'player2@pokeka.local' ||
@@ -88,6 +96,67 @@ export default function ReferenceDeckList({
 
         if (!error && data) {
             setArchetypes(data)
+        }
+    }
+
+    const handleEdit = (deck: ReferenceDeck, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setEditingDeck(deck)
+        setEditName(deck.deck_name)
+        setEditImageUrl(deck.image_url || '')
+        setEditImageFile(null)
+        setEditEventType(deck.event_type || '')
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingDeck) return
+        setIsSaving(true)
+
+        try {
+            let finalImageUrl = editImageUrl
+
+            // Upload if file selected
+            if (editImageFile) {
+                const fileExt = editImageFile.name.split('.').pop()
+                const fileName = `reference/${Date.now()}.${fileExt}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('deck-images')
+                    .upload(fileName, editImageFile)
+
+                if (uploadError) throw uploadError
+
+                const { data } = supabase.storage
+                    .from('deck-images')
+                    .getPublicUrl(fileName)
+                
+                finalImageUrl = data.publicUrl
+            }
+
+            const { error } = await supabase
+                .from('reference_decks')
+                .update({
+                    deck_name: editName,
+                    image_url: finalImageUrl || null,
+                    event_type: editEventType || null
+                })
+                .eq('id', editingDeck.id)
+
+            if (error) throw error
+
+            // Update local state
+            setDecks(decks.map(d =>
+                d.id === editingDeck.id
+                    ? { ...d, deck_name: editName, image_url: finalImageUrl || null, event_type: (editEventType || null) as any }
+                    : d
+            ))
+            setEditingDeck(null)
+            alert('変更を保存しました')
+        } catch (e) {
+            console.error(e)
+            alert('保存に失敗しました')
+        } finally {
+            setIsSaving(false)
         }
     }
 
@@ -173,7 +242,92 @@ export default function ReferenceDeckList({
                         alt="Deck Preview"
                         className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
+                        referrerPolicy="no-referrer"
                     />
+                </div>
+            </div>
+        )
+    }
+
+    // Edit Modal
+    const renderEditModal = () => {
+        if (!editingDeck) return null
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setEditingDeck(null)}>
+                <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                    <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">デッキ名</label>
+                            <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">イベントタイプ</label>
+                            <select
+                                value={editEventType}
+                                onChange={(e) => setEditEventType(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                            >
+                                <option value="">選択してください</option>
+                                {EVENT_TYPES.filter(t => t !== 'All').map(type => (
+                                    <option key={type} value={type}>{EVENT_TYPE_LABELS[type]}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">デッキ画像</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0] || null
+                                    setEditImageFile(file)
+                                    // Preview
+                                    if (file) {
+                                        const url = URL.createObjectURL(file)
+                                        setEditImageUrl(url)
+                                    }
+                                }}
+                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                ※新しい画像を選択すると自動でアップロードされます。
+                            </p>
+                        </div>
+
+                        {editImageUrl && (
+                            <div className="mt-2">
+                                <p className="text-xs font-bold mb-1 text-gray-500">プレビュー:</p>
+                                <div className="h-32 w-24 relative border rounded overflow-hidden bg-gray-100">
+                                    <img src={editImageUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                            <button
+                                onClick={() => setEditingDeck(null)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={isSaving}
+                                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {isSaving ? '保存中...' : '保存する'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         )
@@ -191,6 +345,7 @@ export default function ReferenceDeckList({
         return (
             <div className="space-y-6">
                 {renderModal()}
+                {renderEditModal()}
 
                 {/* Header / Back Button */}
                 <div className="flex items-center gap-2 mb-4">
@@ -222,6 +377,7 @@ export default function ReferenceDeckList({
                                         src={deck.image_url}
                                         alt={deck.deck_name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                        referrerPolicy="no-referrer"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -263,12 +419,20 @@ export default function ReferenceDeckList({
                                     )}
 
                                     {isAdmin && (
-                                        <button
-                                            onClick={(e) => handleDelete(deck.id, e)}
-                                            className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition"
-                                        >
-                                            削除
-                                        </button>
+                                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => handleEdit(deck, e)}
+                                                className="text-xs text-blue-500 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition"
+                                            >
+                                                編集
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(deck.id, e)}
+                                                className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition"
+                                            >
+                                                削除
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -283,6 +447,7 @@ export default function ReferenceDeckList({
     return (
         <div className="space-y-6">
             {renderModal()}
+            {renderEditModal()}
 
             {/* Event Filter Tabs */}
             <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 no-scrollbar">
@@ -336,6 +501,7 @@ export default function ReferenceDeckList({
                                             src={coverImage}
                                             alt={displayName}
                                             className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
+                                            referrerPolicy="no-referrer"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
@@ -361,3 +527,5 @@ export default function ReferenceDeckList({
         </div>
     )
 }
+
+

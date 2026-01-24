@@ -84,3 +84,26 @@ body {
   background-color: #333;
   border-radius: 10px;
 }
+
+/* Default Input Styles */
+/* Force black text for inputs with white background */
+input,
+select,
+textarea {
+  color: #000000;
+  background-color: #ffffff;
+}
+
+/* Optional: Override for dark mode if needed, but user specifically asked for "white bg -> black text" default */
+@media (prefers-color-scheme: dark) {
+
+  input,
+  select,
+  textarea {
+    /* If we want to support dark mode inputs, we might want to invert this, 
+       but for now enforcing the user's specific request for white bg inputs. 
+       Many components hardcode bg-white so this ensures readability. */
+    color: #000000;
+    background-color: #ffffff;
+  }
+}
