@@ -192,6 +192,14 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo') => {
+        if (source === 'player1') {
+            player2Ref.current?.receiveEffect(effect)
+        } else {
+            player1Ref.current?.receiveEffect(effect)
+        }
+    }
+
     return (
         <div className="h-[100dvh] md:h-auto md:min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col">
             <div className="max-w-[1800px] mx-auto w-full">
@@ -288,6 +296,7 @@ function PracticeContent() {
                                                 setStadium1(card)
                                                 setStadium2(null)
                                             }}
+                                            onEffectTrigger={(effect) => handleEffectTrigger('player1', effect)}
                                         />
                                     </div>
                                 )}
@@ -409,6 +418,7 @@ function PracticeContent() {
                                                 setStadium2(card)
                                                 setStadium1(null)
                                             }}
+                                            onEffectTrigger={(effect) => handleEffectTrigger('player2', effect)}
                                         />
                                     </div>
                                 )}

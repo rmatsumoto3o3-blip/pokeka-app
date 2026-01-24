@@ -25,6 +25,7 @@ interface DeckPracticeProps {
     compact?: boolean
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
+    onEffectTrigger?: (effect: 'judge' | 'apollo', target: 'opponent') => void
     idPrefix?: string
     mobile?: boolean
     isOpponent?: boolean
@@ -33,6 +34,7 @@ interface DeckPracticeProps {
 export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
+    receiveEffect: (effect: 'judge' | 'apollo') => void
 }
 
 interface MenuState {
@@ -77,7 +79,7 @@ interface AttachmentTarget {
     index: number
 }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, onEffectTrigger }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
     const [trash, setTrash] = useState<Card[]>([])
@@ -112,6 +114,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [activeDragData, setActiveDragData] = useState<any>(null)
     const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null)
     const [teisatsuCards, setTeisatsuCards] = useState<Card[] | null>(null)
+    const [showDetailModal, setShowDetailModal] = useState<Card | null>(null)
 
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
@@ -216,6 +219,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         },
         playStadium: (index: number) => {
             playStadium(index)
+        },
+        receiveEffect: (effect: 'judge' | 'apollo') => {
+            // Triggered by opponent usage
+            const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
+            setRemaining(newDeck)
+            setHand([])
+
+            const drawCount = effect === 'judge' ? 4 : 3
+            const drawn = newDeck.slice(0, drawCount)
+            setHand(drawn)
+            setRemaining(newDeck.slice(drawCount))
+
+            alert(`相手が${effect === 'judge' ? 'ジャッジマン' : 'アポロ'}を使用しました。\n手札をシャッフルし、${drawCount}枚引きました。`)
         }
     }))
 
@@ -247,6 +263,62 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         // Update ref to current
         prevStadiumRef.current = externalStadium || null
     }, [externalStadium])
+
+    // --- UI Helpers ---
+
+    // Dynamic Mobile Scaling
+    const [mobileScale, setMobileScale] = useState(1)
+
+    useEffect(() => {
+        if (!mobile) return
+
+        const updateScale = () => {
+            const width = window.innerWidth
+            // Base reference: iPhone SE/8 width (375px)
+            const wRatio = width / 375
+            const hRatio = window.innerHeight / 750
+            setMobileScale(Math.min(wRatio, hRatio, 1.2))
+        }
+
+        updateScale()
+        window.addEventListener('resize', updateScale)
+        return () => window.removeEventListener('resize', updateScale)
+    }, [mobile])
+
+    const SIZES = {
+        standard: {
+            battle: { w: 100, h: 140 },
+            bench: { w: 80, h: 112 },
+            hand: { w: 90, h: 126 }
+        },
+        mobile: {
+            battle: { w: Math.floor(50 * mobileScale), h: Math.floor(70 * mobileScale) },
+            bench: { w: Math.floor(48 * mobileScale), h: Math.floor(67 * mobileScale) },
+            hand: { w: Math.floor(45 * mobileScale), h: Math.floor(63 * mobileScale) }
+        }
+    }
+    const sizes = mobile ? SIZES.mobile : SIZES.standard
+
+    // Scroll lock utilities
+    const lockScroll = () => {
+        document.body.style.overflow = 'hidden'
+    }
+    const unlockScroll = () => {
+        document.body.style.overflow = 'auto'
+    }
+
+    // Portal Target for Mobile
+    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
+
+    useEffect(() => {
+        if (mobile) {
+            const targetId = idPrefix === 'player1' ? 'mobile-battle-p1' : 'mobile-battle-p2'
+            const el = document.getElementById(targetId)
+            setPortalTarget(el)
+        } else {
+            setPortalTarget(null)
+        }
+    }, [mobile, idPrefix])
 
     const setupPrizeCards = () => {
         const prizes = remaining.slice(0, 6)
@@ -519,6 +591,44 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(drawn)
         setRemaining(newDeck.slice(4))
 
+        // Notify parent to trigger opponent
+        if (onEffectTrigger) {
+            onEffectTrigger('judge', 'opponent')
+        }
+    }
+
+    const useApollo = () => {
+        // Shuffle hand into deck, self draws 5
+        const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setHand([])
+
+        const drawn = newDeck.slice(0, 5)
+        setHand(drawn)
+        setRemaining(newDeck.slice(5))
+
+        // Notify parent to trigger opponent (opponent draws 3)
+        if (onEffectTrigger) {
+            onEffectTrigger('apollo', 'opponent')
+        }
+        alert('手札を全て山札に戻し、自分は5枚引きました。\n相手は3枚引きます。')
+    }
+
+    const useAthena = () => {
+        // Draw until hand has 5 cards
+        const currentHandSize = hand.length
+        if (currentHandSize >= 5) {
+            alert('手札が5枚以上あるため引けません')
+            return
+        }
+
+        const drawCount = 5 - currentHandSize
+        const drawn = remaining.slice(0, drawCount)
+        setHand([...hand, ...drawn])
+        setRemaining(remaining.slice(drawCount))
+
+        // Simplification: Not checking for Rocket text for now, as agreed
+        alert(`手札が5枚になるように${drawCount}枚引きました`)
     }
 
     const useTeisatsuShirei = () => {
@@ -766,86 +876,167 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
     }
 
-    // --- UI Helpers ---
 
-    // Dynamic Mobile Scaling
-    const [mobileScale, setMobileScale] = useState(1)
 
-    useEffect(() => {
-        if (!mobile) return
+    // Render logic for menu items (Add "View Detail" button)
+    const renderMenu = () => {
+        if (!menu) return null
 
-        const updateScale = () => {
-            // Base reference: iPhone SE/8 width (375px) and reasonable height (667px)
-            // We prioritize width fit but check height to avoid overflow
-            const wRatio = window.innerWidth / 375
-            const hRatio = window.innerHeight / 750 // conservative height
-            setMobileScale(Math.min(wRatio, hRatio, 1.2)) // Cap at 1.2x zoom
+        // Simple positioning to avoid overflow is tricky without measuring menu size first
+        // Simple heuristic: if x > windowWidth / 2, align left
+        const isRightSide = menu.x > (typeof window !== 'undefined' ? window.innerWidth / 2 : 500)
+
+        let style: React.CSSProperties = {
+            position: 'fixed',
+            zIndex: 9999,
         }
 
-        updateScale()
-        window.addEventListener('resize', updateScale)
-        return () => window.removeEventListener('resize', updateScale)
-    }, [mobile])
-
-    const SIZES = {
-        standard: {
-            battle: { w: 100, h: 140 },
-            bench: { w: 80, h: 112 },
-            hand: { w: 90, h: 126 }
-        },
-        mobile: {
-            // Apply scale to base sizes
-            battle: { w: Math.floor(50 * mobileScale), h: Math.floor(70 * mobileScale) },
-            bench: { w: Math.floor(48 * mobileScale), h: Math.floor(67 * mobileScale) },
-            hand: { w: Math.floor(45 * mobileScale), h: Math.floor(63 * mobileScale) }
-        }
-    }
-    const sizes = mobile ? SIZES.mobile : SIZES.standard
-
-
-
-    // Click outside to close menu
-    useEffect(() => {
-        const handleClickOutside = () => {
-            if (menu) closeMenu()
-        }
-        window.addEventListener('click', handleClickOutside)
-
-        // Prevent context menu (long press menu)
-        const preventContextMenu = (e: MouseEvent) => {
-            e.preventDefault()
-        }
-        window.addEventListener('contextmenu', preventContextMenu)
-
-        return () => {
-            window.removeEventListener('click', handleClickOutside)
-            window.removeEventListener('contextmenu', preventContextMenu)
-        }
-    }, [menu])
-
-    // Scroll lock utilities
-    const lockScroll = () => {
-        document.body.style.overflow = 'hidden'
-    }
-    const unlockScroll = () => {
-        document.body.style.overflow = 'auto'
-    }
-
-    // Portal Target for Mobile
-    const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
-
-    useEffect(() => {
-        if (mobile) {
-            // Map idPrefix to portal slot ID
-            // player1 -> mobile-battle-p1 (Self)
-            // player2 -> mobile-battle-p2 (Opponent)
-            const targetId = idPrefix === 'player1' ? 'mobile-battle-p1' : 'mobile-battle-p2'
-            const el = document.getElementById(targetId)
-            setPortalTarget(el)
+        // Adjust position to stick to the card
+        if (menu.rect) {
+            style.top = menu.rect.bottom + 5
+            style.left = menu.rect.left + (menu.rect.width / 2)
+            style.transform = 'translateX(-50%)'
         } else {
-            setPortalTarget(null)
+            style.top = menu.y
+            style.left = menu.x
         }
-    }, [mobile, idPrefix])
+
+        // Determine available actions based on source
+        return createPortal(
+            <div className="fixed inset-0 z-[9999]" onClick={closeMenu}>
+                <div
+                    className="absolute bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+                    style={style}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-500">
+                        カード操作
+                    </div>
+
+                    {/* View Detail Button */}
+                    <button
+                        onClick={() => {
+                            const cardToView = 'cards' in menu.card ? getTopCard(menu.card) : menu.card
+                            setShowDetailModal(cardToView)
+                            closeMenu()
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-purple-50 hover:text-purple-600 text-sm flex items-center gap-2"
+                    >
+                        <span>🔍</span> 詳細を見る
+                    </button>
+
+                    {menu.source === 'hand' && (
+                        <>
+                            <button onClick={() => playToBattleField(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">バトル場に出す</button>
+                            <button onClick={() => playToBench(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">ベンチに出す</button>
+                            <button onClick={() => trashFromHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">トラッシュ</button>
+                        </>
+                    )}
+                    {menu.source === 'battle' && (
+                        <>
+                            <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">手札に戻す</button>
+                            <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">ベンチと交代</button>
+                            <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">山札に戻す</button>
+                            <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">きぜつ（トラッシュ）</button>
+                            {/* Attachments list logic could go here if crowded */}
+                        </>
+                    )}
+                    {menu.source === 'bench' && (
+                        <>
+                            <button onClick={() => benchToHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">手札に戻す</button>
+                            <button onClick={() => swapBenchToBattle(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">バトル場へ</button>
+                            <button onClick={() => benchToTrash(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">きぜつ（トラッシュ）</button>
+                        </>
+                    )}
+                </div>
+            </div>,
+            document.body
+        )
+    }
+
+    // Detail Modal
+    const renderDetailModal = () => {
+        if (!showDetailModal) return null
+
+        return createPortal(
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
+                <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col items-center">
+                    <button
+                        className="absolute -top-12 right-0 text-white hover:text-gray-300 transition"
+                        onClick={() => setShowDetailModal(null)}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <img
+                        src={showDetailModal.imageUrl}
+                        alt={showDetailModal.name}
+                        className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="mt-4 bg-white/10 backdrop-blur rounded-full px-6 py-2 text-white font-bold">
+                        {showDetailModal.name}
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )
+    }
+
+    // Action Menu Render (Updated with new buttons)
+    const renderActionMenu = () => {
+        // ... existing implementation details for Action Menu need to be updated or replaced
+        // Since we are replacing lines, I'll rewrite the Action Menu section fully or rely on where it is called
+        // Let's implement the Action Menu content here to be used in the render function
+        return (
+            <div className={`
+                fixed bottom-0 left-0 right-0 bg-white border-t rounded-t-xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-50 transform transition-transform duration-300
+                ${showActionMenu ? 'translate-y-0' : 'translate-y-full'}
+                md:relative md:transform-none md:bg-transparent md:border-none md:shadow-none md:p-0 md:z-0
+            `}>
+                <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
+                    <button onClick={shuffleDeck} className="bg-white border hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium shadow-sm">
+                        山札シャッフル
+                    </button>
+                    <button onClick={mulligan} className="bg-white border hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium shadow-sm">
+                        マリガン
+                    </button>
+                    <button onClick={increaseBenchSize} className="bg-white border hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium shadow-sm">
+                        ベンチ拡張 (+1)
+                    </button>
+                    {/* Supporters */}
+                    <div className="col-span-2 md:col-span-1 border-t pt-2 mt-1 md:mt-2">
+                        <p className="text-xs text-center text-gray-400 font-bold mb-1">サポート</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={useLillie} className="bg-pink-100 hover:bg-pink-200 text-pink-700 px-3 py-1 rounded text-xs font-bold">
+                                リーリエ
+                            </button>
+                            <button onClick={useJudge} className="bg-orange-100 hover:bg-orange-200 text-orange-700 px-3 py-1 rounded text-xs font-bold">
+                                ジャッジマン
+                            </button>
+                            <button onClick={useApollo} className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-xs font-bold">
+                                アポロ
+                            </button>
+                            <button onClick={useAthena} className="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-1 rounded text-xs font-bold">
+                                アテナ
+                            </button>
+                            <button onClick={useTeisatsuShirei} className="col-span-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded text-xs font-bold flex items-center justify-center gap-1">
+                                <span>👁️</span> 偵察指令
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Close Button */}
+                <button
+                    onClick={() => setShowActionMenu(false)}
+                    className="md:hidden w-full mt-4 bg-gray-100 text-gray-600 py-3 rounded-lg font-bold"
+                >
+                    閉じる
+                </button>
+            </div>
+        )
+    }
+
 
     const BattleFieldContent = (
         <DroppableZone id={`${idPrefix}-battle-field`} className={`${theme.bg} rounded-lg shadow-lg p-1 sm:p-3 ${theme.border} border ${attachMode ? 'ring-2 ring-green-400 animate-pulse' : ''} ${mobile ? 'w-full h-full min-w-[60px]' : 'min-w-[180px]'} flex flex-col items-center justify-center`}>
@@ -872,108 +1063,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     return (
         <div className={`w-full ${compact ? "space-y-0.5 sm:space-y-2" : "space-y-4"} relative`}>
             {/* Context Menu */}
-            {menu && (
-                <div
-                    className="fixed z-[9999] bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden min-w-[170px]"
-                    style={{
-                        top: menu.rect ? Math.min(menu.rect.top, window.innerHeight - 250) : Math.min(menu.y, window.innerHeight - 200),
-                        left: menu.rect
-                            ? (menu.rect.right + 180 < window.innerWidth
-                                ? menu.rect.right + 10
-                                : (menu.rect.left - 180 > 0
-                                    ? menu.rect.left - 180
-                                    : Math.max(10, window.innerWidth - 180)))
-                            : Math.min(menu.x, window.innerWidth - 170)
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-700">
-                        {menu.source === 'hand' ? '手札 ' : menu.source === 'battle' ? 'バトル場 ' : 'ベンチ '}: {(menu.card as any).name || 'カード'}
-                    </div>
-                    <div className="flex flex-col">
-                        {menu.source === 'hand' && (
-                            <>
-                                {isPokemon(menu.card as Card) && (
-                                    <>
-                                        <button onClick={() => playToBattleField(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black font-bold">
-                                            バトル場に出す
-                                        </button>
-                                        <button onClick={() => playToBench(menu.index)} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black font-bold">
-                                            ベンチに出す
-                                        </button>
-                                    </>
-                                )}
-                                {isStadium(menu.card as Card) && (
-                                    <button onClick={() => { playStadium(menu.index); closeMenu(); }} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-green-700 font-bold">
-                                        スタジアムを出す
-                                    </button>
-                                )}
-                                <button onClick={() => trashFromHand(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                        {menu.source === 'battle' && (
-                            <>
-                                <button onClick={startSwapWithBench} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-black">
-                                    ベンチと入替
-                                </button>
-                                <button onClick={() => updateDamage('battle', 0, 10)} className="text-left px-4 py-3 hover:bg-orange-50 text-sm border-b transition-colors text-orange-600 font-bold">
-                                    ダメージ加算 (+10)
-                                </button>
-                                {battleField && battleField.damage > 0 && (
-                                    <button onClick={() => updateDamage('battle', 0, -10)} className="text-left px-4 py-3 hover:bg-pink-50 text-sm border-b transition-colors text-pink-600 font-bold">
-                                        ダメージ回復 (-10)
-                                    </button>
-                                )}
-                                <button onClick={battleToHand} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
-                                    手札に戻す
-                                </button>
-                                <button onClick={battleToDeck} className="text-left px-4 py-3 hover:bg-blue-50 text-sm border-b transition-colors text-blue-700">
-                                    山札に戻す
-                                </button>
-                                {((battleField?.cards.length || 0) > 1) && (
-                                    <button onClick={() => { setAttachmentTarget({ type: 'battle', index: 0 }); closeMenu(); }} className="text-left px-4 py-3 hover:bg-yellow-50 text-sm border-b transition-colors text-black font-bold">
-                                        道具・エネルギー管理
-                                    </button>
-                                )}
-                                <button onClick={battleToTrash} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                        {menu.source === 'bench' && (
-                            <>
-                                <button onClick={() => swapBenchToBattle(menu.index)} className="text-left px-4 py-3 hover:bg-purple-50 text-sm border-b transition-colors text-black">
-                                    バトル場へ
-                                </button>
-                                <button onClick={() => updateDamage('bench', menu.index, 10)} className="text-left px-4 py-3 hover:bg-orange-50 text-sm border-b transition-colors text-orange-600 font-bold">
-                                    ダメージ加算 (+10)
-                                </button>
-                                {bench[menu.index] && bench[menu.index]!.damage > 0 && (
-                                    <button onClick={() => updateDamage('bench', menu.index, -10)} className="text-left px-4 py-3 hover:bg-pink-50 text-sm border-b transition-colors text-pink-600 font-bold">
-                                        ダメージ回復 (-10)
-                                    </button>
-                                )}
-                                <button onClick={() => benchToHand(menu.index)} className="text-left px-4 py-3 hover:bg-green-50 text-sm border-b transition-colors text-black">
-                                    手札に戻す
-                                </button>
-                                {((bench[menu.index]?.cards.length || 0) > 1) && (
-                                    <button onClick={() => { setAttachmentTarget({ type: 'bench', index: menu.index }); closeMenu(); }} className="text-left px-4 py-3 hover:bg-yellow-50 text-sm border-b transition-colors text-black font-bold">
-                                        道具・エネルギー管理
-                                    </button>
-                                )}
-                                <button onClick={() => benchToTrash(menu.index)} className="text-left px-4 py-3 hover:bg-red-50 text-sm text-red-600 transition-colors">
-                                    トラッシュする
-                                </button>
-                            </>
-                        )}
-                    </div>
-                    <button onClick={closeMenu} className="w-full py-2 bg-gray-100 text-xs text-gray-500 hover:bg-gray-200">
-                        閉じる
-                    </button>
-                </div>
-            )}
+            {/* Render Context Menu */}
+            {renderMenu()}
+
+            {/* Render Detail Modal */}
+            {renderDetailModal()}
 
             {/* Swap Prompt */}
             {swapMode && (
@@ -1009,40 +1103,33 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                     <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 relative">
                         <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
-                        <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
-                        <button onClick={useJudge} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition whitespace-nowrap">ジャッジマン</button>
-                        <button onClick={useTeisatsuShirei} className="px-3 py-1 bg-teal-500 text-white rounded text-xs font-bold hover:bg-teal-600 transition whitespace-nowrap">ていさつしれい</button>
+
+                        {/* Desktop View Buttons (Hidden on Mobile) */}
+                        <div className="hidden md:flex gap-1">
+                            <button onClick={useLillie} className="px-3 py-1 bg-pink-500 text-white rounded text-xs font-bold hover:bg-pink-600 transition whitespace-nowrap">リーリエ</button>
+                            <button onClick={useJudge} className="px-3 py-1 bg-orange-500 text-white rounded text-xs font-bold hover:bg-orange-600 transition whitespace-nowrap">ジャッジマン</button>
+                            <button onClick={useApollo} className="px-3 py-1 bg-indigo-500 text-white rounded text-xs font-bold hover:bg-indigo-600 transition whitespace-nowrap">アポロ</button>
+                            <button onClick={useAthena} className="px-3 py-1 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600 transition whitespace-nowrap">アテナ</button>
+                            <button onClick={useTeisatsuShirei} className="px-3 py-1 bg-teal-500 text-white rounded text-xs font-bold hover:bg-teal-600 transition whitespace-nowrap">偵察指令</button>
+                        </div>
 
                         <div className="relative">
                             <button
                                 onClick={() => setShowActionMenu(!showActionMenu)}
-                                className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs font-bold hover:bg-gray-300 transition whitespace-nowrap"
+                                className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs font-bold hover:bg-gray-300 transition whitespace-nowrap flex items-center lg:hidden"
+                            >
+                                メニュー ▼
+                            </button>
+                            {/* PC 'Others' Button */}
+                            <button
+                                onClick={() => setShowActionMenu(!showActionMenu)}
+                                className="hidden lg:flex px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs font-bold hover:bg-gray-300 transition whitespace-nowrap items-center"
                             >
                                 その他 ▼
                             </button>
-                            {showActionMenu && (
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden flex flex-col p-1">
-                                    <button
-                                        onClick={() => { shuffleDeck(); setShowActionMenu(false); }}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-xs text-gray-700 font-bold rounded"
-                                    >
-                                        シャッフル
-                                    </button>
-                                    <button
-                                        onClick={() => { mulligan(); setShowActionMenu(false); }}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-xs text-gray-700 font-bold rounded"
-                                    >
-                                        引き直し
-                                    </button>
-                                    <div className="h-px bg-gray-100 my-1"></div>
-                                    <button
-                                        onClick={() => { onReset(); setShowActionMenu(false); }}
-                                        className="w-full text-left px-4 py-2 hover:bg-red-50 text-xs text-red-600 font-bold rounded"
-                                    >
-                                        リセット
-                                    </button>
-                                </div>
-                            )}
+
+                            {/* Action Menu Dropdown/Modal */}
+                            {showActionMenu && renderActionMenu()}
                         </div>
                     </div>
                 </div>

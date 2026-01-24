@@ -2,23 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { ReferenceDeck } from '@/lib/supabase'
-
-// Separate interface for the 'deck_archetypes' table (Global/Reference archetypes)
-// This is distinct from the 'user_deck_archetypes' used in deck management
-interface ReferenceDeckArchetype {
-    id: string
-    name: string
-    display_order?: number
-    cover_image_url?: string | null
-    created_at: string
-}
+import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 
 interface ReferenceDeckListProps {
     userId?: string | null
     userEmail?: string | null
     initialDecks?: ReferenceDeck[]
-    initialArchetypes?: ReferenceDeckArchetype[]
+    initialArchetypes?: DeckArchetype[]
 }
 
 const EVENT_TYPES = [
@@ -46,7 +36,7 @@ export default function ReferenceDeckList({
     initialArchetypes = []
 }: ReferenceDeckListProps) {
     const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
-    const [archetypes, setArchetypes] = useState<ReferenceDeckArchetype[]>(initialArchetypes)
+    const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
     const [selectedEvent, setSelectedEvent] = useState('All')
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
     const [loading, setLoading] = useState(initialDecks.length === 0)
@@ -129,7 +119,7 @@ export default function ReferenceDeckList({
                 const { data } = supabase.storage
                     .from('deck-images')
                     .getPublicUrl(fileName)
-                
+
                 finalImageUrl = data.publicUrl
             }
 
