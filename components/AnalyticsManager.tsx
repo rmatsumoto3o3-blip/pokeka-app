@@ -1,9 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, syncAnalyzedDecksToReferencesAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction } from '@/app/actions'
 import Image from 'next/image'
+
+// Sortable Item Component
+function SortableArchetypeItem({ id, name, displayOrder }: { id: string, name: string, displayOrder: number }) {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: id })
+    const style = { transform: CSS.Transform.toString(transform), transition }
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded text-sm mb-1 cursor-move hover:shadow-sm">
+            <div className="flex items-center">
+                <span className="text-gray-400 mr-2">☰</span>
+                <span className="font-medium text-gray-700">{name}</span>
+            </div>
+            <span className="text-xs text-gray-400">#{displayOrder}</span>
+        </div>
+    )
+}
 
 type Archetype = {
     id: string
@@ -23,7 +43,7 @@ type AnalyticsResult = {
     totalDecks: number
 }
 
-export default function AnalyticsManager({ archetypes, userId }: { archetypes: Archetype[], userId: string }) {
+export default function AnalyticsManager({ archetypes = [], userId }: { archetypes?: Archetype[], userId: string }) {
     const [selectedArchetype, setSelectedArchetype] = useState<string>(archetypes.length > 0 ? archetypes[0].id : '')
     const [inputCode, setInputCode] = useState('')
     const [inputDeckName, setInputDeckName] = useState('')
@@ -32,6 +52,47 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
     const [isAdding, setIsAdding] = useState(false)
     const [data, setData] = useState<AnalyticsResult | null>(null)
     const [error, setError] = useState<string | null>(null)
+
+    // Edit State
+    const [editingDeck, setEditingDeck] = useState<any | null>(null)
+    const [editName, setEditName] = useState('')
+    const [editEventType, setEditEventType] = useState('')
+    const [isSaving, setIsSaving] = useState(false)
+
+    // Image Upload State (Deck)
+    const [deckImageFile, setDeckImageFile] = useState<File | null>(null)
+
+    // Archetype Management State
+    const [localArchetypes, setLocalArchetypes] = useState<Archetype[]>([])
+    const [isManageMode, setIsManageMode] = useState(false) // Toggle for Archetype Manager
+    const [newArchetypeName, setNewArchetypeName] = useState('')
+    const [manageArchetypeId, setManageArchetypeId] = useState('')
+    const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
+    const [archetypeLoading, setArchetypeLoading] = useState(false)
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    )
+
+    useEffect(() => {
+        if (archetypes.length > 0) {
+            setLocalArchetypes(archetypes)
+        } else {
+            fetchArchetypes()
+        }
+    }, [archetypes])
+
+    const fetchArchetypes = async () => {
+        const { data } = await supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true })
+        if (data) {
+            setLocalArchetypes(data)
+            // If no archetype selected, select first
+            if (!selectedArchetype && data.length > 0) {
+                setSelectedArchetype(data[0].id)
+            }
+        }
+    }
 
     // Initial load
     useEffect(() => {
@@ -61,18 +122,100 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
         }
     }
 
-    const handleSync = async () => {
-        if (!confirm('全ての分析済みデッキをトップページ（参照デッキ）に同期しますか？\n※まだ登録されていないデッキのみ追加されます。')) return
 
+
+    const handleEdit = (deck: any) => {
+        setEditingDeck(deck)
+        setEditName(deck.deck_name || '')
+        setEditEventType(deck.event_type || '')
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingDeck) return
+        setIsSaving(true)
         try {
-            const res = await syncAnalyzedDecksToReferencesAction(userId)
+            const res = await updateAnalyzedDeckAction(
+                editingDeck.deck_code,
+                editingDeck.archetype_id,
+                userId,
+                { name: editName, eventType: editEventType }
+            )
             if (res.success) {
-                alert(`同期完了しました！\n追加されたデッキ数: ${res.count}`)
+                await refreshAnalytics(selectedArchetype)
+                setEditingDeck(null)
             } else {
-                alert(`エラー: ${res.error}`)
+                alert(res.error || '更新失敗')
             }
         } catch (e) {
-            alert('通信エラーが発生しました')
+            alert('エラーが発生しました')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+        if (over && active.id !== over.id) {
+            setLocalArchetypes((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id)
+                const newIndex = items.findIndex((item) => item.id === over.id)
+                return arrayMove(items, oldIndex, newIndex)
+            })
+        }
+    }
+
+    const saveOrder = async () => {
+        setIsSaving(true)
+        const updates = localArchetypes.map((arch, index) => ({
+            id: arch.id,
+            new_order: index
+        }))
+        const { error } = await supabase.rpc('update_archetype_order', { orders: updates })
+        setIsSaving(false)
+        if (error) {
+            alert('並び順の保存に失敗しました: ' + error.message)
+        } else {
+            alert('並び順を保存しました！')
+        }
+    }
+
+    const handleCreateArchetype = async () => {
+        if (!newArchetypeName) return
+        const { data, error } = await supabase
+            .from('deck_archetypes')
+            .insert({ name: newArchetypeName })
+            .select().single()
+
+        if (error) {
+            alert('作成失敗: ' + error.message)
+        } else if (data) {
+            setLocalArchetypes([...localArchetypes, data])
+            setSelectedArchetype(data.id)
+            setNewArchetypeName('')
+            alert('新しいデッキタイプを作成しました')
+        }
+    }
+
+    const handleUpdateArchetypeImage = async () => {
+        if (!manageArchetypeId || !archetypeImageFile) return
+        setArchetypeLoading(true)
+        try {
+            const fileExt = archetypeImageFile.name.split('.').pop()
+            const fileName = `archetype-covers/${Date.now()}.${fileExt}`
+            const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, archetypeImageFile)
+            if (uploadError) throw uploadError
+
+            const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
+            const { error: updateError } = await supabase.from('deck_archetypes').update({ cover_image_url: data.publicUrl }).eq('id', manageArchetypeId)
+            if (updateError) throw updateError
+
+            alert('画像を更新しました')
+            setManageArchetypeId('')
+            setArchetypeImageFile(null)
+        } catch (e: any) {
+            alert('エラー: ' + e.message)
+        } finally {
+            setArchetypeLoading(false)
         }
     }
 
@@ -93,19 +236,33 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
         console.log('Adding deck:', code)
 
         try {
+            // Upload Image if provided
+            let imageUrl: string | undefined = undefined
+            if (deckImageFile) {
+                const fileExt = deckImageFile.name.split('.').pop()
+                const fileName = `reference/${Date.now()}.${fileExt}`
+                const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, deckImageFile)
+                if (uploadError) throw uploadError
+
+                const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
+                imageUrl = data.publicUrl
+            }
+
             // Pass custom name/event if provided
             const res = await addDeckToAnalyticsAction(
                 code,
                 selectedArchetype,
                 userId,
                 inputDeckName.trim() || undefined,
-                inputEventType || undefined
+                inputEventType || undefined,
+                imageUrl // New Param
             )
 
             if (res.success) {
                 console.log('Deck added successfully')
                 setInputCode('')
                 setInputDeckName('') // Reset
+                setDeckImageFile(null) // Reset Image
                 // Keep event type logic? Maybe reset or keep. Let's keep for batch entry.
                 await refreshAnalytics(selectedArchetype)
                 alert('デッキを追加しました！')
@@ -184,15 +341,172 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
 
     return (
         <div className="space-y-6">
+            {/* Edit Modal */}
+            {editingDeck && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setEditingDeck(null)}>
+                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">デッキ名</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">イベントタイプ</label>
+                                <select
+                                    value={editEventType}
+                                    onChange={(e) => setEditEventType(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                >
+                                    {['Gym Battle', 'City League', 'Championship', 'Worldwide'].map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                                <button
+                                    onClick={() => setEditingDeck(null)}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    キャンセル
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    disabled={isSaving}
+                                    className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {isSaving ? '保存中...' : '保存'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4">
                     <p className="text-red-700">{error}</p>
                 </div>
             )}
 
+            {/* Archetype Management Section (Collapsible) */}
+            <div className="bg-white rounded-lg shadow border-2 border-purple-100 overflow-hidden">
+                <button
+                    onClick={() => setIsManageMode(!isManageMode)}
+                    className="w-full flex justify-between items-center p-4 bg-purple-50 hover:bg-purple-100 transition"
+                >
+                    <span className="font-bold text-gray-800 flex items-center">
+                        <span className="bg-white p-1 rounded mr-2 text-sm shadow-sm">📁</span>
+                        デッキタイプ設定（画像管理・並び替え）
+                    </span>
+                    <span className="text-purple-600">{isManageMode ? '▲ 閉じる' : '▼ 開く'}</span>
+                </button>
+
+                {isManageMode && (
+                    <div className="p-6 space-y-8 animate-in slide-in-from-top-2">
+                        {/* 1. Deck Type Creation & Cover Image */}
+                        <div className="flex flex-col md:flex-row gap-6">
+                            <div className="flex-1 space-y-4">
+                                <h4 className="font-bold text-gray-900 border-b pb-2">新規作成 & 画像設定</h4>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        設定するデッキタイプ
+                                    </label>
+                                    <div className="flex gap-2 mb-2">
+                                        <select
+                                            value={manageArchetypeId}
+                                            onChange={(e) => setManageArchetypeId(e.target.value)}
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+                                        >
+                                            <option value="">選択してください</option>
+                                            {localArchetypes.map(arch => (
+                                                <option key={arch.id} value={arch.id}>{arch.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newArchetypeName}
+                                            onChange={(e) => setNewArchetypeName(e.target.value)}
+                                            placeholder="新しいタイプ名..."
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+                                        />
+                                        <button
+                                            onClick={handleCreateArchetype}
+                                            disabled={!newArchetypeName}
+                                            className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+                                        >
+                                            新規作成
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        表紙画像を変更 (選択中のタイプ)
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setArchetypeImageFile(e.target.files?.[0] || null)}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-2"
+                                    />
+                                    <button
+                                        onClick={handleUpdateArchetypeImage}
+                                        disabled={!manageArchetypeId || !archetypeImageFile || archetypeLoading}
+                                        className="w-full py-2 bg-white border border-purple-300 text-purple-700 font-bold rounded-md hover:bg-purple-50 disabled:opacity-50"
+                                    >
+                                        {archetypeLoading ? '更新中...' : '画像を更新'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 2. Sorting */}
+                            <div className="flex-1 space-y-4">
+                                <div className="flex justify-between items-center border-b pb-2">
+                                    <h4 className="font-bold text-gray-900">並び替え</h4>
+                                    <button
+                                        onClick={saveOrder}
+                                        disabled={isSaving}
+                                        className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 disabled:opacity-50"
+                                    >
+                                        {isSaving ? '保存中...' : '順序を保存'}
+                                    </button>
+                                </div>
+                                <div className="bg-gray-50 p-2 rounded-lg border border-gray-200 max-h-[300px] overflow-y-auto">
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={localArchetypes.map(a => a.id)}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            {localArchetypes.map((archetype, index) => (
+                                                <SortableArchetypeItem
+                                                    key={archetype.id}
+                                                    id={archetype.id}
+                                                    name={archetype.name}
+                                                    displayOrder={index}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-white p-6 rounded-lg shadow space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Left Column: Controls */}
+                <div className="space-y-6">
+                    {/* Controls (Full Width) */}
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -203,7 +517,7 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                                 onChange={(e) => setSelectedArchetype(e.target.value)}
                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
                             >
-                                {archetypes.map(a => (
+                                {localArchetypes.map(a => (
                                     <option key={a.id} value={a.id}>{a.name}</option>
                                 ))}
                             </select>
@@ -227,13 +541,13 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    デッキ名 (任意)
+                                    デッキ名 <span className="text-pink-500 font-bold">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={inputDeckName}
                                     onChange={(e) => setInputDeckName(e.target.value)}
-                                    placeholder="例: 優勝デッキ (省略可)"
+                                    placeholder="例: 優勝デッキ"
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
                                 />
                             </div>
@@ -259,6 +573,27 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                                     {isAdding ? '解析中...' : '追加'}
                                 </button>
                             </div>
+                            <div className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">
+                                    デッキ画像 (トップページ用) - 任意
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setDeckImageFile(e.target.files?.[0] || null)}
+                                    className="block w-full text-xs text-slate-500
+                                      file:mr-4 file:py-1.5 file:px-3
+                                      file:rounded-md file:border-0
+                                      file:text-xs file:font-semibold
+                                      file:bg-indigo-100 file:text-indigo-700
+                                      hover:file:bg-indigo-200
+                                      cursor-pointer
+                                    "
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    ※設定しない場合は、デッキの1枚目のカード画像が自動的に使用されます。
+                                </p>
+                            </div>
                             <p className="text-xs text-gray-500 mt-1">※1つずつ追加してください</p>
                         </div>
 
@@ -269,19 +604,29 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                             </h4>
                             <div className="max-h-60 overflow-y-auto space-y-2 bg-gray-50 p-2 rounded">
                                 {data?.decks.map((deck) => (
-                                    <div key={deck.id} className="flex justify-between items-center text-sm p-2 bg-white rounded shadow-sm">
-                                        <div className="font-mono text-gray-600">{deck.deck_code}</div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-400">
-                                                {new Date(deck.created_at).toLocaleDateString()}
+                                    <div key={deck.id} className="p-2 bg-white rounded shadow-sm border border-gray-100">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <div className="font-bold text-gray-800 text-sm truncate">{deck.deck_name}</div>
+                                            <span className="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                                                {deck.event_type}
                                             </span>
-                                            <button
-                                                onClick={() => handleRemoveDeck(deck.id)}
-                                                className="text-red-500 hover:text-red-700 p-1"
-                                                title="分析から除外"
-                                            >
-                                                🗑️
-                                            </button>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs">
+                                            <div className="bg-gray-100 px-1 rounded font-mono text-gray-600">{deck.deck_code}</div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleEdit(deck)}
+                                                    className="text-blue-500 hover:text-blue-700 p-1"
+                                                >
+                                                    編集
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveDeck(deck.id)}
+                                                    className="text-red-500 hover:text-red-700 p-1"
+                                                >
+                                                    削除
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -292,29 +637,7 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                         </div>
                     </div>
 
-                    {/* Right Column: Key Card Preview (Text Summary) */}
-                    {/* 
-                         We could put a summary here, but the main visual is below.
-                         Maybe instructions or "Key Metrics"? 
-                     */}
-                    <div className="bg-blue-50 p-4 rounded text-sm text-blue-800">
-                        <h4 className="font-bold mb-2">💡 分析のヒント</h4>
-                        <ul className="list-disc list-inside space-y-1 mb-4">
-                            <li>公式デッキコードを入力して「追加」を押すと、採用率などが自動計算されます。</li>
-                            <li>ゴミ箱アイコンで除外できます。</li>
-                        </ul>
 
-                        <div className="border-t border-blue-200 pt-4 mt-4">
-                            <h4 className="font-bold mb-2">⚡️ 管理者ツール</h4>
-                            <p className="mb-2 text-xs">過去の分析データをトップページに反映させたい場合はこちら</p>
-                            <button
-                                onClick={handleSync}
-                                className="w-full bg-white border border-blue-300 text-blue-700 font-bold py-2 px-4 rounded hover:bg-blue-100 transition shadow-sm"
-                            >
-                                🔄 トップページと同期する
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 

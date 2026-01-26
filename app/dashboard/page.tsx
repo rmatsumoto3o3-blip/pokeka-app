@@ -10,7 +10,7 @@ import InvitationCodeInput from '@/components/InvitationCodeInput'
 import AddDeckForm from '@/components/AddDeckForm'
 import DeckManager from '@/components/DeckManager'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
-import ReferenceDeckManager from '@/components/ReferenceDeckManager'
+import AnalyticsManager from '@/components/AnalyticsManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
 import SideArticleList from '@/components/SideArticleList'
@@ -336,7 +336,13 @@ export default function Dashboard() {
                                     isAdmin) && (
                                         <>
                                             <EnvironmentManager userEmail={userEmail} />
-                                            <ReferenceDeckManager userId={userId} userEmail={userEmail} />
+                                            <div className="bg-white rounded-2xl p-6 border-2 border-orange-100 shadow-sm mt-8">
+                                                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                                                    <span className="bg-orange-100 p-2 rounded-lg mr-2">📊</span>
+                                                    デッキ管理 (分析 & 参考デッキ)
+                                                </h2>
+                                                <AnalyticsManager userId={userId} />
+                                            </div>
                                         </>
                                     )}
 

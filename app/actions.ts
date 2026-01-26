@@ -342,7 +342,7 @@ export async function saveDeckVersionAction(
 }
 // --- Phase 36: Deck Analytics Automation ---
 
-export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string) {
+export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string, customImageUrl?: string) {
     try {
         // 1. Check permissions (Admin only)
         const ADMIN_EMAILS = [
@@ -410,8 +410,8 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
         const deckName = customDeckName || archetypeData?.name || 'New Deck'
         const eventType = customEventType || 'Gym Battle'
 
-        // Use first card (usually a Pokemon) as the thumbnail
-        const imageUrl = cards.length > 0 ? cards[0].imageUrl : null
+        // Use custom image if provided, otherwise fallback to first card
+        const imageUrl = customImageUrl || (cards.length > 0 ? cards[0].imageUrl : null)
 
         const { error: refError } = await supabaseAdmin
             .from('reference_decks')
@@ -453,6 +453,21 @@ export async function removeDeckFromAnalyticsAction(id: string, userId: string) 
             return { success: false, error: '権限がありません' }
         }
 
+        const { data: targetDeck } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('deck_code, archetype_id')
+            .eq('id', id)
+            .single()
+
+        if (targetDeck) {
+            // Delete from Reference Decks first (or parallel)
+            await supabaseAdmin
+                .from('reference_decks')
+                .delete()
+                .eq('deck_code', targetDeck.deck_code)
+                .eq('archetype_id', targetDeck.archetype_id)
+        }
+
         const { error } = await supabaseAdmin
             .from('analyzed_decks')
             .delete()
@@ -479,6 +494,26 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         if (!decks || decks.length === 0) {
             return { success: true, decks: [], analytics: [], totalDecks: 0 }
         }
+
+        // 1.5 Fetch Reference Metadata
+        const deckCodes = decks.map(d => d.deck_code)
+        const { data: refDecks } = await supabaseAdmin
+            .from('reference_decks')
+            .select('deck_code, deck_name, event_type, image_url, id')
+            .in('deck_code', deckCodes)
+            .eq('archetype_id', archetypeId)
+
+        // Merge Metadata
+        const enrichedDecks = decks.map(deck => {
+            const ref = refDecks?.find(r => r.deck_code === deck.deck_code)
+            return {
+                ...deck,
+                deck_name: ref?.deck_name || '名称未設定',
+                event_type: ref?.event_type || 'Unknown',
+                image_url: ref?.image_url || null,
+                reference_id: ref?.id // For ID-based updates if needed
+            }
+        })
 
         // 2. Aggregate Data
         const totalDecks = decks.length
@@ -535,11 +570,51 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
             // Let's provide "avgQuantity" as (totalQty / adoptionCount) to say "Adopting decks usually play X copies".
         })).sort((a, b) => b.adoptionRate - a.adoptionRate) // Sort by popularity
 
-        return { success: true, decks, analytics, totalDecks }
+        return { success: true, decks: enrichedDecks, analytics, totalDecks }
 
     } catch (error) {
         console.error('Get Analytics Error:', error)
         return { success: false, error: (error as Error).message }
+    }
+}
+
+export async function updateAnalyzedDeckAction(
+    deckCode: string,
+    archetypeId: string,
+    userId: string,
+    updates: { name: string, eventType: string, imageUrl?: string }
+) {
+    try {
+        // Admin Check
+        const ADMIN_EMAILS = [
+            'player1@pokeka.local',
+            'player2@pokeka.local',
+            'player3@pokeka.local',
+            'r.matsumoto.3o3@gmail.com',
+            'nexpure.event@gmail.com',
+            'admin@pokeka.local'
+        ]
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        // Update Reference Deck
+        const { error } = await supabaseAdmin
+            .from('reference_decks')
+            .update({
+                deck_name: updates.name,
+                event_type: updates.eventType,
+                image_url: updates.imageUrl // Optional update if provided
+            })
+            .eq('deck_code', deckCode)
+            .eq('archetype_id', archetypeId)
+
+        if (error) throw error
+
+        return { success: true }
+    } catch (e) {
+        return { success: false, error: (e as Error).message }
     }
 }
 
