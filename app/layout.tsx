@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google"; // Import pixel font
 import "./globals.css";
-import AdSenseLoader from "@/components/AdSenseLoader";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +35,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} antialiased`}
       >
-        <AdSenseLoader />
+        {/* Google AdSense (Verification) */}
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2951381820280282"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-2JW6DYQYSD"
