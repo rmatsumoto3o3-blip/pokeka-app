@@ -370,7 +370,22 @@ export default function Dashboard() {
                         {/* Mobile Ad Slot (Visible only on mobile) */}
                         <div className="lg:hidden mt-8 space-y-6">
                             {/* Mobile Article List */}
-                            <SideArticleList />
+                            <div className="mb-6">
+                                <a
+                                    href="https://shopa.jp/9293M3MEXQ2Z"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full hover:opacity-90 transition-opacity mb-4"
+                                >
+                                    <img
+                                        src="/ad_sponsor_toyger.png"
+                                        alt="サプライ買うならTOYGER"
+                                        className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                        loading="lazy"
+                                    />
+                                </a>
+                                <SideArticleList />
+                            </div>
                             <AdPlaceholder slot="mobile-bottom" label="Sponsored" />
                         </div>
                     </div>
@@ -378,7 +393,22 @@ export default function Dashboard() {
                     {/* Sidebar Column (Visible only on Desktop) */}
                     <div className="hidden lg:block lg:col-span-1 space-y-6 sticky top-24">
                         {/* Sidebar Article List (Top Priority) */}
-                        <SideArticleList />
+                        <div className="mb-6">
+                            <a
+                                href="https://shopa.jp/9293M3MEXQ2Z"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full hover:opacity-90 transition-opacity mb-4"
+                            >
+                                <img
+                                    src="/ad_sponsor_toyger.png"
+                                    alt="サプライ買うならTOYGER"
+                                    className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                    loading="lazy"
+                                />
+                            </a>
+                            <SideArticleList />
+                        </div>
 
                         <AdPlaceholder slot="sidebar-top" label="Sponsored" className="min-h-[300px]" />
                         <AdPlaceholder slot="sidebar-bottom" label="Sponsored" className="min-h-[300px]" />
