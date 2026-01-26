@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
+import DeckViewerModal from './DeckViewerModal' // Import the new modal
 
 interface ReferenceDeckListProps {
     userId?: string | null
@@ -27,8 +28,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
     'Worldwide': 'Worldwide'
 }
 
-
-
 export default function ReferenceDeckList({
     userId,
     userEmail,
@@ -40,13 +39,15 @@ export default function ReferenceDeckList({
     const [selectedEvent, setSelectedEvent] = useState('All')
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
     const [loading, setLoading] = useState(initialDecks.length === 0)
-    const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Modal State
+
+    // View State
+    const [viewerDeckCode, setViewerDeckCode] = useState<string | null>(null)
+    const [viewerDeckName, setViewerDeckName] = useState<string>('')
+    const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Legacy Image Modal
 
     // Edit State
     const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
     const [editName, setEditName] = useState('')
-    const [editImageUrl, setEditImageUrl] = useState('')
-    const [editImageFile, setEditImageFile] = useState<File | null>(null)
     const [editEventType, setEditEventType] = useState('')
     const [isSaving, setIsSaving] = useState(false)
 
@@ -56,7 +57,6 @@ export default function ReferenceDeckList({
         userEmail === 'player3@pokeka.local'
 
     useEffect(() => {
-        // If we have initial data, don't fetch (unless we want to refresh, but for now ISR is the goal)
         if (initialDecks.length > 0) return
 
         const loadData = async () => {
@@ -82,7 +82,7 @@ export default function ReferenceDeckList({
             .from('deck_archetypes')
             .select('*')
             .order('display_order', { ascending: true })
-            .order('name', { ascending: true }) // Fallback
+            .order('name', { ascending: true })
 
         if (!error && data) {
             setArchetypes(data)
@@ -93,8 +93,6 @@ export default function ReferenceDeckList({
         e.stopPropagation()
         setEditingDeck(deck)
         setEditName(deck.deck_name)
-        setEditImageUrl(deck.image_url || '')
-        setEditImageFile(null)
         setEditEventType(deck.event_type || '')
     }
 
@@ -103,31 +101,10 @@ export default function ReferenceDeckList({
         setIsSaving(true)
 
         try {
-            let finalImageUrl = editImageUrl
-
-            // Upload if file selected
-            if (editImageFile) {
-                const fileExt = editImageFile.name.split('.').pop()
-                const fileName = `reference/${Date.now()}.${fileExt}`
-
-                const { error: uploadError } = await supabase.storage
-                    .from('deck-images')
-                    .upload(fileName, editImageFile)
-
-                if (uploadError) throw uploadError
-
-                const { data } = supabase.storage
-                    .from('deck-images')
-                    .getPublicUrl(fileName)
-
-                finalImageUrl = data.publicUrl
-            }
-
             const { error } = await supabase
                 .from('reference_decks')
                 .update({
                     deck_name: editName,
-                    image_url: finalImageUrl || null,
                     event_type: editEventType || null
                 })
                 .eq('id', editingDeck.id)
@@ -137,7 +114,7 @@ export default function ReferenceDeckList({
             // Update local state
             setDecks(decks.map(d =>
                 d.id === editingDeck.id
-                    ? { ...d, deck_name: editName, image_url: finalImageUrl || null, event_type: (editEventType || null) as any }
+                    ? { ...d, deck_name: editName, event_type: (editEventType || null) as any }
                     : d
             ))
             setEditingDeck(null)
@@ -151,7 +128,7 @@ export default function ReferenceDeckList({
     }
 
     const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation() // Prevent folder click if distinct
+        e.stopPropagation()
         if (!confirm('本当に削除しますか？')) return
 
         const { error } = await supabase
@@ -161,6 +138,16 @@ export default function ReferenceDeckList({
 
         if (!error) {
             setDecks(decks.filter(d => d.id !== id))
+        }
+    }
+
+    const handleDeckClick = (deck: ReferenceDeck) => {
+        if (deck.deck_code) {
+            setViewerDeckCode(deck.deck_code)
+            setViewerDeckName(deck.deck_name)
+        } else if (deck.image_url) {
+            // Fallback to image modal if no code
+            setSelectedDeckImage(deck.image_url)
         }
     }
 
@@ -179,12 +166,9 @@ export default function ReferenceDeckList({
     // Grouping Logic
     const groupedDecks: { [key: string]: ReferenceDeck[] } = {}
 
-    // Initialize groups for all known archetypes (so empty ones could theoretically exist, but we filter to used ones usually)
-    // Actually better to just group by what decks we have.
-
     filteredDecks.forEach(deck => {
         const archetype = getArchetypeForDeck(deck.archetype_id)
-        const key = archetype ? archetype.id : 'others' // Use ID as key
+        const key = archetype ? archetype.id : 'others'
         if (!groupedDecks[key]) {
             groupedDecks[key] = []
         }
@@ -199,15 +183,12 @@ export default function ReferenceDeckList({
         const aArch = archetypes.find(a => a.id === aId)
         const bArch = archetypes.find(a => a.id === bId)
 
-        // Compare by display_order first
         const aOrder = aArch?.display_order ?? 9999
         const bOrder = bArch?.display_order ?? 9999
 
         if (aOrder !== bOrder) {
             return aOrder - bOrder
         }
-
-        // Fallback to name
         const aName = aArch?.name || ''
         const bName = bArch?.name || ''
         return aName.localeCompare(bName)
@@ -215,8 +196,8 @@ export default function ReferenceDeckList({
 
     if (loading) return <div className="text-gray-500 text-center py-8">読み込み中...</div>
 
-    // Modal
-    const renderModal = () => {
+    // Render Legacy Image Modal
+    const renderLegacyModal = () => {
         if (!selectedDeckImage) return null
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setSelectedDeckImage(null)}>
@@ -239,14 +220,13 @@ export default function ReferenceDeckList({
         )
     }
 
-    // Edit Modal
+    // Render Edit Modal
     const renderEditModal = () => {
         if (!editingDeck) return null
         return (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setEditingDeck(null)}>
                 <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
-
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">デッキ名</label>
@@ -257,7 +237,6 @@ export default function ReferenceDeckList({
                                 className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
                             />
                         </div>
-
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1">イベントタイプ</label>
                             <select
@@ -271,37 +250,6 @@ export default function ReferenceDeckList({
                                 ))}
                             </select>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">デッキ画像</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0] || null
-                                    setEditImageFile(file)
-                                    // Preview
-                                    if (file) {
-                                        const url = URL.createObjectURL(file)
-                                        setEditImageUrl(url)
-                                    }
-                                }}
-                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                ※新しい画像を選択すると自動でアップロードされます。
-                            </p>
-                        </div>
-
-                        {editImageUrl && (
-                            <div className="mt-2">
-                                <p className="text-xs font-bold mb-1 text-gray-500">プレビュー:</p>
-                                <div className="h-32 w-24 relative border rounded overflow-hidden bg-gray-100">
-                                    <img src={editImageUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                </div>
-                            </div>
-                        )}
-
                         <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
                             <button
                                 onClick={() => setEditingDeck(null)}
@@ -334,7 +282,13 @@ export default function ReferenceDeckList({
 
         return (
             <div className="space-y-6">
-                {renderModal()}
+                <DeckViewerModal
+                    isOpen={!!viewerDeckCode}
+                    onClose={() => setViewerDeckCode(null)}
+                    deckCode={viewerDeckCode || ''}
+                    deckName={viewerDeckName}
+                />
+                {renderLegacyModal()}
                 {renderEditModal()}
 
                 {/* Header / Back Button */}
@@ -354,89 +308,119 @@ export default function ReferenceDeckList({
                     </h3>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 lg:grid-cols-3">
-                    {archetypeDecks.map((deck) => (
-                        <div
-                            key={deck.id}
-                            onClick={() => setSelectedDeckImage(deck.image_url || null)}
-                            className="bg-white rounded-lg md:rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition group cursor-pointer"
-                        >
-                            <div className="aspect-[3/4] md:aspect-video bg-gray-100 relative overflow-hidden">
-                                {deck.image_url ? (
-                                    <img
-                                        src={deck.image_url}
-                                        alt={deck.deck_name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                                        referrerPolicy="no-referrer"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                        <span className="text-4xl">⚡️</span>
+                {/* New List View */}
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                    {/* Header Row (Optional, maybe simplistic is better) */}
+                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
+                        <div className="flex-1">デッキ名</div>
+                        <div className="w-24 hidden md:block">イベント</div>
+                        <div className="w-24 hidden md:block">CODE</div>
+                        {isAdmin && <div className="w-20">管理</div>}
+                    </div>
+
+                    <div className="divide-y divide-gray-100">
+                        {archetypeDecks.map((deck) => (
+                            <div
+                                key={deck.id}
+                                onClick={() => handleDeckClick(deck)}
+                                className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition flex items-center gap-3 group"
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-bold text-gray-900 text-sm truncate">{deck.deck_name}</h4>
+                                        {/* Mobile Event Badge */}
+                                        {deck.event_type && (
+                                            <span className="md:hidden text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                                {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
+                                            </span>
+                                        )}
                                     </div>
-                                )}
-                                {/* Event Badge */}
-                                {deck.event_type && (
-                                    <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] md:text-xs px-1.5 py-0.5 md:px-2 md:py-1 rounded">
-                                        {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                        {deck.deck_code && (
+                                            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center">
+                                                <span className="text-[10px] mr-1 opacity-50">CODE:</span>
+                                                {deck.deck_code}
+                                            </span>
+                                        )}
+                                        {/* Fallback indicator if image only */}
+                                        {!deck.deck_code && deck.image_url && (
+                                            <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                                                画像あり
+                                            </span>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </div>
 
-                            <div className="p-2 md:p-3">
-                                <h4 className="font-bold text-gray-900 mb-1 truncate text-xs md:text-sm lg:text-base">{deck.deck_name}</h4>
-
-                                {deck.deck_code && (
-                                    <div className="flex items-center text-[10px] md:text-xs text-gray-500 mb-2 bg-gray-50 p-1 rounded">
-                                        <span className="hidden md:inline mr-2 px-1 py-0.5 bg-gray-200 rounded text-gray-600 font-mono">CODE</span>
-                                        <span className="font-mono select-all truncate">{deck.deck_code}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center mt-1 pt-1 md:mt-2 md:pt-2 border-t border-gray-50">
-                                    {deck.deck_url ? (
-                                        <a
-                                            href={deck.deck_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()} // Prevent modal open
-                                            className="text-[10px] md:text-xs text-pink-600 hover:text-pink-700 font-medium flex items-center bg-pink-50 px-2 py-1 rounded-full"
-                                        >
-                                            <span className="truncate">詳細を見る</span>
-                                            <span className="ml-1">→</span>
-                                        </a>
-                                    ) : (
-                                        <span className="text-[10px] md:text-sm text-gray-400">詳細なし</span>
-                                    )}
-
-                                    {isAdmin && (
-                                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                                            <button
-                                                onClick={(e) => handleEdit(deck, e)}
-                                                className="text-xs text-blue-500 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50 transition"
-                                            >
-                                                編集
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleDelete(deck.id, e)}
-                                                className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition"
-                                            >
-                                                削除
-                                            </button>
-                                        </div>
+                                {/* Desktop Event Type */}
+                                <div className="w-24 hidden md:flex flex-col justify-center text-xs text-gray-600">
+                                    {deck.event_type && (
+                                        <span className="bg-gray-100 px-2 py-1 rounded-full text-center">
+                                            {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
+                                        </span>
                                     )}
                                 </div>
+
+                                {/* Desktop Code Copy Button (Quick Action) */}
+                                <div className="w-24 hidden md:flex items-center justify-center">
+                                    {deck.deck_code && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                navigator.clipboard.writeText(deck.deck_code || '')
+                                                alert('コピーしました')
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition"
+                                            title="コードをコピー"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {isAdmin && (
+                                    <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                                        <button
+                                            onClick={(e) => handleEdit(deck, e)}
+                                            className="text-blue-500 hover:bg-blue-50 p-1.5 rounded"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDelete(deck.id, e)}
+                                            className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="md:hidden text-gray-300">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                </div>
                             </div>
+                        ))}
+                    </div>
+
+                    {archetypeDecks.length === 0 && (
+                        <div className="p-8 text-center text-gray-400">
+                            登録されたデッキはありません
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         )
     }
 
-    // VIEW: Top Level (Folders)
+    // VIEW: Top Level (Folders) - Remains mostly Grid for Archetypes
     return (
         <div className="space-y-6">
-            {renderModal()}
+            <DeckViewerModal
+                isOpen={!!viewerDeckCode}
+                onClose={() => setViewerDeckCode(null)}
+                deckCode={viewerDeckCode || ''}
+                deckName={viewerDeckName}
+            />
+            {renderLegacyModal()}
             {renderEditModal()}
 
             {/* Event Filter Tabs */}
@@ -466,16 +450,24 @@ export default function ReferenceDeckList({
                         const decks = groupedDecks[archetypeId]
 
                         let displayName = 'その他'
-                        let coverImage = decks[0]?.image_url
+                        let coverImage = null
 
                         if (archetypeId !== 'others') {
                             const archetypeData = archetypes.find(a => a.id === archetypeId)
                             if (archetypeData) {
                                 displayName = archetypeData.name
-                                // Priority: 1. Manual Cover, 2. First Deck Image
                                 if (archetypeData.cover_image_url) {
                                     coverImage = archetypeData.cover_image_url
                                 }
+                            }
+                        }
+
+                        // Fallback cover image logic: if no archetype cover, use first deck's image if available (Legacy support)
+                        if (!coverImage && decks.length > 0) {
+                            // Try to find a deck with an image
+                            const deckWithImage = decks.find(d => d.image_url)
+                            if (deckWithImage) {
+                                coverImage = deckWithImage.image_url
                             }
                         }
 

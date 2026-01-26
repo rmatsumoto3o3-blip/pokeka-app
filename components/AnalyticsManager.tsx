@@ -236,18 +236,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         console.log('Adding deck:', code)
 
         try {
-            // Upload Image if provided
-            let imageUrl: string | undefined = undefined
-            if (deckImageFile) {
-                const fileExt = deckImageFile.name.split('.').pop()
-                const fileName = `reference/${Date.now()}.${fileExt}`
-                const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, deckImageFile)
-                if (uploadError) throw uploadError
-
-                const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
-                imageUrl = data.publicUrl
-            }
-
+            // Updated: No Image Upload for individual decks anymore
             // Pass custom name/event if provided
             const res = await addDeckToAnalyticsAction(
                 code,
@@ -255,14 +244,13 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 userId,
                 inputDeckName.trim() || undefined,
                 inputEventType || undefined,
-                imageUrl // New Param
+                undefined // imageUrl is now undefined
             )
 
             if (res.success) {
                 console.log('Deck added successfully')
                 setInputCode('')
                 setInputDeckName('') // Reset
-                setDeckImageFile(null) // Reset Image
                 // Keep event type logic? Maybe reset or keep. Let's keep for batch entry.
                 await refreshAnalytics(selectedArchetype)
                 alert('デッキを追加しました！')
@@ -572,27 +560,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 >
                                     {isAdding ? '解析中...' : '追加'}
                                 </button>
-                            </div>
-                            <div className="mt-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                <label className="block text-xs font-bold text-gray-600 mb-1">
-                                    デッキ画像 (トップページ用) - 任意
-                                </label>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setDeckImageFile(e.target.files?.[0] || null)}
-                                    className="block w-full text-xs text-slate-500
-                                      file:mr-4 file:py-1.5 file:px-3
-                                      file:rounded-md file:border-0
-                                      file:text-xs file:font-semibold
-                                      file:bg-indigo-100 file:text-indigo-700
-                                      hover:file:bg-indigo-200
-                                      cursor-pointer
-                                    "
-                                />
-                                <p className="text-[10px] text-gray-400 mt-1">
-                                    ※設定しない場合は、デッキの1枚目のカード画像が自動的に使用されます。
-                                </p>
                             </div>
                             <p className="text-xs text-gray-500 mt-1">※1つずつ追加してください</p>
                         </div>
