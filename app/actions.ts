@@ -342,7 +342,7 @@ export async function saveDeckVersionAction(
 }
 // --- Phase 36: Deck Analytics Automation ---
 
-export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string) {
+export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string) {
     try {
         // 1. Check permissions (Admin only)
         const ADMIN_EMAILS = [
@@ -407,8 +407,10 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
             .eq('id', archetypeId)
             .single()
 
-        const deckName = archetypeData?.name || 'New Deck'
-        // Use the first card (usually a Pokemon) as the thumbnail
+        const deckName = customDeckName || archetypeData?.name || 'New Deck'
+        const eventType = customEventType || 'Gym Battle'
+
+        // Use first card (usually a Pokemon) as the thumbnail
         const imageUrl = cards.length > 0 ? cards[0].imageUrl : null
 
         const { error: refError } = await supabaseAdmin
@@ -418,7 +420,7 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
                 deck_code: deckCode,
                 deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
                 image_url: imageUrl,
-                event_type: 'Gym Battle', // Default category
+                event_type: eventType,
                 archetype_id: archetypeId
             }])
 

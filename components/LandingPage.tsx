@@ -109,8 +109,75 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 </div>
             </section>
 
+            {/* NEW: Usage Guide Section */}
+            <section className="py-16 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <span className="text-pink-500 font-bold tracking-wider uppercase text-sm">How to Use</span>
+                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">
+                            PokeLixの活用方法
+                        </h2>
+                        <p className="mt-4 text-gray-500 max-w-2xl mx-auto">
+                            デッキの登録から戦績管理まで、3ステップであなたのポケカライフをサポートします。
+                        </p>
+                    </div>
+
+                    <div className="relative">
+                        {/* Connecting Line (Desktop) */}
+                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-pink-200 via-purple-200 to-blue-200 transform -translate-y-1/2 z-0"></div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+                            {/* Step 1 */}
+                            <div className="bg-white p-6 rounded-2xl border-2 border-pink-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
+                                <div className="w-16 h-16 mx-auto bg-pink-100 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                                    📋
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">1. デッキを登録</h3>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                    公式のエディタで作成した「デッキコード」を入力するだけ。<br />
+                                    カード画像ごと一瞬で保存できます。
+                                </p>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div className="bg-white p-6 rounded-2xl border-2 border-purple-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
+                                <div className="w-16 h-16 mx-auto bg-purple-100 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                                    📊
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">2. 分析・カスタマイズ</h3>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                    「キーカード採用率」を見ながらデッキを調整。<br />
+                                    自分だけの最強構築を作り上げましょう。
+                                </p>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div className="bg-white p-6 rounded-2xl border-2 border-blue-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
+                                <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                                    ⚔️
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">3. 戦績を記録</h3>
+                                <p className="text-gray-600 text-sm leading-relaxed">
+                                    対戦結果をサクサク記録。<br />
+                                    「どのデッキに勝てるか」がグラフで可視化されます。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="text-center mt-10">
+                            <Link
+                                href="/guide"
+                                className="inline-flex items-center text-purple-600 font-bold hover:text-purple-800 transition-colors text-lg"
+                            >
+                                詳しい使い方はこちら <span className="ml-2">→</span>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Featured Articles Carousel Section */}
-            <section className="py-12 bg-pink-50/50">
+            <section className="py-12 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-end mb-6">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -170,50 +237,49 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             </div>
 
             {/* Features Section */}
-            <section id="features" className="py-12 md:py-20 bg-pink-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
-                        <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                        {[
-                            {
-                                icon: "📊",
-                                title: "勝率を自動計算",
-                                description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
-                            },
-                            {
-                                icon: "📝",
-                                title: "詳細な対戦記録",
-                                description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
-                            },
-                            {
-                                icon: "🔍",
-                                title: "参考デッキ閲覧",
-                                description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
-                            }
-                        ].map((feature, index) => (
-                            <div key={index} className="bg-white rounded-2xl p-6 md:p-8 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl">
-                                <div className="text-4xl md:text-5xl mb-4 md:mb-6">{feature.icon}</div>
-                                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
-                                <p className="text-sm md:text-base text-gray-600 leading-relaxed">
-                                    {feature.description}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="text-center mt-12">
-                        <button
-                            onClick={() => router.push('/auth?mode=signup')}
-                            className="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
-                        >
-                            無料で戦績管理を始める
-                        </button>
-                    </div>
+            <section id="features" className="py-12 md:py-20 bg-pink-50">                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-16">
+                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
+                    <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    {[
+                        {
+                            icon: "📊",
+                            title: "勝率を自動計算",
+                            description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
+                        },
+                        {
+                            icon: "📝",
+                            title: "詳細な対戦記録",
+                            description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
+                        },
+                        {
+                            icon: "🔍",
+                            title: "参考デッキ閲覧",
+                            description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
+                        }
+                    ].map((feature, index) => (
+                        <div key={index} className="bg-white rounded-2xl p-6 md:p-8 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl">
+                            <div className="text-4xl md:text-5xl mb-4 md:mb-6">{feature.icon}</div>
+                            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
+                            <p className="text-sm md:text-base text-gray-600 leading-relaxed">
+                                {feature.description}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="text-center mt-12">
+                    <button
+                        onClick={() => router.push('/auth?mode=signup')}
+                        className="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
+                    >
+                        無料で戦績管理を始める
+                    </button>
+                </div>
+            </div>
             </section>
 
             {/* Ad Slot: Bottom */}

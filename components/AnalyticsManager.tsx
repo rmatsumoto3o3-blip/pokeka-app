@@ -26,6 +26,8 @@ type AnalyticsResult = {
 export default function AnalyticsManager({ archetypes, userId }: { archetypes: Archetype[], userId: string }) {
     const [selectedArchetype, setSelectedArchetype] = useState<string>(archetypes.length > 0 ? archetypes[0].id : '')
     const [inputCode, setInputCode] = useState('')
+    const [inputDeckName, setInputDeckName] = useState('')
+    const [inputEventType, setInputEventType] = useState('Gym Battle')
     const [isLoading, setIsLoading] = useState(false)
     const [isAdding, setIsAdding] = useState(false)
     const [data, setData] = useState<AnalyticsResult | null>(null)
@@ -91,10 +93,20 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
         console.log('Adding deck:', code)
 
         try {
-            const res = await addDeckToAnalyticsAction(code, selectedArchetype, userId)
+            // Pass custom name/event if provided
+            const res = await addDeckToAnalyticsAction(
+                code,
+                selectedArchetype,
+                userId,
+                inputDeckName.trim() || undefined,
+                inputEventType || undefined
+            )
+
             if (res.success) {
                 console.log('Deck added successfully')
                 setInputCode('')
+                setInputDeckName('') // Reset
+                // Keep event type logic? Maybe reset or keep. Let's keep for batch entry.
                 await refreshAnalytics(selectedArchetype)
                 alert('デッキを追加しました！')
             } else {
@@ -195,6 +207,36 @@ export default function AnalyticsManager({ archetypes, userId }: { archetypes: A
                                     <option key={a.id} value={a.id}>{a.name}</option>
                                 ))}
                             </select>
+                        </div>
+
+                        {/* New Fields for Sync */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    イベントタイプ (参考デッキ用)
+                                </label>
+                                <select
+                                    value={inputEventType}
+                                    onChange={(e) => setInputEventType(e.target.value)}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                >
+                                    {['Gym Battle', 'City League', 'Championship', 'Worldwide'].map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    デッキ名 (任意)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={inputDeckName}
+                                    onChange={(e) => setInputDeckName(e.target.value)}
+                                    placeholder="例: 優勝デッキ (省略可)"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                />
+                            </div>
                         </div>
 
                         <div>
