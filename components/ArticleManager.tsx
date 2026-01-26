@@ -16,7 +16,12 @@ export default function ArticleManager() {
     const [excerpt, setExcerpt] = useState('')
     const [thumbnailUrl, setThumbnailUrl] = useState('')
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+
     const [isPublished, setIsPublished] = useState(false)
+
+    // Link Tool State
+    const [linkText, setLinkText] = useState('')
+    const [linkUrl, setLinkUrl] = useState('')
 
     useEffect(() => {
         fetchArticles()
@@ -272,6 +277,95 @@ export default function ArticleManager() {
                             />
                         </div>
 
+                        {/* Image Inserter Tool */}
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <label className="block text-sm font-bold text-blue-800 mb-2">
+                                📷 本文挿入用画像アップロード
+                            </label>
+                            <div className="flex gap-4 items-start">
+                                <div className="flex-1">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0]
+                                            if (!file) return
+
+                                            // Upload immediately
+                                            try {
+                                                const fileExt = file.name.split('.').pop()
+                                                const fileName = `article-content/${Date.now()}.${fileExt}`
+                                                const { error: uploadError } = await supabase.storage
+                                                    .from('deck-images') // Reusing this bucket as per convention
+                                                    .upload(fileName, file)
+
+                                                if (uploadError) throw uploadError
+
+                                                const { data } = supabase.storage
+                                                    .from('deck-images')
+                                                    .getPublicUrl(fileName)
+
+                                                const imgTag = `<img src="${data.publicUrl}" alt="Inserted Image" class="w-full rounded-lg shadow-md my-6" />`
+                                                setContent(prev => prev + '\n' + imgTag + '\n')
+                                                alert('画像をアップロードし、本文末尾にタグを追加しました！')
+                                            } catch (err) {
+                                                alert('アップロード失敗')
+                                                console.error(err)
+                                            }
+                                        }}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                                    />
+                                    <p className="text-xs text-blue-600 mt-2">
+                                        ※画像を選択すると自動的にアップロードされ、本文の末尾にHTMLタグが追加されます。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/* Link Inserter Tool */}
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                            <label className="block text-sm font-bold text-purple-800 mb-2">
+                                🔗 本文挿入用リンク作成
+                            </label>
+                            <div className="flex gap-2 items-end">
+                                <div className="flex-1">
+                                    <label className="block text-xs text-purple-600 mb-1">表示テキスト</label>
+                                    <input
+                                        type="text"
+                                        value={linkText}
+                                        onChange={(e) => setLinkText(e.target.value)}
+                                        placeholder="ここをクリック"
+                                        className="w-full text-sm p-2 border border-purple-200 rounded text-gray-900"
+                                    />
+                                </div>
+                                <div className="flex-[2]">
+                                    <label className="block text-xs text-purple-600 mb-1">URL</label>
+                                    <input
+                                        type="text"
+                                        value={linkUrl}
+                                        onChange={(e) => setLinkUrl(e.target.value)}
+                                        placeholder="https://example.com"
+                                        className="w-full text-sm p-2 border border-purple-200 rounded text-gray-900"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!linkText || !linkUrl) return alert('テキストとURLを入力してください')
+                                        const linkTag = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-bold">${linkText}</a>`
+                                        setContent(prev => prev + '\n' + linkTag + '\n')
+                                        setLinkText('')
+                                        setLinkUrl('')
+                                        alert('リンクタグを末尾に追加しました！')
+                                    }}
+                                    className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-purple-700 h-[38px]"
+                                >
+                                    追加
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
@@ -301,7 +395,7 @@ export default function ArticleManager() {
                             </button>
                         </div>
                     </form>
-                </div>
+                </div >
             ) : (
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
