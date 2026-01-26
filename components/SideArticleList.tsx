@@ -55,6 +55,7 @@ export default function SideArticleList() {
                                         height={64}
                                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                                         loading="lazy"
+                                        unoptimized
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-lg">📝</div>

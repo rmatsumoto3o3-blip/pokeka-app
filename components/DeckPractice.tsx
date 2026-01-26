@@ -1157,6 +1157,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         width={sizes.hand.w}
                                         height={sizes.hand.h}
                                         className="rounded"
+                                        unoptimized
                                     />
                                 </div>
                             </DraggableCard>
@@ -1331,6 +1332,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         width={sizes.hand.w}
                                         height={sizes.hand.h}
                                         className="rounded"
+                                        unoptimized
                                     />
                                 </div>
                             </DraggableCard>
@@ -1376,6 +1378,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             height={112}
                                             className="rounded shadow no-touch-menu no-select no-tap-highlight"
                                             draggable={false}
+                                            unoptimized
                                         />
                                     </div>
                                 ))}
@@ -1449,6 +1452,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             width={140}
                                             height={196}
                                             className="rounded-lg shadow-lg border-2 border-transparent hover:border-blue-500"
+                                            unoptimized
                                         />
                                         <div className="mt-2 text-center text-sm font-bold text-gray-700">{card.name}</div>
                                     </div>
@@ -1485,6 +1489,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             height={112}
                                             className="rounded shadow no-touch-menu no-select no-tap-highlight"
                                             draggable={false}
+                                            unoptimized
                                         />
                                     </div>
                                 ))}
@@ -1552,6 +1557,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                         alt={card.name}
                                                         fill
                                                         className="object-contain rounded"
+                                                        unoptimized
                                                     />
                                                 </div>
                                                 <div className="flex flex-col">
@@ -1689,6 +1695,7 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
                             height={height}
                             className="rounded shadow bg-white no-touch-menu no-select no-tap-highlight ring-1 ring-black/5"
                             draggable={false}
+                            unoptimized
                         />
                     </div>
                 )

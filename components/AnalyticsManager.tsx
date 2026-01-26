@@ -309,6 +309,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     fill
                                     className="object-contain"
                                     loading="lazy"
+                                    unoptimized
                                 />
                             </div>
                             <div className="mt-2 text-center text-xs space-y-1">

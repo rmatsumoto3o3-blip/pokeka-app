@@ -227,6 +227,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                             height={197}
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                                             loading="lazy"
+                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center text-4xl">
