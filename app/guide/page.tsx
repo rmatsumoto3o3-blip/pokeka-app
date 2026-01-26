@@ -47,25 +47,24 @@ export default function GuidePage() {
 
                     <div className="p-6 md:p-12 space-y-16">
 
-                        {/* STEP 0: Registration */}
+                        {/* Registration */}
                         <section>
                             <div className="flex items-center gap-4 mb-6">
-                                <div className="bg-gray-900 text-white font-bold px-4 py-2 rounded-lg text-xl">STEP 0</div>
-                                <h2 className="text-2xl md:text-3xl font-bold text-gray-800">まずはここから：アカウント作成</h2>
+                                <h2 className="text-2xl md:text-3xl font-bold text-gray-800">まずはアカウント作成</h2>
                             </div>
                             <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
                                 <div className="space-y-6">
                                     <div className="flex gap-4 items-start">
                                         <div className="bg-white border rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500 flex-shrink-0">1</div>
                                         <div>
-                                            <h3 className="font-bold text-lg mb-1">登録ページへアクセス</h3>
+                                            <h3 className="font-bold text-lg mb-1 text-gray-900">登録ページへアクセス</h3>
                                             <p className="text-gray-600">トップページの「新規登録」ボタンをクリックします。</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-4 items-start">
                                         <div className="bg-white border rounded-full w-8 h-8 flex items-center justify-center font-bold text-gray-500 flex-shrink-0">2</div>
                                         <div>
-                                            <h3 className="font-bold text-lg mb-1">メールアドレスを入力</h3>
+                                            <h3 className="font-bold text-lg mb-1 text-gray-900">メールアドレスを入力</h3>
                                             <p className="text-gray-600">メールアドレスとパスワードを入力して送信します。</p>
                                         </div>
                                     </div>
