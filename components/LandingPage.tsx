@@ -79,6 +79,28 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             </section>
 
             {/* Reference Decks Section (Public Preview) */}
+            <section className="py-4 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col items-center justify-center">
+                        <span className="text-xs text-gray-400 mb-1">PR: サプライ買うならTOYGER</span>
+                        <a
+                            href="https://shopa.jp/9293M3MEXQ2Z"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full max-w-sm hover:opacity-90 transition-opacity"
+                        >
+                            <img
+                                src="/ad_sponsor_toyger.png"
+                                alt="サプライ買うならTOYGER"
+                                className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
+                                loading="lazy"
+                            />
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* Reference Decks Section (Public Preview) */}
             <section id="reference-decks" className="py-12 md:py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="mb-6">
