@@ -83,13 +83,16 @@ function PracticeContent() {
 
         if (mode === 'custom') {
             loadCustomDeck()
-            // If code2 is present, load it normally as opponent
             if (code2) {
                 loadDecks(undefined, code2)
             }
-        } else if (code1 && !deck1.length) {
-            setDeckCode1(code1)
-            loadDecks(code1, code2 || '')
+        } else if (code1) {
+            // Reload if code changed or deck is empty
+            if (code1 !== deckCode1 || !deck1.length) {
+                setDeckCode1(code1)
+                setDeck1([]) // Clear current deck to avoid mixing or stale state visual
+                loadDecks(code1, code2 || '')
+            }
         }
     }, [searchParams])
 

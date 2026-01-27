@@ -15,7 +15,8 @@ export interface Card {
 
 export async function fetchDeckData(deckCode: string): Promise<CardData[]> {
     const response = await fetch(
-        `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`
+        `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
+        { cache: 'no-store' }
     )
 
     if (!response.ok) {

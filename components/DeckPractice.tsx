@@ -116,6 +116,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [teisatsuCards, setTeisatsuCards] = useState<Card[] | null>(null)
     const [showDetailModal, setShowDetailModal] = useState<Card | null>(null)
 
+
+    // Updated Detail Modal State: Holds context about the stack being viewed
+    interface DetailModalState {
+        stack: CardStack
+        type: 'battle' | 'bench'
+        index: number
+    }
+    const [detailModal, setDetailModal] = useState<DetailModalState | null>(null)
+
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
             const { active, over } = event
@@ -172,6 +181,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             alert("このカードは選択したポケモンに重ねられません")
                         }
                     } else if ((isEnergy(card) || isTool(card)) && targetStack) {
+                        // User requested Energy to be attached
                         if (canStack(card, targetStack)) {
                             playToBench(source.index, targetIndex)
                         } else {
@@ -674,10 +684,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         lockScroll()
     }
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        unlockScroll()
-        // Removed undefined parentHandleDragEnd
-    }
+    // Unified Detail Modal Definition
+
 
     const playStadium = (handIndex: number) => {
         const card = hand[handIndex]
@@ -876,6 +884,76 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
     }
 
+    const returnAttachmentToHand = (cardIndex: number) => {
+        if (!attachmentTarget) return
+        const { type, index } = attachmentTarget
+        const stack = type === 'battle' ? battleField : bench[index]
+        if (!stack) return
+
+        const card = stack.cards[cardIndex]
+        setHand([...hand, card])
+
+        const newCards = stack.cards.filter((_, i) => i !== cardIndex)
+
+        // Inline update logic
+        const updated = {
+            ...stack,
+            cards: newCards,
+            energyCount: stack.energyCount - (isEnergy(card) ? 1 : 0),
+            toolCount: stack.toolCount - (isTool(card) ? 1 : 0)
+        }
+
+        if (type === 'battle') {
+            setBattleField(updated)
+        } else {
+            const newBench = [...bench]
+            if (newCards.length === 0 && stack.cards.length === 1) { // Was the only card (base), though unlikely for attachment logic
+                newBench[index] = null
+            } else {
+                newBench[index] = updated
+            }
+            setBench(newBench)
+        }
+        // Don't close modal yet, user might want to manage more? Or maybe close.
+        // Let's close for now to be safe/simple, or keep open. User didn't specify.
+        // handleRemoveAttachment doesn't close modal implicitly? 
+        // Wait, handleRemoveAttachment doesn't show closing logic in the snippet.
+        // Actually the modal renders list of cards. Removing one updates the state/list.
+    }
+
+    const returnAttachmentToDeck = (cardIndex: number) => {
+        if (!attachmentTarget) return
+        const { type, index } = attachmentTarget
+        const stack = type === 'battle' ? battleField : bench[index]
+        if (!stack) return
+
+        const card = stack.cards[cardIndex]
+        const newDeck = [...remaining, card].sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        alert("山札に戻してシャッフルしました")
+
+        const newCards = stack.cards.filter((_, i) => i !== cardIndex)
+
+        const updated = {
+            ...stack,
+            cards: newCards,
+            energyCount: stack.energyCount - (isEnergy(card) ? 1 : 0),
+            toolCount: stack.toolCount - (isTool(card) ? 1 : 0)
+        }
+
+        if (type === 'battle') {
+            setBattleField(updated)
+        } else {
+            const newBench = [...bench]
+            if (newCards.length === 0 && stack.cards.length === 1) {
+                newBench[index] = null
+            } else {
+                newBench[index] = updated
+            }
+            setBench(newBench)
+        }
+    }
+
 
 
     // Render logic for menu items (Add "View Detail" button)
@@ -892,10 +970,32 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
 
         // Adjust position to stick to the card
-        if (menu.rect) {
-            style.top = menu.rect.bottom + 5
-            style.left = menu.rect.left + (menu.rect.width / 2)
-            style.transform = 'translateX(-50%)'
+        // Adjust position to stick to the card with viewport clamping
+        if (menu.rect && typeof window !== 'undefined') {
+            const MENU_WIDTH = 200
+            const MENU_HEIGHT = 300 // Estimated max height including actions
+
+            // Horizontal Calculation
+            let leftPos = menu.rect.left + (menu.rect.width / 2) - (MENU_WIDTH / 2)
+
+            // Clamp Horizontal
+            if (leftPos < 10) leftPos = 10
+            if (leftPos + MENU_WIDTH > window.innerWidth - 10) leftPos = window.innerWidth - MENU_WIDTH - 10
+
+            style.left = leftPos
+
+            // Vertical Calculation
+            const spaceBelow = window.innerHeight - menu.rect.bottom
+            const spaceAbove = menu.rect.top
+
+            // Prefer below, but if not enough space and more space above, go above
+            if (spaceBelow < MENU_HEIGHT && spaceAbove > spaceBelow) {
+                style.bottom = window.innerHeight - menu.rect.top + 5
+                style.transformOrigin = 'bottom'
+            } else {
+                style.top = menu.rect.bottom + 5
+                style.transformOrigin = 'top'
+            }
         } else {
             style.top = menu.y
             style.left = menu.x
@@ -909,7 +1009,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     style={style}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-500">
+                    <div className="bg-gray-50 px-3 py-2 border-b text-xs font-bold text-gray-900">
                         カード操作
                     </div>
 
@@ -917,35 +1017,52 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     <button
                         onClick={() => {
                             const cardToView = 'cards' in menu.card ? getTopCard(menu.card) : menu.card
-                            setShowDetailModal(cardToView)
+                            // Open new Detail Modal
+                            const targetStack = menu.source === 'battle' ? battleField : (menu.source === 'bench' ? bench[menu.index] : null)
+                            if (targetStack) {
+                                setDetailModal({
+                                    stack: targetStack,
+                                    type: menu.source as 'battle' | 'bench',
+                                    index: menu.index
+                                })
+                            } else if (menu.source === 'hand') {
+                                // For hand, we just show a simple modal or ignore detailed stack view (since hand has no attachments)
+                                // Let's just use the old single card view for hand or adapting logic.
+                                // For simplicity, let's just alert or show single card image if needed, 
+                                // but User request was about "Attached cards", which implies Battle/Bench.
+                                // Let's keep a "Simple Card View" for hand if needed, or just skip.
+                                // Re-using separate state for single card view might be needed if we want to view Hand cards.
+                                // Or we can construct a fake stack.
+                                setShowDetailModal(menu.card as Card) // Fallback for hand
+                            }
                             closeMenu()
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-purple-50 hover:text-purple-600 text-sm flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 hover:bg-purple-50 hover:text-purple-600 text-sm flex items-center gap-2 text-gray-900 font-bold"
                     >
                         <span>🔍</span> 詳細を見る
                     </button>
 
                     {menu.source === 'hand' && (
                         <>
-                            <button onClick={() => playToBattleField(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">バトル場に出す</button>
-                            <button onClick={() => playToBench(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">ベンチに出す</button>
-                            <button onClick={() => trashFromHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">トラッシュ</button>
+                            <button onClick={() => playToBattleField(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">バトル場に出す</button>
+                            <button onClick={() => playToBench(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチに出す</button>
+                            <button onClick={() => trashFromHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">トラッシュ</button>
                         </>
                     )}
                     {menu.source === 'battle' && (
                         <>
-                            <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">手札に戻す</button>
-                            <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">ベンチと交代</button>
-                            <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">山札に戻す</button>
-                            <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">きぜつ（トラッシュ）</button>
+                            <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
+                            <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
+                            <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
+                            <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                             {/* Attachments list logic could go here if crowded */}
                         </>
                     )}
                     {menu.source === 'bench' && (
                         <>
-                            <button onClick={() => benchToHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">手札に戻す</button>
-                            <button onClick={() => swapBenchToBattle(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm">バトル場へ</button>
-                            <button onClick={() => benchToTrash(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm">きぜつ（トラッシュ）</button>
+                            <button onClick={() => benchToHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
+                            <button onClick={() => swapBenchToBattle(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">バトル場へ</button>
+                            <button onClick={() => benchToTrash(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
                     )}
                 </div>
@@ -954,32 +1071,152 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         )
     }
 
-    // Detail Modal
+    // Unified Detail Modal
     const renderDetailModal = () => {
-        if (!showDetailModal) return null
-
-        return createPortal(
-            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
-                <div className="relative max-w-lg w-full max-h-[90vh] flex flex-col items-center">
-                    <button
-                        className="absolute -top-12 right-0 text-white hover:text-gray-300 transition"
-                        onClick={() => setShowDetailModal(null)}
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    <img
-                        src={showDetailModal.imageUrl}
-                        alt={showDetailModal.name}
-                        className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="mt-4 bg-white/10 backdrop-blur rounded-full px-6 py-2 text-white font-bold">
-                        {showDetailModal.name}
+        // Fallback for Hand (Single Card) - Legacy showDetailModal
+        if (showDetailModal && !detailModal) {
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
+                    <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
+                        <img
+                            src={showDetailModal.imageUrl}
+                            alt={showDetailModal.name}
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
                     </div>
                 </div>
-            </div>,
-            document.body
+            )
+        }
+
+        if (!detailModal) return null
+
+        // Dynamic check of stack content
+        const currentStack = detailModal.type === 'battle' ? battleField : bench[detailModal.index]
+        if (!currentStack) return null
+
+        // Identify Top Pokemon
+        let topPokemonIndex = -1
+        for (let i = currentStack.cards.length - 1; i >= 0; i--) {
+            if (isPokemon(currentStack.cards[i])) {
+                topPokemonIndex = i
+                break
+            }
+        }
+        if (topPokemonIndex === -1 && currentStack.cards.length > 0) topPokemonIndex = 0
+        const mainCard = currentStack.cards[topPokemonIndex]
+
+        return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setDetailModal(null)}>
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
+
+                    {/* Left: Main Image */}
+                    <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 relative">
+                        <div className="relative h-full w-full flex items-center justify-center">
+                            <img
+                                src={mainCard.imageUrl}
+                                alt={mainCard.name}
+                                className="max-h-full max-w-full object-contain drop-shadow-lg"
+                            />
+                            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                {detailModal.type === 'battle' ? 'バトル場' : 'ベンチ'}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: Attached Cards List & Actions */}
+                    <div className="w-full md:w-[400px] flex flex-col border-l border-gray-200 bg-white">
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-900">カード構成一覧</h3>
+                            <button onClick={() => setDetailModal(null)} className="text-gray-400 hover:text-gray-900 text-2xl leading-none">&times;</button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                            {currentStack.cards.map((card, i) => {
+                                const isMain = i === topPokemonIndex
+                                return (
+                                    <div key={i} className={`flex flex-col p-3 rounded-lg border ${isMain ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}`}>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="w-10 h-14 relative flex-shrink-0">
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-contain rounded" unoptimized />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="font-bold text-sm text-gray-900 truncate">{card.name}</h4>
+                                                    {isMain && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded">Active</span>}
+                                                </div>
+                                                <p className="text-xs text-gray-500">
+                                                    {isPokemon(card) ? 'ポケモン' : (isEnergy(card) ? 'エネルギー' : (isTool(card) ? 'どうぐ' : 'その他'))}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    handleSafeRemove(detailModal.type, detailModal.index, i, 'hand')
+                                                }}
+                                                className="flex-1 bg-blue-50 text-blue-600 border border-blue-200 py-1.5 rounded text-xs font-bold hover:bg-blue-100 transition"
+                                            >
+                                                手札へ
+                                            </button>
+                                            <button
+                                                onClick={() => handleSafeRemove(detailModal.type, detailModal.index, i, 'deck')}
+                                                className="flex-1 bg-gray-50 text-gray-600 border border-gray-200 py-1.5 rounded text-xs font-bold hover:bg-gray-100 transition"
+                                            >
+                                                山札へ
+                                            </button>
+                                            <button
+                                                onClick={() => handleSafeRemove(detailModal.type, detailModal.index, i, 'trash')}
+                                                className="flex-1 bg-red-50 text-red-600 border border-red-200 py-1.5 rounded text-xs font-bold hover:bg-red-100 transition"
+                                            >
+                                                トラッシュ
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
         )
+    }
+
+    // Safe Remove Helper for Modal
+    const handleSafeRemove = (targetType: 'battle' | 'bench', targetIndex: number, cardIndex: number, destination: 'hand' | 'deck' | 'trash') => {
+        const stack = targetType === 'battle' ? battleField : bench[targetIndex]
+        if (!stack) return
+
+        const card = stack.cards[cardIndex]
+        const newCards = stack.cards.filter((_, i) => i !== cardIndex)
+
+        // Calculate new counts
+        const updatedStack = {
+            ...stack,
+            cards: newCards,
+            energyCount: stack.energyCount - (isEnergy(card) ? 1 : 0),
+            toolCount: stack.toolCount - (isTool(card) ? 1 : 0)
+        }
+
+        // Apply State Update
+        if (targetType === 'battle') {
+            setBattleField(updatedStack.cards.length === 0 ? null : updatedStack)
+        } else {
+            const newBench = [...bench]
+            newBench[targetIndex] = updatedStack.cards.length === 0 ? null : updatedStack
+            setBench(newBench)
+        }
+
+        // Move Card
+        if (destination === 'hand') {
+            setHand([...hand, card])
+        } else if (destination === 'deck') {
+            setRemaining([...remaining, card].sort(() => Math.random() - 0.5))
+        } else {
+            setTrash([...trash, card])
+        }
     }
 
     // Action Menu Render (Updated with new buttons)
@@ -1177,21 +1414,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 {/* Main Row: Prizes, Battle */}
                 <div className={`flex flex-row gap-0.5 sm:gap-4 items-start justify-center order-none ${mobile && portalTarget ? 'hidden' : ''}`}>
                     {/* Prizes - Desktop Only */}
+                    {/* Prizes - Desktop Only (Simplified Numeric) */}
                     {!mobile && (
-                        <div className={`bg-white rounded-lg shadow p-0.5 sm:p-2 border border-gray-100 min-w-[140px]`}>
-                            <h2 className="text-[8px] sm:text-[10px] font-bold text-gray-400 mb-0.5 sm:mb-2 uppercase tracking-tight">サイド ({prizeCards.length})</h2>
-                            <div className="flex -space-x-8 sm:-space-x-10 px-1 sm:px-2 py-1 sm:py-4 h-20 sm:h-32 items-center">
-                                {prizeCards.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => takePrizeCard(i)}
-                                        className="w-8 h-12 sm:w-14 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 hover:-translate-y-2 transition flex items-center justify-center text-white font-bold text-xs sm:text-lg border border-white/20 transform"
-                                        style={{ zIndex: prizeCards.length - i }}
-                                    >
-                                        ?
-                                    </button>
-                                ))}
+                        <div className={`bg-white rounded-lg shadow p-0.5 sm:p-2 border border-gray-100 min-w-[100px] flex flex-col items-center justify-center`}>
+                            <h2 className="text-[10px] sm:text-xs font-black text-gray-500 mb-1 uppercase tracking-tight">SIDE</h2>
+                            <div className="text-4xl font-black text-blue-600 mb-1 leading-none">
+                                {prizeCards.length}
                             </div>
+                            <div className="text-[9px] text-gray-400 font-bold mb-2">MAX: 6</div>
+                            {prizeCards.length > 0 && (
+                                <button
+                                    onClick={() => takePrizeCard(0)}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded shadow-sm transition-transform active:scale-95"
+                                >
+                                    1枚取る
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -1231,24 +1469,17 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     {/* Mobile Only: Side (Prizes) on Left of Bench */}
                     {/* Mobile Only: Side (Prizes) on Left of Bench - True Absolute Stack */}
                     {mobile && (
-                        <div className="flex flex-col items-center justify-center pr-1 border-r border-gray-200 mr-1 h-[80px]">
-                            {/* Stack Container - Relative, fixed size */}
-                            <div className="relative w-8 h-12 mb-1">
-                                {prizeCards.map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => takePrizeCard(i)}
-                                        className="absolute left-0 w-8 h-10 bg-gradient-to-br from-blue-500 to-indigo-700 rounded shadow hover:scale-105 transition flex items-center justify-center text-white font-bold text-[8px] border border-white/20 transform rotate-90 origin-center"
-                                        style={{
-                                            zIndex: prizeCards.length - i,
-                                            top: `${i * 3}px` // 3px vertical offset per card
-                                        }}
-                                    >
-                                        ?
-                                    </button>
-                                ))}
-                            </div>
-                            <h2 className="text-[8px] font-bold text-gray-400 text-center leading-none mt-1">サイド</h2>
+                        <div className="flex flex-col items-center justify-center pr-1 border-r border-gray-200 mr-1 min-w-[40px]">
+                            <h2 className="text-[8px] font-bold text-gray-400 text-center leading-none mb-1">SIDE</h2>
+                            <div className="text-xl font-black text-blue-600 leading-none mb-2">{prizeCards.length}</div>
+                            {prizeCards.length > 0 && (
+                                <button
+                                    onClick={() => takePrizeCard(0)}
+                                    className="bg-blue-500 text-white text-[10px] w-6 h-6 rounded flex items-center justify-center font-bold shadow"
+                                >
+                                    ↓
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -1533,56 +1764,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 )
             }
 
-            {/* Attachment Manager Modal */}
-            {attachmentTarget && (
-                <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4" onClick={() => setAttachmentTarget(null)}>
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
-                        <div className="bg-gray-100 px-4 py-3 border-b flex justify-between items-center">
-                            <h3 className="font-bold text-gray-800">カード管理</h3>
-                            <button onClick={() => setAttachmentTarget(null)} className="text-gray-500 hover:text-gray-700 font-bold">✕</button>
-                        </div>
-                        <div className="p-4 max-h-[60vh] overflow-y-auto">
-                            <p className="text-xs text-gray-500 mb-2">トラッシュしたいカードを選択してください</p>
-                            <div className="space-y-2">
-                                {(() => {
-                                    const stack = attachmentTarget.type === 'battle' ? battleField : bench[attachmentTarget.index]
-                                    if (!stack) return <div className="text-gray-500">カードがありません</div>
+            {/* Detail Modal Render */}
+            {renderDetailModal()}
 
-                                    return stack.cards.map((card, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-2 border rounded bg-gray-50">
-                                            <div className="flex items-center gap-3">
-                                                <div className="relative w-10 h-14">
-                                                    <Image
-                                                        src={card.imageUrl}
-                                                        alt={card.name}
-                                                        fill
-                                                        className="object-contain rounded"
-                                                        unoptimized
-                                                    />
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold">{card.name}</span>
-                                                    <span className="text-xs text-gray-500">{idx === 0 ? '（ベース）' : '（カード）'}</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleRemoveAttachment(idx)}
-                                                className="bg-red-100 text-red-600 px-3 py-1.5 rounded text-xs font-bold hover:bg-red-200 transition"
-                                            >
-                                                トラッシュ
-                                            </button>
-                                        </div>
-                                    ))
-                                })()}
-                            </div>
-                        </div>
-                        <div className="bg-gray-50 px-4 py-2 border-t flex justify-end">
-                            <button onClick={() => setAttachmentTarget(null)} className="px-4 py-2 bg-gray-200 rounded text-sm font-bold text-gray-700 hover:bg-gray-300">閉じる</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div >
+        </div>
     )
 })
 
@@ -1646,8 +1831,6 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
     const maxVisible = 5
 
     // Find the index of the top-most Pokemon (the operational active card)
-    // This handles Evolution: The evolved pokemon (last in array) should be visually ON TOP.
-    // While attached tools/energy (also in array) should be visually UNDERNEATH.
     let topPokemonIndex = -1
     for (let i = stack.cards.length - 1; i >= 0; i--) {
         if (isPokemon(stack.cards[i])) {
@@ -1655,35 +1838,51 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
             break
         }
     }
-    // Fallback if no pokemon found (shouldn't happen for valid stack but safety first)
     if (topPokemonIndex === -1 && stack.cards.length > 0) topPokemonIndex = 0
+
+    // Calculate visible stack size (excluding Energy/Tools) for height
+    const visibleCardsCount = stack.cards.filter(c => !isEnergy(c) && !isTool(c)).length
 
     return (
         <div
             className="relative"
             style={{
                 width: width,
-                height: height + (Math.min(stack.cards.length - 1, maxVisible) * cardOffset)
+                // Only use visible cards for height calculation
+                height: height + (Math.min(Math.max(0, visibleCardsCount - 1), maxVisible) * cardOffset)
             }}
         >
             {stack.cards.map((card, i) => {
+                const isEnergyCard = isEnergy(card)
+                const isToolCard = isTool(card)
+                const isPokemonCard = isPokemon(card)
                 const isTopPokemon = i === topPokemonIndex
 
-                // If this is the Active (Top) Pokemon, it goes to the FRONT (Highest Z).
-                // All other cards (Pre-evos, Energy, Tools) go BEHIND it (Lower Z).
-                // We use (stack.cards.length - i) for the others to maintain relative order among themselves.
+                // Hide attached Energy and Tools from the main stack
+                // But SHOW Pokemon (evolutions)
+                const hideFromStack = (isEnergyCard || isToolCard)
+
+                if (hideFromStack) return null
+
                 const zIndexValue = isTopPokemon ? (stack.cards.length + 10) : (stack.cards.length - i)
 
-                // The Top Pokemon sits at the base (0 offset).
-                // Others are offset upwards to peek out.
-                const marginBottomValue = isTopPokemon ? 0 : (i * cardOffset)
+                // Calculate visual position (how many Visible cards are below this one)
+                let visualPos = 0
+                for (let k = 0; k < i; k++) {
+                    const c = stack.cards[k]
+                    if (!isEnergy(c) && !isTool(c)) {
+                        visualPos++
+                    }
+                }
+
+                const marginBottomValue = isTopPokemon ? 0 : (visualPos * cardOffset)
 
                 return (
                     <div
                         key={i}
                         className="absolute left-0 transition-all"
                         style={{
-                            bottom: 0, // Align all to bottom of container
+                            bottom: 0,
                             marginBottom: marginBottomValue,
                             zIndex: zIndexValue
                         }}
@@ -1701,6 +1900,52 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
                 )
             })}
 
+            {/* Attached Energy Icons Layer (Bottom Left) */}
+            {stack.cards.filter(c => isEnergy(c)).map((card, i) => (
+                <div
+                    key={`energy-${i}`}
+                    className="absolute z-[100] drop-shadow-md hover:scale-150 transition-transform origin-bottom-left"
+                    style={{
+                        bottom: 4 + (i * 8), // Tighter stacking
+                        left: -4,
+                        width: width / 3.5, // Slightly smaller
+                        height: height / 3.5,
+                    }}
+                >
+                    <Image
+                        src={card.imageUrl}
+                        alt={card.name}
+                        width={width / 3.5}
+                        height={height / 3.5}
+                        className="rounded-sm border border-white bg-white"
+                        unoptimized
+                    />
+                </div>
+            ))}
+
+            {/* Attached Tool Icons Layer (Top Left) - Moved from Top Right/Bottom Right */}
+            {stack.cards.filter(c => isTool(c)).map((card, i) => (
+                <div
+                    key={`tool-${i}`}
+                    className="absolute z-[100] drop-shadow-md hover:scale-150 transition-transform origin-top-left"
+                    style={{
+                        top: 25 + (i * 8), // Start slightly down to avoid potential badge overlap if any
+                        left: -4,
+                        width: width / 3.5,
+                        height: height / 3.5,
+                    }}
+                >
+                    <Image
+                        src={card.imageUrl}
+                        alt={card.name}
+                        width={width / 3.5}
+                        height={height / 3.5}
+                        className="rounded-sm border border-white bg-white"
+                        unoptimized
+                    />
+                </div>
+            ))}
+
             {/* Stack info badge - Simplified to Damage Only */}
             <div className="absolute bottom-1 right-1 pointer-events-none z-50">
                 {stack.damage > 0 && <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20">💥{stack.damage}</span>}
@@ -1708,3 +1953,4 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
         </div>
     )
 }
+

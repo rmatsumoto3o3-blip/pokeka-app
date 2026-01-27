@@ -1,9 +1,50 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import DeckViewerModal from './DeckViewerModal' // Import the new modal
+
+// Helper Component for Auto-Scaling Text
+function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const textRef = useRef<HTMLSpanElement>(null)
+    const [scale, setScale] = useState(1)
+
+    useEffect(() => {
+        const container = containerRef.current
+        const content = textRef.current
+        if (!container || !content) return
+
+        const resize = () => {
+            const containerWidth = container.clientWidth
+            const contentWidth = content.scrollWidth
+
+            if (contentWidth > containerWidth) {
+                setScale(containerWidth / contentWidth)
+            } else {
+                setScale(1)
+            }
+        }
+
+        resize()
+        // Simple scaling, no debounce needed for simple use case
+        window.addEventListener('resize', resize)
+        return () => window.removeEventListener('resize', resize)
+    }, [text])
+
+    return (
+        <div ref={containerRef} className={`w-full overflow-hidden ${className}`}>
+            <span
+                ref={textRef}
+                className="inline-block whitespace-nowrap origin-left"
+                style={{ transform: `scale(${scale})` }}
+            >
+                {text}
+            </span>
+        </div>
+    )
+}
 
 interface ReferenceDeckListProps {
     userId?: string | null
@@ -327,7 +368,9 @@ export default function ReferenceDeckList({
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h4 className="font-bold text-gray-900 text-sm truncate">{deck.deck_name}</h4>
+                                        <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
+                                            <AutoFitText text={deck.deck_name} />
+                                        </div>
                                         {/* Mobile Event Badge */}
                                         {deck.event_type && (
                                             <span className="md:hidden text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
