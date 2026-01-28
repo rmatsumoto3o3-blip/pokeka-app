@@ -1238,6 +1238,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setTrash([...trash, card])
     }
 
+    const useUnfairStamp = () => {
+        const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
+        setHand(newDeck.slice(0, 5))
+        setRemaining(newDeck.slice(5))
+        setTrash([...trash]) // Trigger update if needed, though state is separate
+    }
+
     // Action Menu Render (Updated with new buttons)
     const renderActionMenu = () => {
         // ... existing implementation details for Action Menu need to be updated or replaced
@@ -1283,6 +1290,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             </button>
                             <button onClick={useTeisatsuShirei} className="col-span-2 bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1 rounded text-xs font-bold flex items-center justify-center gap-1">
                                 <span>👁️</span> 偵察指令
+                            </button>
+                            <button onClick={useUnfairStamp} className="col-span-2 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-xs font-bold ring-1 ring-red-300">
+                                アンフェアスタンプ (自分5枚)
                             </button>
                         </div>
                     </div>
