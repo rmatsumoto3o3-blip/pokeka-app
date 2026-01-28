@@ -1111,7 +1111,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
 
                     {/* Left: Main Image */}
-                    <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 relative">
+                    <div className="h-[40vh] md:h-auto md:flex-1 bg-gray-100 flex items-center justify-center p-4 sm:p-8 relative flex-shrink-0">
                         <div className="relative h-full w-full flex items-center justify-center">
                             <img
                                 src={mainCard.imageUrl}
@@ -1125,7 +1125,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
 
                     {/* Right: Attached Cards List & Actions */}
-                    <div className="w-full md:w-[400px] flex flex-col border-l border-gray-200 bg-white">
+                    <div className="w-full md:w-[400px] flex flex-col border-l border-gray-200 bg-white flex-1 md:flex-none min-h-0">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <h3 className="font-bold text-gray-900">カード構成一覧</h3>
                             <button onClick={() => setDetailModal(null)} className="text-gray-400 hover:text-gray-900 text-2xl leading-none">&times;</button>
