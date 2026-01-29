@@ -774,3 +774,63 @@ export async function syncAnalyzedDecksToReferencesAction(userId: string) {
         return { success: false, error: (error as Error).message }
     }
 }
+
+// --- Phase 44: Deck Scraper Automation ---
+
+export async function scrapePokecabookAction(url: string) {
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        })
+        if (!response.ok) {
+            return { success: false, error: 'ページの取得に失敗しました' }
+        }
+        const html = await response.text()
+
+        // Regex to extract figcaption content and deck link
+        // Pattern logic:
+        // 1. Find <figcaption ...> ... </figcaption>
+        // 2. Extract text (Deck Name)
+        // 3. Extract href with deckID (Deck Code)
+
+        const deckList: { name: string, code: string }[] = []
+
+        // Simple regex to find blocks. Note: HTML parsing with Regex is fragile but efficient for specific structures.
+        // We look for the distinct structure provided by the user:
+        // <figcaption class="wp-element-caption">NAME <a ... href=".../deckID/CODE">...</a></figcaption>
+
+        // Split by figcaption to make it easier
+        const parts = html.split('<figcaption class="wp-element-caption">')
+
+        for (let i = 1; i < parts.length; i++) {
+            const part = parts[i]
+            const endIdx = part.indexOf('</figcaption>')
+            if (endIdx === -1) continue
+
+            const captionContent = part.substring(0, endIdx)
+
+            // Extract Code
+            const codeMatch = captionContent.match(/deckID\/([a-zA-Z0-9-]+)/)
+            if (!codeMatch) continue
+            const code = codeMatch[1]
+
+            // Extract Name (Remove tags)
+            // Remove <a> tags to get pure text. 
+            // The structure is usually "Text <a...>Link</a>"
+            // We want "Text" + "Link Text" or just the raw text content.
+            // Let's strip all headers/tags.
+            let name = captionContent.replace(/<[^>]+>/g, '').trim()
+
+            // Allow duplicates within the page? Yes, let user decide.
+            deckList.push({ name, code })
+        }
+
+        return { success: true, decks: deckList }
+
+    } catch (e) {
+        console.error('Scrape Error:', e)
+        return { success: false, error: 'スクレイピング中にエラーが発生しました' }
+    }
+}

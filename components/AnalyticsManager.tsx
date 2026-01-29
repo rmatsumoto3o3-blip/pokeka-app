@@ -6,7 +6,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction } from '@/app/actions'
 import Image from 'next/image'
 
 // Sortable Item Component
@@ -61,8 +61,14 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [editEventType, setEditEventType] = useState('')
     const [isSaving, setIsSaving] = useState(false)
 
-    // Image Upload State (Deck)
+    // Image Upload State (Deck) - DEPRECATED for individual deck, logic moved to archetype
     const [deckImageFile, setDeckImageFile] = useState<File | null>(null)
+
+    // Phase 44: Scraper State
+    const [importMode, setImportMode] = useState<'manual' | 'url'>('manual')
+    const [importUrl, setImportUrl] = useState('')
+    const [scrapedDecks, setScrapedDecks] = useState<{ name: string, code: string, selected: boolean }[]>([])
+    const [isScraping, setIsScraping] = useState(false)
 
     // Archetype Management State
     const [localArchetypes, setLocalArchetypes] = useState<Archetype[]>([])
@@ -270,6 +276,67 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         } finally {
             setIsAdding(false)
         }
+    }
+
+    // --- Phase 44: Scraper Logic ---
+    const handleScrape = async () => {
+        if (!importUrl) return
+        setIsScraping(true)
+        setScrapedDecks([])
+        try {
+            const res = await scrapePokecabookAction(importUrl)
+            if (res.success && res.decks) {
+                setScrapedDecks(res.decks.map(d => ({ ...d, selected: true }))) // Default select all
+                alert(`${res.decks.length}件のデッキが見つかりました`)
+            } else {
+                alert(res.error || 'デッキが見つかりませんでした')
+            }
+        } catch (e) {
+            alert('スクレイピングエラー')
+        } finally {
+            setIsScraping(false)
+        }
+    }
+
+    const handleBulkAdd = async () => {
+        const selectedDecks = scrapedDecks.filter(d => d.selected)
+        if (selectedDecks.length === 0) return
+
+        if (!confirm(`${selectedDecks.length}件のデッキを一括登録しますか？\n（イベントタイプ: ${inputEventType}）`)) return
+
+        setIsAdding(true)
+        let successCount = 0
+
+        // Loop sequentially to avoid DB overload and race conditions
+        for (const deck of selectedDecks) {
+            try {
+                const res = await addDeckToAnalyticsAction(
+                    deck.code,
+                    selectedArchetype,
+                    userId,
+                    deck.name || undefined,
+                    inputEventType || undefined,
+                    undefined,
+                    syncReference
+                )
+                if (res.success) successCount++
+            } catch (e) {
+                console.error(`Failed to add ${deck.code}`, e)
+            }
+        }
+
+        setIsAdding(false)
+        alert(`${selectedDecks.length}件中 ${successCount}件 を登録しました`)
+        await refreshAnalytics(selectedArchetype)
+        setImportUrl('')
+        setScrapedDecks([])
+        setImportMode('manual') // Back to manual or stay? Maybe stay to import more.
+    }
+
+    const toggleDeckSelection = (index: number) => {
+        const newDecks = [...scrapedDecks]
+        newDecks[index].selected = !newDecks[index].selected
+        setScrapedDecks(newDecks)
     }
 
     const handleRemoveDeck = async (id: string) => {
@@ -572,26 +639,103 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                デッキコードを追加
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={inputCode}
-                                    onChange={(e) => setInputCode(e.target.value)}
-                                    placeholder="ここへ公式デッキコードを入力"
-                                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
-                                />
+                            {/* Import Mode Toggle */}
+                            <div className="flex gap-4 border-b mb-4">
                                 <button
-                                    onClick={handleAddDeck}
-                                    disabled={isAdding || !inputCode}
-                                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                    onClick={() => setImportMode('manual')}
+                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'manual' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'}`}
                                 >
-                                    {isAdding ? '解析中...' : '追加'}
+                                    個別入力
+                                </button>
+                                <button
+                                    onClick={() => setImportMode('url')}
+                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'url' ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-500'}`}
+                                >
+                                    URLから一括(Pokecabook)
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">※1つずつ追加してください</p>
+
+                            {importMode === 'manual' ? (
+                                <>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        デッキコードを追加
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={inputCode}
+                                            onChange={(e) => setInputCode(e.target.value)}
+                                            placeholder="ここへ公式デッキコードを入力"
+                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                        />
+                                        <button
+                                            onClick={handleAddDeck}
+                                            disabled={isAdding || !inputCode}
+                                            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                        >
+                                            {isAdding ? '解析中...' : '追加'}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">※1つずつ追加してください</p>
+                                </>
+                            ) : (
+                                <div className="space-y-4">
+                                    {/* URL Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            記事URL (pokecabook_archives用)
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={importUrl}
+                                                onChange={(e) => setImportUrl(e.target.value)}
+                                                placeholder="https://pokecabook.com/archives/..."
+                                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                            />
+                                            <button
+                                                onClick={handleScrape}
+                                                disabled={isScraping || !importUrl}
+                                                className="bg-pink-600 text-white px-4 py-2 rounded-md hover:bg-pink-700 disabled:opacity-50"
+                                            >
+                                                {isScraping ? '取得中...' : '取得'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Scraped Results */}
+                                    {scrapedDecks.length > 0 && (
+                                        <div className="bg-white border rounded-lg p-3">
+                                            <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                                <span className="font-bold text-sm">{scrapedDecks.length}件検出</span>
+                                                <button
+                                                    onClick={handleBulkAdd}
+                                                    disabled={isAdding}
+                                                    className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 disabled:opacity-50"
+                                                >
+                                                    {isAdding ? '登録中...' : 'まとめて登録'}
+                                                </button>
+                                            </div>
+                                            <div className="max-h-[200px] overflow-y-auto space-y-1">
+                                                {scrapedDecks.map((deck, idx) => (
+                                                    <label key={idx} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer border-b border-gray-100 last:border-0">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={deck.selected}
+                                                            onChange={() => toggleDeckSelection(idx)}
+                                                            className="text-indigo-600 rounded"
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-xs font-bold truncate text-gray-800">{deck.name}</div>
+                                                            <div className="text-[10px] text-gray-500 font-mono">{deck.code}</div>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="border-t pt-4">
