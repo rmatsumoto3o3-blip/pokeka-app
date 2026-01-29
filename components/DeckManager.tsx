@@ -367,15 +367,6 @@ export default function DeckManager({
                                                     <span>🎮</span>
                                                     一人回し
                                                 </Link>
-                                                <Link
-                                                    href={`/simulator?code=${tempDeckCode}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
-                                                >
-                                                    <span>🧮</span>
-                                                    確率シミュ
-                                                </Link>
                                                 <button
                                                     onClick={deleteTempDeck}
                                                     className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm font-bold"
@@ -383,6 +374,36 @@ export default function DeckManager({
                                                     片付ける
                                                 </button>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Simulator Portal Card */}
+                        <div className="bg-orange-50/50 rounded-xl overflow-hidden border-2 border-orange-200 border-dashed hover:border-orange-400 transition shadow-sm hover:shadow-md flex flex-col">
+                            <div className="p-4 flex-1 flex flex-col">
+                                <h3 className="text-xl font-bold text-orange-900 mb-2 flex items-center gap-2">
+                                    <span>🧮</span>
+                                    確率シミュレーター
+                                </h3>
+                                <p className="text-sm text-orange-800 mb-4 opacity-80">
+                                    初手率・サイド落ち率などを計算して、デッキの安定性を分析します。
+                                </p>
+
+                                <div className="flex-1 flex flex-col justify-end">
+                                    <Link
+                                        href={tempDeckCode ? `/simulator?code=${tempDeckCode}` : '/simulator'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <span>🚀</span>
+                                        {tempDeckCode ? '作業中のデッキを分析' : 'シミュレーターを開く'}
+                                    </Link>
+                                    {tempDeckCode && (
+                                        <div className="mt-2 text-center text-xs text-orange-600 font-medium">
+                                            ※ 作業机のコードを使用します
                                         </div>
                                     )}
                                 </div>
@@ -564,7 +585,7 @@ export default function DeckManager({
                         </div>
                     </div>
                 )}
-            </div>
+            </div >
         </>
     )
 }
@@ -654,14 +675,6 @@ function DeckCard({
                         className="flex-1 py-1.5 px-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
                     >
                         一人回し
-                    </Link>
-                    <Link
-                        href={`/simulator?code=${deck.deck_code}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-1.5 px-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition shadow-sm text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
-                    >
-                        🧮 確率シミュ
                     </Link>
                     <button
                         onClick={() => onDelete(deck.id)}
