@@ -1,16 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getDeckDataAction } from '@/app/actions'
 import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
-export default function SimulatorManager() {
-    const [deckCode, setDeckCode] = useState('')
+interface SimulatorManagerProps {
+    initialDeckCode?: string
+}
+
+export default function SimulatorManager({ initialDeckCode = '' }: SimulatorManagerProps) {
+    const [deckCode, setDeckCode] = useState(initialDeckCode)
     const [loading, setLoading] = useState(false)
     const [cards, setCards] = useState<CardData[]>([])
     const [error, setError] = useState<string | null>(null)
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+
+    // Auto-Run if initialDeckCode is provided
+    useEffect(() => {
+        if (initialDeckCode) {
+            handleSimulate(initialDeckCode)
+        }
+    }, [])
 
     const toggleRow = (id: string) => {
         const newSet = new Set(expandedRows)
@@ -22,15 +33,17 @@ export default function SimulatorManager() {
         setExpandedRows(newSet)
     }
 
-    const handleSimulate = async () => {
-        if (!deckCode) return
+    const handleSimulate = async (codeOverride?: string) => {
+        const codeToUse = codeOverride || deckCode
+        if (!codeToUse) return
+
         setLoading(true)
         setError(null)
         setCards([])
         setExpandedRows(new Set()) // Reset expansions
 
         try {
-            const res = await getDeckDataAction(deckCode)
+            const res = await getDeckDataAction(codeToUse)
             if (res.success && res.data) {
                 setCards(res.data)
             } else {
@@ -155,7 +168,7 @@ export default function SimulatorManager() {
                         className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-3 border"
                     />
                     <button
-                        onClick={handleSimulate}
+                        onClick={() => handleSimulate()}
                         disabled={loading || !deckCode}
                         className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-6 py-3 rounded-lg hover:shadow-md disabled:opacity-50 transition-all transform hover:scale-105"
                     >

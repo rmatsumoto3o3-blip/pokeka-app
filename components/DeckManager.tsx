@@ -367,6 +367,15 @@ export default function DeckManager({
                                                     <span>🎮</span>
                                                     一人回し
                                                 </Link>
+                                                <Link
+                                                    href={`/simulator?code=${tempDeckCode}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex-1 py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
+                                                >
+                                                    <span>🧮</span>
+                                                    確率シミュ
+                                                </Link>
                                                 <button
                                                     onClick={deleteTempDeck}
                                                     className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm font-bold"
@@ -645,6 +654,14 @@ function DeckCard({
                         className="flex-1 py-1.5 px-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
                     >
                         一人回し
+                    </Link>
+                    <Link
+                        href={`/simulator?code=${deck.deck_code}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-1.5 px-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition shadow-sm text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
+                    >
+                        🧮 確率シミュ
                     </Link>
                     <button
                         onClick={() => onDelete(deck.id)}

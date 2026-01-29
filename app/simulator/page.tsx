@@ -4,7 +4,14 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import SimulatorManager from '@/components/SimulatorManager'
 
-export default function SimulatorPage() {
+export default async function SimulatorPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const resolvedParams = await searchParams
+    const code = typeof resolvedParams.code === 'string' ? resolvedParams.code : undefined
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <PublicHeader />
@@ -21,7 +28,7 @@ export default function SimulatorPage() {
                         </p>
                     </div>
 
-                    <SimulatorManager />
+                    <SimulatorManager initialDeckCode={code} />
                 </div>
             </main>
 
