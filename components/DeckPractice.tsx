@@ -25,7 +25,7 @@ interface DeckPracticeProps {
     compact?: boolean
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
-    onEffectTrigger?: (effect: 'judge' | 'apollo', target: 'opponent') => void
+    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp', target: 'opponent') => void
     idPrefix?: string
     mobile?: boolean
     isOpponent?: boolean
@@ -34,7 +34,7 @@ interface DeckPracticeProps {
 export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo') => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp') => void
 }
 
 interface MenuState {
@@ -230,18 +230,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         playStadium: (index: number) => {
             playStadium(index)
         },
-        receiveEffect: (effect: 'judge' | 'apollo') => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp') => {
             // Triggered by opponent usage
             const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
             setRemaining(newDeck)
             setHand([])
 
-            const drawCount = effect === 'judge' ? 4 : 3
+            let drawCount = 0
+            if (effect === 'judge') drawCount = 4
+            else if (effect === 'apollo') drawCount = 3
+            else if (effect === 'unfair_stamp') drawCount = 2
+
             const drawn = newDeck.slice(0, drawCount)
             setHand(drawn)
             setRemaining(newDeck.slice(drawCount))
 
-            alert(`相手が${effect === 'judge' ? 'ジャッジマン' : 'アポロ'}を使用しました。\n手札をシャッフルし、${drawCount}枚引きました。`)
+            const effectName = effect === 'judge' ? 'ジャッジマン' : (effect === 'apollo' ? 'アポロ' : 'アンフェアスタンプ')
+            alert(`相手が${effectName}を使用しました。\n手札をシャッフルし、${drawCount}枚引きました。`)
         }
     }))
 
@@ -1242,7 +1247,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
         setHand(newDeck.slice(0, 5))
         setRemaining(newDeck.slice(5))
-        setTrash([...trash]) // Trigger update if needed, though state is separate
+        setTrash([...trash])
+
+        // Notify parent to trigger opponent (opponent draws 2)
+        if (onEffectTrigger) {
+            onEffectTrigger('unfair_stamp', 'opponent')
+        }
+        alert('手札を全て山札に戻し、自分は5枚引きました。\n相手は2枚引きます。')
     }
 
     // Action Menu Render (Updated with new buttons)

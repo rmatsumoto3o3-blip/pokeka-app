@@ -342,7 +342,7 @@ export async function saveDeckVersionAction(
 }
 // --- Phase 36: Deck Analytics Automation ---
 
-export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string, customImageUrl?: string) {
+export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string, customImageUrl?: string, syncReference: boolean = true) {
     try {
         // 1. Check permissions (Admin only)
         const ADMIN_EMAILS = [
@@ -399,34 +399,36 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
 
         if (insertError) throw insertError
 
-        // 4. [Sync] Add to reference_decks for Top Page Display
-        // Fetch archetype name for deck_name
-        const { data: archetypeData } = await supabaseAdmin
-            .from('deck_archetypes')
-            .select('name')
-            .eq('id', archetypeId)
-            .single()
+        // 4. [Sync] Add to reference_decks for Top Page Display (CONDITIONAL)
+        if (syncReference) {
+            // Fetch archetype name for deck_name
+            const { data: archetypeData } = await supabaseAdmin
+                .from('deck_archetypes')
+                .select('name')
+                .eq('id', archetypeId)
+                .single()
 
-        const deckName = customDeckName || archetypeData?.name || 'New Deck'
-        const eventType = customEventType || 'Gym Battle'
+            const deckName = customDeckName || archetypeData?.name || 'New Deck'
+            const eventType = customEventType || 'Gym Battle'
 
-        // Use custom image if provided, otherwise fallback to first card
-        const imageUrl = customImageUrl || (cards.length > 0 ? cards[0].imageUrl : null)
+            // Use custom image if provided, otherwise fallback to first card
+            const imageUrl = customImageUrl || (cards.length > 0 ? cards[0].imageUrl : null)
 
-        const { error: refError } = await supabaseAdmin
-            .from('reference_decks')
-            .insert([{
-                deck_name: deckName,
-                deck_code: deckCode,
-                deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
-                image_url: imageUrl,
-                event_type: eventType,
-                archetype_id: archetypeId
-            }])
+            const { error: refError } = await supabaseAdmin
+                .from('reference_decks')
+                .insert([{
+                    deck_name: deckName,
+                    deck_code: deckCode,
+                    deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
+                    image_url: imageUrl,
+                    event_type: eventType,
+                    archetype_id: archetypeId
+                }])
 
-        if (refError) {
-            console.warn('Reference Deck Sync Failed:', refError)
-            // Do not fail the whole action, just log it. The analytics part succeeded.
+            if (refError) {
+                console.warn('Reference Deck Sync Failed:', refError)
+                // Do not fail the whole action, just log it. The analytics part succeeded.
+            }
         }
 
         return { success: true }

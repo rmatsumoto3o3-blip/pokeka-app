@@ -47,7 +47,9 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [selectedArchetype, setSelectedArchetype] = useState<string>(archetypes.length > 0 ? archetypes[0].id : '')
     const [inputCode, setInputCode] = useState('')
     const [inputDeckName, setInputDeckName] = useState('')
+
     const [inputEventType, setInputEventType] = useState('Gym Battle')
+    const [syncReference, setSyncReference] = useState(true) // Default to "Both"
     const [isLoading, setIsLoading] = useState(false)
     const [isAdding, setIsAdding] = useState(false)
     const [data, setData] = useState<AnalyticsResult | null>(null)
@@ -244,7 +246,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 userId,
                 inputDeckName.trim() || undefined,
                 inputEventType || undefined,
-                undefined // imageUrl is now undefined
+                undefined, // imageUrl is now undefined
+                syncReference
             )
 
             if (res.success) {
@@ -527,6 +530,32 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         <option key={t} value={t}>{t}</option>
                                     ))}
                                 </select>
+
+                                <div className="mt-4 p-2 bg-gray-50 rounded border border-gray-200">
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">追加オプション</label>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="syncOption"
+                                                checked={!syncReference}
+                                                onChange={() => setSyncReference(false)}
+                                                className="text-blue-600"
+                                            />
+                                            <span className="text-xs text-gray-700">分析のみに追加</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="syncOption"
+                                                checked={syncReference}
+                                                onChange={() => setSyncReference(true)}
+                                                className="text-blue-600"
+                                            />
+                                            <span className="text-xs text-gray-700">分析一覧と参考デッキ(Top)両方に追加</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">

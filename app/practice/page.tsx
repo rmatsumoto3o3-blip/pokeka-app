@@ -195,7 +195,7 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo') => {
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp') => {
         if (source === 'player1') {
             player2Ref.current?.receiveEffect(effect)
         } else {
