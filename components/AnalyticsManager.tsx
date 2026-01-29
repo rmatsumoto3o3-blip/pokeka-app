@@ -70,6 +70,10 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [scrapedDecks, setScrapedDecks] = useState<{ name: string, code: string, selected: boolean }[]>([])
     const [isScraping, setIsScraping] = useState(false)
 
+    // Phase 45: Bulk Delete State
+    const [selectedDeleteDecks, setSelectedDeleteDecks] = useState<Set<string>>(new Set())
+    const [isDeleting, setIsDeleting] = useState(false)
+
     // Archetype Management State
     const [localArchetypes, setLocalArchetypes] = useState<Archetype[]>([])
     const [isManageMode, setIsManageMode] = useState(false) // Toggle for Archetype Manager
@@ -351,6 +355,40 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         } catch (e) {
             alert('エラーが発生しました')
         }
+    }
+
+    // --- Phase 45: Bulk Delete Logic ---
+    const toggleDeleteSelection = (id: string) => {
+        const newSet = new Set(selectedDeleteDecks)
+        if (newSet.has(id)) {
+            newSet.delete(id)
+        } else {
+            newSet.add(id)
+        }
+        setSelectedDeleteDecks(newSet)
+    }
+
+    const handleBulkRemove = async () => {
+        if (selectedDeleteDecks.size === 0) return
+        if (!confirm(`${selectedDeleteDecks.size}件のデッキを削除しますか？\nこの操作は取り消せません。`)) return
+
+        setIsDeleting(true)
+        let successCount = 0
+
+        const ids = Array.from(selectedDeleteDecks)
+        for (const id of ids) {
+            try {
+                const res = await removeDeckFromAnalyticsAction(id, userId)
+                if (res.success) successCount++
+            } catch (e) {
+                console.error(`Failed to delete ${id}`, e)
+            }
+        }
+
+        setIsDeleting(false)
+        setSelectedDeleteDecks(new Set()) // Clear selection
+        alert(`${successCount}件削除しました`)
+        await refreshAnalytics(selectedArchetype)
     }
 
     // Categorize for display
@@ -739,34 +777,55 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         </div>
 
                         <div className="border-t pt-4">
-                            <h4 className="text-sm font-bold text-gray-900 mb-3 flex justify-between">
+                            <h4 className="text-sm font-bold text-gray-900 mb-3 flex justify-between items-center">
                                 <span>登録済みデッキ一覧</span>
-                                <span className="text-gray-500 font-normal">Total: {data?.totalDecks || 0}</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-500 font-normal text-xs">Total: {data?.totalDecks || 0}</span>
+                                    {selectedDeleteDecks.size > 0 && (
+                                        <button
+                                            onClick={handleBulkRemove}
+                                            disabled={isDeleting}
+                                            className="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold hover:bg-red-700 disabled:opacity-50"
+                                        >
+                                            {isDeleting ? '削除中...' : `選択削除 (${selectedDeleteDecks.size})`}
+                                        </button>
+                                    )}
+                                </div>
                             </h4>
                             <div className="max-h-60 overflow-y-auto space-y-2 bg-gray-50 p-2 rounded">
                                 {data?.decks.map((deck) => (
-                                    <div key={deck.id} className="p-2 bg-white rounded shadow-sm border border-gray-100">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <div className="font-bold text-gray-800 text-sm truncate">{deck.deck_name}</div>
-                                            <span className="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
-                                                {deck.event_type}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs">
-                                            <div className="bg-gray-100 px-1 rounded font-mono text-gray-600">{deck.deck_code}</div>
-                                            <div className="flex items-center gap-1">
-                                                <button
-                                                    onClick={() => handleEdit(deck)}
-                                                    className="text-blue-500 hover:text-blue-700 p-1"
-                                                >
-                                                    編集
-                                                </button>
-                                                <button
-                                                    onClick={() => handleRemoveDeck(deck.id)}
-                                                    className="text-red-500 hover:text-red-700 p-1"
-                                                >
-                                                    削除
-                                                </button>
+                                    <div key={deck.id} className={`p-2 bg-white rounded shadow-sm border ${selectedDeleteDecks.has(deck.id) ? 'border-red-400 bg-red-50' : 'border-gray-100'}`}>
+                                        <div className="flex items-start gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedDeleteDecks.has(deck.id)}
+                                                onChange={() => toggleDeleteSelection(deck.id)}
+                                                className="mt-1 w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 cursor-pointer"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div className="font-bold text-gray-800 text-sm truncate">{deck.deck_name}</div>
+                                                    <span className="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded flex-shrink-0 ml-1">
+                                                        {deck.event_type}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <div className="bg-gray-100 px-1 rounded font-mono text-gray-600 truncate mr-2">{deck.deck_code}</div>
+                                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                                        <button
+                                                            onClick={() => handleEdit(deck)}
+                                                            className="text-blue-500 hover:text-blue-700 p-1"
+                                                        >
+                                                            編集
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRemoveDeck(deck.id)}
+                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                        >
+                                                            削除
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
