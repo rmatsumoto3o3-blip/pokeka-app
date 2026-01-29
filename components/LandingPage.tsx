@@ -40,9 +40,9 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </span>
                     </h1>
                     <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
-                        最新の環境考察、優勝デッキ情報、初心者ガイドまで。<br className="block sm:hidden" />
-                        あなたのポケカライフを充実させる<br className="block sm:hidden" />
-                        全ての情報がここに。
+                        環境考察、優勝デッキ情報。<br />
+                        あなたのポケカライフを充実させる機能がここに。<br />
+                        <span className="font-bold text-pink-600">シミュレーションでデッキを分析</span>
                     </p>
                     <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
                         <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
