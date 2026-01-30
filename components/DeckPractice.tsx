@@ -114,6 +114,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [activeDragData, setActiveDragData] = useState<any>(null)
     const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null)
     const [teisatsuCards, setTeisatsuCards] = useState<Card[] | null>(null)
+    const [pokegearCards, setPokegearCards] = useState<Card[] | null>(null)
     const [showDetailModal, setShowDetailModal] = useState<Card | null>(null)
 
 
@@ -672,6 +673,47 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         setTeisatsuCards(null)
         alert(`1枚を手札に加え、残りを山札の下に戻しました`)
+    }
+
+    const usePokegear = () => {
+        if (remaining.length === 0) {
+            alert("山札がありません")
+            return
+        }
+        // Look at top 7
+        const count = Math.min(remaining.length, 7)
+        const cards = remaining.slice(0, count)
+        setPokegearCards(cards)
+        // Remove them from deck temporarily
+        setRemaining(remaining.slice(count))
+    }
+
+    const handlePokegearSelect = (selectedIndex: number) => {
+        if (!pokegearCards) return
+
+        const selected = pokegearCards[selectedIndex]
+        const unselected = pokegearCards.filter((_, i) => i !== selectedIndex)
+
+        // Add selected to hand
+        setHand([...hand, selected])
+
+        // Add unselected back to deck and shuffle
+        const newDeck = [...remaining, ...unselected].sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+
+        setPokegearCards(null)
+        alert(`1枚を手札に加え、残りを山札に戻してシャッフルしました`)
+    }
+
+    const handlePokegearCancel = () => {
+        if (!pokegearCards) return
+
+        // Return all to deck and shuffle
+        const newDeck = [...remaining, ...pokegearCards].sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+
+        setPokegearCards(null)
+        alert(`山札に戻してシャッフルしました`)
     }
 
     // Deck Viewer
@@ -1305,6 +1347,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={useUnfairStamp} className="col-span-2 bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-xs font-bold ring-1 ring-red-300">
                                 アンフェアスタンプ (自分5枚)
                             </button>
+                            <button onClick={usePokegear} className="col-span-2 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 border border-blue-200">
+                                <span>📱</span> ポケギア3.0 (7枚)
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1734,6 +1779,50 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         <div className="mt-2 text-center text-sm font-bold text-gray-700">{card.name}</div>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Pokegear 3.0 Modal */}
+            {
+                pokegearCards && (
+                    <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
+                            <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケギア3.0</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">手札に加えるカードを1枚選んでください。<br />（選ばなかったカードは山札に戻してシャッフルされます）</p>
+
+                            <div className="flex flex-wrap justify-center gap-4">
+                                {pokegearCards.map((card, i) => (
+                                    <div
+                                        key={i}
+                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                        onClick={() => handlePokegearSelect(i)}
+                                    >
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow z-10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            手札に加える
+                                        </div>
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={120}
+                                            height={168}
+                                            className="rounded-lg shadow-lg border-2 border-transparent hover:border-blue-500"
+                                            unoptimized
+                                        />
+                                        <div className="mt-1 text-center text-xs font-bold text-gray-700 truncate w-[120px]">{card.name}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 flex justify-center">
+                                <button
+                                    onClick={handlePokegearCancel}
+                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-full"
+                                >
+                                    加えない (全て戻す)
+                                </button>
                             </div>
                         </div>
                     </div>
