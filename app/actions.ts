@@ -823,6 +823,11 @@ export async function scrapePokecabookAction(url: string) {
             // Let's strip all headers/tags.
             let name = captionContent.replace(/<[^>]+>/g, '').trim()
 
+            // Filter out "Averaged" decks (Noise)
+            if (name.includes('平均化') || name.includes('平均レシピ') || name.includes('平均')) {
+                continue
+            }
+
             // Allow duplicates within the page? Yes, let user decide.
             deckList.push({ name, code })
         }
