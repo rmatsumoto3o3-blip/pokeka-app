@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
@@ -89,7 +90,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             </section>
 
             {/* Reference Decks Section (Public Preview) */}
-            < section className="py-4 bg-white" >
+            <section className="py-4 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col items-center justify-center">
                         <span className="text-xs text-gray-400 mb-1">PR: サプライ買うならTOYGER</span>
@@ -108,10 +109,10 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </a>
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* Reference Decks Section (Public Preview) */}
-            < section id="reference-decks" className="py-12 md:py-20 bg-white" >
+            <section id="reference-decks" className="py-12 md:py-20 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="mb-6">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -127,6 +128,11 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         />
                     </div>
 
+                    {/* Featured Card Trends (Mid-Section) */}
+                    <div className="mt-8">
+                        <FeaturedCardTrends />
+                    </div>
+
                     <div className="mt-8" id="key-card-adoption">
                         <div className="mb-4">
                             <h3 className="text-xl md:text-2xl font-bold text-gray-900">
@@ -139,10 +145,10 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* NEW: Usage Guide Section */}
-            < section className="py-16 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100" >
+            <section className="py-16 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <span className="text-pink-500 font-bold tracking-wider uppercase text-sm">How to Use</span>
@@ -206,10 +212,10 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* Featured Articles Carousel Section */}
-            < section className="py-12 bg-white" >
+            <section className="py-12 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-end mb-6">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -262,15 +268,15 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         ))}
                     </div>
                 </div>
-            </section >
+            </section>
 
             {/* Ad Slot: Mid-Page */}
-            < div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <AdPlaceholder slot="landing-mid" label="Sponsored" />
-            </div >
+            </div>
 
             {/* Features Section */}
-            < section id="features" className="py-12 md:py-20 bg-pink-50" > <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section id="features" className="py-12 md:py-20 bg-pink-50"> <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
                     <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
@@ -313,14 +319,14 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                     </button>
                 </div>
             </div>
-            </section >
+            </section>
 
             {/* Ad Slot: Bottom */}
-            < div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <AdPlaceholder slot="landing-bottom" label="Sponsored" />
-            </div >
+            </div>
 
             <Footer />
-        </div >
+        </div>
     )
 }

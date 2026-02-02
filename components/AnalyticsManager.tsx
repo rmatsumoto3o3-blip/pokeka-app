@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, TouchSensor, closestCorners } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
+import FeaturedCardsManager from './FeaturedCardsManager'
 
 import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction } from '@/app/actions'
 import Image from 'next/image'
@@ -83,14 +85,28 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [archetypeLoading, setArchetypeLoading] = useState(false)
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(TouchSensor, {
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     )
 
     useEffect(() => {
-        if (archetypes.length > 0) {
+        // Prevent aggressive reset unless IDs actually change (deep comparison proxy)
+        const currentIds = localArchetypes.map(a => a.id).sort().join(',')
+        const newIds = archetypes.map(a => a.id).sort().join(',')
+
+        if (archetypes.length > 0 && currentIds !== newIds) {
             setLocalArchetypes(archetypes)
-        } else {
+        } else if (localArchetypes.length === 0 && archetypes.length === 0) {
             fetchArchetypes()
         }
     }, [archetypes])
@@ -505,10 +521,22 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
                 {isManageMode && (
                     <div className="p-6 space-y-8 animate-in slide-in-from-top-2">
+                        {/* Tab Switcher inside Manage Mode */}
+                        <div className="flex gap-4 border-b border-gray-200 pb-2 mb-4">
+                            <button className="text-sm font-bold text-purple-600 border-b-2 border-purple-600 pb-2">デッキタイプ設定</button>
+                            <button
+                                className="text-sm font-bold text-gray-500 hover:text-purple-600 pb-2"
+                                onClick={() => alert('実装中: 画面が長くなるのでタブ切り替えにした方がいいかも')}
+                            >
+                                注目カード設定
+                            </button>
+                        </div>
+
                         {/* 1. Deck Type Creation & Cover Image */}
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-1 space-y-4">
                                 <h4 className="font-bold text-gray-900 border-b pb-2">新規作成 & 画像設定</h4>
+                                {/* ... existing implementation ... */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         設定するデッキタイプ
@@ -594,6 +622,25 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                             ))}
                                         </SortableContext>
                                     </DndContext>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 3. Featured Cards Management (Phase 47) */}
+                        <div className="border-t pt-6 mt-6">
+                            <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <span>🏆 注目カード設定（採用率グラフ用）</span>
+                                <span className="text-xs font-normal bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Topページ表示</span>
+                            </h4>
+
+                            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <p className="text-sm text-gray-700 mb-4">
+                                    ここで設定したカード（最大5枚推奨）がトップページの「注目カード採用率」に表示されます。<br />
+                                    <strong>※データの更新が必要な場合は、下の更新ボタンを押してください。</strong>
+                                </p>
+
+                                <div className="flex gap-4">
+                                    <FeaturedCardsManager userId={userId} />
                                 </div>
                             </div>
                         </div>
