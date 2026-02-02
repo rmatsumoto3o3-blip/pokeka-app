@@ -351,12 +351,11 @@ export default function ReferenceDeckList({
 
                 {/* New List View */}
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                    {/* Header Row (Optional, maybe simplistic is better) */}
+                    {/* Header Row */}
                     <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
                         <div className="flex-1">デッキ名</div>
-                        <div className="w-24 hidden md:block">イベント</div>
-                        <div className="w-24 hidden md:block">CODE</div>
-                        {isAdmin && <div className="w-20">管理</div>}
+                        <div className="w-24 hidden md:block text-center">CODE</div>
+                        {isAdmin && <div className="w-20 text-right">管理</div>}
                     </div>
 
                     <div className="divide-y divide-gray-100">
@@ -371,37 +370,33 @@ export default function ReferenceDeckList({
                                         <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
                                             <AutoFitText text={deck.deck_name} />
                                         </div>
-                                        {/* Mobile Event Badge */}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                        {/* Event Type Badge (Moved here) */}
                                         {deck.event_type && (
-                                            <span className="md:hidden text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                                            <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
                                                 {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
                                             </span>
                                         )}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+
                                         {deck.deck_code && (
-                                            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center">
+                                            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
                                                 <span className="text-[10px] mr-1 opacity-50">CODE:</span>
                                                 {deck.deck_code}
                                             </span>
                                         )}
                                         {/* Fallback indicator if image only */}
                                         {!deck.deck_code && deck.image_url && (
-                                            <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                                            <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
                                                 画像あり
                                             </span>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Desktop Event Type */}
-                                <div className="w-24 hidden md:flex flex-col justify-center text-xs text-gray-600">
-                                    {deck.event_type && (
-                                        <span className="bg-gray-100 px-2 py-1 rounded-full text-center">
-                                            {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
-                                        </span>
-                                    )}
-                                </div>
+                                {/* Removed standalone Event Type column */}
+
+                                {/* Desktop Code Copy Button (Quick Action) - Keep alignment */}
 
                                 {/* Desktop Code Copy Button (Quick Action) */}
                                 <div className="w-24 hidden md:flex items-center justify-center">
