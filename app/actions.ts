@@ -22,6 +22,16 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 )
 
+// --- Constants ---
+const ADMIN_EMAILS = [
+    'player1@pokeka.local',
+    'player2@pokeka.local',
+    'player3@pokeka.local',
+    'r.matsumoto.3o3@gmail.com',
+    'nexpure.event@gmail.com',
+    'admin@pokeka.local'
+]
+
 export async function getOrCreateProfileAction(userId: string) {
     try {
         // 1. Try to fetch existing profile (using admin to be safe, though public read is allowed for self)
@@ -31,11 +41,27 @@ export async function getOrCreateProfileAction(userId: string) {
             .eq('user_id', userId)
             .single()
 
-        if (profile) return { success: true, profile }
+        // Admin Check for existing profile (Auto-Upgrade if needed)
+        const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId)
+        const email = userAuth?.user?.email
+        const isAdmin = email && ADMIN_EMAILS.includes(email)
+
+        if (profile) {
+            // Fix: If admin is on 'free' plan, upgrade them silently to hide the modal
+            if (isAdmin && profile.plan_type !== 'invited') {
+                const { data: updated } = await supabaseAdmin
+                    .from('user_profiles')
+                    .update({ plan_type: 'invited', max_decks: 999, max_matches: 9999 })
+                    .eq('user_id', userId)
+                    .select().single()
+                return { success: true, profile: updated || profile }
+            }
+            return { success: true, profile }
+        }
 
         // 2. If not found, create default profile
         // SMART CHECK: If user was created before today (Legacy User), give them Premium
-        const { data: userAuth, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+        // const { data: userAuth, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId) // Already fetched above
 
         // Default to 'free'
         let initialPlan: 'free' | 'invited' = 'free'
@@ -51,6 +77,13 @@ export async function getOrCreateProfileAction(userId: string) {
                 initialMaxDecks = 20
                 initialMaxMatches = 500
             }
+        }
+
+        // Override for Admin
+        if (isAdmin) {
+            initialPlan = 'invited'
+            initialMaxDecks = 999
+            initialMaxMatches = 9999
         }
 
         const newProfile = {
@@ -133,8 +166,12 @@ export async function createFolderAction(userId: string, folderName: string) {
             .eq('user_id', userId)
             .single()
 
+        // Check Admin Status directly
+        const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId)
+        const isAdmin = userAuth?.user?.email && ADMIN_EMAILS.includes(userAuth.user.email)
+
         const isInvited = profile?.plan_type === 'invited'
-        const MAX_PARENTS = isInvited ? 5 : 3
+        const MAX_PARENTS = isAdmin ? 9999 : (isInvited ? 5 : 3)
 
         // 2. Count Parents
         const { count: folderCount, error: fErr } = await supabaseAdmin
@@ -187,8 +224,12 @@ export async function createDeckVariantAction(
             .eq('user_id', userId)
             .single()
 
+        // Check Admin Status directly
+        const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId)
+        const isAdmin = userAuth?.user?.email && ADMIN_EMAILS.includes(userAuth.user.email)
+
         const isInvited = profile?.plan_type === 'invited'
-        const MAX_CHILDREN = isInvited ? 20 : 5
+        const MAX_CHILDREN = isAdmin ? 9999 : (isInvited ? 20 : 5)
 
         // 2. Count Children in Folder
         const { count, error: cErr } = await supabaseAdmin
@@ -244,11 +285,15 @@ export async function saveDeckVersionAction(
             .eq('user_id', userId)
             .single()
 
-        const isInvited = profile?.plan_type === 'invited'
-        const isAdmin = false // TODO: check admin logic if needed, but 'invited' is highest plan now
+        // Check Admin Status directly
+        const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId)
+        const isAdmin = userAuth?.user?.email && ADMIN_EMAILS.includes(userAuth.user.email)
 
-        const MAX_PARENTS = isInvited ? 5 : 3
-        const MAX_CHILDREN = isInvited ? 20 : 5
+        const isInvited = profile?.plan_type === 'invited'
+        // const isAdmin = false // Removed placeholder
+
+        const MAX_PARENTS = isAdmin ? 9999 : (isInvited ? 5 : 3)
+        const MAX_CHILDREN = isAdmin ? 9999 : (isInvited ? 20 : 5)
 
         // 2. Limit Check Logic
 
@@ -345,14 +390,6 @@ export async function saveDeckVersionAction(
 export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string, customImageUrl?: string, syncReference: boolean = true) {
     try {
         // 1. Check permissions (Admin only)
-        const ADMIN_EMAILS = [
-            'player1@pokeka.local',
-            'player2@pokeka.local',
-            'player3@pokeka.local',
-            'r.matsumoto.3o3@gmail.com',
-            'nexpure.event@gmail.com',
-            'admin@pokeka.local'
-        ]
 
         const { data: user, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (userError || !user.user || !user.user.email || !ADMIN_EMAILS.includes(user.user.email)) {
@@ -441,15 +478,7 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
 
 export async function removeDeckFromAnalyticsAction(id: string, userId: string) {
     try {
-        // Admin permission check (simplified by reusing the list logic or assuming UI hides it, but robust check is better)
-        const ADMIN_EMAILS = [
-            'player1@pokeka.local',
-            'player2@pokeka.local',
-            'player3@pokeka.local',
-            'r.matsumoto.3o3@gmail.com',
-            'nexpure.event@gmail.com',
-            'admin@pokeka.local'
-        ]
+        // Admin permission check
         const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
             return { success: false, error: '権限がありません' }
@@ -588,14 +617,6 @@ export async function updateAnalyzedDeckAction(
 ) {
     try {
         // Admin Check
-        const ADMIN_EMAILS = [
-            'player1@pokeka.local',
-            'player2@pokeka.local',
-            'player3@pokeka.local',
-            'r.matsumoto.3o3@gmail.com',
-            'nexpure.event@gmail.com',
-            'admin@pokeka.local'
-        ]
         const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
             return { success: false, error: '権限がありません' }
@@ -707,14 +728,6 @@ function mapSupertypeToCategory(supertype: string, subtypes?: string[]): string 
 export async function syncAnalyzedDecksToReferencesAction(userId: string) {
     try {
         // 1. Admin Check
-        const ADMIN_EMAILS = [
-            'player1@pokeka.local',
-            'player2@pokeka.local',
-            'player3@pokeka.local',
-            'r.matsumoto.3o3@gmail.com',
-            'nexpure.event@gmail.com',
-            'admin@pokeka.local'
-        ]
         const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
             return { success: false, error: '権限がありません' }
@@ -961,12 +974,6 @@ export async function manageFeaturedCardsAction(action: 'add' | 'remove', cardNa
 export async function updateDailySnapshotsAction(userId: string) {
     try {
         // Admin Check
-        const ADMIN_EMAILS = [
-            'r.matsumoto.3o3@gmail.com', // Add explicit admin
-            'nexpure.event@gmail.com',
-            'admin@pokeka.local',
-            'player1@pokeka.local'
-        ]
         const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
         if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
             // For testing, let's allow if userId matches known IDs? 
