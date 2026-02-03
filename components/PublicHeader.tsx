@@ -28,7 +28,7 @@ export default function PublicHeader() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
                 <div className="flex justify-between items-center">
                     <Link href="/" className="flex items-center">
-                        <h1 className="text-base sm:text-2xl font-bold text-gray-900 whitespace-nowrap cursor-pointer">
+                        <h1 className="text-xl sm:text-2xl text-gray-900 whitespace-nowrap cursor-pointer font-[family-name:var(--font-dotgothic-16)] tracking-wider">
                             ⚡️ポケリス⚡️
                         </h1>
                     </Link>
