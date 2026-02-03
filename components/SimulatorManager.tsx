@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -126,16 +126,16 @@ export default function SimulatorManager({ initialDeckCode = '' }: SimulatorMana
                                                 <td colSpan={7} className="px-8 py-4">
                                                     <div className="text-xs font-bold text-gray-500 mb-2">山札に残る枚数の内訳 (47枚中)</div>
                                                     <div className="space-y-2">
-                                                        {distribution.map((d, i) => (
+                                                        {distribution.probabilities.map((prob, i) => (
                                                             <div key={i} className="flex items-center text-sm">
-                                                                <div className="w-16 font-bold text-gray-700 text-right mr-3">{d.count}枚残る</div>
+                                                                <div className="w-16 font-bold text-gray-700 text-right mr-3">{i}枚残る</div>
                                                                 <div className="flex-1 bg-gray-200 rounded-full h-4 overflow-hidden relative">
                                                                     <div
                                                                         className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                                                                        style={{ width: `${d.prob}%` }}
+                                                                        style={{ width: `${prob * 100}%` }}
                                                                     ></div>
                                                                 </div>
-                                                                <div className="w-16 text-right font-mono text-gray-600 ml-3">{d.prob}%</div>
+                                                                <div className="w-16 text-right font-mono text-gray-600 ml-3">{(prob * 100).toFixed(1)}%</div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -152,38 +152,178 @@ export default function SimulatorManager({ initialDeckCode = '' }: SimulatorMana
         )
     }
 
+    // --- Custom Simulation Logic ---
+    const [customTargets, setCustomTargets] = useState<{ id: string, name: string, deckQuantity: number, targetQuantity: number }[]>([])
+    const [selectedCardId, setSelectedCardId] = useState<string>('')
+    const [targetQtyInput, setTargetQtyInput] = useState<number>(1)
+    const [simResult, setSimResult] = useState<string | null>(null)
+
+    const handleAddCondition = () => {
+        if (!selectedCardId) return
+        const card = cards.find(c => c.name === selectedCardId) // ID is name for now
+        if (!card) return
+
+        // Prevent duplicates
+        if (customTargets.some(t => t.id === card.name)) return
+
+        setCustomTargets([...customTargets, {
+            id: card.name,
+            name: card.name,
+            deckQuantity: card.quantity,
+            targetQuantity: targetQtyInput
+        }])
+        setSimResult(null) // Reset result
+    }
+
+    const handleRemoveCondition = (id: string) => {
+        setCustomTargets(customTargets.filter(t => t.id !== id))
+        setSimResult(null)
+    }
+
+    const runCustomSimulation = () => {
+        // Import dynamically or use the imported one
+        // Using the imported function from top level
+        const result = simulateCustomHandProbability(customTargets.map(t => ({
+            id: t.id,
+            deckQuantity: t.deckQuantity,
+            targetQuantity: t.targetQuantity
+        })))
+        setSimResult(result)
+    }
+
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             {/* Input Section */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    公式デッキコード
-                </label>
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        value={deckCode}
-                        onChange={(e) => setDeckCode(e.target.value)}
-                        placeholder="例: pypMME-Ms3k6K-yMM3SX"
-                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-lg p-3 border"
-                    />
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div className="flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1 w-full">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">デッキコード</label>
+                        <input
+                            type="text"
+                            value={deckCode}
+                            onChange={(e) => setDeckCode(e.target.value)}
+                            placeholder="例: pypMMy-xxxxxx-xxxxxx"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition"
+                        />
+                    </div>
                     <button
                         onClick={() => handleSimulate()}
                         disabled={loading || !deckCode}
-                        className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold px-6 py-3 rounded-lg hover:shadow-md disabled:opacity-50 transition-all transform hover:scale-105"
+                        className={`px-6 py-2 rounded-lg font-bold text-white transition shadow-md whitespace-nowrap h-[42px] flex items-center justify-center min-w-[120px]
+                            ${loading || !deckCode
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 active:scale-95'
+                            }`}
                     >
-                        {loading ? '計算中...' : 'シミュレーション開始'}
+                        {loading ? (
+                            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                        ) : (
+                            '解析開始'
+                        )}
                     </button>
                 </div>
-                {error && <p className="text-red-500 mt-2 text-sm font-bold">{error}</p>}
-                <p className="text-xs text-gray-400 mt-2">
-                    ※ 60枚のデッキで計算します。<br />
-                    ※ 残山札率は、サイド6枚落ちを考慮した上で山札（47枚）に1枚以上残る確率です。<br />
-                    ※ サイド落ち率は、残りの53枚から6枚が選ばれた確率です。
-                </p>
+                {error && <p className="mt-2 text-red-500 text-sm font-bold">{error}</p>}
+
+                {cards.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-500 text-right">
+                        合計: {cards.reduce((acc, c) => acc + c.quantity, 0)}枚
+                    </div>
+                )}
             </div>
 
-            {/* Application Info */}
+            {/* Custom Hand Simulation Section */}
+            {cards.length > 0 && (
+                <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 rounded-xl shadow-sm border-2 border-violet-100 mb-10">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="text-2xl">✨</span>
+                        カスタム初手確率シミュレーター
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">Beta (モンテカルロ法 n=100,000)</span>
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-6">
+                        デッキ内の特定のカードを指定して、「初手7枚にこの組み合わせが揃う確率」を計算します。<br />
+                        例：「ボール系が1枚以上」かつ「たねポケモンが1枚以上」など
+                    </p>
+
+                    <div className="flex flex-col md:flex-row gap-4 items-end mb-6 bg-white p-4 rounded-lg border border-gray-100 shadow-sm">
+                        <div className="flex-1">
+                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">カードを選択</label>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                value={selectedCardId}
+                                onChange={(e) => setSelectedCardId(e.target.value)}
+                            >
+                                <option value="">選択してください</option>
+                                {cards.map((c, i) => (
+                                    <option key={i} value={c.name}>{c.name} ({c.quantity}枚)</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="w-24">
+                            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">必要枚数</label>
+                            <input
+                                type="number"
+                                min={1}
+                                max={4}
+                                value={targetQtyInput}
+                                onChange={(e) => setTargetQtyInput(parseInt(e.target.value) || 1)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            />
+                        </div>
+                        <button
+                            onClick={handleAddCondition}
+                            disabled={!selectedCardId}
+                            className="bg-violet-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                        >
+                            条件を追加
+                        </button>
+                    </div>
+
+                    {/* Condition List */}
+                    {customTargets.length > 0 && (
+                        <div className="space-y-3 mb-6">
+                            {customTargets.map((t, idx) => (
+                                <div key={idx} className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border border-violet-200 shadow-sm animate-in fade-in slide-in-from-top-1">
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-violet-100 text-violet-700 font-bold px-2 py-1 rounded text-xs">条件 {idx + 1}</span>
+                                        <span className="font-bold text-gray-800">{t.name}</span>
+                                        <span className="text-sm text-gray-500">が</span>
+                                        <span className="font-bold text-violet-600 text-lg">{t.targetQuantity}枚</span>
+                                        <span className="text-sm text-gray-500">以上</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRemoveCondition(t.id)}
+                                        className="text-gray-400 hover:text-red-500 transition px-2"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Calculate Button */}
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={runCustomSimulation}
+                            disabled={customTargets.length === 0}
+                            className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all"
+                        >
+                            確率を計算する 🎲
+                        </button>
+
+                        {simResult !== null && (
+                            <div className="flex items-center gap-3 animate-in fade-in zoom-in duration-300">
+                                <span className="text-sm font-bold text-gray-500">成功確率:</span>
+                                <span className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
+                                    {simResult}%
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Results */}
             {cards.length === 0 && !loading && (
                 <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
                     <div className="text-4xl mb-4">🧮</div>

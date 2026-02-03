@@ -41,13 +41,22 @@ export async function getOrCreateProfileAction(userId: string) {
             .eq('user_id', userId)
             .single()
 
-        // Admin Check for existing profile (Auto-Upgrade if needed)
+        // Admin Check & Legacy User Check for existing profile (Auto-Upgrade if needed)
         const { data: userAuth } = await supabaseAdmin.auth.admin.getUserById(userId)
         const email = userAuth?.user?.email
         const isAdmin = email && ADMIN_EMAILS.includes(email)
 
+        let isLegacy = false
+        if (userAuth?.user?.created_at) {
+            const createdAt = new Date(userAuth.user.created_at)
+            const cutoffDate = new Date('2025-01-17T00:00:00Z')
+            if (createdAt < cutoffDate) {
+                isLegacy = true
+            }
+        }
+
         if (profile) {
-            // Fix: If admin is on 'free' plan, upgrade them silently to hide the modal
+            // Fix: If admin is on 'free' plan, upgrade them silently
             if (isAdmin && profile.plan_type !== 'invited') {
                 const { data: updated } = await supabaseAdmin
                     .from('user_profiles')
@@ -56,6 +65,17 @@ export async function getOrCreateProfileAction(userId: string) {
                     .select().single()
                 return { success: true, profile: updated || profile }
             }
+
+            // Fix: If LEGACY user is on 'free' plan, upgrade them silently (They assume they are premium)
+            if (isLegacy && profile.plan_type !== 'invited') {
+                const { data: updated } = await supabaseAdmin
+                    .from('user_profiles')
+                    .update({ plan_type: 'invited', max_decks: 20, max_matches: 500 })
+                    .eq('user_id', userId)
+                    .select().single()
+                return { success: true, profile: updated || profile }
+            }
+
             return { success: true, profile }
         }
 

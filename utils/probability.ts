@@ -98,8 +98,8 @@ export function calculateRemainingInDeckProbability(copies: number): string {
  * So N = 53, n = 6.
  * k = copies (assuming all 'k' copies are in this 53-card pool).
  * This usually models "If I didn't draw it in my opening hand, what is the chance it is prized?".
- * 
- * P(X >= 1) = 1 - C(53-k, 6) / C(53, 6)
+ * P(X >= 1) = 1 - P(X = 0)
+ * P(X = 0) = C(53-k, 6) / C(53, 6)
  */
 export function calculatePrizeProbability(copies: number): string {
     if (copies <= 0) return '0.0'
@@ -108,7 +108,7 @@ export function calculatePrizeProbability(copies: number): string {
     const n = 6
     const k = copies
 
-    if (k > (N - n)) return '100.0' // If copies > 47, impossible to not have one in prize (extreme edge case)
+    if (k > N) return '100.0' // Should not happen
 
     const probNone = combinations(N - k, n) / combinations(N, n)
     const probAtLeastOne = 1 - probNone
@@ -117,40 +117,154 @@ export function calculatePrizeProbability(copies: number): string {
 }
 
 /**
- * Calculate Probability Distribution of having EXACTLY x copies remaining in the Deck (47 cards).
- * N = 60 (Total)
- * n = 47 (Deck Size)
- * k = Total Copies
- * x = Copies in Deck (0 to k)
- * 
- * P(X=x) = C(k, x) * C(60-k, 47-x) / C(60, 47)
+ * Represents the distribution of remaining copies of a card.
+ * Indices 0 to 4 represent having 0, 1, 2, 3, or 4 copies remaining.
+ * Values are probabilities (0.0 to 1.0).
  */
-export function calculateRemainingDistribution(copies: number): { count: number, prob: string }[] {
-    if (copies <= 0) return []
+export interface RemainingDistribution {
+    probabilities: number[] // [P(0), P(1), P(2), P(3), P(4)]
+    expectedValue: number
+}
 
+/**
+ * Calculates the probability distribution of having X copies remaining in the deck (47 cards).
+ * Given K total copies in the 60 card deck.
+ * Used copies U = K - Remaining.
+ * Used copies are in the 13 removed cards (7 hand + 6 prize).
+ * 
+ * We want P(Remaining = r).
+ * Remaining = r means Used = K - r copies are in the Removed 13.
+ * P(Remaining = r) = P(Used = K - r)
+ * 
+ * Hypergeometric Distribution:
+ * Population N = 60
+ * Successes K = Total Copies
+ * Draws n = 13 (Removed cards)
+ * k = (K - r) (Number of successes in draw)
+ * 
+ * P(X = k) = [C(K, k) * C(N-K, n-k)] / C(N, n)
+ */
+export function calculateRemainingDistribution(totalCopies: number): RemainingDistribution {
     const N = 60
-    const n = 47
-    const k = copies
-    const result = []
+    const n = 13
+    const K = totalCopies
 
-    // x can range from 0 to k
-    for (let x = 0; x <= k; x++) {
-        // Validation: We must be able to pick x from k, AND (n-x) from (N-k)
-        // (47-x) must be <= (60-k)
-        if (n - x > N - k) {
-            continue
+    const probabilities: number[] = []
+    let expectedValue = 0
+
+    // Possible remaining counts: from 0 to K (limited by deck size behavior, practically 0 to 4)
+    // Actually, remaining r can be anything from 0 to K subject to valid constraints.
+    // k (used) = K - r.
+    // Constraints on k:
+    // 0 <= k <= n (13) -> Usually true since n=13 > K=4
+    // 0 <= k <= K -> True by definition
+    // n - k <= N - K -> 13 - k <= 60 - K -> True
+
+    // We iterate r from 0 to K
+    // Note: If user puts 20 energy, K=20. We should handle arbitrary K.
+    // But interface usually expects distinct cards (max 4). 
+    // Let's return array up to K.
+
+    for (let r = 0; r <= K; r++) {
+        const k_used = K - r // Count in removed pile
+
+        let p = 0
+        if (k_used >= 0 && k_used <= n) {
+            p = (combinations(K, k_used) * combinations(N - K, n - k_used)) / combinations(N, n)
         }
-
-        const combinationsX = combinations(k, x)
-        const combinationsRest = combinations(N - k, n - x)
-        const totalCombinations = combinations(N, n)
-
-        const prob = (combinationsX * combinationsRest) / totalCombinations
-        result.push({
-            count: x,
-            prob: (prob * 100).toFixed(1)
-        })
+        probabilities.push(p)
+        expectedValue += r * p
     }
 
-    return result.reverse() // Show max remaining first
+    return { probabilities, expectedValue }
+}
+
+// --- Multi-Card Simulation ---
+
+export interface CustomHandTarget {
+    id: string
+    deckQuantity: number
+    targetQuantity: number
+}
+
+/**
+ * Simulates drawing an opening hand of 7 cards from a 60 card deck.
+ * Calculates probability that ALL targets are met simultaneously.
+ * Uses Monte Carlo simulation.
+ * 
+ * @param targets List of card constraints (e.g. "Pidgey: need 1", "Candy: need 1")
+ * @param trials Number of simulations (default 100000)
+ * @returns Success rate string (e.g. "45.2")
+ */
+export function simulateCustomHandProbability(targets: CustomHandTarget[], trials: number = 100000): string {
+    if (!targets || targets.length === 0) return '0.0'
+
+    let successCount = 0
+    const deckSize = 60
+    const handSize = 7
+
+    // 1. Construct representative deck array
+    // Integers representing card types. 0 = Filler. 1..N = Target Indices + 1.
+    const baseDeck: number[] = []
+
+    // Safety check for total cards
+    let totalTargetCards = 0
+    targets.forEach((t, i) => {
+        const typeId = i + 1
+        for (let j = 0; j < t.deckQuantity; j++) {
+            baseDeck.push(typeId)
+        }
+        totalTargetCards += t.deckQuantity
+    })
+
+    if (totalTargetCards > deckSize) return 'Error'
+
+    // Fill remaining with 0
+    for (let i = baseDeck.length; i < deckSize; i++) {
+        baseDeck.push(0)
+    }
+
+    // 2. Run Simulation
+    for (let i = 0; i < trials; i++) {
+        // Fisher-Yates Shuffle (Optimization: Only need first 7)
+        // Actually, shuffling first 7 is enough? No, need to pick 7 random from 60.
+        // Standard shuffle is fast enough for N=60.
+
+        const currentDeck = [...baseDeck] // Copy
+
+        // Shuffle at least first `handSize` elements
+        for (let j = 0; j < handSize; j++) {
+            const r = j + Math.floor(Math.random() * (deckSize - j))
+            const temp = currentDeck[j]
+            currentDeck[j] = currentDeck[r]
+            currentDeck[r] = temp
+        }
+
+        const hand = currentDeck.slice(0, handSize)
+
+        // 3. Check Conditions
+        // Count occurrences in hand
+        const counts = new Map<number, number>()
+        for (const cardType of hand) {
+            if (cardType > 0) {
+                counts.set(cardType, (counts.get(cardType) || 0) + 1)
+            }
+        }
+
+        let allMet = true
+        for (let t = 0; t < targets.length; t++) {
+            const typeId = t + 1
+            const count = counts.get(typeId) || 0
+            if (count < targets[t].targetQuantity) {
+                allMet = false
+                break
+            }
+        }
+
+        if (allMet) {
+            successCount++
+        }
+    }
+
+    return ((successCount / trials) * 100).toFixed(1)
 }
