@@ -237,7 +237,7 @@ export default function SimulatorManager({ initialDeckCode = '' }: SimulatorMana
                     <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <span className="text-2xl">✨</span>
                         カスタム初手確率シミュレーター
-                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">Beta (モンテカルロ法 n=100,000)</span>
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">モンテカルロ法 (n=100,000)</span>
                     </h3>
                     <p className="text-sm text-gray-600 mb-6">
                         デッキ内の特定のカードを指定して、「初手7枚にこの組み合わせが揃う確率」を計算します。<br />
