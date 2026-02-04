@@ -2093,7 +2093,7 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
 
             {/* Stack info badge - Simplified to Damage Only */}
             {/* Stack info badge - Interactive Damage Controls */}
-            <div className="absolute bottom-1 right-1 pointer-events-auto z-50 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute bottom-1 right-1 pointer-events-auto z-[101] flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                 {stack.damage > 0 && (
                     <>
                         <button
@@ -2101,7 +2101,7 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                             className="bg-white/90 text-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm border border-red-200 hover:bg-red-50 active:scale-95"
                         >-</button>
                         <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20 min-w-[24px] text-center">
-                            💥{stack.damage}
+                            {stack.damage}
                         </span>
                         <button
                             onClick={(e) => { e.stopPropagation(); onDamageChange?.(10); }}
