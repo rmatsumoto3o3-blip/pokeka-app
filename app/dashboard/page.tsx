@@ -271,9 +271,6 @@ export default function Dashboard() {
 
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
-                                {/* Featured Trends Section */}
-                                <FeaturedCardTrends />
-
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm relative overflow-hidden">
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-lg md:text-xl font-bold text-gray-900">登録済みデッキ</h2>
@@ -296,6 +293,9 @@ export default function Dashboard() {
                                         onMatchAdded={refreshCounts}
                                     />
                                 </div>
+
+                                {/* Featured Trends Section */}
+                                <FeaturedCardTrends />
 
                                 {/* Registration Modal */}
                                 {isAddDeckModalOpen && (
