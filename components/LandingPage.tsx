@@ -35,15 +35,15 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         ✨ 勝つための情報が集まる場所
                     </div>
                     <h1 className="font-extrabold text-gray-900 tracking-tight mb-6 animate-fade-in-up delay-100">
-                        <span className="block text-xl md:text-2xl mb-2 text-gray-600">ポケモンカード情報局</span>
-                        <span className="block text-5xl md:text-7xl leading-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 font-[family-name:var(--font-press-start-2p)] py-2">
+                        <span className="block text-base sm:text-xl md:text-2xl mb-2 text-gray-600">ポケモンカード情報局</span>
+                        <span className="block text-4xl sm:text-5xl md:text-7xl leading-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 font-[family-name:var(--font-press-start-2p)] py-2">
                             PokéLix
                         </span>
                     </h1>
-                    <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
-                        環境考察、優勝デッキ情報。<br />
-                        あなたのポケカライフを充実させる機能がここに。<br />
-                        <span className="font-bold text-pink-600">シミュレーションでデッキを分析</span>
+                    <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200 px-2">
+                        環境考察、優勝デッキ情報。<br className="hidden sm:block" />
+                        あなたのポケカライフを充実させる機能がここに。<br className="hidden sm:block" />
+                        <span className="font-bold text-pink-600 block sm:inline mt-1 sm:mt-0">シミュレーションでデッキを分析</span>
                     </p>
                     <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
                         <div className="flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">

@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { type Card } from '@/lib/deckParser'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium } from '@/lib/cardStack'
 import {
-    useSensor,
+    DndContext,
     useSensors,
     PointerSensor,
     TouchSensor,
@@ -1375,7 +1375,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
                     onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
                 >
-                    <CascadingStack stack={battleField} width={sizes.battle.w} height={sizes.battle.h} />
+                    <CascadingStack
+                        stack={battleField}
+                        width={sizes.battle.w}
+                        height={sizes.battle.h}
+                        onDamageChange={(delta) => updateDamage('battle', 0, delta)}
+                    />
                 </DraggableCard>
             ) : (
                 <div
@@ -1581,7 +1586,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={increaseBenchSize} disabled={benchSize >= 8} className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8px] shadow hover:bg-blue-600">+</button>
                             <span className="text-[8px] text-gray-500">Max: {benchSize}</span>
                         </div>
-                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[140px] sm:h-auto">
+                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[100px] sm:h-auto">
                             {bench.slice(0, benchSize).map((stack, i) => (
                                 <DroppableZone key={i} id={`${idPrefix}-bench-slot-${i}`} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                     {stack ? (
@@ -1591,7 +1596,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             onClick={(e) => handleCardClick(e, stack, 'bench', i)}
                                             className={swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}
                                         >
-                                            <CascadingStack stack={stack} width={sizes.bench.w} height={sizes.bench.h} />
+                                            <CascadingStack
+                                                stack={stack}
+                                                width={sizes.bench.w}
+                                                height={sizes.bench.h}
+                                                onDamageChange={(delta) => updateDamage('bench', i, delta)}
+                                            />
                                         </DraggableCard>
                                     ) : (
                                         <div
@@ -1961,7 +1971,7 @@ function DroppableZone({ id, children, className = "", style = {}, onClick }: { 
 }
 
 // Cascading Stack Component (Helper)
-export function CascadingStack({ stack, width, height }: { stack: CardStack, width: number, height: number }) {
+export function CascadingStack({ stack, width, height, onDamageChange }: { stack: CardStack, width: number, height: number, onDamageChange?: (delta: number) => void }) {
     const cardOffset = 15 // pixels to show of card below
     const maxVisible = 5
 
@@ -2082,8 +2092,23 @@ export function CascadingStack({ stack, width, height }: { stack: CardStack, wid
             ))}
 
             {/* Stack info badge - Simplified to Damage Only */}
-            <div className="absolute bottom-1 right-1 pointer-events-none z-50">
-                {stack.damage > 0 && <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20">💥{stack.damage}</span>}
+            {/* Stack info badge - Interactive Damage Controls */}
+            <div className="absolute bottom-1 right-1 pointer-events-auto z-50 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                {stack.damage > 0 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDamageChange?.(-10); }}
+                            className="bg-white/90 text-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm border border-red-200 hover:bg-red-50 active:scale-95"
+                        >-</button>
+                        <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20 min-w-[24px] text-center">
+                            💥{stack.damage}
+                        </span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDamageChange?.(10); }}
+                            className="bg-white/90 text-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm border border-red-200 hover:bg-red-50 active:scale-95"
+                        >+</button>
+                    </>
+                )}
             </div>
         </div>
     )

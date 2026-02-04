@@ -463,6 +463,42 @@ function PracticeContent() {
                     </DndContext>
                 )
                 }
+
+                {/* Content description for SEO/AdSense (Value) */}
+                <div className="mt-16 mb-8 max-w-4xl mx-auto px-4">
+                    <div className="bg-white rounded-xl p-6 md:p-10 shadow-sm border border-gray-100">
+                        <h2 className="text-xl md:text-2xl font-bold text-gray-800 border-b pb-4 mb-6">
+                            📖 1人回しツールの使い方
+                        </h2>
+                        <div className="space-y-6 text-gray-600 leading-relaxed">
+                            <section>
+                                <h3 className="font-bold text-gray-900 mb-2">⚡️ ブラウザで手軽に対戦練習</h3>
+                                <p>
+                                    公式デッキコードを入力するだけで、仮想のテーブルトップでデッキを動かすことができます。
+                                    自分と相手の2つのデッキを読み込めば、一人で交互に操作して対面練習（一人回し）が可能です。
+                                </p>
+                            </section>
+
+                            <section>
+                                <h3 className="font-bold text-gray-900 mb-2">👆 操作方法</h3>
+                                <ul className="list-disc list-inside space-y-1 ml-2">
+                                    <li><strong>カード移動:</strong> ドラッグ＆ドロップで手札、ベンチ、バトル場、トラッシュへ自由に移動できます。</li>
+                                    <li><strong>山札確認:</strong> デッキをクリックすると中身を確認し、特定のカードを手札に加えたりサイド落ちを確認できます。</li>
+                                    <li><strong>ダメカン:</strong> 画面中央のダメカンをドラッグしてポケモンに乗せることができます。</li>
+                                    <li><strong>特殊状態:</strong> カードをタップしてメニューから「状態異常」や「進化」を選択できます。</li>
+                                </ul>
+                            </section>
+
+                            <section className="bg-blue-50 p-4 rounded-lg mt-4">
+                                <h3 className="font-bold text-blue-900 mb-1">📱 スマホ・タブレット対応</h3>
+                                <p className="text-sm text-blue-800">
+                                    外出先や移動中でも練習ができるよう、スマートフォンでのタッチ操作に完全対応しています。
+                                    ちょっとした空き時間に、新デッキの初動確認やコンボの練習にお使いください。
+                                </p>
+                            </section>
+                        </div>
+                    </div>
+                </div>
             </div >
         </div >
     )
