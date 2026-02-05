@@ -1135,7 +1135,8 @@ export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, da
                 imageUrl: cardImages[name] || null
             }))
             .sort((a, b) => b.count - a.count)
-            .slice(0, 50) // Top 50
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 300) // Top 300 (Increased from 50 to include more variety)
 
         return { success: true, data: sorted }
 
