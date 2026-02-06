@@ -40,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(100) // Limit for now
 
     const deckRoutes = (decks || []).map((deck) => ({
-        url: `${baseUrl}/decks/${deck.id}`, // Note: Verify if we have a public deck page at this URL
+        url: `${baseUrl}/decks/${deck.id}`,
         lastModified: new Date(deck.created_at),
         changeFrequency: 'weekly' as const,
         priority: 0.6,
