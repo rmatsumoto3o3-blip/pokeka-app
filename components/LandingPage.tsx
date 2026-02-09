@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+// useState removed as unused per lint
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -65,24 +65,26 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 参考デッキを探す
                             </a>
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
                             <Link
                                 href="/practice"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-center"
+                                className="w-full px-8 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
                             >
-                                <span className="flex items-center justify-center">
-                                    🎮 一人回し
-                                </span>
+                                🎮 一人回し
                             </Link>
                             <Link
                                 href="/simulator"
-                                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-center"
+                                className="w-full px-8 py-4 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
                             >
-                                <span className="flex items-center justify-center">
-                                    🧮 確率シミュ
-                                </span>
+                                🧮 確率シミュ
+                            </Link>
+                            <Link
+                                href="/global-simulator"
+                                className="sm:col-span-2 w-full px-8 py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold text-base shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center"
+                            >
+                                🌎 Global Simulator (PTCGL Import)
                             </Link>
                         </div>
                     </div>
@@ -100,11 +102,12 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             rel="noopener noreferrer"
                             className="block w-full max-w-sm hover:opacity-90 transition-opacity"
                         >
-                            <img
+                            <Image
                                 src="/ad_sponsor_toyger.png"
                                 alt="サプライ買うならTOYGER"
+                                width={400}
+                                height={150}
                                 className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
-                                loading="lazy"
                             />
                         </a>
                     </div>

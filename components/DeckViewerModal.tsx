@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { fetchDeckData, type CardData } from '@/lib/deckParser'
 import Link from 'next/link'
+import Image from 'next/image'
+import { useCallback } from 'react'
 
 interface DeckViewerModalProps {
     isOpen: boolean
@@ -15,20 +17,9 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
     const [cards, setCards] = useState<CardData[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [activeTab, setActiveTab] = useState<'all' | 'pokemon' | 'trainer' | 'energy'>('all')
+    // activeTab removed as unused per lint
 
-    useEffect(() => {
-        if (isOpen && deckCode) {
-            loadDeck()
-        } else {
-            // Reset state when closed
-            setCards([])
-            setError(null)
-            setLoading(false)
-        }
-    }, [isOpen, deckCode])
-
-    const loadDeck = async () => {
+    const loadDeck = useCallback(async () => {
         setLoading(true)
         setError(null)
         try {
@@ -40,7 +31,18 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
         } finally {
             setLoading(false)
         }
-    }
+    }, [deckCode])
+
+    useEffect(() => {
+        if (isOpen && deckCode) {
+            loadDeck()
+        } else {
+            // Reset state when closed
+            setCards([])
+            setError(null)
+            setLoading(false)
+        }
+    }, [isOpen, deckCode, loadDeck])
 
     const copyDeckCode = () => {
         navigator.clipboard.writeText(deckCode)
@@ -222,12 +224,12 @@ function CardGrid({ cards, small = false }: { cards: CardData[], small?: boolean
                 <div key={i} className="group relative">
                     <div className="relative aspect-[73/102] rounded bg-gray-100 overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition">
                         {/* Image */}
-                        <img
+                        <Image
                             src={card.imageUrl}
                             alt={card.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
+                            fill
+                            className="object-cover"
+                            unoptimized
                         />
                         {/* Quantity Badge */}
                         <div className="absolute bottom-0 right-0 bg-black/70 backdrop-blur-[2px] text-white font-bold px-1.5 py-0.5 text-xs md:text-sm rounded-tl-lg shadow-sm border-t border-l border-white/20">

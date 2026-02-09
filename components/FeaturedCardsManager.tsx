@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { getFeaturedCardsWithStatsAction, manageFeaturedCardsAction, updateDailySnapshotsAction, getTopAdoptedCardsAction, backfillTrendDataAction } from '@/app/actions'
 
 export default function FeaturedCardsManager({ userId }: { userId: string }) {
@@ -16,13 +17,20 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
     const [suggestionsLoading, setSuggestionsLoading] = useState(false)
     const [addingSuggestionName, setAddingSuggestionName] = useState<string | null>(null)
 
-    const fetchCards = async () => {
+    const fetchCards = useCallback(async () => {
         const res = await getFeaturedCardsWithStatsAction()
         if (res.success && res.data) {
             setCards(res.data.map(d => ({ id: d.id, card_name: d.card_name })))
         }
         setLoading(false)
-    }
+    }, [])
+
+    useEffect(() => {
+        const init = async () => {
+            await fetchCards()
+        }
+        init()
+    }, [fetchCards])
 
     const handleLoadSuggestions = async () => {
         setShowSuggestions(true)
@@ -51,10 +59,6 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
 
     // Check if card is already added
     const isAlreadyAdded = (name: string) => cards.some(c => c.card_name === name)
-
-    useEffect(() => {
-        fetchCards()
-    }, [])
 
     const handleAdd = async () => {
         if (!newCardName) return
@@ -229,8 +233,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
                                                 {/* Image */}
                                                 <div className="aspect-[2/3] relative bg-gray-100">
                                                     {s.imageUrl ? (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                                        <img src={s.imageUrl} alt={s.name} className="w-full h-full object-cover" loading="lazy" />
+                                                        <Image src={s.imageUrl} alt={s.name} fill className="object-cover" unoptimized />
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Image</div>
                                                     )}

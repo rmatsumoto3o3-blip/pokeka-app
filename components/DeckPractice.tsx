@@ -1007,11 +1007,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const renderMenu = () => {
         if (!menu) return null
 
-        // Simple positioning to avoid overflow is tricky without measuring menu size first
-        // Simple heuristic: if x > windowWidth / 2, align left
-        const isRightSide = menu.x > (typeof window !== 'undefined' ? window.innerWidth / 2 : 500)
+        // isRightSide removed as unused per lint
 
-        let style: React.CSSProperties = {
+        const style: React.CSSProperties = {
             position: 'fixed',
             zIndex: 9999,
         }
@@ -1063,7 +1061,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     {/* View Detail Button */}
                     <button
                         onClick={() => {
-                            const cardToView = 'cards' in menu.card ? getTopCard(menu.card) : menu.card
+                            // cardToView removed as unused per lint
                             // Open new Detail Modal
                             const targetStack = menu.source === 'battle' ? battleField : (menu.source === 'bench' ? bench[menu.index] : null)
                             if (targetStack) {
@@ -1125,12 +1123,16 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
                     <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
-                        <img
-                            src={showDetailModal.imageUrl}
-                            alt={showDetailModal.name}
-                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                            onClick={(e) => e.stopPropagation()}
-                        />
+                        <div className="relative w-full max-h-[85vh] aspect-[73/102]">
+                            <Image
+                                src={showDetailModal.imageUrl}
+                                alt={showDetailModal.name}
+                                fill
+                                className="object-contain rounded-lg shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                                unoptimized
+                            />
+                        </div>
                     </div>
                 </div>
             )
@@ -1160,10 +1162,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     {/* Left: Main Image */}
                     <div className="h-[40vh] md:h-auto md:flex-1 bg-gray-100 flex items-center justify-center p-4 sm:p-8 relative flex-shrink-0">
                         <div className="relative h-full w-full flex items-center justify-center">
-                            <img
+                            <Image
                                 src={mainCard.imageUrl}
                                 alt={mainCard.name}
-                                className="max-h-full max-w-full object-contain drop-shadow-lg"
+                                fill
+                                className="object-contain drop-shadow-lg"
+                                unoptimized
                             />
                             <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-bold">
                                 {detailModal.type === 'battle' ? 'バトル場' : 'ベンチ'}
@@ -1919,7 +1923,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 export default DeckPractice
 
 // Helpers for D&D
-function DraggableCard({ id, data, children, className = "", onClick }: { id: string, data: any, children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void }) {
+interface CardWithMetadata {
+    playerPrefix: string
+    type: string
+    index: number
+    card: unknown
+}
+
+function DraggableCard({ id, data, children, className = "", onClick }: { id: string, data: CardWithMetadata, children: React.ReactNode, className?: string, onClick?: (e: React.MouseEvent) => void }) {
     const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
         id,
         data,
@@ -1953,7 +1964,7 @@ function DraggableCard({ id, data, children, className = "", onClick }: { id: st
     )
 }
 
-function DroppableZone({ id, children, className = "", style = {}, onClick }: { id: string, children: React.ReactNode, className?: string, style?: any, onClick?: (e: React.MouseEvent) => void }) {
+function DroppableZone({ id, children, className = "", style = {}, onClick }: { id: string, children: React.ReactNode, className?: string, style?: React.CSSProperties, onClick?: (e: React.MouseEvent) => void }) {
     const { isOver, setNodeRef } = useDroppable({
         id,
     })
@@ -2000,7 +2011,6 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
             {stack.cards.map((card, i) => {
                 const isEnergyCard = isEnergy(card)
                 const isToolCard = isTool(card)
-                const isPokemonCard = isPokemon(card)
                 const isTopPokemon = i === topPokemonIndex
 
                 // Hide attached Energy and Tools from the main stack

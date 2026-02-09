@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { CardData } from './deckParser'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -42,8 +43,8 @@ export interface Deck {
   archetype_id: string | null
   version_label: string | null // e.g., 'v1.0'
   memo: string | null
-  sideboard_cards: any[] | null // JSONB
-  custom_cards: any[] | null // [NEW] JSONB for custom deck lists
+  sideboard_cards: CardData[] | null // JSONB
+  custom_cards: CardData[] | null // [NEW] JSONB for custom deck lists
   is_current: boolean
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Match, Deck, GameEnvironment, DeckArchetype } from '@/lib/supabase'
 import {
@@ -27,16 +27,12 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     const [decks, setDecks] = useState<Deck[]>([])
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])
     const [environments, setEnvironments] = useState<GameEnvironment[]>([])
-    const [loading, setLoading] = useState(true)
+    // const [loading, setLoading] = useState(true) // Removed as unused per lint
     const [selectedDeckId, setSelectedDeckId] = useState<string>('all')
     const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<string>('all')
     const [activeTab, setActiveTab] = useState<'all' | 'win' | 'loss'>('all')
 
-    useEffect(() => {
-        fetchData()
-    }, [userId])
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             // Fetch matches
             const { data: matchesData, error: matchesError } = await supabase
@@ -84,10 +80,12 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             setEnvironments(environmentsData || [])
         } catch (err) {
             console.error(err)
-        } finally {
-            setLoading(false)
         }
-    }
+    }, [userId])
+
+    useEffect(() => {
+        fetchData()
+    }, [fetchData])
 
     // --- Computed Data ---
 
@@ -251,8 +249,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             result: match.result,
             going_first: match.going_first,
             side: match.side || '',
-            mySide: isNaN(mySide as any) || mySide === null ? 0 : mySide,
-            opSide: isNaN(opSide as any) || opSide === null ? 0 : opSide,
+            mySide: mySide === null ? 0 : mySide,
+            opSide: opSide === null ? 0 : opSide,
             opponent_name: match.opponent_name || '',
             date: match.date,
             notes: match.notes || ''
@@ -304,8 +302,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                 } : m
             ))
             setEditingMatchId(null)
-        } catch (err: any) {
-            alert('戦績の更新に失敗しました: ' + err.message)
+        } catch (err) {
+            alert('戦績の更新に失敗しました: ' + (err instanceof Error ? err.message : String(err)))
         } finally {
             setUpdating(false)
         }
@@ -325,8 +323,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             if (error) throw error
 
             setMatches(matches.filter(m => m.id !== matchId))
-        } catch (err: any) {
-            alert('削除に失敗しました: ' + err.message)
+        } catch (err) {
+            alert('削除に失敗しました: ' + (err instanceof Error ? err.message : String(err)))
         } finally {
             setUpdating(false)
         }

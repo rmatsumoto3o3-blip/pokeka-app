@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { getGlobalDeckAnalyticsAction } from '@/app/actions'
 
@@ -112,10 +113,12 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                                                         {/* Card Image */}
                                                         <div className="relative aspect-[3/4] mb-1.5 rounded-lg overflow-hidden shadow-sm border border-gray-100 group-hover:shadow-md transition bg-gray-100">
                                                             {card.image_url ? (
-                                                                <img
+                                                                <Image
                                                                     src={card.image_url}
                                                                     alt={card.card_name}
-                                                                    className="w-full h-full object-cover"
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    unoptimized
                                                                 />
                                                             ) : (
                                                                 <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">

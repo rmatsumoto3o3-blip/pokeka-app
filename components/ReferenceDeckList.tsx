@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
+import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal' // Import the new modal
 
 // Helper Component for Auto-Scaling Text
@@ -70,7 +71,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 }
 
 export default function ReferenceDeckList({
-    userId,
+    // userId removed as unused per lint
     userEmail,
     initialDecks = [],
     initialArchetypes = []
@@ -155,7 +156,7 @@ export default function ReferenceDeckList({
             // Update local state
             setDecks(decks.map(d =>
                 d.id === editingDeck.id
-                    ? { ...d, deck_name: editName, event_type: (editEventType || null) as any }
+                    ? { ...d, deck_name: editName, event_type: (editEventType || null) as ReferenceDeck['event_type'] }
                     : d
             ))
             setEditingDeck(null)
@@ -249,13 +250,16 @@ export default function ReferenceDeckList({
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
-                    <img
-                        src={selectedDeckImage}
-                        alt="Deck Preview"
-                        className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-                        onClick={(e) => e.stopPropagation()}
-                        referrerPolicy="no-referrer"
-                    />
+                    <div className="relative max-w-full max-h-[85vh] w-[800px] aspect-[16/11]">
+                        <Image
+                            src={selectedDeckImage}
+                            alt="Deck Preview"
+                            fill
+                            className="object-contain rounded-lg shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                            unoptimized
+                        />
+                    </div>
                 </div>
             </div>
         )
@@ -517,11 +521,12 @@ export default function ReferenceDeckList({
                             >
                                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                                     {coverImage ? (
-                                        <img
+                                        <Image
                                             src={coverImage}
                                             alt={displayName}
-                                            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
-                                            referrerPolicy="no-referrer"
+                                            fill
+                                            className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
+                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">

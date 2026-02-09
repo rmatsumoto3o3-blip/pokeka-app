@@ -8,7 +8,8 @@ interface EnvironmentManagerProps {
     userEmail: string
 }
 
-export default function EnvironmentManager({ userEmail }: EnvironmentManagerProps) {
+// userEmail removed as unused per lint
+export default function EnvironmentManager({ }: EnvironmentManagerProps) {
     const [environments, setEnvironments] = useState<GameEnvironment[]>([])
     const [loading, setLoading] = useState(true)
     const [isAdding, setIsAdding] = useState(false)
@@ -79,8 +80,8 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
             setIsAdding(false)
             setEditingId(null)
             fetchEnvironments()
-        } catch (err: any) {
-            alert('保存に失敗しました: ' + err.message)
+        } catch (err) {
+            alert('保存に失敗しました: ' + (err instanceof Error ? err.message : String(err)))
         }
     }
 
@@ -106,8 +107,8 @@ export default function EnvironmentManager({ userEmail }: EnvironmentManagerProp
 
             if (error) throw error
             fetchEnvironments()
-        } catch (err: any) {
-            alert('削除に失敗しました: ' + err.message)
+        } catch (err) {
+            alert('削除に失敗しました: ' + (err instanceof Error ? err.message : String(err)))
         }
     }
 
