@@ -129,6 +129,57 @@ function extractCardsFromHtml(html: string): CardData[] {
     return cards
 }
 
+/**
+ * Parses PTCGL (Pokemon TCG Live) export format text.
+ * Example:
+ * Pokémon: 5
+ * 1 Hisuian Goodra V AST 133
+ * 2 Hisuian Goodra VSTAR AST 136
+ * ...
+ */
+export function parsePTCGLFormat(text: string): CardData[] {
+    const cards: CardData[] = []
+    const lines = text.split('\n')
+
+    // PTCGL Format Regex: Quantity (1), Name (2), Set (3), Number (4)
+    // Example: "2 Comfey LOR 79"
+    const cardRegex = /^(\d+)\s+(.+?)\s+([A-Z0-9]{2,})\s+(\d+)\s*$/i
+
+    lines.forEach(line => {
+        const trimmed = line.trim()
+        if (!trimmed) return
+
+        const match = trimmed.match(cardRegex)
+        if (match) {
+            const quantity = parseInt(match[1], 10)
+            const name = match[2]
+            const setCode = match[3]
+            const collectorNumber = match[4]
+
+            // Basic type detection based on keywords in name (very crude for now)
+            let supertype = 'Trainer'
+            let subtype: string | undefined = undefined
+
+            const upperName = name.toUpperCase()
+            if (upperName.includes(' V') || upperName.includes('EX') || upperName.includes('GX') || upperName.includes('VSTAR') || upperName.includes('VMAX')) {
+                supertype = 'Pokémon'
+            } else if (upperName.includes('ENERGY')) {
+                supertype = 'Energy'
+            }
+
+            cards.push({
+                name,
+                imageUrl: '', // Placeholder for now
+                quantity,
+                supertype,
+                subtypes: subtype ? [subtype] : undefined
+            })
+        }
+    })
+
+    return cards
+}
+
 export function buildDeck(cards: CardData[]): Card[] {
     return cards.flatMap(card =>
         Array(card.quantity).fill({
