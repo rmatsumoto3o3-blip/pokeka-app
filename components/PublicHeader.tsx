@@ -41,6 +41,13 @@ export default function PublicHeader() {
                             コラム・記事
                         </Link>
 
+                        <Link
+                            href="/global-simulator"
+                            className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-indigo-600 hover:text-indigo-800 transition whitespace-nowrap font-bold"
+                        >
+                            Global Edition
+                        </Link>
+
                         {isLoggedIn ? (
                             <button
                                 onClick={() => router.push('/dashboard')}
