@@ -8,7 +8,8 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, syncReferenceToAnalyzedAction } from '@/app/actions'
+
 import Image from 'next/image'
 
 // Sortable Item Component

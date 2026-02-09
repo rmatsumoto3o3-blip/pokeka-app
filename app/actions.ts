@@ -663,13 +663,25 @@ export async function updateAnalyzedDeckAction(
 
 export async function getGlobalDeckAnalyticsAction() {
     try {
-        // 1. Fetch all analyzed decks
-        const { data: decks, error } = await supabaseAdmin
-            .from('analyzed_decks')
-            .select('*')
+        // 1. Fetch all analyzed decks with pagination (bypass 1000 row limit)
+        let decks: any[] = []
+        let from = 0
+        const step = 1000
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('*')
+                .range(from, from + step - 1)
 
-        if (error) throw error
-        if (!decks) return { success: true, analyticsByArchetype: {} }
+            if (error) throw error
+            if (!data || data.length === 0) break
+
+            decks = decks.concat(data)
+            if (data.length < step) break
+            from += step
+        }
+
+        if (decks.length === 0) return { success: true, analyticsByArchetype: {} }
 
         // 2. Aggregate per Archetype
         const analyticsByArchetype: Record<string, any[]> = {}
@@ -1249,3 +1261,5 @@ export async function backfillTrendDataAction(userId: string) {
         return { success: false, error: (error as Error).message }
     }
 }
+// ... (previous content)
+
