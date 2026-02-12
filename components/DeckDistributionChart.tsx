@@ -45,7 +45,8 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
                 { data: decksData },
                 { data: archetypesData }
             ] = await Promise.all([
-                supabase.from('reference_decks').select('*'),
+                supabase.from('reference_decks')
+                    .select('*'),
                 supabase.from('deck_archetypes').select('*')
             ])
             if (decksData) setDecks(decksData)

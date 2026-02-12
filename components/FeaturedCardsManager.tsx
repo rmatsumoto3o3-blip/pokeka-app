@@ -86,7 +86,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
     }
 
     const handleUpdateSnapshots = async () => {
-        if (!confirm('直近30日のデッキを集計してスナップショットを更新します。よろしいですか？')) return
+        if (!confirm('全期間のデッキを集計してスナップショットを更新します。よろしいですか？')) return
         setActionLoading(true)
         setUpdateResult(null)
         const res = await updateDailySnapshotsAction(userId)
@@ -139,7 +139,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
                         onClick={handleLoadSuggestions}
                         className="text-sm text-purple-600 font-bold mb-4 hover:underline flex items-center"
                     >
-                        ✨ おすすめから追加 (直近30日の採用率)
+                        ✨ おすすめから追加 (全期間の採用率)
                     </button>
 
                     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -199,7 +199,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[85vh] flex flex-col">
                         <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
-                            <h3 className="font-bold text-lg text-gray-900">✨ おすすめカード (直近30日)</h3>
+                            <h3 className="font-bold text-lg text-gray-900">✨ おすすめカード (全期間)</h3>
                             <button onClick={() => setShowSuggestions(false)} className="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 bg-gray-50">

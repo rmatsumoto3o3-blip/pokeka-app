@@ -1073,14 +1073,10 @@ export async function updateDailySnapshotsAction(userId: string) {
 
         const targetNames = new Set(featured.map(f => f.card_name))
 
-        // 2. Fetch Decks from Last 30 Days
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
+        // 2. Fetch All Decks
         const { data: decks, error: dErr } = await getSupabaseAdmin()
             .from('analyzed_decks')
             .select('cards_json')
-            .gte('created_at', thirtyDaysAgo.toISOString())
 
         if (dErr) throw dErr
         if (!decks || decks.length === 0) return { success: false, error: '集計対象のデッキがありません' }
@@ -1153,14 +1149,10 @@ export async function updateDailySnapshotsAction(userId: string) {
 
 export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
     try {
-        // 1. Fetch Decks from Last 30 Days
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
+        // 1. Fetch All Decks
         const { data: decks, error: dErr } = await getSupabaseAdmin()
             .from('analyzed_decks')
             .select('cards_json')
-            .gte('created_at', thirtyDaysAgo.toISOString())
 
         if (dErr) throw dErr
         if (!decks || decks.length === 0) return { success: true, data: [] }

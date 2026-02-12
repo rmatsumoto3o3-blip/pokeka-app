@@ -12,7 +12,9 @@ export default async function Home() {
     { data: archetypes },
     { data: articles }
   ] = await Promise.all([
-    supabase.from('reference_decks').select('*').order('created_at', { ascending: false }).limit(1000),
+    supabase.from('reference_decks')
+      .select('*')
+      .order('created_at', { ascending: false }),
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false }).limit(5)
   ])

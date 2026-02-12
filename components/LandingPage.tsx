@@ -143,7 +143,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             <h3 className="text-xl md:text-2xl font-bold text-gray-900">
                                 📊 環境デッキ分布
                             </h3>
-                            <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率（直近30日）</p>
+                            <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率</p>
                         </div>
                         <div className="bg-white rounded-2xl border-2 border-purple-100 shadow-sm p-4 md:p-6">
                             <DeckDistributionChart decks={decks} archetypes={archetypes} />

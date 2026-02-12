@@ -39,7 +39,7 @@ export default function FeaturedCardTrends() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 <span className="text-xl mr-2">📈</span>
-                注目カード採用率（直近30日）
+                注目カード採用率（全期間）
             </h2>
 
             {/* Master: Card Grid */}
@@ -99,7 +99,7 @@ export default function FeaturedCardTrends() {
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-gray-900">{selectedCard.card_name}</h3>
-                                <p className="text-xs text-gray-500">直近30日間の採用率推移</p>
+                                <p className="text-xs text-gray-500">全期間の採用率推移</p>
                             </div>
                         </div>
                         <div className="text-right">
