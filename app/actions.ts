@@ -549,6 +549,43 @@ export async function removeDeckFromAnalyticsAction(id: string, userId: string) 
     }
 }
 
+export async function deleteArchetypeAction(archetypeId: string, userId: string) {
+    try {
+        // Admin permission check
+        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
+        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        const supabaseAdmin = getSupabaseAdmin()
+
+        // 1. Delete from reference_decks (Top page)
+        await supabaseAdmin
+            .from('reference_decks')
+            .delete()
+            .eq('archetype_id', archetypeId)
+
+        // 2. Delete from analyzed_decks (Analytics)
+        await supabaseAdmin
+            .from('analyzed_decks')
+            .delete()
+            .eq('archetype_id', archetypeId)
+
+        // 3. Delete from deck_archetypes (The category itself)
+        const { error } = await supabaseAdmin
+            .from('deck_archetypes')
+            .delete()
+            .eq('id', archetypeId)
+
+        if (error) throw error
+
+        return { success: true }
+    } catch (error) {
+        console.error('Delete Archetype Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
 export async function getDeckAnalyticsAction(archetypeId: string) {
     try {
         // 1. Fetch all decks for this archetype

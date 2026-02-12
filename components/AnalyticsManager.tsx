@@ -8,7 +8,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction } from '@/app/actions'
 
 import Image from 'next/image'
 
@@ -205,6 +205,31 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             alert('並び順の保存に失敗しました: ' + error.message)
         } else {
             alert('並び順を保存しました！')
+        }
+    }
+
+    const handleDeleteArchetype = async () => {
+        if (!manageArchetypeId) return
+        const arch = localArchetypes.find(a => a.id === manageArchetypeId)
+        if (!arch) return
+
+        if (!confirm(`「${arch.name}」を完全に削除してもよろしいですか？\n※紐づいている全ての分析データと参考デッキも同時に削除されます。この操作は取り消せません。`)) return
+
+        setArchetypeLoading(true)
+        try {
+            const res = await deleteArchetypeAction(manageArchetypeId, userId)
+            if (res.success) {
+                alert('削除が完了しました')
+                setManageArchetypeId('')
+                fetchArchetypes()
+            } else {
+                alert(res.error || '削除に失敗しました')
+            }
+        } catch (e) {
+            console.error(e)
+            alert('エラーが発生しました')
+        } finally {
+            setArchetypeLoading(false)
         }
     }
 
@@ -553,6 +578,14 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                 <option key={arch.id} value={arch.id}>{arch.name}</option>
                                             ))}
                                         </select>
+                                        <button
+                                            onClick={handleDeleteArchetype}
+                                            disabled={!manageArchetypeId || archetypeLoading}
+                                            className="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-md text-sm hover:bg-red-100 disabled:opacity-50"
+                                            title="このタイプを完全に削除"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </button>
                                     </div>
                                     <div className="flex gap-2">
                                         <input
