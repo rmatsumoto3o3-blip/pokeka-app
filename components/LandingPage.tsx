@@ -7,6 +7,7 @@ import Image from 'next/image'
 import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
+import DeckDistributionChart from '@/components/DeckDistributionChart'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
@@ -134,6 +135,19 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                     {/* Featured Card Trends (Mid-Section) */}
                     <div className="mt-8">
                         <FeaturedCardTrends />
+                    </div>
+
+                    {/* Deck Distribution Chart */}
+                    <div className="mt-8" id="deck-distribution">
+                        <div className="mb-4">
+                            <h3 className="text-xl md:text-2xl font-bold text-gray-900">
+                                📊 環境デッキ分布
+                            </h3>
+                            <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率（直近30日）</p>
+                        </div>
+                        <div className="bg-white rounded-2xl border-2 border-purple-100 shadow-sm p-4 md:p-6">
+                            <DeckDistributionChart decks={decks} archetypes={archetypes} />
+                        </div>
                     </div>
 
                     <div className="mt-8" id="key-card-adoption">

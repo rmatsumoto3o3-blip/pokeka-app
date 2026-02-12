@@ -18,6 +18,7 @@ import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
+import DeckDistributionChart from '@/components/DeckDistributionChart'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 
 export default function Dashboard() {
@@ -362,6 +363,14 @@ export default function Dashboard() {
                                     </h2>
                                     <KeyCardAdoptionList />
                                 </div>
+
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-purple-100 shadow-sm">
+                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
+                                        <span className="bg-purple-100 p-1.5 rounded-lg mr-2 text-base">📊</span>
+                                        環境デッキ分布
+                                    </h2>
+                                    <DeckDistributionChart />
+                                </div>
                             </div>
                         )}
 
@@ -425,9 +434,9 @@ export default function Dashboard() {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
 
             <Footer />
-        </div>
+        </div >
     )
 }
