@@ -39,12 +39,6 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    useEffect(() => {
-        if (!initialDecks || !initialArchetypes) {
-            fetchData()
-        }
-    }, [initialDecks, initialArchetypes])
-
     const fetchData = async () => {
         try {
             const [
@@ -62,6 +56,31 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        if (!initialDecks || !initialArchetypes) {
+            fetchData()
+        }
+
+        // Real-time subscription for automatic updates
+        const channel = supabase
+            .channel('deck-distribution-updates')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'reference_decks' },
+                () => fetchData()
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'deck_archetypes' },
+                () => fetchData()
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [initialDecks, initialArchetypes])
 
     const data = useMemo(() => {
         // 1. Create a map of Archetype ID -> Name
