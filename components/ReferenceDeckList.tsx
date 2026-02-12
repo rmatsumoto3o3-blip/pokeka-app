@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import Image from 'next/image'
-import DeckViewerModal from './DeckViewerModal' // Import the new modal
+import DeckViewerModal from './DeckViewerModal'
+import { getAllReferenceDecksAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -109,13 +110,9 @@ export default function ReferenceDeckList({
     }, [initialDecks.length])
 
     const fetchDecks = async () => {
-        const { data, error } = await supabase
-            .from('reference_decks')
-            .select('*')
-            .order('created_at', { ascending: false })
-
-        if (!error && data) {
-            setDecks(data)
+        const res = await getAllReferenceDecksAction()
+        if (res.success && res.data) {
+            setDecks(res.data)
         }
     }
 

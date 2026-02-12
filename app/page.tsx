@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import LandingPage from '@/components/LandingPage'
+import { getAllReferenceDecksAction } from './actions'
 
 // Incremental Static Regeneration (ISR)
 // Revalidate this page content at most once every 60 seconds
@@ -12,9 +13,8 @@ export default async function Home() {
     { data: archetypes },
     { data: articles }
   ] = await Promise.all([
-    supabase.from('reference_decks')
-      .select('*')
-      .order('created_at', { ascending: false }),
+    getAllReferenceDecksAction()
+      .then(res => ({ data: res.success ? res.data : [] })),
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false }).limit(5)
   ])

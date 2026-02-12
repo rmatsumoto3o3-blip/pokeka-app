@@ -586,16 +586,58 @@ export async function deleteArchetypeAction(archetypeId: string, userId: string)
     }
 }
 
+export async function getAllReferenceDecksAction() {
+    try {
+        let allDecks: any[] = []
+        let from = 0
+        const step = 1000
+        const supabaseAdmin = getSupabaseAdmin()
+
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('reference_decks')
+                .select('*')
+                .range(from, from + step - 1)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+            if (!data || data.length === 0) break
+
+            allDecks = allDecks.concat(data)
+            if (data.length < step) break
+            from += step
+        }
+
+        return { success: true, data: allDecks }
+    } catch (error) {
+        console.error('Fetch Reference Decks Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
 export async function getDeckAnalyticsAction(archetypeId: string) {
     try {
-        // 1. Fetch all decks for this archetype
-        const { data: decks, error } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('*')
-            .eq('archetype_id', archetypeId)
-            .order('created_at', { ascending: false })
+        // 1. Fetch all decks for this archetype with pagination
+        let decks: any[] = []
+        let from = 0
+        const step = 1000
+        const supabaseAdmin = getSupabaseAdmin()
 
-        if (error) throw error
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('*')
+                .eq('archetype_id', archetypeId)
+                .range(from, from + step - 1)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+            if (!data || data.length === 0) break
+
+            decks = decks.concat(data)
+            if (data.length < step) break
+            from += step
+        }
         if (!decks || decks.length === 0) {
             return { success: true, decks: [], analytics: [], totalDecks: 0 }
         }
@@ -1073,12 +1115,25 @@ export async function updateDailySnapshotsAction(userId: string) {
 
         const targetNames = new Set(featured.map(f => f.card_name))
 
-        // 2. Fetch All Decks
-        const { data: decks, error: dErr } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('cards_json')
+        // 2. Fetch All Decks with pagination
+        let decks: any[] = []
+        let from = 0
+        const step = 1000
+        const supabaseAdmin = getSupabaseAdmin()
 
-        if (dErr) throw dErr
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('cards_json')
+                .range(from, from + step - 1)
+
+            if (error) throw error
+            if (!data || data.length === 0) break
+
+            decks = decks.concat(data)
+            if (data.length < step) break
+            from += step
+        }
         if (!decks || decks.length === 0) return { success: false, error: '集計対象のデッキがありません' }
 
         const totalDecks = decks.length
@@ -1149,12 +1204,25 @@ export async function updateDailySnapshotsAction(userId: string) {
 
 export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
     try {
-        // 1. Fetch All Decks
-        const { data: decks, error: dErr } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('cards_json')
+        // 1. Fetch All Decks with pagination
+        let decks: any[] = []
+        let from = 0
+        const step = 1000
+        const supabaseAdmin = getSupabaseAdmin()
 
-        if (dErr) throw dErr
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('cards_json')
+                .range(from, from + step - 1)
+
+            if (error) throw error
+            if (!data || data.length === 0) break
+
+            decks = decks.concat(data)
+            if (data.length < step) break
+            from += step
+        }
         if (!decks || decks.length === 0) return { success: true, data: [] }
 
         const totalDecks = decks.length

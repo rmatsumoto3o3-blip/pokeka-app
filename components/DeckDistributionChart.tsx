@@ -4,6 +4,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
+import { getAllReferenceDecksAction } from '@/app/actions'
 
 interface DeckDistributionChartProps {
     decks?: ReferenceDeck[]
@@ -42,14 +43,13 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
     const fetchData = async () => {
         try {
             const [
-                { data: decksData },
+                res,
                 { data: archetypesData }
             ] = await Promise.all([
-                supabase.from('reference_decks')
-                    .select('*'),
+                getAllReferenceDecksAction(),
                 supabase.from('deck_archetypes').select('*')
             ])
-            if (decksData) setDecks(decksData)
+            if (res.success && res.data) setDecks(res.data)
             if (archetypesData) setArchetypes(archetypesData)
         } catch (e) {
             console.error('Error fetching chart data:', e)
