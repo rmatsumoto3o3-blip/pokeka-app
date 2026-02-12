@@ -15,7 +15,9 @@ import {
     DragStartEvent,
     useDraggable,
     useDroppable,
+    DragOverlay,
 } from '@dnd-kit/core'
+import { AnimatePresence, motion } from 'framer-motion'
 import { CSS } from '@dnd-kit/utilities'
 
 interface DeckPracticeProps {
@@ -89,12 +91,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     // UI Theme based on Player
     const isSelf = idPrefix === 'player1'
     const theme = isSelf ? {
-        bg: 'bg-blue-50/50',
+        bg: 'bg-blue-50/90',
         border: 'border-blue-100',
         accent: 'bg-blue-100',
         active: 'border-blue-300'
     } : {
-        bg: 'bg-red-50/50',
+        bg: 'bg-red-50/90',
         border: 'border-red-100',
         accent: 'bg-red-100',
         active: 'border-red-300'
@@ -116,6 +118,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [teisatsuCards, setTeisatsuCards] = useState<Card[] | null>(null)
     const [pokegearCards, setPokegearCards] = useState<Card[] | null>(null)
     const [showDetailModal, setShowDetailModal] = useState<Card | null>(null)
+    const [toast, setToast] = useState<string | null>(null)
+    const showToast = (msg: string) => {
+        setToast(msg)
+        setTimeout(() => setToast(null), 3000)
+    }
 
 
     // Updated Detail Modal State: Holds context about the stack being viewed
@@ -356,6 +363,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const drawn = newDeck.slice(0, 7)
         setHand(drawn)
         setRemaining(newDeck.slice(7))
+        showToast('引き直しました')
     }
 
     const increaseBenchSize = () => {
@@ -574,6 +582,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const shuffleDeck = () => {
         const shuffled = [...remaining].sort(() => Math.random() - 0.5)
         setRemaining(shuffled)
+        showToast('山札をシャッフルしました')
     }
 
     // Supporter Card Effects
@@ -1058,6 +1067,26 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         カード操作
                     </div>
 
+                    {/* Damage Counter Controls (Battle/Bench only) */}
+                    {(menu.source === 'battle' || menu.source === 'bench') && (() => {
+                        const targetStack = menu.source === 'battle' ? battleField : (menu.source === 'bench' ? bench[menu.index] : null)
+                        if (!targetStack) return null
+                        return (
+                            <div className="bg-red-50 p-2 border-b border-red-100">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-bold text-red-800">ダメカン</span>
+                                    <span className="text-sm font-black text-red-600">{targetStack.damage || 0}</span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-1">
+                                    <button onClick={() => updateDamage(menu.source as 'battle' | 'bench', menu.index, -50)} className="px-1 py-1 bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 text-[10px] font-bold shadow-sm">-50</button>
+                                    <button onClick={() => updateDamage(menu.source as 'battle' | 'bench', menu.index, -10)} className="px-1 py-1 bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 text-[10px] font-bold shadow-sm">-10</button>
+                                    <button onClick={() => updateDamage(menu.source as 'battle' | 'bench', menu.index, 10)} className="px-1 py-1 bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 text-[10px] font-bold shadow-sm">+10</button>
+                                    <button onClick={() => updateDamage(menu.source as 'battle' | 'bench', menu.index, 50)} className="px-1 py-1 bg-white border border-red-200 text-red-700 rounded hover:bg-red-100 text-[10px] font-bold shadow-sm">+50</button>
+                                </div>
+                            </div>
+                        )
+                    })()}
+
                     {/* View Detail Button */}
                     <button
                         onClick={() => {
@@ -1319,9 +1348,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </button>
                     <button onClick={mulligan} className="bg-white border hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium shadow-sm">
                         マリガン
-                    </button>
-                    <button onClick={increaseBenchSize} className="bg-white border hover:bg-gray-50 text-gray-700 px-3 py-2 rounded text-sm font-medium shadow-sm">
-                        ベンチ拡張 (+1)
                     </button>
                     <button onClick={discardTopDeck} disabled={remaining.length === 0} className="bg-white border hover:bg-red-50 text-red-600 px-3 py-2 rounded text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         山札トップをトラッシュ
@@ -1687,7 +1713,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <div className="bg-white rounded-lg p-4 max-w-4xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold">山札確認 ({remaining.length}枚)</h2>
-                                <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded">閉じる</button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setShowDeckViewer(false); shuffleDeck(); }} className="bg-blue-600 text-white font-bold px-3 py-1 rounded shadow hover:bg-blue-700">シャッフルして閉じる</button>
+                                    <button onClick={() => setShowDeckViewer(false)} className="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300">閉じる</button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-x-2 gap-y-6">
                                 {remaining.map((card, i) => (
@@ -1916,6 +1945,71 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Detail Modal Render */}
             {renderDetailModal()}
 
+            {/* Drag Overlay */}
+            <DragOverlay dropAnimation={null}>
+                {activeDragId ? (
+                    <div className="w-[100px] h-[140px] rounded-lg shadow-2xl overflow-hidden ring-2 ring-yellow-400 opacity-90 pointer-events-none transform scale-110">
+                        {(() => {
+                            const findCardImage = () => {
+                                // Search hand
+                                if (activeDragId && activeDragId.startsWith(`${idPrefix}-hand-card-`)) {
+                                    const index = parseInt(activeDragId.replace(`${idPrefix}-hand-card-`, ''))
+                                    const handCard = hand[index]
+                                    if (handCard) return handCard.imageUrl
+                                }
+
+                                // Search Battle
+                                if (activeDragId === `${idPrefix}-battle-card` && battleField) {
+                                    let topPokemonIndex = -1
+                                    for (let i = battleField.cards.length - 1; i >= 0; i--) {
+                                        if (isPokemon(battleField.cards[i])) {
+                                            topPokemonIndex = i
+                                            break
+                                        }
+                                    }
+                                    if (topPokemonIndex === -1 && battleField.cards.length > 0) topPokemonIndex = 0
+                                    return battleField.cards[topPokemonIndex]?.imageUrl
+                                }
+
+                                // Search Bench
+                                if (activeDragId && activeDragId.startsWith(`${idPrefix}-bench-card-`)) {
+                                    const index = parseInt(activeDragId.replace(`${idPrefix}-bench-card-`, ''))
+                                    const stack = bench[index]
+                                    if (stack) {
+                                        let topPokemonIndex = -1
+                                        for (let i = stack.cards.length - 1; i >= 0; i--) {
+                                            if (isPokemon(stack.cards[i])) {
+                                                topPokemonIndex = i
+                                                break
+                                            }
+                                        }
+                                        if (topPokemonIndex === -1 && stack.cards.length > 0) topPokemonIndex = 0
+                                        return stack.cards[topPokemonIndex]?.imageUrl
+                                    }
+                                }
+                                return null
+                            }
+                            const imgUrl = findCardImage()
+                            if (imgUrl) return <Image src={imgUrl} alt="dragging" fill className="object-cover" unoptimized />
+                            return <div className="bg-blue-900 w-full h-full border-2 border-white" />
+                        })()}
+                    </div>
+                ) : null}
+            </DragOverlay>
+
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, x: '-50%' }}
+                        animate={{ opacity: 1, y: 0, x: '-50%' }}
+                        exit={{ opacity: 0, y: 20, x: '-50%' }}
+                        className="fixed bottom-10 left-1/2 bg-black/80 text-white px-6 py-3 rounded-full text-sm font-bold shadow-xl z-[2000] pointer-events-none whitespace-nowrap"
+                    >
+                        {toast}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 })
@@ -2004,8 +2098,8 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
             className="relative"
             style={{
                 width: width,
-                // Only use visible cards for height calculation
-                height: height + (Math.min(Math.max(0, visibleCardsCount - 1), maxVisible) * cardOffset)
+                // Fixed height since we are validating stacking
+                height: height
             }}
         >
             {stack.cards.map((card, i) => {
@@ -2030,7 +2124,7 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                     }
                 }
 
-                const marginBottomValue = isTopPokemon ? 0 : (visualPos * cardOffset)
+                const marginBottomValue = 0 // No offset, stack directly
 
                 return (
                     <div
@@ -2101,25 +2195,16 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                 </div>
             ))}
 
-            {/* Stack info badge - Simplified to Damage Only */}
-            {/* Stack info badge - Interactive Damage Controls */}
-            <div className="absolute bottom-1 right-1 pointer-events-auto z-[101] flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                {stack.damage > 0 && (
-                    <>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDamageChange?.(-10); }}
-                            className="bg-white/90 text-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm border border-red-200 hover:bg-red-50 active:scale-95"
-                        >-</button>
-                        <span className="bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm border border-white/20 min-w-[24px] text-center">
-                            {stack.damage}
-                        </span>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDamageChange?.(10); }}
-                            className="bg-white/90 text-red-600 text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-sm border border-red-200 hover:bg-red-50 active:scale-95"
-                        >+</button>
-                    </>
-                )}
-            </div>
+            {/* Damage Counter Badge (Read Only) */}
+            {stack.damage > 0 && (
+                <div
+                    className="absolute bottom-1 right-1 z-[200] flex items-end justify-end pointer-events-none"
+                >
+                    <div className="bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-md border border-white/20 backdrop-blur-sm">
+                        <span className="text-center">{stack.damage}</span>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

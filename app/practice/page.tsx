@@ -204,15 +204,15 @@ function PracticeContent() {
     }
 
     return (
-        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col">
+        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-slate-900 p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col">
             <div className="max-w-[1800px] mx-auto w-full">
                 {/* Header - Hidden on mobile for space */}
                 <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
                     <div>
-                        <h1 className="text-lg md:text-3xl font-bold text-gray-900">
+                        <h1 className="text-lg md:text-3xl font-bold text-white">
                             🎮 1人回し練習
                         </h1>
-                        <p className="text-xs md:text-sm text-gray-600 hidden md:block">
+                        <p className="text-xs md:text-sm text-gray-400 hidden md:block">
                             デッキコードを入力して、対戦練習を始めましょう
                         </p>
                     </div>
@@ -305,9 +305,10 @@ function PracticeContent() {
                                 )}
 
                                 {/* Center Column - Stadium & Tools */}
-                                <div className="order-2 md:order-none w-full md:w-32 flex-shrink-0 flex flex-col items-center z-10">
+                                <div className="order-2 md:order-none w-full md:w-40 flex-shrink-0 flex flex-col items-center z-10">
                                     {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
-                                    <div className="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0 border border-white/50">
+                                    {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
+                                    <div className="p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0">
 
                                         {/* Main Battle Row: Opponent - Stadium - Coin/Dmg - Self */}
                                         <div className="flex flex-row items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
@@ -315,7 +316,7 @@ function PracticeContent() {
                                             <div id="mobile-battle-p2" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
 
                                             {/* Stadium Zone */}
-                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[10px] text-center p-0.5 sm:p-2 overflow-visible relative group bg-white/50 flex-shrink-0">
+                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-[10px] text-center p-0.5 sm:p-2 overflow-visible relative group bg-gray-200/90 flex-shrink-0 shadow-lg">
                                                 {(stadium1 || stadium2) ? (
                                                     <div
                                                         onClick={(e) => {
@@ -364,7 +365,7 @@ function PracticeContent() {
                                                         })()}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] font-bold text-gray-300">スタジアム</span>
+                                                    <span className="text-[10px] font-bold text-gray-500">スタジアム</span>
                                                 )}
                                             </DroppableZone>
 
