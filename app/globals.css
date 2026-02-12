@@ -16,7 +16,56 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
   }
+}
+
+/* Deck Practice Mode Overrides */
+.practice-container {
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background-color: #2a6f41;
+  /* Fallback Green */
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2) 1px, transparent 1px);
+  background-size: 20px 20px, 100px 100px, 100px 100px;
+  background-position: 0 0, 0 0, 0 0;
+}
+
+.zone-container {
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.zone-container:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.card-shadow {
+  box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  z-index: 50;
+  box-shadow: 4px 8px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Hide scrollbar for hand/bench but allow scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 body {

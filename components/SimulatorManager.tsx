@@ -128,16 +128,16 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                     <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{list.length}{t.types}</span>
                 </h3>
                 <div className="overflow-x-auto">
-                    <table className="min-w-[800px] md:min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full md:min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
                         <thead className="bg-gray-50 text-xs font-bold text-gray-600 uppercase tracking-wider">
                             <tr>
                                 <th className="px-2 md:px-4 py-3 text-center w-8 whitespace-nowrap"></th>
                                 <th className="px-2 md:px-4 py-3 text-left w-16 whitespace-nowrap">{t.image}</th>
                                 <th className="px-2 md:px-4 py-3 text-left whitespace-nowrap">{t.cardName}</th>
                                 <th className="px-2 md:px-4 py-3 text-center w-20 whitespace-nowrap">{t.quantity}</th>
-                                <th className="px-2 md:px-4 py-3 text-center w-32 bg-pink-50 text-pink-700 whitespace-nowrap">{t.openingHand}</th>
-                                <th className="px-2 md:px-4 py-3 text-center w-32 bg-orange-50 text-orange-700 whitespace-nowrap">{t.prizeRisk}</th>
-                                <th className="px-2 md:px-4 py-3 text-center w-32 bg-blue-50 text-blue-700 whitespace-nowrap">{t.remainingInDeck}</th>
+                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-pink-50 text-pink-700 whitespace-nowrap">{t.openingHand}</th>
+                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-orange-50 text-orange-700 whitespace-nowrap">{t.prizeRisk}</th>
+                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-blue-50 text-blue-700 whitespace-nowrap">{t.remainingInDeck}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 text-xs md:text-sm">
@@ -166,33 +166,52 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                 {card.subtypes && <span className="ml-2 text-xs text-gray-400 font-normal">({card.subtypes.join(', ')})</span>}
                                             </td>
                                             <td className="px-2 md:px-4 py-2 text-center font-bold text-gray-900 whitespace-nowrap">{card.quantity}</td>
-                                            <td className="px-2 md:px-4 py-2 text-center font-bold text-pink-600 bg-pink-50/30 whitespace-nowrap">
+                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-pink-600 bg-pink-50/30 whitespace-nowrap">
                                                 {calculateOpeningProbability(card.quantity)}%
                                             </td>
-                                            <td className="px-2 md:px-4 py-2 text-center font-bold text-orange-600 bg-orange-50/30 whitespace-nowrap">
+                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-orange-600 bg-orange-50/30 whitespace-nowrap">
                                                 {calculatePrizeProbability(card.quantity)}%
                                             </td>
-                                            <td className="px-2 md:px-4 py-2 text-center font-bold text-blue-600 bg-blue-50/30 whitespace-nowrap">
+                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-blue-600 bg-blue-50/30 whitespace-nowrap">
                                                 {calculateRemainingInDeckProbability(card.quantity)}%
                                             </td>
                                         </tr>
                                         {isExpanded && (
                                             <tr className="bg-gray-50">
                                                 <td colSpan={7} className="px-4 md:px-8 py-4">
-                                                    <div className="text-xs font-bold text-gray-500 mb-2">{t.distributionCaption}</div>
-                                                    <div className="space-y-2">
-                                                        {distribution.probabilities.map((prob, i) => (
-                                                            <div key={i} className="flex items-center text-sm">
-                                                                <div className="w-16 font-bold text-gray-700 text-right mr-3 whitespace-nowrap">{i}{t.remainingLabel}</div>
-                                                                <div className="flex-1 bg-gray-200 rounded-full h-3 md:h-4 overflow-hidden relative">
-                                                                    <div
-                                                                        className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                                                                        style={{ width: `${prob * 100}%` }}
-                                                                    ></div>
+                                                    {/* Mobile View: Simple Stats */}
+                                                    <div className="md:hidden grid grid-cols-1 gap-3">
+                                                        <div className="bg-white p-3 rounded-lg border border-pink-100 flex justify-between items-center shadow-sm">
+                                                            <span className="text-sm font-bold text-gray-600">{t.openingHand}</span>
+                                                            <span className="text-lg font-black text-pink-600">{calculateOpeningProbability(card.quantity)}%</span>
+                                                        </div>
+                                                        <div className="bg-white p-3 rounded-lg border border-orange-100 flex justify-between items-center shadow-sm">
+                                                            <span className="text-sm font-bold text-gray-600">{t.prizeRisk}</span>
+                                                            <span className="text-lg font-black text-orange-600">{calculatePrizeProbability(card.quantity)}%</span>
+                                                        </div>
+                                                        <div className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center shadow-sm">
+                                                            <span className="text-sm font-bold text-gray-600">{t.remainingInDeck}</span>
+                                                            <span className="text-lg font-black text-blue-600">{calculateRemainingInDeckProbability(card.quantity)}%</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Desktop View: Distribution Graph */}
+                                                    <div className="hidden md:block">
+                                                        <div className="text-xs font-bold text-gray-500 mb-2">{t.distributionCaption}</div>
+                                                        <div className="space-y-2">
+                                                            {distribution.probabilities.map((prob, i) => (
+                                                                <div key={i} className="flex items-center text-sm">
+                                                                    <div className="w-16 font-bold text-gray-700 text-right mr-3 whitespace-nowrap">{i}{t.remainingLabel}</div>
+                                                                    <div className="flex-1 bg-gray-200 rounded-full h-3 md:h-4 overflow-hidden relative">
+                                                                        <div
+                                                                            className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                                                                            style={{ width: `${prob * 100}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <div className="w-12 md:w-16 text-right font-mono text-gray-600 ml-3 whitespace-nowrap">{(prob * 100).toFixed(1)}%</div>
                                                                 </div>
-                                                                <div className="w-12 md:w-16 text-right font-mono text-gray-600 ml-3 whitespace-nowrap">{(prob * 100).toFixed(1)}%</div>
-                                                            </div>
-                                                        ))}
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>

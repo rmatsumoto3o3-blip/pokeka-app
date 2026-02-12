@@ -112,6 +112,50 @@ export default function GlobalSimulatorPage() {
                         <SimulatorManager initialCards={cards} lang="en" />
                     </div>
                 )}
+
+                {/* Usage Guide (Added for SEO & User Help) */}
+                <div className="mt-20 prose prose-indigo max-w-none bg-white p-8 rounded-2xl shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-800 border-b pb-4 mb-6">
+                        <span className="text-3xl">📝</span>
+                        How to use the Simulator
+                    </h2>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">🔢 Key Features</h3>
+                            <ul className="list-disc list-inside space-y-2 text-gray-600 mb-6">
+                                <li>Instantly calculate probabilities from PTCGL deck lists.</li>
+                                <li>Opening Hand Probability (7 cards).</li>
+                                <li>Prize Card Risk (Probability of being prized).</li>
+                                <li>Remaining in Deck distribution (after hand/prizes).</li>
+                            </ul>
+
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">🎲 About Calculation Logic</h3>
+                            <p className="text-gray-600 mb-4 leading-relaxed">
+                                This simulator uses the <strong>Monte Carlo method</strong> with 100,000 virtual hands to determine probabilities statistically.<br />
+                                It accurately handles complex combinations that are difficult with simple hypergeometric formulas.
+                            </p>
+                            <h4 className="font-bold text-gray-800 mb-1">About Remaining in Deck Distribution</h4>
+                            <p className="text-gray-600 mb-4 leading-relaxed">
+                                This calculates the probability distribution of how many copies of a specific card remain in the 47-card deck (after drawing 7 hand cards and setting 6 prize cards).
+                            </p>
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">💡 Tips for Use</h3>
+                            <div className="space-y-4">
+                                <div className="bg-pink-50 p-4 rounded-lg border border-pink-100">
+                                    <h4 className="font-bold text-pink-800 mb-1">Ball Search Counts</h4>
+                                    <p className="text-sm text-pink-700">Useful for optimizing the count of Nest Balls, Ultra Balls, etc., to ensure you find Basic Pokémon.</p>
+                                </div>
+                                <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                                    <h4 className="font-bold text-purple-800 mb-1">Consistency Check</h4>
+                                    <p className="text-sm text-purple-700">Visualize "brick" rates (unplayable hands) when you reduce Energy or Supporter counts.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

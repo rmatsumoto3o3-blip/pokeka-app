@@ -53,6 +53,10 @@ export default async function SimulatorPage({
                                     100,000回の仮想的な手札配布を行い、その結果から統計的に確率を導き出しています。<br />
                                     純粋な超幾何分布の計算式だけでは難しい、「複数種類のカードの組み合わせ」や「マリガンによる引き直し」も正確にシミュレーション可能です。
                                 </p>
+                                <h4 className="font-bold text-gray-800 mb-1">山札に残る枚数の内訳について</h4>
+                                <p className="text-gray-600 mb-4 leading-relaxed">
+                                    これは残りの47枚の中に特定のカードが何枚含まれるかを算出しています。
+                                </p>
                             </div>
 
                             <div>
@@ -63,7 +67,7 @@ export default async function SimulatorPage({
                                         <p className="text-sm text-pink-700">ネストボールやハイパーボールなど、初動でたねポケモンに触れるカードの枚数を調整する際に役立ちます。</p>
                                     </div>
                                     <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                                        <h4 className="font-bold text-purple-800 mb-1">とどろくツキ等の事故率確認</h4>
+                                        <h4 className="font-bold text-purple-800 mb-1">事故率確認</h4>
                                         <p className="text-sm text-purple-700">エネルギーやサポートを絞った構築で、どれくらいの頻度で攻撃できない手札になるかを可視化できます。</p>
                                     </div>
                                 </div>
