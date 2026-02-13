@@ -195,12 +195,24 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp') => {
-        if (source === 'player1') {
-            player2Ref.current?.receiveEffect(effect)
-        } else {
-            player1Ref.current?.receiveEffect(effect)
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders') => {
+        const targetRef = source === 'player1' ? player2Ref : player1Ref
+
+        if (effect === 'boss_orders') {
+            targetRef.current?.startSelection({
+                title: 'ボスの指令: 入れ替えるベンチポケモンを選択してください',
+                onSelect: (type, index) => {
+                    if (type === 'bench') {
+                        targetRef.current?.switchPokemon(index)
+                    } else {
+                        alert("ベンチポケモンを選択してください")
+                    }
+                }
+            })
+            return
         }
+
+        targetRef.current?.receiveEffect(effect)
     }
 
     return (

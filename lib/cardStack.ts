@@ -47,6 +47,26 @@ export function isStadium(card: Card): boolean {
     return card.subtypes?.includes('Stadium') || false
 }
 
+export function isTrainer(card: Card): boolean {
+    return card.supertype === 'Trainer' || isItem(card) || isSupporter(card) || isStadium(card)
+}
+
+export function isRuleBox(card: Card): boolean {
+    if (!isPokemon(card)) return false
+    const name = card.name
+    // Rule box markers: ex, GX, V, VMAX, VSTAR, Radiant (輝く), V-UNION
+    return name.includes('ex') ||
+        name.includes('EX') ||
+        name.includes('GX') ||
+        name.includes(' V') || // Often "Name V"
+        name.includes('VMAX') ||
+        name.includes('VSTAR') ||
+        name.includes('V-UNION') ||
+        name.includes('輝く') ||
+        name.includes('かがやく') ||
+        name.includes('テラスタル')
+}
+
 // Check if a card can be stacked on another
 export function canStack(card: Card, stack: CardStack): boolean {
     const topCard = getTopCard(stack)
