@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import PokemonIconSelector from './PokemonIconSelector'
 
 interface AddDeckFormProps {
     userId: string
@@ -22,6 +23,7 @@ export default function AddDeckForm({
 }: AddDeckFormProps) {
     const [deckCode, setDeckCode] = useState('')
     const [deckName, setDeckName] = useState('')
+    const [icons, setIcons] = useState<(string | null)[]>([null, null])
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -65,6 +67,8 @@ export default function AddDeckForm({
                     deck_code: deckCode,
                     deck_name: deckName,
                     image_url: imageUrl,
+                    icon_1: icons[0],
+                    icon_2: icons[1],
                 })
 
             if (insertError) throw insertError
@@ -72,6 +76,7 @@ export default function AddDeckForm({
             // Reset form
             setDeckCode('')
             setDeckName('')
+            setIcons([null, null])
             setImageFile(null)
             setSuccess(true)
 
@@ -172,6 +177,14 @@ export default function AddDeckForm({
                                 required
                                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
                                 placeholder="例: ピカチュウex"
+                            />
+                        </div>
+
+                        <div>
+                            <PokemonIconSelector
+                                selectedIcons={icons}
+                                onSelect={setIcons}
+                                label="デッキアイコン"
                             />
                         </div>
 

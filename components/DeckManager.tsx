@@ -7,8 +7,8 @@ import { createFolderAction, createDeckVariantAction } from '@/app/actions' // [
 
 import Link from 'next/link'
 import Image from 'next/image'
-import AddMatchForm from './AddMatchForm'
 import DeckDetailManager from './DeckDetailManager'
+import MatchRecordModal from './MatchRecordModal'
 
 interface DeckListProps {
     userId: string
@@ -259,6 +259,18 @@ export default function DeckManager({
                     onUpdate={() => { }} // No parent update needed for local
                 />
             )}
+
+            {/* Match Record Modal */}
+            <MatchRecordModal
+                isOpen={!!selectedDeck}
+                onClose={() => setSelectedDeck(null)}
+                deckId={selectedDeck || ''}
+                userId={userId}
+                onUpdate={() => {
+                    fetchData()
+                    if (onMatchAdded) onMatchAdded()
+                }}
+            />
 
             {/* Image Modal */}
             {selectedImage && (
@@ -649,7 +661,21 @@ function DeckCard({
             )}
 
             <div className="p-2.5">
-                <h3 className="text-xl font-bold text-gray-900 mb-2 truncate" title={deck.deck_name}>{deck.deck_name}</h3>
+                <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 truncate" title={deck.deck_name}>{deck.deck_name}</h3>
+                    <div className="flex -space-x-2">
+                        {deck.icon_1 && (
+                            <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={24} height={24} className="object-contain" />
+                            </div>
+                        )}
+                        {deck.icon_2 && (
+                            <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={24} height={24} className="object-contain" />
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {/* Deck Code or Version/Memo */}
                 {deck.custom_cards ? (
@@ -713,22 +739,6 @@ function DeckCard({
                 >
                     <span>✨</span> 詳細・編集 (Mock)
                 </button>
-
-                {selectedDeck === deck.id && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                        <AddMatchForm
-                            deckId={deck.id}
-                            userId={userId}
-                            onSuccess={() => {
-                                onSelectDeck(null)
-                                onMatchAdded()
-                            }}
-                            isLimitReached={isLimitReached}
-                            matchCount={matchCount}
-                            maxMatches={maxMatches}
-                        />
-                    </div>
-                )}
             </div>
         </div>
     )

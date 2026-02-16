@@ -46,6 +46,8 @@ export interface Deck {
   sideboard_cards: CardData[] | null // JSONB
   custom_cards: CardData[] | null // [NEW] JSONB for custom deck lists
   is_current: boolean
+  icon_1: string | null
+  icon_2: string | null
 }
 
 export interface Match {
@@ -58,6 +60,8 @@ export interface Match {
   notes: string | null
   side: string | null
   going_first: '先攻' | '後攻' | null
+  opponent_icon_1: string | null
+  opponent_icon_2: string | null
   created_at: string
 }
 

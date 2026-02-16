@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Deck, DeckArchetype } from '@/lib/supabase'
 import { getDeckDataAction, saveDeckVersionAction } from '@/app/actions'
 import Image from 'next/image'
+import PokemonIconSelector from './PokemonIconSelector'
 import type { CardData } from '@/lib/deckParser'
 import {
     DndContext,
@@ -28,6 +29,8 @@ interface DeckVariant extends Deck {
     memo: string | null
     sideboard_cards: CardData[]
     custom_cards: CardData[] | null // [NEW] JSONB
+    icon_1: string | null
+    icon_2: string | null
 }
 
 interface DeckDetailManagerProps {
@@ -179,7 +182,9 @@ export default function DeckDetailManager({
                     version_label: 'Draft',
                     memo: '保存前の下書き',
                     sideboard_cards: localSideboard,
-                    custom_cards: null, // [NEW]
+                    custom_cards: null,
+                    icon_1: null,
+                    icon_2: null,
                     created_at: new Date().toISOString()
                 }
 
@@ -607,7 +612,32 @@ export default function DeckDetailManager({
                                 🔥 {archetype ? archetype.name : (currentVariant?.deck_name || '未分類')}
                             </h2>
                         </div>
-                        <button onClick={onClose} className="text-white/80 hover:text-white text-2xl">×</button>
+                        <div className="flex items-center gap-4">
+                            {currentVariant && !isLocalMode && (
+                                <PokemonIconSelector
+                                    selectedIcons={[currentVariant.icon_1, currentVariant.icon_2]}
+                                    onSelect={async (newIcons) => {
+                                        const icon1 = newIcons[0]
+                                        const icon2 = newIcons[1]
+                                        // Update state immediately
+                                        setVariants(prev => prev.map(v => v.id === currentVariant.id ? { ...v, icon_1: icon1, icon_2: icon2 } : v))
+                                        // Save to DB
+                                        try {
+                                            const { error } = await supabase
+                                                .from('decks')
+                                                .update({ icon_1: icon1, icon_2: icon2 })
+                                                .eq('id', currentVariant.id)
+                                            if (error) throw error
+                                            if (onUpdate) onUpdate()
+                                        } catch (e) {
+                                            console.error('Failed to save icon:', e)
+                                        }
+                                    }}
+                                    label=""
+                                />
+                            )}
+                            <button onClick={onClose} className="text-white/80 hover:text-white text-2xl">×</button>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 bg-gray-50">

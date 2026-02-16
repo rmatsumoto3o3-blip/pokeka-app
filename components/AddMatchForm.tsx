@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import PokemonIconSelector from './PokemonIconSelector'
 
 interface AddMatchFormProps {
     deckId: string
@@ -25,6 +26,7 @@ export default function AddMatchForm({
     const [mySide, setMySide] = useState<number>(0)
     const [opponentSide, setOpponentSide] = useState<number>(0)
     const [opponentName, setOpponentName] = useState('')
+    const [opponentIcons, setOpponentIcons] = useState<(string | null)[]>([null, null])
     const [date, setDate] = useState(new Date().toISOString().split('T')[0])
     const [notes, setNotes] = useState('')
     const [loading, setLoading] = useState(false)
@@ -54,6 +56,8 @@ export default function AddMatchForm({
                     user_id: userId,
                     result,
                     opponent_name: opponentName || null,
+                    opponent_icon_1: opponentIcons[0],
+                    opponent_icon_2: opponentIcons[1],
                     date,
                     notes: notes || null,
                     side: sideFormatted,
@@ -67,6 +71,7 @@ export default function AddMatchForm({
             setMySide(0)
             setOpponentSide(0)
             setOpponentName('')
+            setOpponentIcons([null, null])
             setNotes('')
             setDate(new Date().toISOString().split('T')[0])
             onSuccess()
@@ -161,26 +166,26 @@ export default function AddMatchForm({
                     サイド状況 (取った枚数) *
                 </label>
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                    <div className="space-y-1 relative">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">自分</span>
                         <select
                             value={mySide}
                             onChange={(e) => setMySide(Number(e.target.value))}
-                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
-                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 cursor-pointer appearance-none"
+                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                         >
                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                 <option key={n} value={n}>{n}枚</option>
                             ))}
                         </select>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 relative">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">相手</span>
                         <select
                             value={opponentSide}
                             onChange={(e) => setOpponentSide(Number(e.target.value))}
-                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
-                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-gray-400 cursor-pointer appearance-none"
+                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                         >
                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
                                 <option key={n} value={n}>{n}枚</option>
@@ -199,6 +204,13 @@ export default function AddMatchForm({
                         onChange={(e) => setOpponentName(e.target.value)}
                         className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
                         placeholder="デカヌチャンex など"
+                    />
+                </div>
+                <div>
+                    <PokemonIconSelector
+                        selectedIcons={opponentIcons}
+                        onSelect={setOpponentIcons}
+                        label="相手のデッキアイコン"
                     />
                 </div>
                 <div>

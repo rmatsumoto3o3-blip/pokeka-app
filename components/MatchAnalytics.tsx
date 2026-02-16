@@ -7,6 +7,8 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer,
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend
 } from 'recharts'
+import Image from 'next/image'
+import PokemonIconSelector from './PokemonIconSelector'
 
 interface MatchAnalyticsProps {
     userId: string
@@ -229,6 +231,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
         mySide: null as number | null,
         opSide: null as number | null,
         opponent_name: '',
+        opponent_icon_1: null as string | null,
+        opponent_icon_2: null as string | null,
         date: '',
         notes: ''
     })
@@ -252,6 +256,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             mySide: mySide === null ? 0 : mySide,
             opSide: opSide === null ? 0 : opSide,
             opponent_name: match.opponent_name || '',
+            opponent_icon_1: match.opponent_icon_1,
+            opponent_icon_2: match.opponent_icon_2,
             date: match.date,
             notes: match.notes || ''
         })
@@ -282,6 +288,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     going_first: editForm.going_first,
                     side: sideFormatted,
                     opponent_name: editForm.opponent_name || null,
+                    opponent_icon_1: editForm.opponent_icon_1,
+                    opponent_icon_2: editForm.opponent_icon_2,
                     date: editForm.date,
                     notes: editForm.notes || null
                 })
@@ -297,6 +305,8 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     going_first: editForm.going_first,
                     side: sideFormatted,
                     opponent_name: editForm.opponent_name || null,
+                    opponent_icon_1: editForm.opponent_icon_1,
+                    opponent_icon_2: editForm.opponent_icon_2,
                     date: editForm.date,
                     notes: editForm.notes || null
                 } : m
@@ -532,9 +542,34 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                             {match.result === 'win' ? '勝ち' : match.result === 'loss' ? '負け' : '引分'}
                                         </span>
                                         <div>
-                                            <div className="font-bold text-gray-900">{match.deck.deck_name}</div>
-                                            <div className="text-xs text-gray-500">
-                                                vs {match.opponent_name || '不明'} | {new Date(match.date).toLocaleDateString()}
+                                            <div className="flex items-center gap-2">
+                                                <div className="font-bold text-gray-900">{match.deck.deck_name}</div>
+                                                <div className="flex -space-x-2">
+                                                    {match.deck.icon_1 && (
+                                                        <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5">
+                                                            <Image src={`/pokemon-icons/${match.deck.icon_1}.png`} alt={match.deck.icon_1} width={20} height={20} className="object-contain" />
+                                                        </div>
+                                                    )}
+                                                    {match.deck.icon_2 && (
+                                                        <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5">
+                                                            <Image src={`/pokemon-icons/${match.deck.icon_2}.png`} alt={match.deck.icon_2} width={20} height={20} className="object-contain" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
+                                                <span className="flex items-center gap-1">
+                                                    vs {match.opponent_name || '不明'}
+                                                    <div className="flex -space-x-1">
+                                                        {match.opponent_icon_1 && (
+                                                            <Image src={`/pokemon-icons/${match.opponent_icon_1}.png`} alt={match.opponent_icon_1} width={16} height={16} className="object-contain" />
+                                                        )}
+                                                        {match.opponent_icon_2 && (
+                                                            <Image src={`/pokemon-icons/${match.opponent_icon_2}.png`} alt={match.opponent_icon_2} width={16} height={16} className="object-contain" />
+                                                        )}
+                                                    </div>
+                                                </span>
+                                                | {new Date(match.date).toLocaleDateString()}
                                                 {match.side && <span className="ml-2 bg-gray-100 px-1 rounded">Side: {match.side}</span>}
                                                 {match.going_first && <span className="ml-2 bg-gray-100 px-1 rounded">{match.going_first}</span>}
                                             </div>
@@ -663,6 +698,14 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                         className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
                                                     />
                                                 </div>
+                                            </div>
+
+                                            <div>
+                                                <PokemonIconSelector
+                                                    selectedIcons={[editForm.opponent_icon_1, editForm.opponent_icon_2]}
+                                                    onSelect={(icons) => setEditForm({ ...editForm, opponent_icon_1: icons[0], opponent_icon_2: icons[1] })}
+                                                    label="相手のデッキアイコン"
+                                                />
                                             </div>
 
                                             <div>
