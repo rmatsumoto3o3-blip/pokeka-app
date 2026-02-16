@@ -3,6 +3,7 @@
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
 export default function PublicHeader() {
@@ -25,11 +26,13 @@ export default function PublicHeader() {
 
     return (
         <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+            <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5 md:py-2.5">
                 <div className="flex justify-between items-center">
                     <Link href="/" className="flex items-center">
-                        <h1 className="text-xl sm:text-2xl text-gray-900 whitespace-nowrap cursor-pointer font-[family-name:var(--font-dotgothic-16)] tracking-wider">
-                            ⚡️ポケリス⚡️
+                        <h1 className="text-xl sm:text-2xl text-gray-900 whitespace-nowrap cursor-pointer font-[family-name:var(--font-dotgothic-16)] tracking-wider flex items-center gap-1">
+                            <Image src="/pikachu.png" alt="pikachu" width={28} height={28} className="inline-block" />
+                            ポケリス
+                            <Image src="/pikachu.png" alt="pikachu" width={28} height={28} className="inline-block" />
                         </h1>
                     </Link>
 

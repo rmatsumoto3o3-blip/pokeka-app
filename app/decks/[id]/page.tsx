@@ -169,7 +169,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                                 {deck.deck_code && (
                                     <a
                                         href={`/practice?code=${deck.deck_code}`}
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-500 text-white rounded-lg font-bold text-sm hover:bg-pink-600 transition"
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-2 bg-pink-500 text-white rounded-lg font-bold text-sm hover:bg-pink-600 transition"
                                     >
                                         一人回し練習
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -182,13 +182,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
                 {/* Card List Section */}
                 {cards.length > 0 ? (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2.5">
                         <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                             <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
                             デッキリスト ({cards.reduce((acc, c) => acc + c.quantity, 0)}枚)
                         </h2>
 
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">
                             {cards.map((card, i) => (
                                 <div key={i} className="relative aspect-[2/3] group">
                                     {card.imageUrl ? (
@@ -214,13 +214,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         {/* Text List for Copy/Paste */}
                         <div className="mt-8 pt-8 border-t border-gray-100">
                             <h3 className="text-sm font-bold text-gray-500 mb-3">テキスト形式</h3>
-                            <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 font-mono leading-relaxed whitespace-pre-wrap select-all">
+                            <div className="bg-gray-50 p-2.5 rounded-lg text-sm text-gray-600 font-mono leading-relaxed whitespace-pre-wrap select-all">
                                 {cards.map((c: any) => `${c.quantity} ${c.name}`).join('\n')}
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-gray-300">
+                    <div className="p-2.5 text-center bg-white rounded-2xl border border-dashed border-gray-300">
                         <p className="text-gray-500">詳細なカードリストは登録されていません。</p>
                         <p className="text-sm text-gray-400 mt-2">公式ページでご確認ください。</p>
                     </div>

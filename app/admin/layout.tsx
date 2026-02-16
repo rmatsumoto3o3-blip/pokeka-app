@@ -11,8 +11,6 @@ export default async function AdminLayout({
 
     const ADMIN_EMAILS = [
         'player1@pokeka.local',
-        'player2@pokeka.local',
-        'player3@pokeka.local',
         'r.matsumoto.3o3@gmail.com',
         'nexpure.event@gmail.com',
         'admin@pokeka.local'

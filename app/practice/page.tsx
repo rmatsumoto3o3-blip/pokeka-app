@@ -221,8 +221,15 @@ function PracticeContent() {
                 {/* Header - Hidden on mobile for space */}
                 <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
                     <div>
-                        <h1 className="text-lg md:text-3xl font-bold text-white">
-                            🎮 1人回し練習
+                        <h1 className="text-lg md:text-3xl font-bold text-white flex items-center gap-2">
+                            <Image
+                                src="/Lucario.png"
+                                alt="Practice"
+                                width={36}
+                                height={36}
+                                className="w-6 h-6 md:w-8 md:h-8"
+                            />
+                            1人回し練習
                         </h1>
                         <p className="text-xs md:text-sm text-gray-400 hidden md:block">
                             デッキコードを入力して、対戦練習を始めましょう

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
+import DeckPreview from './DeckPreview'
+import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
 import { getAllReferenceDecksAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
@@ -53,6 +55,7 @@ interface ReferenceDeckListProps {
     userEmail?: string | null
     initialDecks?: ReferenceDeck[]
     initialArchetypes?: DeckArchetype[]
+    gridClassName?: string
 }
 
 const EVENT_TYPES = [
@@ -75,7 +78,8 @@ export default function ReferenceDeckList({
     // userId removed as unused per lint
     userEmail,
     initialDecks = [],
-    initialArchetypes = []
+    initialArchetypes = [],
+    gridClassName = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
 }: ReferenceDeckListProps) {
     const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
@@ -87,6 +91,7 @@ export default function ReferenceDeckList({
     const [viewerDeckCode, setViewerDeckCode] = useState<string | null>(null)
     const [viewerDeckName, setViewerDeckName] = useState<string>('')
     const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Legacy Image Modal
+    const [expandedDeckIds, setExpandedDeckIds] = useState<string[]>([])
 
     // Edit State
     const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
@@ -94,10 +99,14 @@ export default function ReferenceDeckList({
     const [editEventType, setEditEventType] = useState('')
     const [isSaving, setIsSaving] = useState(false)
 
+    // Key Card Drawer State [NEW]
+    const [adoptionDrawerData, setAdoptionDrawerData] = useState<{ id: string, name: string } | null>(null)
+
     // Admin Check (Safe for guest)
     const isAdmin = userEmail === 'player1@pokeka.local' ||
-        userEmail === 'player2@pokeka.local' ||
-        userEmail === 'player3@pokeka.local'
+        userEmail === 'r.matsumoto.3o3@gmail.com' ||
+        userEmail === 'nexpure.event@gmail.com' ||
+        userEmail === 'admin@pokeka.local'
 
     useEffect(() => {
         if (initialDecks.length > 0) return
@@ -182,12 +191,25 @@ export default function ReferenceDeckList({
 
     const handleDeckClick = (deck: ReferenceDeck) => {
         if (deck.deck_code) {
-            setViewerDeckCode(deck.deck_code)
-            setViewerDeckName(deck.deck_name)
+            // Toggle expand if clicking the row
+            setExpandedDeckIds(prev =>
+                prev.includes(deck.id)
+                    ? prev.filter(id => id !== deck.id)
+                    : [...prev, deck.id]
+            )
         } else if (deck.image_url) {
             // Fallback to image modal if no code
             setSelectedDeckImage(deck.image_url)
         }
+    }
+
+    const handleToggleExpand = (e: React.MouseEvent, deckId: string) => {
+        e.stopPropagation()
+        setExpandedDeckIds(prev =>
+            prev.includes(deckId)
+                ? prev.filter(id => id !== deckId)
+                : [...prev, deckId]
+        )
     }
 
     // Filter Logic (Event)
@@ -239,7 +261,7 @@ export default function ReferenceDeckList({
     const renderLegacyModal = () => {
         if (!selectedDeckImage) return null
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setSelectedDeckImage(null)}>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2.5" onClick={() => setSelectedDeckImage(null)}>
                 <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
                     <button
                         className="absolute -top-12 right-0 text-white hover:text-gray-300 transition"
@@ -266,8 +288,8 @@ export default function ReferenceDeckList({
     const renderEditModal = () => {
         if (!editingDeck) return null
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setEditingDeck(null)}>
-                <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2.5" onClick={() => setEditingDeck(null)}>
+                <div className="bg-white rounded-xl shadow-xl p-2.5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
                     <div className="space-y-4">
                         <div>
@@ -331,7 +353,16 @@ export default function ReferenceDeckList({
                     deckName={viewerDeckName}
                 />
                 {renderLegacyModal()}
+                {renderLegacyModal()}
                 {renderEditModal()}
+
+                {/* Key Card Adoption Drawer [MOVED HERE] */}
+                <KeyCardAdoptionDrawer
+                    isOpen={!!adoptionDrawerData}
+                    onClose={() => setAdoptionDrawerData(null)}
+                    archetypeId={adoptionDrawerData?.id || ''}
+                    archetypeName={adoptionDrawerData?.name || ''}
+                />
 
                 {/* Header / Back Button */}
                 <div className="flex items-center gap-2 mb-4">
@@ -347,13 +378,22 @@ export default function ReferenceDeckList({
                         <span className="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                             {archetypeDecks.length}
                         </span>
+                        {/* Adoption Rate Button [MOVED] */}
+                        {selectedArchetypeId !== 'others' && (
+                            <button
+                                onClick={() => setAdoptionDrawerData({ id: selectedArchetypeId!, name: displayName })}
+                                className="ml-4 text-sm bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded-full hover:bg-blue-100 transition flex items-center gap-1 shadow-sm"
+                            >
+                                採用率を見る
+                            </button>
+                        )}
                     </h3>
                 </div>
 
                 {/* New List View */}
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     {/* Header Row */}
-                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
+                    <div className="bg-gray-50 px-2.5 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
                         <div className="flex-1">デッキ名</div>
                         <div className="w-24 hidden md:block text-center">CODE</div>
                         {isAdmin && <div className="w-20 text-right">管理</div>}
@@ -361,81 +401,111 @@ export default function ReferenceDeckList({
 
                     <div className="divide-y divide-gray-100">
                         {archetypeDecks.map((deck) => (
-                            <div
-                                key={deck.id}
-                                onClick={() => handleDeckClick(deck)}
-                                className="px-4 py-3 hover:bg-purple-50 cursor-pointer transition flex items-center gap-3 group"
-                            >
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
-                                            <AutoFitText text={deck.deck_name} />
+                            <div key={deck.id} className="group transition overflow-hidden">
+                                <div
+                                    onClick={() => handleDeckClick(deck)}
+                                    className={`px-2.5 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${expandedDeckIds.includes(deck.id) ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                                >
+                                    {/* Expand Toggle Icon */}
+                                    <div className="flex-shrink-0 text-gray-400">
+                                        {deck.deck_code ? (
+                                            <button
+                                                onClick={(e) => handleToggleExpand(e, deck.id)}
+                                                className={`p-1 rounded-full hover:bg-black/5 transition ${expandedDeckIds.includes(deck.id) ? 'text-purple-600 rotate-90 transform' : ''}`}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                                            </button>
+                                        ) : (
+                                            <div className="w-6 h-6"></div> // Spacer
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
+                                                <AutoFitText text={deck.deck_name} />
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                            {/* Event Type Badge (Moved here) */}
+                                            {deck.event_type && (
+                                                <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
+                                                    {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
+                                                </span>
+                                            )}
+
+                                            {deck.deck_code && (
+                                                <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
+                                                    <span className="text-[10px] mr-1 opacity-50">CODE:</span>
+                                                    {deck.deck_code}
+                                                </span>
+                                            )}
+                                            {/* Fallback indicator if image only */}
+                                            {!deck.deck_code && deck.image_url && (
+                                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
+                                                    画像あり
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                        {/* Event Type Badge (Moved here) */}
-                                        {deck.event_type && (
-                                            <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
-                                                {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
-                                            </span>
-                                        )}
 
+                                    {/* Desktop Code Copy Button (Quick Action) */}
+                                    <div className="w-24 hidden md:flex items-center justify-center">
                                         {deck.deck_code && (
-                                            <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
-                                                <span className="text-[10px] mr-1 opacity-50">CODE:</span>
-                                                {deck.deck_code}
-                                            </span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    navigator.clipboard.writeText(deck.deck_code || '')
+                                                    alert('コピーしました')
+                                                }}
+                                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition"
+                                                title="コードをコピー"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                            </button>
                                         )}
-                                        {/* Fallback indicator if image only */}
+                                    </div>
+
+                                    {isAdmin && (
+                                        <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+                                            <button
+                                                onClick={(e) => handleEdit(deck, e)}
+                                                className="text-blue-500 hover:bg-blue-50 p-1.5 rounded"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDelete(deck.id, e)}
+                                                className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Mobile Chevron (Replaced with expansion indicator if code exists) */}
+                                    <div className="md:hidden text-gray-300">
+                                        {deck.deck_code && (
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                                className={`transition-transform duration-200 ${expandedDeckIds.includes(deck.id) ? 'rotate-90 text-purple-500' : ''}`}
+                                            >
+                                                <polyline points="9 18 15 12 9 6"></polyline>
+                                            </svg>
+                                        )}
                                         {!deck.deck_code && deck.image_url && (
-                                            <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
-                                                画像あり
-                                            </span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Removed standalone Event Type column */}
-
-                                {/* Desktop Code Copy Button (Quick Action) - Keep alignment */}
-
-                                {/* Desktop Code Copy Button (Quick Action) */}
-                                <div className="w-24 hidden md:flex items-center justify-center">
-                                    {deck.deck_code && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                navigator.clipboard.writeText(deck.deck_code || '')
-                                                alert('コピーしました')
-                                            }}
-                                            className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition"
-                                            title="コードをコピー"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isAdmin && (
-                                    <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                                        <button
-                                            onClick={(e) => handleEdit(deck, e)}
-                                            className="text-blue-500 hover:bg-blue-50 p-1.5 rounded"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleDelete(deck.id, e)}
-                                            className="text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                        </button>
+                                {/* Expanded Content */}
+                                {expandedDeckIds.includes(deck.id) && deck.deck_code && (
+                                    <div className="border-t border-gray-100 bg-gray-50/50 p-2 md:p-2.5">
+                                        <DeckPreview deckCode={deck.deck_code} />
                                     </div>
                                 )}
-
-                                <div className="md:hidden text-gray-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -484,7 +554,7 @@ export default function ReferenceDeckList({
                     <p className="text-gray-500">該当する参考デッキはありません</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+                <div className={gridClassName}>
                     {sortedArchetypeIds.map(archetypeId => {
                         const decks = groupedDecks[archetypeId]
 
@@ -534,7 +604,7 @@ export default function ReferenceDeckList({
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
 
                                     {/* Content Info */}
-                                    <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 text-white">
+                                    <div className="absolute bottom-0 left-0 right-0 p-2.5 md:p-2.5 text-white">
                                         <h3 className="text-lg md:text-xl font-bold truncate leading-tight mb-1">{displayName}</h3>
                                         <p className="text-xs md:text-sm text-gray-200 font-medium flex items-center">
                                             <span className="bg-white/20 px-2 py-0.5 rounded text-xs mr-2">{decks.length} Decks</span>

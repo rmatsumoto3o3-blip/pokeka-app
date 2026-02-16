@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Deck, DeckArchetype } from '@/lib/supabase'
 import { getDeckDataAction, saveDeckVersionAction } from '@/app/actions'
+import Image from 'next/image'
 import type { CardData } from '@/lib/deckParser'
 import {
     DndContext,
@@ -675,7 +676,14 @@ export default function DeckDetailManager({
                                             disabled={loading || cardsLoading || deckCards.length === 0}
                                             className="flex-1 md:flex-none text-xs bg-purple-600 text-white px-3 py-2 rounded font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-1 shadow-sm"
                                         >
-                                            <span>🎮</span> 現在の構成で一人回し
+                                            <Image
+                                                src="/Lucario.png"
+                                                alt="Practice"
+                                                width={20}
+                                                height={20}
+                                                className="w-4 h-4 filter brightness-0 invert"
+                                            />
+                                            現在の構成で一人回し
                                         </button>
 
                                         {/* Copy Text Button */}

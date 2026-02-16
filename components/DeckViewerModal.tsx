@@ -64,7 +64,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
     const getContent = () => {
         if (loading) {
             return (
-                <div className="flex flex-col items-center justify-center py-20">
+                <div className="flex flex-col items-center justify-center py-2.5">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mb-4"></div>
                     <p className="text-gray-500">デッキデータを読み込んでいます...</p>
                 </div>
@@ -73,7 +73,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
 
         if (error) {
             return (
-                <div className="text-center py-12">
+                <div className="text-center py-2.5">
                     <div className="text-red-500 mb-2">⚠️ エラーが発生しました</div>
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button onClick={loadDeck} className="text-blue-500 underline hover:text-blue-700">再読み込み</button>
@@ -140,10 +140,10 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
     const countCards = (list: CardData[]) => list.reduce((acc, c) => acc + c.quantity, 0)
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2.5 animate-in fade-in duration-200" onClick={onClose}>
             <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="px-6 py-4 border-b flex justify-between items-center bg-white sticky top-0 z-10">
+                <div className="px-2.5 py-2.5 border-b flex justify-between items-center bg-white sticky top-0 z-10">
                     <div className="flex-1 min-w-0 mr-4">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-900 truncate">{deckName}</h2>
                         <div className="flex items-center gap-2 mt-1">
@@ -160,7 +160,14 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
                             href={`/practice?mode=custom&code1=${deckCode}`}
                             className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition text-sm"
                         >
-                            <span>🎮 一人回し</span>
+                            <Image
+                                src="/Lucario.png"
+                                alt="Practice"
+                                width={24}
+                                height={24}
+                                className="w-5 h-5 filter brightness-0 invert"
+                            />
+                            <span>一人回し</span>
                         </Link>
                         <button
                             onClick={onClose}
@@ -172,17 +179,24 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-2.5 md:p-2.5 bg-gray-50 custom-scrollbar">
                     {getContent()}
                 </div>
 
                 {/* Mobile Footer Action */}
-                <div className="md:hidden p-4 border-t bg-white flex justify-center pb-safe">
+                <div className="md:hidden p-2.5 border-t bg-white flex justify-center pb-safe">
                     <Link
                         href={`/practice?mode=custom&code1=${deckCode}`}
-                        className="w-full flex justify-center items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition"
+                        className="w-full flex justify-center items-center gap-2 px-2.5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition"
                     >
-                        <span>🎮 このデッキで一人回し</span>
+                        <Image
+                            src="/Lucario.png"
+                            alt="Practice"
+                            width={24}
+                            height={24}
+                            className="w-5 h-5 filter brightness-0 invert"
+                        />
+                        <span>このデッキで一人回し</span>
                     </Link>
                 </div>
             </div>
@@ -193,11 +207,11 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
 function CategorySection({ title, count, color, children }: { title: string, count: number, color: string, children: React.ReactNode }) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className={`px-4 py-2 flex justify-between items-center ${color}`}>
+            <div className={`px-2.5 py-2 flex justify-between items-center ${color}`}>
                 <h3 className="font-bold">{title}</h3>
                 <span className="text-sm font-medium bg-white/50 px-2 py-0.5 rounded backdrop-blur-sm">{count}枚</span>
             </div>
-            <div className="p-4">
+            <div className="p-2.5">
                 {children}
             </div>
         </div>
@@ -210,7 +224,7 @@ function SubCategorySection({ title, cards, color }: { title: string, cards: Car
             <div className={`px-3 py-1.5 text-sm font-bold border-b border-gray-100 ${color}`}>
                 {title} <span className="text-xs opacity-70 ml-1">({cards.reduce((acc, c) => acc + c.quantity, 0)}枚)</span>
             </div>
-            <div className="p-3">
+            <div className="p-2.5">
                 <CardGrid cards={cards} small />
             </div>
         </div>

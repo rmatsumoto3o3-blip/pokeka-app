@@ -6,6 +6,7 @@ import type { Deck, Match, DeckArchetype } from '@/lib/supabase'
 import { createFolderAction, createDeckVariantAction } from '@/app/actions' // [NEW]
 
 import Link from 'next/link'
+import Image from 'next/image'
 import AddMatchForm from './AddMatchForm'
 import DeckDetailManager from './DeckDetailManager'
 
@@ -262,7 +263,7 @@ export default function DeckManager({
             {/* Image Modal */}
             {selectedImage && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2.5"
                     onClick={() => setSelectedImage(null)}
                 >
                     <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
@@ -314,9 +315,17 @@ export default function DeckManager({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* Work Table */}
                         <div className="bg-blue-50/50 rounded-xl overflow-hidden border-2 border-blue-200 border-dashed hover:border-blue-400 transition shadow-sm hover:shadow-md flex flex-col">
-                            <div className="p-4 flex-1 flex flex-col">
+                            <div className="p-2.5 flex-1 flex flex-col">
                                 <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                    <span>🛠️</span>
+                                    <span className="flex items-center justify-center w-6 h-6 mr-1">
+                                        <Image
+                                            src="/king.png"
+                                            alt="Simulate"
+                                            width={24}
+                                            height={24}
+                                            className="w-5 h-5"
+                                        />
+                                    </span>
                                     作業机 (一時保存)
                                 </h3>
                                 <p className="text-sm text-blue-600 mb-4 opacity-80">
@@ -364,7 +373,13 @@ export default function DeckManager({
                                                     rel="noopener noreferrer"
                                                     className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
                                                 >
-                                                    <span>🎮</span>
+                                                    <Image
+                                                        src="/Lucario.png"
+                                                        alt="Practice"
+                                                        width={24}
+                                                        height={24}
+                                                        className="w-5 h-5"
+                                                    />
                                                     一人回し
                                                 </Link>
                                                 <button
@@ -382,9 +397,17 @@ export default function DeckManager({
 
                         {/* Simulator Portal Card */}
                         <div className="bg-orange-50/50 rounded-xl overflow-hidden border-2 border-orange-200 border-dashed hover:border-orange-400 transition shadow-sm hover:shadow-md flex flex-col">
-                            <div className="p-4 flex-1 flex flex-col">
+                            <div className="p-2.5 flex-1 flex flex-col">
                                 <h3 className="text-xl font-bold text-orange-900 mb-2 flex items-center gap-2">
-                                    <span>🧮</span>
+                                    <span className="flex items-center justify-center w-6 h-6 mr-1">
+                                        <Image
+                                            src="/king.png"
+                                            alt="Simulate"
+                                            width={24}
+                                            height={24}
+                                            className="w-5 h-5"
+                                        />
+                                    </span>
                                     確率シミュレーター
                                 </h3>
                                 <p className="text-sm text-orange-800 mb-4 opacity-80">
@@ -396,7 +419,7 @@ export default function DeckManager({
                                         href={tempDeckCode ? `/simulator?code=${tempDeckCode}` : '/simulator'}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full py-3 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
                                     >
                                         <span>🚀</span>
                                         {tempDeckCode ? '作業中のデッキを分析' : 'シミュレーターを開く'}
@@ -432,7 +455,7 @@ export default function DeckManager({
                                     <div key={arch.id} className="bg-white rounded-xl border-2 border-indigo-100 shadow-sm overflow-hidden">
                                         {/* Folder Header */}
                                         <div
-                                            className="p-4 bg-indigo-50/50 flex justify-between items-center cursor-pointer hover:bg-indigo-50 transition"
+                                            className="p-2.5 bg-indigo-50/50 flex justify-between items-center cursor-pointer hover:bg-indigo-50 transition"
                                             onClick={() => setExpandedArchetypeId(isExpanded ? null : arch.id)}
                                         >
                                             <div className="flex items-center gap-4">
@@ -459,11 +482,11 @@ export default function DeckManager({
 
                                         {/* Folder Content (Expanded) */}
                                         {isExpanded && (
-                                            <div className="p-4 bg-indigo-50/20 border-t border-indigo-100">
+                                            <div className="p-2.5 bg-indigo-50/20 border-t border-indigo-100">
                                                 <div className="flex justify-between mb-4 items-start">
                                                     {/* Add Variant Form or Button */}
                                                     {addingVariationToArchId === arch.id ? (
-                                                        <div className="flex flex-col gap-2 bg-white p-3 rounded-lg border border-indigo-200 shadow-sm w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-indigo-200 shadow-sm w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
                                                             <div className="text-xs font-bold text-gray-500">新規バリエーション追加</div>
                                                             <div className="flex gap-2">
                                                                 <input
@@ -625,7 +648,7 @@ function DeckCard({
                 </div>
             )}
 
-            <div className="p-4">
+            <div className="p-2.5">
                 <h3 className="text-xl font-bold text-gray-900 mb-2 truncate" title={deck.deck_name}>{deck.deck_name}</h3>
 
                 {/* Deck Code or Version/Memo */}

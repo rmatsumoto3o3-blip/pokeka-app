@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getOrCreateProfileAction } from '@/app/actions'
 import InvitationCodeInput from '@/components/InvitationCodeInput'
 
@@ -31,7 +32,7 @@ export default function Dashboard() {
     // Usage Limits (Now Dynamic)
     const [deckCount, setDeckCount] = useState(0)
     const [matchCount, setMatchCount] = useState(0)
-    const [maxDecks, setMaxDecks] = useState(3) // Default Free
+    const [maxDecks, setMaxDecks] = useState(1000) // Default Unrestricted
     const [maxMatches, setMaxMatches] = useState(100) // Default Free
     const [userPlan, setUserPlan] = useState<'free' | 'invited'>('free')
 
@@ -50,7 +51,7 @@ export default function Dashboard() {
                     setUserEmail(email)
 
                     // Admin Check
-                    if (['player1@pokeka.local', 'player2@pokeka.local', 'player3@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
+                    if (['player1@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
                         setIsAdmin(true)
                     }
 
@@ -167,7 +168,7 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-pink-50">
             <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                     <div className="flex justify-between h-14 md:h-16">
                         <div className="flex overflow-x-auto no-scrollbar items-center">
                             <div className="flex-shrink-0 flex items-center">
@@ -208,9 +209,16 @@ export default function Dashboard() {
                                     href="/practice"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition ml-2 shadow-sm"
+                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition ml-2 shadow-sm gap-1"
                                 >
-                                    🎮 一人回し
+                                    <Image
+                                        src="/Lucario.png"
+                                        alt="Practice"
+                                        width={20}
+                                        height={20}
+                                        className="w-4 h-4 md:w-5 md:h-5 filter brightness-0 invert"
+                                    />
+                                    一人回し
                                 </Link>
                                 {isAdmin && (
                                     <button
@@ -251,24 +259,11 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            <main className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5 md:py-2.5">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     {/* Main Content Column */}
                     <div className="lg:col-span-3 space-y-6">
-                        {/* Invitation Banner (Shown only for Free Plan Users) */}
-                        {userPlan === 'free' && (
-                            <div className="bg-white rounded-xl p-4 border-2 border-purple-100 shadow-sm">
-                                <InvitationCodeInput
-                                    userId={userId}
-                                    onSuccess={() => {
-                                        // Update local state to reflect upgrade immediately
-                                        setUserPlan('invited')
-                                        setMaxDecks(20)
-                                        setMaxMatches(500)
-                                    }}
-                                />
-                            </div>
-                        )}
+
 
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
@@ -336,14 +331,18 @@ export default function Dashboard() {
                             <div className="space-y-6">
                                 {/* Admin Only: Manager Forms */}
                                 {(userEmail === 'player1@pokeka.local' ||
-                                    userEmail === 'player2@pokeka.local' ||
-                                    userEmail === 'player3@pokeka.local' ||
                                     isAdmin) && (
                                         <>
                                             <EnvironmentManager userEmail={userEmail} />
                                             <div className="bg-white rounded-2xl p-6 border-2 border-orange-100 shadow-sm mt-8">
                                                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                                    <span className="bg-orange-100 p-2 rounded-lg mr-2">📊</span>
+                                                    <span className="flex items-center justify-center bg-orange-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                                        <img
+                                                            src="/Alakazam.png"
+                                                            alt="Alakazam"
+                                                            className="w-6 h-6 object-contain"
+                                                        />
+                                                    </span>
                                                     デッキ管理 (分析 & 参考デッキ)
                                                 </h2>
                                                 <AnalyticsManager userId={userId} />
@@ -353,12 +352,22 @@ export default function Dashboard() {
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
-                                    <ReferenceDeckList userId={userId} userEmail={userEmail} />
+                                    <ReferenceDeckList
+                                        userId={userId}
+                                        userEmail={userEmail}
+                                        gridClassName="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4"
+                                    />
                                 </div>
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-orange-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                        <span className="bg-orange-100 p-1.5 rounded-lg mr-2 text-base">🔑</span>
+                                        <span className="flex items-center justify-center bg-orange-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                            <img
+                                                src="/Klefki.png"
+                                                alt="Klefki"
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        </span>
                                         キーカード採用率
                                     </h2>
                                     <KeyCardAdoptionList />
@@ -366,7 +375,13 @@ export default function Dashboard() {
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-purple-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                        <span className="bg-purple-100 p-1.5 rounded-lg mr-2 text-base">📊</span>
+                                        <span className="flex items-center justify-center bg-purple-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                            <img
+                                                src="/Alakazam.png"
+                                                alt="Alakazam"
+                                                className="w-6 h-6 object-contain"
+                                            />
+                                        </span>
                                         環境デッキ分布
                                     </h2>
                                     <DeckDistributionChart />
@@ -383,20 +398,39 @@ export default function Dashboard() {
                         {/* Mobile Ad Slot (Visible only on mobile) */}
                         <div className="lg:hidden mt-8 space-y-6">
                             {/* Mobile Article List */}
-                            <div className="mb-6">
-                                <a
-                                    href="https://shopa.jp/9293M3MEXQ2Z"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-full hover:opacity-90 transition-opacity mb-4"
-                                >
-                                    <img
-                                        src="/ad_sponsor_toyger.png"
-                                        alt="サプライ買うならTOYGER"
-                                        className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
-                                        loading="lazy"
-                                    />
-                                </a>
+                            <div className="mb-6 space-y-4">
+                                <div>
+                                    <span className="text-[10px] text-gray-400 block mb-1">PR: サプライ買うならTOYGER</span>
+                                    <a
+                                        href="https://shopa.jp/9293M3MEXQ2Z"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full hover:opacity-90 transition-opacity"
+                                    >
+                                        <img
+                                            src="/ad_sponsor_toyger.png"
+                                            alt="サプライ買うならTOYGER"
+                                            className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                            loading="lazy"
+                                        />
+                                    </a>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-gray-400 block mb-1">PR: ドット絵ご提供者様(下記タップでXへ)</span>
+                                    <a
+                                        href="https://twitter.com/komori541milk"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full hover:opacity-90 transition-opacity mx-auto"
+                                    >
+                                        <img
+                                            src="/dotpicture.png"
+                                            alt="ドット絵ご提供者様"
+                                            className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                            loading="lazy"
+                                        />
+                                    </a>
+                                </div>
                                 <SideArticleList />
                             </div>
                             <AdPlaceholder slot="mobile-bottom" label="Sponsored" />
@@ -406,20 +440,39 @@ export default function Dashboard() {
                     {/* Sidebar Column (Visible only on Desktop) */}
                     <div className="hidden lg:block lg:col-span-1 space-y-6 sticky top-24">
                         {/* Sidebar Article List (Top Priority) */}
-                        <div className="mb-6">
-                            <a
-                                href="https://shopa.jp/9293M3MEXQ2Z"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full hover:opacity-90 transition-opacity mb-4"
-                            >
-                                <img
-                                    src="/ad_sponsor_toyger.png"
-                                    alt="サプライ買うならTOYGER"
-                                    className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
-                                    loading="lazy"
-                                />
-                            </a>
+                        <div className="mb-6 space-y-4">
+                            <div>
+                                <span className="text-[10px] text-gray-400 block mb-1">PR: サプライ買うならTOYGER</span>
+                                <a
+                                    href="https://shopa.jp/9293M3MEXQ2Z"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full hover:opacity-90 transition-opacity"
+                                >
+                                    <img
+                                        src="/ad_sponsor_toyger.png"
+                                        alt="サプライ買うならTOYGER"
+                                        className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            </div>
+                            <div>
+                                <span className="text-[10px] text-gray-400 block mb-1">PR: ドット絵ご提供者様(下記タップでXへ)</span>
+                                <a
+                                    href="https://twitter.com/komori541milk"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-[94%] hover:opacity-90 transition-opacity mx-auto"
+                                >
+                                    <img
+                                        src="/dotpicture.png"
+                                        alt="ドット絵ご提供者様"
+                                        className="w-full h-auto rounded-xl shadow-sm border border-gray-100"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            </div>
                             <SideArticleList />
                         </div>
 

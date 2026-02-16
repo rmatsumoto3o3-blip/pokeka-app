@@ -522,7 +522,15 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             {
                 cards.length === 0 && !loading && (
                     <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                        <div className="text-4xl mb-4">🧮</div>
+                        <div className="mb-4 flex justify-center">
+                            <Image
+                                src="/king.png"
+                                alt="Simulator"
+                                width={48}
+                                height={48}
+                                className="w-12 h-12"
+                            />
+                        </div>
                         <h3 className="text-lg font-bold text-gray-900">{t.usageTitle}</h3>
                         <p className="text-gray-600 mt-2 px-4 whitespace-pre-line">
                             {t.usageDesc}

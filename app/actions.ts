@@ -42,8 +42,6 @@ function getSupabaseAdmin() {
 // --- Constants ---
 const ADMIN_EMAILS = [
     'player1@pokeka.local',
-    'player2@pokeka.local',
-    'player3@pokeka.local',
     'r.matsumoto.3o3@gmail.com',
     'nexpure.event@gmail.com',
     'admin@pokeka.local'
@@ -87,7 +85,17 @@ export async function getOrCreateProfileAction(userId: string) {
             if (isLegacy && profile.plan_type !== 'invited') {
                 const { data: updated } = await getSupabaseAdmin()
                     .from('user_profiles')
-                    .update({ plan_type: 'invited', max_decks: 20, max_matches: 500 })
+                    .update({ plan_type: 'invited', max_decks: 1000, max_matches: 500 })
+                    .eq('user_id', userId)
+                    .select().single()
+                return { success: true, profile: updated || profile }
+            }
+
+            // GLOBAL UNLOCK: Upgrade everyone to 1000 decks if they have less
+            if (profile.max_decks < 1000) {
+                const { data: updated } = await getSupabaseAdmin()
+                    .from('user_profiles')
+                    .update({ max_decks: 1000 })
                     .eq('user_id', userId)
                     .select().single()
                 return { success: true, profile: updated || profile }
@@ -102,7 +110,7 @@ export async function getOrCreateProfileAction(userId: string) {
 
         // Default to 'free'
         let initialPlan: 'free' | 'invited' = 'free'
-        let initialMaxDecks = 3
+        let initialMaxDecks = 1000 // Default Unrestricted
         let initialMaxMatches = 100
 
         if (userAuth?.user?.created_at) {
@@ -111,7 +119,7 @@ export async function getOrCreateProfileAction(userId: string) {
             // If created before cutoff, they are a legacy user => Premium
             if (createdAt < cutoffDate) {
                 initialPlan = 'invited'
-                initialMaxDecks = 20
+                initialMaxDecks = 1000 // Global High Limit
                 initialMaxMatches = 500
             }
         }
@@ -208,7 +216,7 @@ export async function createFolderAction(userId: string, folderName: string) {
         const isAdmin = userAuth?.user?.email && ADMIN_EMAILS.includes(userAuth.user.email)
 
         const isInvited = profile?.plan_type === 'invited'
-        const MAX_PARENTS = isAdmin ? 9999 : (isInvited ? 5 : 3)
+        const MAX_PARENTS = isAdmin ? 9999 : 1000 // Global High Limit
 
         // 2. Count Parents
         const { count: folderCount, error: fErr } = await getSupabaseAdmin()
@@ -962,7 +970,7 @@ export async function scrapePokecabookAction(url: string) {
             // The structure is usually "Text <a...>Link</a>"
             // We want "Text" + "Link Text" or just the raw text content.
             // Let's strip all headers/tags.
-            let name = captionContent.replace(/<[^>]+>/g, '').trim()
+            let name = captionContent.replace(/<[^>]+>/g, '').replace(/【[月火水木金土日]】/g, '').trim()
 
             // Filter out "Averaged" decks (Noise)
             if (name.includes('平均化') || name.includes('平均レシピ') || name.includes('平均')) {

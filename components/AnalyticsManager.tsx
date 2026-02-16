@@ -482,8 +482,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         <div className="space-y-6">
             {/* Edit Modal */}
             {editingDeck && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setEditingDeck(null)}>
-                    <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2.5" onClick={() => setEditingDeck(null)}>
+                    <div className="bg-white rounded-xl shadow-xl p-2.5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
                         <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
                         <div className="space-y-4">
                             <div>
@@ -536,7 +536,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             <div className="bg-white rounded-lg shadow border-2 border-purple-100 overflow-hidden">
                 <button
                     onClick={() => setIsManageMode(!isManageMode)}
-                    className="w-full flex justify-between items-center p-4 bg-purple-50 hover:bg-purple-100 transition"
+                    className="w-full flex justify-between items-center p-2.5 bg-purple-50 hover:bg-purple-100 transition"
                 >
                     <span className="font-bold text-gray-800 flex items-center">
                         <span className="bg-white p-1 rounded mr-2 text-sm shadow-sm">📁</span>
@@ -546,7 +546,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 </button>
 
                 {isManageMode && (
-                    <div className="p-6 space-y-8 animate-in slide-in-from-top-2">
+                    <div className="p-2.5 space-y-8 animate-in slide-in-from-top-2">
                         {/* Tab Switcher inside Manage Mode */}
                         <div className="flex gap-4 border-b border-gray-200 pb-2 mb-4">
                             <button className="text-sm font-bold text-purple-600 border-b-2 border-purple-600 pb-2">デッキタイプ設定</button>
@@ -604,7 +604,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         表紙画像を変更 (選択中のタイプ)
                                     </label>
@@ -663,11 +663,20 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         {/* 3. Featured Cards Management (Phase 47) */}
                         <div className="border-t pt-6 mt-6">
                             <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <span>🏆 注目カード設定（採用率グラフ用）</span>
+                                <span className="flex items-center gap-1">
+                                    <Image
+                                        src="/victory.png"
+                                        alt="victory"
+                                        width={24}
+                                        height={24}
+                                        className="w-6 h-6"
+                                    />
+                                    注目カード設定（採用率グラフ用）
+                                </span>
                                 <span className="text-xs font-normal bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Topページ表示</span>
                             </h4>
 
-                            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div className="p-2.5 bg-yellow-50 rounded-lg border border-yellow-200">
                                 <p className="text-sm text-gray-700 mb-4">
                                     ここで設定したカード（最大5枚推奨）がトップページの「注目カード採用率」に表示されます。<br />
                                     <strong>※データの更新が必要な場合は、下の更新ボタンを押してください。</strong>
@@ -682,7 +691,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 )}
             </div>
 
-            <div className="bg-white p-6 rounded-lg shadow space-y-6">
+            <div className="bg-white p-2.5 rounded-lg shadow space-y-6">
                 <div className="space-y-6">
                     {/* Controls (Full Width) */}
                     <div className="space-y-6">

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Deck, Match } from '@/lib/supabase'
 import Link from 'next/link'
+import Image from 'next/image'
 import AddMatchForm from './AddMatchForm'
 import DeckDetailMock from './DeckDetailMock'
 
@@ -139,7 +140,7 @@ export default function DeckList({
             {/* Image Modal */}
             {selectedImage && (
                 <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-2.5"
                     onClick={() => setSelectedImage(null)}
                 >
                     <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
@@ -163,7 +164,7 @@ export default function DeckList({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Work Table (Temp Slot) */}
                     <div className="bg-blue-50/50 rounded-xl overflow-hidden border-2 border-blue-200 border-dashed hover:border-blue-400 transition shadow-sm hover:shadow-md flex flex-col">
-                        <div className="p-4 flex-1 flex flex-col">
+                        <div className="p-2.5 flex-1 flex flex-col">
                             <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                                 <span>🛠️</span>
                                 作業机 (一時保存)
@@ -181,7 +182,7 @@ export default function DeckList({
                                             placeholder="デッキコードを入力"
                                             value={tempDeckCode}
                                             onChange={(e) => setTempDeckCode(e.target.value)}
-                                            className="w-full px-4 py-2 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                            className="w-full px-2.5 py-2 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                         />
                                         <button
                                             onClick={saveTempDeck}
@@ -193,7 +194,7 @@ export default function DeckList({
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="bg-white rounded p-3 border border-blue-100">
+                                        <div className="bg-white rounded p-2.5 border border-blue-100">
                                             <div className="text-xs text-gray-500 mb-1">登録中のデッキコード</div>
                                             <div className="text-lg font-mono font-bold text-gray-800 tracking-wider text-center">{tempDeckCode}</div>
                                         </div>
@@ -205,7 +206,13 @@ export default function DeckList({
                                                 rel="noopener noreferrer"
                                                 className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
                                             >
-                                                <span>🎮</span>
+                                                <Image
+                                                    src="/Lucario.png"
+                                                    alt="Practice"
+                                                    width={24}
+                                                    height={24}
+                                                    className="w-5 h-5"
+                                                />
                                                 一人回し
                                             </Link>
                                             <button
@@ -229,7 +236,7 @@ export default function DeckList({
                         >
                             {/* ... image ... */}
 
-                            <div className="p-4">
+                            <div className="p-2.5">
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">{deck.deck_name}</h3>
                                 {/* ... code ... */}
                                 {/* ... stats ... */}

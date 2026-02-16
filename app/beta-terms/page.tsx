@@ -15,9 +15,9 @@ export default function BetaTermsPage() {
 
             <main>
                 {/* Hero Section */}
-                <section className="relative py-20 overflow-hidden">
+                <section className="relative py-2.5 overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-pink-50 via-purple-50 to-white z-0" />
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 relative z-10 text-center">
                         <span className="inline-block px-4 py-1.5 rounded-full bg-white border border-pink-200 text-pink-600 font-bold mb-6 text-sm shadow-sm">
                             🎉 50名様限定募集中
                         </span>
@@ -36,10 +36,10 @@ export default function BetaTermsPage() {
                 </section>
 
                 {/* Benefits Section */}
-                <section className="py-12 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-2.5 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-gray-900">
-                            <div className="p-8 rounded-2xl bg-gradient-to-br from-pink-50 to-white border border-pink-100 shadow-sm hover:shadow-md transition">
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-pink-50 to-white border border-pink-100 shadow-sm hover:shadow-md transition">
                                 <div className="text-5xl mb-4">∞</div>
                                 <h3 className="text-xl font-bold mb-3">ずっと無料</h3>
                                 <p className="text-gray-600 leading-relaxed">
@@ -48,7 +48,7 @@ export default function BetaTermsPage() {
                                     有料機能を無料で利用できます。
                                 </p>
                             </div>
-                            <div className="p-8 rounded-2xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 shadow-sm hover:shadow-md transition">
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 shadow-sm hover:shadow-md transition">
                                 <div className="text-5xl mb-4">🚀</div>
                                 <h3 className="text-xl font-bold mb-3">先行体験</h3>
                                 <p className="text-gray-600 leading-relaxed">
@@ -57,7 +57,7 @@ export default function BetaTermsPage() {
                                     誰よりも早く体験できます。
                                 </p>
                             </div>
-                            <div className="p-8 rounded-2xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-md transition">
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-md transition">
                                 <div className="text-5xl mb-4">💬</div>
                                 <h3 className="text-xl font-bold mb-3">開発に参加</h3>
                                 <p className="text-gray-600 leading-relaxed">
@@ -71,10 +71,10 @@ export default function BetaTermsPage() {
                 </section>
 
                 {/* Rules Section */}
-                <section className="py-16 bg-gray-50 text-gray-900">
-                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <section className="py-2.5 bg-gray-50 text-gray-900">
+                    <div className="max-w-3xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                         <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">参加条件・ルール</h2>
-                        <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-200">
+                        <div className="bg-white rounded-2xl shadow-sm p-2.5 border border-gray-200">
                             <ul className="space-y-4">
                                 <li className="flex items-start">
                                     <span className="text-green-500 mr-3 text-xl">✓</span>
@@ -94,10 +94,10 @@ export default function BetaTermsPage() {
                 </section>
 
                 {/* Disclaimer Section */}
-                <section className="py-12 bg-white text-gray-600">
-                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <section className="py-2.5 bg-white text-gray-600">
+                    <div className="max-w-3xl mx-auto px-2 sm:px-2.5 lg:px-2.5 text-center">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">免責事項</h2>
-                        <div className="bg-gray-50 p-6 rounded-xl text-sm leading-relaxed text-left space-y-3">
+                        <div className="bg-gray-50 p-2.5 rounded-xl text-sm leading-relaxed text-left space-y-3">
                             <p>
                                 ・本アプリはベータ版（開発中）のため、予期せぬ不具合やエラーが発生する可能性があります。
                             </p>
@@ -112,11 +112,11 @@ export default function BetaTermsPage() {
                 </section>
 
                 {/* CTA Section */}
-                <section className="py-20 text-center">
-                    <div className="max-w-4xl mx-auto px-4">
+                <section className="py-2.5 text-center">
+                    <div className="max-w-4xl mx-auto px-2">
                         <button
                             onClick={() => router.push('/auth?mode=signup')}
-                            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xl md:text-2xl font-bold py-6 px-12 rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 animate-pulse"
+                            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white text-xl md:text-2xl font-bold py-2.5 px-2.5 rounded-full shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 animate-pulse"
                         >
                             条件に同意して参加する
                         </button>

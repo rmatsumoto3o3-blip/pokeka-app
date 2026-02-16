@@ -36,9 +36,15 @@ export default function FeaturedCardTrends() {
     const selectedCard = cards.find(c => c.id === selectedCardId) || cards[0]
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5 mb-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                <span className="text-xl mr-2">📈</span>
+                <Image
+                    src="/Eevee.png"
+                    alt="Trending"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 mr-2"
+                />
                 注目カード採用率（全期間）
             </h2>
 
@@ -91,7 +97,7 @@ export default function FeaturedCardTrends() {
 
             {/* Detail: Chart Area */}
             {selectedCard && (
-                <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-2.5 bg-gray-50 border border-gray-100 rounded-xl animate-in fade-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-14 relative rounded overflow-hidden border border-gray-200 shadow-sm hidden md:block">

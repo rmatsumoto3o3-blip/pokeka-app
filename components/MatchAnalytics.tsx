@@ -335,7 +335,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
     return (
         <div className="space-y-8">
             {/* Header / Filter */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-purple-100 shadow-sm">
+            <div className="bg-white rounded-2xl p-2.5 border-2 border-purple-100 shadow-sm">
                 <div className="flex flex-col gap-4">
                     <h2 className="text-xl font-bold text-gray-900">戦績分析</h2>
 
@@ -343,7 +343,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                         <select
                             value={selectedDeckId}
                             onChange={(e) => setSelectedDeckId(e.target.value)}
-                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="flex-1 px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="all">すべてのデッキ</option>
 
@@ -371,7 +371,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                         <select
                             value={selectedEnvironmentId}
                             onChange={(e) => setSelectedEnvironmentId(e.target.value)}
-                            className="flex-1 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="flex-1 px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
                             <option value="all">全期間</option>
                             {environments.map(env => (
@@ -386,7 +386,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                 {/* Graphs */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Pie Chart */}
-                    <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
+                    <div className="bg-gray-50 rounded-xl p-2.5 flex flex-col items-center">
                         <h3 className="text-sm font-bold text-gray-500 mb-2">勝率内訳</h3>
                         <div className="h-64 w-full relative">
                             {graphData.total > 0 ? (
@@ -443,7 +443,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
                     {/* Bar Chart (Only for All Decks) */}
                     {selectedDeckId === 'all' && (
-                        <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
+                        <div className="bg-gray-50 rounded-xl p-2.5 flex flex-col items-center">
                             <h3 className="text-sm font-bold text-gray-500 mb-2">デッキ別勝率 (TOP 5)</h3>
                             <div className="h-64 w-full">
                                 {deckPerformanceData.length > 0 ? (
@@ -468,7 +468,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
                     {/* Stat Cards (For Specific Deck) */}
                     {selectedDeckId !== 'all' && (
-                        <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-4 place-items-center">
+                        <div className="bg-gray-50 rounded-xl p-2.5 grid grid-cols-2 gap-4 place-items-center">
                             <div className="text-center">
                                 <div className="text-sm text-gray-500">試合数</div>
                                 <div className="text-2xl font-bold text-gray-900">{graphData.total}</div>
@@ -484,12 +484,12 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
             </div>
 
             {/* List Section */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-pink-100 shadow-sm">
+            <div className="bg-white rounded-2xl p-2.5 border-2 border-pink-100 shadow-sm">
                 {/* Result Filter Tabs */}
                 <div className="flex gap-2 mb-4">
                     <button
                         onClick={() => setActiveTab('all')}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'all'
+                        className={`px-2.5 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'all'
                             ? 'bg-gray-900 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
@@ -498,7 +498,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     </button>
                     <button
                         onClick={() => setActiveTab('win')}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'win'
+                        className={`px-2.5 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'win'
                             ? 'bg-green-600 text-white'
                             : 'bg-green-50 text-green-700 hover:bg-green-100'
                             }`}
@@ -507,7 +507,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                     </button>
                     <button
                         onClick={() => setActiveTab('loss')}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'loss'
+                        className={`px-2.5 py-2 rounded-lg font-medium text-sm transition ${activeTab === 'loss'
                             ? 'bg-red-600 text-white'
                             : 'bg-red-50 text-red-700 hover:bg-red-100'
                             }`}
@@ -521,11 +521,11 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                         filteredMatches.map((match) => (
                             <div
                                 key={match.id}
-                                className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition"
+                                className="bg-white rounded-xl p-2.5 border border-gray-200 shadow-sm hover:shadow-md transition"
                             >
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-4">
-                                        <span className={`px-3 py-1 rounded-lg border font-bold text-sm min-w-[60px] text-center ${match.result === 'win' ? 'bg-green-50 text-green-700 border-green-200' :
+                                        <span className={`px-2.5 py-1 rounded-lg border font-bold text-sm min-w-[60px] text-center ${match.result === 'win' ? 'bg-green-50 text-green-700 border-green-200' :
                                             match.result === 'loss' ? 'bg-red-50 text-red-700 border-red-200' :
                                                 'bg-gray-50 text-gray-700 border-gray-200'
                                             }`}>
@@ -577,7 +577,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                                 key={r}
                                                                 type="button"
                                                                 onClick={() => setEditForm({ ...editForm, result: r })}
-                                                                className={`flex-1 py-3 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.result === r
+                                                                className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.result === r
                                                                     ? (r === 'win' ? 'bg-green-700 text-white translate-y-[-1px] shadow-green-100 ring-2 ring-green-400' : r === 'loss' ? 'bg-red-700 text-white translate-y-[-1px] shadow-red-100 ring-2 ring-red-400' : 'bg-gray-700 text-white translate-y-[-1px] shadow-gray-100 ring-2 ring-gray-400')
                                                                     : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-200'
                                                                     }`}
@@ -597,7 +597,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                                                 key={g}
                                                                 type="button"
                                                                 onClick={() => setEditForm({ ...editForm, going_first: g })}
-                                                                className={`flex-1 py-3 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
+                                                                className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
                                                                     ? 'bg-purple-700 text-white translate-y-[-1px] shadow-purple-100 ring-2 ring-purple-400'
                                                                     : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-purple-200'
                                                                     }`}
@@ -610,7 +610,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                             </div>
 
                                             {/* Edit Side */}
-                                            <div className="space-y-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-100">
+                                            <div className="space-y-3 p-2.5 bg-gray-50 rounded-xl border-2 border-gray-100">
                                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">サイド状況 (取った枚数)</label>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div className="space-y-1">
@@ -679,14 +679,14 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                             <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                                                 <button
                                                     onClick={cancelEditing}
-                                                    className="px-4 py-2 text-sm text-gray-500 hover:bg-white rounded-md transition"
+                                                    className="px-2.5 py-2 text-sm text-gray-500 hover:bg-white rounded-md transition"
                                                     disabled={updating}
                                                 >
                                                     キャンセル
                                                 </button>
                                                 <button
                                                     onClick={() => saveMatch(match.id)}
-                                                    className="px-4 py-2 text-sm font-bold bg-pink-500 text-white rounded-md hover:bg-pink-600 shadow-sm transition disabled:opacity-50"
+                                                    className="px-2.5 py-2 text-sm font-bold bg-pink-500 text-white rounded-md hover:bg-pink-600 shadow-sm transition disabled:opacity-50"
                                                     disabled={updating}
                                                 >
                                                     {updating ? '保存中...' : '保存'}

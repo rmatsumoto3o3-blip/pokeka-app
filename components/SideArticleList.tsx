@@ -32,7 +32,7 @@ export default function SideArticleList() {
 
     return (
         <div className="bg-white rounded-xl border border-pink-100 shadow-sm overflow-hidden">
-            <div className="p-3 border-b border-gray-100 bg-pink-50/50 flex justify-between items-center">
+            <div className="p-2.5 border-b border-gray-100 bg-pink-50/50 flex justify-between items-center">
                 <h3 className="text-sm font-bold text-gray-900">📝 新着記事</h3>
                 <Link href="/articles" className="text-xs text-pink-600 hover:underline">
                     一覧へ
@@ -43,7 +43,7 @@ export default function SideArticleList() {
                     <Link
                         href={`/articles/${article.slug}`}
                         key={article.id}
-                        className="block p-3 hover:bg-gray-50 transition group"
+                        className="block p-2.5 hover:bg-gray-50 transition group"
                     >
                         <div className="flex gap-3">
                             <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden relative">
