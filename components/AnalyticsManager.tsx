@@ -137,7 +137,11 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             const res = await getDeckAnalyticsAction(id)
             if (res.success && res.analytics) {
                 setData({
-                    decks: res.decks || [],
+                    decks: (res.decks || []).sort((a: any, b: any) => {
+                        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+                        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+                        return dateB - dateA
+                    }),
                     analytics: res.analytics,
                     totalDecks: res.totalDecks || 0
                 })
@@ -897,6 +901,9 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                     <div className="font-bold text-gray-800 text-sm truncate">{deck.deck_name}</div>
                                                     <span className="text-[10px] bg-blue-100 text-blue-800 px-1 py-0.5 rounded flex-shrink-0 ml-1">
                                                         {deck.event_type}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 font-medium ml-1">
+                                                        {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
                                                     </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs">

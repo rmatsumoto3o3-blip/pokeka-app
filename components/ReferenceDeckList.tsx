@@ -236,6 +236,15 @@ export default function ReferenceDeckList({
         groupedDecks[key].push(deck)
     })
 
+    // Sort decks within each archetype group by created_at (fallback for safety)
+    Object.keys(groupedDecks).forEach(key => {
+        groupedDecks[key].sort((a, b) => {
+            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+            return dateB - dateA
+        })
+    })
+
     // Sort Archetype IDs for display
     const sortedArchetypeIds = Object.keys(groupedDecks).sort((aId, bId) => {
         if (aId === 'others') return 1
@@ -395,6 +404,7 @@ export default function ReferenceDeckList({
                     {/* Header Row */}
                     <div className="bg-gray-50 px-2.5 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
                         <div className="flex-1">デッキ名</div>
+                        <div className="w-24 hidden md:block text-center">日付</div>
                         <div className="w-24 hidden md:block text-center">CODE</div>
                         {isAdmin && <div className="w-20 text-right">管理</div>}
                     </div>
@@ -440,6 +450,10 @@ export default function ReferenceDeckList({
                                                     {deck.deck_code}
                                                 </span>
                                             )}
+                                            {/* Mobile Date Badge */}
+                                            <span className="md:hidden text-[10px] opacity-70">
+                                                {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                            </span>
                                             {/* Fallback indicator if image only */}
                                             {!deck.deck_code && deck.image_url && (
                                                 <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
@@ -447,6 +461,11 @@ export default function ReferenceDeckList({
                                                 </span>
                                             )}
                                         </div>
+                                    </div>
+
+                                    {/* Desktop Date Display */}
+                                    <div className="w-24 hidden md:flex items-center justify-center text-[10px] text-gray-500 font-medium">
+                                        {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
                                     </div>
 
                                     {/* Desktop Code Copy Button (Quick Action) */}
