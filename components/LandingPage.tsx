@@ -8,7 +8,6 @@ import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
-import AdPlaceholder from '@/components/AdPlaceholder'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import CardSearchAnalysis from '@/components/CardSearchAnalysis'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
@@ -368,10 +367,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 </div>
             </section>
 
-            {/* Ad Slot: Mid-Page */}
-            <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5">
-                <AdPlaceholder slot="landing-mid" label="Sponsored" />
-            </div>
+
 
             {/* Features Section */}
             <section id="features" className="py-2.5 md:py-2.5 bg-pink-50"> <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
@@ -425,10 +421,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             </div>
             </section>
 
-            {/* Ad Slot: Bottom */}
-            <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5">
-                <AdPlaceholder slot="landing-bottom" label="Sponsored" />
-            </div>
+
 
             <Footer />
         </div>

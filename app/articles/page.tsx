@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import AdPlaceholder from '@/components/AdPlaceholder'
 import type { Metadata } from 'next'
 
 export const revalidate = 3600 // Revalidate every hour
@@ -91,10 +90,7 @@ export default async function ArticlesPage() {
                     </div>
                 )}
 
-                {/* Ad Slot */}
-                <div className="mt-16">
-                    <AdPlaceholder slot="articles-bottom" label="Sponsored" />
-                </div>
+
             </main>
 
             <Footer />

@@ -15,7 +15,6 @@ import AnalyticsManager from '@/components/AnalyticsManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
 import SideArticleList from '@/components/SideArticleList'
-import AdPlaceholder from '@/components/AdPlaceholder'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
@@ -433,7 +432,7 @@ export default function Dashboard() {
                                 </div>
                                 <SideArticleList />
                             </div>
-                            <AdPlaceholder slot="mobile-bottom" label="Sponsored" />
+
                         </div>
                     </div>
 
@@ -476,8 +475,7 @@ export default function Dashboard() {
                             <SideArticleList />
                         </div>
 
-                        <AdPlaceholder slot="sidebar-top" label="Sponsored" className="min-h-[300px]" />
-                        <AdPlaceholder slot="sidebar-bottom" label="Sponsored" className="min-h-[300px]" />
+
 
                         <div className="bg-white rounded-xl p-4 border border-pink-100 shadow-sm">
                             <h3 className="text-sm font-bold text-gray-900 mb-2">お知らせ</h3>

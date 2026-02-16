@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import AdPlaceholder from '@/components/AdPlaceholder'
 import type { Metadata } from 'next'
 
 export const revalidate = 3600 // Revalidate every hour
@@ -78,10 +77,7 @@ export default async function ArticleDetailPage({ params }: Props) {
                         )}
                     </div>
 
-                    {/* Ad Slot: Top of Content */}
-                    <div className="my-8 not-prose">
-                        <AdPlaceholder slot="article-top" label="Sponsored" />
-                    </div>
+
 
                     {/* Content */}
                     <div
@@ -89,10 +85,7 @@ export default async function ArticleDetailPage({ params }: Props) {
                         dangerouslySetInnerHTML={{ __html: article.content }}
                     />
 
-                    {/* Ad Slot: Bottom of Content */}
-                    <div className="mt-12 not-prose">
-                        <AdPlaceholder slot="article-bottom" label="Sponsored" />
-                    </div>
+
                 </article>
 
                 {/* Navigation */}
