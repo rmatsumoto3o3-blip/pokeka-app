@@ -10,6 +10,7 @@ import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
+import CardSearchAnalysis from '@/components/CardSearchAnalysis'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
@@ -189,23 +190,31 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         <FeaturedCardTrends />
                     </div>
 
-                    {/* Deck Distribution Chart */}
-                    <div className="mt-8" id="deck-distribution">
-                        <div className="mb-4">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                <Image
-                                    src="/Alakazam.png"
-                                    alt="Alakazam"
-                                    width={36}
-                                    height={36}
-                                    className="w-7 h-7 md:w-9 md:h-9"
-                                />
-                                環境デッキ分布
-                            </h3>
-                            <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率</p>
+                    {/* Environment Analytics Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        {/* Deck Distribution Chart */}
+                        <div id="deck-distribution">
+                            <div className="mb-4">
+                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                    <Image
+                                        src="/Alakazam.png"
+                                        alt="Alakazam"
+                                        width={36}
+                                        height={36}
+                                        className="w-7 h-7 md:w-9 md:h-9"
+                                    />
+                                    環境デッキ分布
+                                </h3>
+                                <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率</p>
+                            </div>
+                            <div className="bg-white rounded-2xl border-2 border-purple-100 shadow-sm p-2.5 md:p-2.5">
+                                <DeckDistributionChart decks={decks} archetypes={archetypes} />
+                            </div>
                         </div>
-                        <div className="bg-white rounded-2xl border-2 border-purple-100 shadow-sm p-2.5 md:p-2.5">
-                            <DeckDistributionChart decks={decks} archetypes={archetypes} />
+
+                        {/* Card Search Analysis [NEW] */}
+                        <div className="h-full">
+                            <CardSearchAnalysis initialArchetypes={archetypes} />
                         </div>
                     </div>
 

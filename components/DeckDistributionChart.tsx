@@ -137,8 +137,8 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
     if (data.length === 0) return null
 
     return (
-        <div className="w-full h-auto min-h-[450px] md:h-[400px] flex flex-col md:flex-row items-center justify-center gap-6">
-            <div className="w-full md:w-2/3 h-[300px] md:h-full">
+        <div className="w-full h-auto min-h-[450px] flex flex-col items-center justify-center gap-6">
+            <div className="w-full h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
@@ -170,7 +170,7 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
             </div>
 
             {/* Custom Legend Layout: Sorted Descending, Icons Right-Aligned */}
-            <div className={`w-full md:w-1/3 px-4 ${isMobile ? 'order-last' : ''}`}>
+            <div className="w-full px-4">
                 <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
                     {data.map((item, index) => (
                         <div key={index} className="flex items-center justify-between group hover:bg-gray-50 p-1.5 rounded-lg transition-colors border-b border-gray-50 last:border-0">

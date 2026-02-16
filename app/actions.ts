@@ -827,20 +827,59 @@ export async function getGlobalDeckAnalyticsAction() {
             })
         })
 
-        // Format
+        // 3. Aggregate Global Stats
+        const globalStats: Record<string, any> = {}
+        const totalDecksGlobal = decks.length
+
+        decks.forEach(deck => {
+            const cards = deck.cards_json as CardData[]
+            const seenInThisDeckGlobal = new Set<string>()
+
+            cards.forEach(card => {
+                const name = card.name
+                if (!globalStats[name]) {
+                    globalStats[name] = {
+                        name: card.name,
+                        imageUrl: card.imageUrl,
+                        supertype: card.supertype,
+                        subtypes: card.subtypes,
+                        totalQty: 0,
+                        adoptionCount: 0
+                    }
+                }
+                globalStats[name].totalQty += card.quantity
+                if (!seenInThisDeckGlobal.has(name)) {
+                    globalStats[name].adoptionCount += 1
+                    seenInThisDeckGlobal.add(name)
+                }
+            })
+        })
+
+        const globalAnalytics = Object.values(globalStats).map(stat => ({
+            id: stat.name,
+            card_name: stat.name,
+            image_url: stat.imageUrl,
+            category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
+            adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1),
+            adoption_rate: ((stat.adoptionCount / totalDecksGlobal) * 100).toFixed(1)
+        })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
+
+        // 4. Format Archetype Stats
         Object.keys(statsByArchetype).forEach(archId => {
             const totalDecks = deckCountsByArchetype[archId]
+            if (!totalDecks) return
+
             analyticsByArchetype[archId] = Object.values(statsByArchetype[archId]).map(stat => ({
-                id: stat.name, // Use name as ID for display
+                id: stat.name,
                 card_name: stat.name,
                 image_url: stat.imageUrl,
                 category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
-                adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1), // Average Quantity
-                adoption_rate: ((stat.adoptionCount / totalDecks) * 100).toFixed(0) // Adoption Rate %
+                adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1),
+                adoption_rate: ((stat.adoptionCount / totalDecks) * 100).toFixed(0)
             })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
         })
 
-        return { success: true, analyticsByArchetype }
+        return { success: true, analyticsByArchetype, globalAnalytics }
 
     } catch (error) {
         console.error('Global Analytics Error:', error)
