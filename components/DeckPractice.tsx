@@ -219,6 +219,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [zoroarkState, setZoroarkState] = useState<ZoroarkState | null>(null)
 
+    // Meowth ex State
+    interface MeowthEXState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndex: number | null
+    }
+    const [meowthEXState, setMeowthEXState] = useState<MeowthEXState | null>(null)
+    const [okunoteUsedThisTurn, setOkunoteUsedThisTurn] = useState(false)
+
+    // Iron Leaves ex State
+    interface IronLeavesEXState {
+        active: boolean
+        targetType: 'battle' | 'bench'
+        targetIndex: number
+    }
+    const [ironLeavesEXState, setIronLeavesEXState] = useState<IronLeavesEXState | null>(null)
+
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
             const { active, over } = event
@@ -1089,6 +1106,199 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(prev => [...prev, ...drew])
         showToast(`さかてにとる: ${drawCount}枚引きました`)
     }
+
+    // --- Dudunsparce (Run Away Draw) Logic ---
+    const useDudunsparce = (source: 'battle' | 'bench', index: number) => {
+        const stack = source === 'battle' ? battleField : bench[index]
+        if (!stack) return
+
+        // 1. Draw 3
+        const drawCount = Math.min(3, remaining.length)
+        const drawn = remaining.slice(0, drawCount)
+        setHand(prev => [...prev, ...drawn])
+        setRemaining(prev => prev.slice(drawCount))
+
+        // 2. Return stack to deck and shuffle
+        const stackCards = stack.cards
+        setRemaining(prev => shuffle([...prev, ...stackCards]))
+
+        // 3. Remove from field
+        if (source === 'battle') {
+            setBattleField(null)
+        } else {
+            setBench(prev => {
+                const next = [...prev]
+                next[index] = null
+                return next
+            })
+        }
+
+        showToast(`にげあしドロー: ${drawCount}枚引き、山札に戻しました`)
+    }
+
+    // --- Meowth ex (Trump Card Catch) Logic ---
+    const useMeowthEX = (handIndex: number) => {
+        if (okunoteUsedThisTurn) {
+            alert("この番、すでに名前に「おくのて」とつく特性を使っています")
+            return
+        }
+
+        const card = hand[handIndex]
+        if (!card) return
+
+        // Search for empty bench slot
+        const emptySlotIndex = bench.findIndex((slot, i) => i < benchSize && slot === null)
+        if (emptySlotIndex === -1) {
+            alert("ベンチがいっぱいです")
+            return
+        }
+
+        // 1. Move to bench
+        setBench(prev => {
+            const next = [...prev]
+            next[emptySlotIndex] = createStack(card)
+            return next
+        })
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+
+        // 2. Search deck for Supporter
+        if (remaining.length === 0) {
+            alert("山札がありません")
+            return
+        }
+
+        setMeowthEXState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndex: null
+        })
+        setOkunoteUsedThisTurn(true)
+    }
+
+    const handleMeowthEXSelect = (index: number) => {
+        const card = meowthEXState?.candidates[index]
+        if (card && !isSupporter(card)) {
+            alert("サポートカードを選択してください")
+            return
+        }
+        setMeowthEXState(prev => prev ? { ...prev, selectedIndex: index } : null)
+    }
+
+    const handleMeowthEXConfirm = () => {
+        if (!meowthEXState) return
+
+        if (meowthEXState.selectedIndex !== null) {
+            const selected = meowthEXState.candidates[meowthEXState.selectedIndex]
+            setHand(prev => [...prev, selected])
+
+            // Remove from remaining
+            let removed = false
+            setRemaining(prev => prev.filter(c => {
+                if (!removed && c === selected) {
+                    removed = true
+                    return false
+                }
+                return true
+            }))
+        }
+
+        shuffleDeck()
+        setMeowthEXState(null)
+    }
+
+    // --- Iron Leaves ex (Rapid Vernier) Logic ---
+    const useIronLeavesEX = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        // Search for empty bench slot
+        const emptySlotIndex = bench.findIndex((slot, i) => i < benchSize && slot === null)
+        if (emptySlotIndex === -1) {
+            alert("ベンチがいっぱいです")
+            return
+        }
+
+        // 1. Move to bench
+        const leavesStack = createStack(card)
+        setBench(prev => {
+            const next = [...prev]
+            next[emptySlotIndex] = leavesStack
+            return next
+        })
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+
+        // 2. Ask to swap with Battle
+        if (confirm("バトル場と入れ替えますか？")) {
+            const currentBattle = battleField
+            setBattleField(leavesStack)
+            setBench(prev => {
+                const next = [...prev]
+                next[emptySlotIndex] = currentBattle
+                return next
+            })
+
+            // 3. Move Energy Interface
+            setIronLeavesEXState({
+                active: true,
+                targetType: 'battle',
+                targetIndex: 0
+            })
+        }
+    }
+
+    const handleIronLeavesEXClickPokemon = (type: 'battle' | 'bench', index: number) => {
+        if (!ironLeavesEXState || !ironLeavesEXState.active) return
+
+        const stack = type === 'battle' ? battleField : bench[index]
+        if (!stack) return
+
+        // If clicking Iron Leaves himself, do nothing
+        if (type === 'battle' && ironLeavesEXState.targetType === 'battle') return
+
+        // Try to find one energy in the stack and move it
+        let energyIndex = -1
+        for (let i = stack.cards.length - 1; i >= 0; i--) {
+            if (isEnergy(stack.cards[i])) {
+                energyIndex = i
+                break
+            }
+        }
+
+        if (energyIndex === -1) {
+            alert("エネルギーが付いていません")
+            return
+        }
+
+        const energyCard = stack.cards[energyIndex]
+
+        // Remove from source
+        if (type === 'battle') {
+            setBattleField(prev => {
+                if (!prev) return null
+                const newCards = prev.cards.filter((_, i) => i !== energyIndex)
+                return { ...prev, cards: newCards, energyCount: prev.energyCount - 1 }
+            })
+        } else {
+            setBench(prev => {
+                const next = [...prev]
+                const bStack = next[index]
+                if (bStack) {
+                    const newCards = bStack.cards.filter((_, i) => i !== energyIndex)
+                    next[index] = { ...bStack, cards: newCards, energyCount: bStack.energyCount - 1 }
+                }
+                return next
+            })
+        }
+
+        // Add to Iron Leaves
+        setBattleField(prev => {
+            if (!prev) return null
+            return { ...prev, cards: [...prev.cards, energyCard], energyCount: prev.energyCount + 1 }
+        })
+
+        showToast(`${energyCard.name}を付け替えました`)
+    }
+
 
     // Ultra Ball Logic
     const useUltraBall = (playedIndex: number) => {
@@ -2104,6 +2314,39 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
+        if (name === 'ノココッチ' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: にげあしドロー',
+                action: () => {
+                    useDudunsparce(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+            })
+        }
+
+        if (name === 'ニャースex' && source === 'hand') {
+            actions.push({
+                label: 'ベンチに出して特性を使用',
+                action: () => {
+                    useMeowthEX(index)
+                    closeMenu()
+                },
+                color: 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+            })
+        }
+
+        if (name === 'テツノイサハex' && source === 'hand') {
+            actions.push({
+                label: 'ベンチに出してバトル場と入れ替え',
+                action: () => {
+                    useIronLeavesEX(index)
+                    closeMenu()
+                },
+                color: 'bg-green-50 text-green-700 hover:bg-green-100'
+            })
+        }
+
         return actions
     }
 
@@ -2658,7 +2901,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 <DraggableCard
                     id={`${idPrefix}-battle-card`}
                     data={{ type: 'battle', index: 0, card: battleField, playerPrefix: idPrefix }}
-                    onClick={(e) => handleCardClick(e, battleField!, 'battle', 0)}
+                    onClick={(e) => {
+                        if (ironLeavesEXState?.active) {
+                            handleIronLeavesEXClickPokemon('battle', 0)
+                        } else {
+                            handleCardClick(e, battleField!, 'battle', 0)
+                        }
+                    }}
                 >
                     <CascadingStack
                         stack={battleField}
@@ -2873,7 +3122,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         <DraggableCard
                                             id={`${idPrefix}-bench-card-${i}`}
                                             data={{ type: 'bench', index: i, card: stack, playerPrefix: idPrefix }}
-                                            onClick={(e) => handleCardClick(e, stack, 'bench', i)}
+                                            onClick={(e) => {
+                                                if (ironLeavesEXState?.active) {
+                                                    handleIronLeavesEXClickPokemon('bench', i)
+                                                } else {
+                                                    handleCardClick(e, stack, 'bench', i)
+                                                }
+                                            }}
                                             className={swapMode?.active ? 'ring-2 ring-blue-400 animate-pulse' : ''}
                                         >
                                             <CascadingStack
@@ -3258,6 +3513,70 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             </button>
                             <button onClick={() => setZoroarkState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Meowth ex (Trump Card Catch) Modal */}
+            {meowthEXState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ニャースex: おくのてキャッチ</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からサポートカードを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {meowthEXState.candidates.map((card, i) => {
+                                const isTarget = isSupporter(card)
+                                const isSelected = meowthEXState.selectedIndex === i
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-orange-600 scale-110 z-10'
+                                                : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleMeowthEXSelect(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                ✓
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleMeowthEXConfirm}
+                                className="bg-orange-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-700"
+                            >
+                                {meowthEXState.selectedIndex !== null ? '決定' : '対象なし・戻す'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Iron Leaves ex (Rapid Vernier) Overlay */}
+            {ironLeavesEXState && ironLeavesEXState.active && (
+                <div className="fixed inset-0 z-[1000] pointer-events-none">
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl animate-bounce pointer-events-auto border-2 border-white">
+                        <h3 className="font-bold text-center">テツノイサハex: ラピッドバーニア</h3>
+                        <p className="text-xs text-green-50 text-center mt-1">
+                            エネルギーが付いている自分のポケモンをクリックして、<br />
+                            テツノイサハexへエネルギーを移動させてください。
+                        </p>
+                        <button
+                            onClick={() => setIronLeavesEXState(null)}
+                            className="mt-3 w-full bg-white text-green-600 font-bold py-1 rounded-lg text-sm hover:bg-green-50"
+                        >
+                            移動を終了する
+                        </button>
                     </div>
                 </div>
             )}
