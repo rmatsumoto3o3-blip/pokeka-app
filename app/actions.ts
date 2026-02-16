@@ -40,12 +40,10 @@ function getSupabaseAdmin() {
 }
 
 // --- Constants ---
-const ADMIN_EMAILS = [
-    'player1@pokeka.local',
-    'r.matsumoto.3o3@gmail.com',
-    'nexpure.event@gmail.com',
-    'admin@pokeka.local'
-]
+const ADMIN_EMAILS = ['r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local', 'player1@pokeka.local']
+
+// Filter for aggregate analysis (Phase 48 Request)
+const ANALYTICS_START_DATE = '2026-01-23T00:00:00Z'
 
 export async function getOrCreateProfileAction(userId: string) {
     try {
@@ -636,6 +634,7 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
                 .from('analyzed_decks')
                 .select('*')
                 .eq('archetype_id', archetypeId)
+                .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -782,7 +781,9 @@ export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsRes
             const { data, error } = await getSupabaseAdmin()
                 .from('analyzed_decks')
                 .select('*')
+                .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
+                .order('created_at', { ascending: false })
 
             if (error) throw error
             if (!data || data.length === 0) break
@@ -1179,6 +1180,7 @@ export async function updateDailySnapshotsAction(userId: string) {
             const { data, error } = await supabaseAdmin
                 .from('analyzed_decks')
                 .select('cards_json')
+                .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
 
             if (error) throw error
@@ -1268,6 +1270,7 @@ export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, da
             const { data, error } = await supabaseAdmin
                 .from('analyzed_decks')
                 .select('cards_json')
+                .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
 
             if (error) throw error
