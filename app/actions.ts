@@ -765,7 +765,14 @@ export async function updateAnalyzedDeckAction(
     }
 }
 
-export async function getGlobalDeckAnalyticsAction() {
+export interface GlobalAnalyticsResult {
+    success: boolean
+    analyticsByArchetype?: Record<string, any[]>
+    globalAnalytics?: any[]
+    error?: string
+}
+
+export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsResult> {
     try {
         // 1. Fetch all analyzed decks with pagination (bypass 1000 row limit)
         let decks: any[] = []
