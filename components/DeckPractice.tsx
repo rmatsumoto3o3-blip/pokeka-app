@@ -1449,11 +1449,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const stack = battleField
         if (!stack) return
 
-        if (confirm("ワザ『げきりゅうポンプ』を使いますか？\n(100ダメージ、のぞむならエネを3個山札に戻してベンチに120ダメージ)")) {
+        const cost = stack.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+
+        if (confirm(`ワザ『げきりゅうポンプ』を使いますか？\n(100ダメージ、のぞむならエネを${cost}個山札に戻してベンチに120ダメージ)`)) {
             showToast("げきりゅうポンプ: バトル場に100ダメージ")
 
-            if (stack.energyCount >= 3) {
-                if (confirm("エネルギーを3個山札に戻して、ベンチに120ダメージ与えますか？")) {
+            if (stack.energyCount >= cost) {
+                if (confirm(`エネルギーを${cost}個山札に戻して、ベンチに120ダメージ与えますか？`)) {
                     setOgerponWellspringState({
                         active: true,
                         step: 'select_cost',
@@ -1461,7 +1463,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     })
                 }
             } else {
-                alert("エネルギーが3個以上付いていないため、追加効果は使えません")
+                alert(`エネルギーが${cost}個以上付いていないため、追加効果は使えません`)
             }
         }
     }
@@ -1474,13 +1476,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return
         }
 
+        const cost = battleField.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+
         setOgerponWellspringState(prev => {
             if (!prev) return null
             const current = [...prev.selectedIndices]
             const foundIdx = current.indexOf(cardIndex)
             if (foundIdx !== -1) {
                 current.splice(foundIdx, 1)
-            } else if (current.length < 3) {
+            } else if (current.length < cost) {
                 current.push(cardIndex)
             }
             return { ...prev, selectedIndices: current }
@@ -1488,7 +1492,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const handleOgerponWellspringConfirmCost = () => {
-        if (!ogerponWellspringState || ogerponWellspringState.selectedIndices.length !== 3 || !battleField) return
+        if (!ogerponWellspringState || !battleField) return
+        const cost = battleField.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+
+        if (ogerponWellspringState.selectedIndices.length !== cost) {
+            alert(`エネルギーを${cost}個選択してください`)
+            return
+        }
 
         const selectedCards = ogerponWellspringState.selectedIndices.map(idx => battleField.cards[idx])
 
@@ -1496,13 +1506,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setBattleField(prev => {
             if (!prev) return null
             const newCards = prev.cards.filter((_, i) => !ogerponWellspringState.selectedIndices.includes(i))
-            return { ...prev, cards: newCards, energyCount: prev.energyCount - 3 }
+            return { ...prev, cards: newCards, energyCount: prev.energyCount - cost }
         })
 
         // 2. Return to Deck and Shuffle
         setRemaining(prev => shuffle([...prev, ...selectedCards]))
 
-        showToast("げきりゅうポンプ: エネ3個を山札に戻し、ベンチに120ダメージ！")
+        showToast(`げきりゅうポンプ: エネ${cost}個を山札に戻し、ベンチに120ダメージ！`)
         setOgerponWellspringState(null)
     }
 
@@ -3924,7 +3934,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
                     <div className="bg-white rounded-lg shadow-2xl p-6 max-w-2xl w-full animate-fade-in-up">
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">げきりゅうポンプ: コスト選択</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを3枚選んでください。</p>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを{battleField?.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3}枚選んでください。</p>
 
                         <div className="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
                             {battleField?.cards.map((card, i) => {
@@ -3955,7 +3965,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <div className="flex justify-center gap-4">
                             <button
                                 onClick={handleOgerponWellspringConfirmCost}
-                                disabled={ogerponWellspringState.selectedIndices.length !== 3}
+                                disabled={ogerponWellspringState.selectedIndices.length !== (battleField?.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3)}
                                 className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700 disabled:opacity-50"
                             >
                                 山札に戻して攻撃！
