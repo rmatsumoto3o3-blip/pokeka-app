@@ -252,13 +252,59 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [cyanoState, setCyanoState] = useState<CyanoState | null>(null)
 
-    // オーガポン いどのめんex State
     interface OgerponWellspringState {
         active: boolean,
         step: 'select_cost',
         selectedIndices: number[]
     }
     const [ogerponWellspringState, setOgerponWellspringState] = useState<OgerponWellspringState | null>(null)
+
+    // むしとりセット State
+    interface BugCatchingSetState {
+        step: 'search',
+        candidates: Card[],
+        selectedIndices: number[]
+    }
+    const [bugCatchingSetState, setBugCatchingSetState] = useState<BugCatchingSetState | null>(null)
+
+    // エネルギーつけかえ State
+    interface EnergySwitchState {
+        step: 'select_source_pokemon' | 'select_energy' | 'select_target_pokemon',
+        sourceType: 'battle' | 'bench' | null,
+        sourceIndex: number | null,
+        energyIndex: number | null,
+        targetType: 'battle' | 'bench' | null,
+        targetIndex: number | null
+    }
+    const [energySwitchState, setEnergySwitchState] = useState<EnergySwitchState | null>(null)
+
+    // エネルギー回収 State
+    interface EnergyRetrievalState {
+        step: 'select',
+        candidates: Card[],
+        selectedIndices: number[]
+    }
+    const [energyRetrievalState, setEnergyRetrievalState] = useState<EnergyRetrievalState | null>(null)
+
+    // ヨルノズク State
+    interface NoctowlState {
+        step: 'search',
+        candidates: Card[],
+        selectedIndices: number[]
+    }
+    const [noctowlState, setNoctowlState] = useState<NoctowlState | null>(null)
+
+    // メガルカリオex State
+    interface MegaLucarioEXState {
+        step: 'select_energy' | 'attach_energy',
+        candidates: Card[],
+        selectedIndices: number[],
+        attachingIndex: number
+    }
+    const [megaLucarioEXState, setMegaLucarioEXState] = useState<MegaLucarioEXState | null>(null)
+
+    // ルナトーン State
+    const [lunacycleUsedThisTurn, setLunacycleUsedThisTurn] = useState(false)
 
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
@@ -753,6 +799,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const shuffleDeck = () => {
         setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
         showToast('山札をシャッフルしました')
+    }
+
+    const nextTurn = () => {
+        setLunacycleUsedThisTurn(false)
+        setOkunoteUsedThisTurn(false)
+        showToast('次の番になりました')
     }
 
     // Supporter Card Effects
@@ -1514,6 +1566,395 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         showToast(`げきりゅうポンプ: エネ${cost}個を山札に戻し、ベンチに120ダメージ！`)
         setOgerponWellspringState(null)
+    }
+
+    // --- むしとりセット (Bug Catching Set) Logic ---
+    const useBugCatchingSet = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        // 1. Move card to trash
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        const top7 = remaining.slice(0, 7)
+        setBugCatchingSetState({
+            step: 'search',
+            candidates: top7,
+            selectedIndices: []
+        })
+    }
+
+    const handleBugCatchingSetSelect = (index: number) => {
+        if (!bugCatchingSetState) return
+        const card = bugCatchingSetState.candidates[index]
+        const isGrassPokemon = isPokemon(card) // Heuristic: allow all pokemon for now as we lack 'types' property
+        const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
+
+        if (!isGrassPokemon && !isBasicGrassEnergy) {
+            alert("草ポケモンまたは基本草エネルギーを選択してください")
+            return
+        }
+
+        setBugCatchingSetState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleBugCatchingSetConfirm = () => {
+        if (!bugCatchingSetState) return
+        const selectedCards = bugCatchingSetState.selectedIndices.map(idx => bugCatchingSetState.candidates[idx])
+        const remainingTop7 = bugCatchingSetState.candidates.filter((_, i) => !bugCatchingSetState.selectedIndices.includes(i))
+
+        // 1. Add to hand
+        setHand(prev => [...prev, ...selectedCards])
+
+        // 2. Return rest to deck and shuffle
+        setRemaining(prev => shuffle([...prev.slice(7), ...remainingTop7]))
+
+        showToast(`${selectedCards.length}枚を手札に加えました`)
+        setBugCatchingSetState(null)
+    }
+
+    // --- エネルギーつけかえ (Energy Switch) Logic ---
+    const useEnergySwitch = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        // 1. Move card to trash
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        setEnergySwitchState({
+            step: 'select_source_pokemon',
+            sourceType: null,
+            sourceIndex: null,
+            energyIndex: null,
+            targetType: null,
+            targetIndex: null
+        })
+    }
+
+    const handleEnergySwitchClickPokemon = (type: 'battle' | 'bench', index: number) => {
+        if (!energySwitchState) return
+
+        if (energySwitchState.step === 'select_source_pokemon') {
+            const stack = type === 'battle' ? battleField : bench[index]
+            if (!stack || stack.energyCount === 0) {
+                alert("エネルギーが付いているポケモンを選択してください")
+                return
+            }
+            setEnergySwitchState(prev => prev ? { ...prev, step: 'select_energy', sourceType: type, sourceIndex: index } : null)
+        } else if (energySwitchState.step === 'select_target_pokemon') {
+            if (type === energySwitchState.sourceType && index === energySwitchState.sourceIndex) {
+                alert("別のポケモンを選択してください")
+                return
+            }
+            const targetStack = type === 'battle' ? battleField : bench[index]
+            if (!targetStack) return
+
+            // Perform Switch
+            const sourceStack = energySwitchState.sourceType === 'battle' ? battleField : bench[energySwitchState.sourceIndex!]
+            if (!sourceStack) return
+
+            const energyCard = sourceStack.cards[energySwitchState.energyIndex!]
+            const isBasic = !energyCard.subtypes?.includes('Special') // Simplistic check for basic
+
+            // Update source
+            const updatedSourceCards = sourceStack.cards.filter((_, i) => i !== energySwitchState.energyIndex)
+            const updatedSourceStack = {
+                ...sourceStack,
+                cards: updatedSourceCards,
+                energyCount: sourceStack.energyCount - 1
+            }
+
+            // Update target
+            const updatedTargetStack = {
+                ...targetStack,
+                cards: [...targetStack.cards, energyCard],
+                energyCount: targetStack.energyCount + 1
+            }
+
+            // Apply state
+            if (energySwitchState.sourceType === 'battle') {
+                setBattleField(updatedSourceStack.cards.length === 0 ? null : updatedSourceStack)
+                if (type === 'battle') {
+                    // This case should be caught by "Select different pokemon" check, but for safety:
+                    setBattleField(updatedTargetStack)
+                } else {
+                    setBench(prev => {
+                        const next = [...prev]
+                        next[index] = updatedTargetStack
+                        return next
+                    })
+                }
+            } else {
+                // Source is Bench
+                if (type === 'battle') {
+                    setBattleField(updatedTargetStack)
+                    setBench(prev => {
+                        const next = [...prev]
+                        next[energySwitchState.sourceIndex!] = updatedSourceStack.cards.length === 0 ? null : updatedSourceStack
+                        return next
+                    })
+                } else {
+                    // Both are Bench
+                    setBench(prev => {
+                        const next = [...prev]
+                        next[energySwitchState.sourceIndex!] = updatedSourceStack.cards.length === 0 ? null : updatedSourceStack
+                        next[index] = updatedTargetStack
+                        return next
+                    })
+                }
+            }
+
+            showToast("エネルギーをつけ替えました")
+            setEnergySwitchState(null)
+        }
+    }
+
+    const handleEnergySwitchSelectEnergy = (energyIndex: number) => {
+        if (!energySwitchState || energySwitchState.step !== 'select_energy') return
+        setEnergySwitchState(prev => prev ? { ...prev, step: 'select_target_pokemon', energyIndex } : null)
+    }
+
+    // --- エネルギー回収 (Energy Retrieval) Logic ---
+    const useEnergyRetrieval = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        const basicEnergies = trash.filter(card => isEnergy(card) && !card.subtypes?.includes('Special'))
+        if (basicEnergies.length === 0) {
+            alert("トラッシュに基本エネルギーがありません")
+            return
+        }
+
+        // 1. Move card to trash
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        setEnergyRetrievalState({
+            step: 'select',
+            candidates: [...trash],
+            selectedIndices: []
+        })
+    }
+
+    const handleEnergyRetrievalSelect = (index: number) => {
+        if (!energyRetrievalState) return
+        const card = trash[index]
+        if (!isEnergy(card) || card.subtypes?.includes('Special')) {
+            alert("基本エネルギーを選択してください")
+            return
+        }
+
+        setEnergyRetrievalState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleEnergyRetrievalConfirm = () => {
+        if (!energyRetrievalState) return
+        const selectedCards = energyRetrievalState.selectedIndices.map(idx => trash[idx])
+
+        // 1. Add to hand
+        setHand(prev => [...prev, ...selectedCards])
+
+        // 2. Remove from trash
+        setTrash(prev => prev.filter((_, i) => !energyRetrievalState.selectedIndices.includes(i)))
+
+        showToast(`${selectedCards.length}枚を手札に加えました`)
+        setEnergyRetrievalState(null)
+    }
+
+    const useNoctowl = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        // 1. In practice mode, we assume evolution happens via drag-drop or just use the menu
+        // If used from menu on Noctowl in hand (to evolve), we move it to trash after search? 
+        // Actually, searching is the main part.
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        setNoctowlState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndices: []
+        })
+    }
+
+    const handleNoctowlSelect = (index: number) => {
+        if (!noctowlState) return
+        const card = remaining[index]
+        if (!isTrainer(card)) {
+            alert("トレーナーズを選択してください")
+            return
+        }
+
+        setNoctowlState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleNoctowlConfirm = () => {
+        if (!noctowlState) return
+        const selectedCards = noctowlState.selectedIndices.map(idx => remaining[idx])
+
+        // 1. Add to hand
+        setHand(prev => [...prev, ...selectedCards])
+
+        // 2. Remove from deck and shuffle
+        setRemaining(prev => shuffle(prev.filter((_, i) => !noctowlState.selectedIndices.includes(i))))
+
+        showToast(`${selectedCards.length}枚を手札に加えました`)
+        setNoctowlState(null)
+    }
+
+    // --- メガルカリオex (Mega Lucario ex) Logic ---
+    const useMegaLucarioEX = (source: 'battle' | 'bench', index: number) => {
+        const stack = source === 'battle' ? battleField : bench[index]
+        if (!stack) return
+
+        const fightingEnergies = trash.filter(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
+        if (fightingEnergies.length === 0) {
+            alert("トラッシュに基本闘エネルギーがありません")
+            return
+        }
+
+        setMegaLucarioEXState({
+            step: 'select_energy',
+            candidates: [...trash],
+            selectedIndices: [],
+            attachingIndex: 0
+        })
+    }
+
+    const handleMegaLucarioEXSelectEnergy = (index: number) => {
+        if (!megaLucarioEXState) return
+        const card = trash[index]
+        if (!isEnergy(card) || !card.name.includes('基本闘エネルギー')) {
+            alert("基本闘エネルギーを選択してください")
+            return
+        }
+
+        setMegaLucarioEXState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 3) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleMegaLucarioEXConfirmEnergy = () => {
+        if (!megaLucarioEXState || megaLucarioEXState.selectedIndices.length === 0) return
+        setMegaLucarioEXState(prev => prev ? { ...prev, step: 'attach_energy', attachingIndex: 0 } : null)
+    }
+
+    const handleMegaLucarioEXAttachClick = (type: 'battle' | 'bench', index: number) => {
+        if (!megaLucarioEXState || megaLucarioEXState.step !== 'attach_energy') return
+        if (type !== 'bench') {
+            alert("ベンチのポケモンを選択してください")
+            return
+        }
+
+        const energyCardIndex = megaLucarioEXState.selectedIndices[megaLucarioEXState.attachingIndex]
+        const energyCard = trash[energyCardIndex]
+        const targetStack = bench[index]
+        if (!targetStack) return
+
+        // Update target
+        setBench(prev => {
+            const next = [...prev]
+            const stack = next[index]
+            if (stack) {
+                next[index] = {
+                    ...stack,
+                    cards: [...stack.cards, energyCard],
+                    energyCount: stack.energyCount + 1
+                }
+            }
+            return next
+        })
+
+        // Remove from trash (Need to be careful with indices if removing multiple)
+        // Better to remove at the end or use ID/ref. 
+        // For now let's just mark it done in state.
+
+        if (megaLucarioEXState.attachingIndex + 1 < megaLucarioEXState.selectedIndices.length) {
+            setMegaLucarioEXState(prev => prev ? { ...prev, attachingIndex: prev.attachingIndex + 1 } : null)
+        } else {
+            // Finalize: remove all used cards from trash
+            setTrash(prev => prev.filter((_, i) => !megaLucarioEXState.selectedIndices.includes(i)))
+            showToast("エネルギーをベンチポケモンに付けました")
+            setMegaLucarioEXState(null)
+        }
+    }
+
+    // --- ルナトーン (Lunatone) Logic ---
+    const useLunatone = (source: 'battle' | 'bench', index: number) => {
+        if (lunacycleUsedThisTurn) {
+            alert("「ルナサイクル」は既にこの番に使われています")
+            return
+        }
+
+        const fightingEnergyInHand = hand.findIndex(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
+        if (fightingEnergyInHand === -1) {
+            alert("手札に基本闘エネルギーがありません")
+            return
+        }
+
+        // Show a mode or just auto-select first one? 
+        // For precision, let's ask to select from hand or show a small modal.
+        // For simplicity here, let's just trigger a discard prompt.
+        if (confirm("手札の基本闘エネルギーを1枚トラッシュして、山札を3枚引きますか？")) {
+            setHand(prev => {
+                const next = [...prev]
+                const energyIdx = next.findIndex(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
+                if (energyIdx !== -1) {
+                    const card = next[energyIdx]
+                    setTrash(t => [...t, card])
+                    next.splice(energyIdx, 1)
+
+                    // Draw 3
+                    const drawn = remaining.slice(0, 3)
+                    setRemaining(r => r.slice(3))
+                    return [...next, ...drawn]
+                }
+                return next
+            })
+            setLunacycleUsedThisTurn(true)
+            showToast("ルナサイクルを使用しました")
+        }
     }
 
 
@@ -2553,14 +2994,78 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'テツノイサハex' && source === 'hand') {
+        if (name === 'むしとりセット' && source === 'hand') {
             actions.push({
-                label: 'ベンチに出してバトル場と入れ替え',
+                label: '使用: むしとりセット',
                 action: () => {
-                    useIronLeavesEX(index)
+                    useBugCatchingSet(index)
                     closeMenu()
                 },
                 color: 'bg-green-50 text-green-700 hover:bg-green-100'
+            })
+        }
+
+        if (name === 'エネルギーつけかえ' && source === 'hand') {
+            actions.push({
+                label: '使用: エネルギーつけかえ',
+                action: () => {
+                    useEnergySwitch(index)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'エネルギー回収' && source === 'hand') {
+            actions.push({
+                label: '使用: エネルギー回収',
+                action: () => {
+                    useEnergyRetrieval(index)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'ヨルノズク' && (source === 'hand' || source === 'bench')) {
+            actions.push({
+                label: '特性: ほうせきさがし',
+                action: () => {
+                    if (source === 'hand') {
+                        useNoctowl(index)
+                    } else {
+                        // If already on bench, just trigger the search part
+                        setNoctowlState({
+                            step: 'search',
+                            candidates: [...remaining],
+                            selectedIndices: []
+                        })
+                    }
+                    closeMenu()
+                },
+                color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+            })
+        }
+
+        if (name === 'メガルカリオex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: 'ワザ: はどうづき',
+                action: () => {
+                    useMegaLucarioEX(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+            })
+        }
+
+        if (name === 'ルナトーン' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: ルナサイクル',
+                action: () => {
+                    useLunatone(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-purple-50 text-purple-700 hover:bg-purple-100'
             })
         }
 
@@ -3127,8 +3632,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     <button onClick={discardTopDeck} disabled={remaining.length === 0} className="bg-white border hover:bg-red-50 text-red-600 px-3 py-2 rounded text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         山札トップをトラッシュ
                     </button>
-                    <button onClick={discardRandomHand} disabled={hand.length === 0} className="col-span-2 md:col-span-1 bg-white border hover:bg-red-50 text-red-600 px-3 py-2 rounded text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={discardRandomHand} disabled={hand.length === 0} className="bg-white border hover:bg-red-50 text-red-600 px-3 py-2 rounded text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         手札ランダムトラッシュ
+                    </button>
+                    <button onClick={nextTurn} className="bg-blue-600 text-white px-3 py-2 rounded text-sm font-bold shadow-lg hover:bg-blue-700">
+                        番を終了する (次へ)
                     </button>
                 </div>
 
@@ -3156,6 +3664,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             handleIronLeavesEXClickPokemon('battle', 0)
                         } else if (nPointUpState?.step === 'select_target') {
                             handleNPointUpClickPokemon('battle', 0)
+                        } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
+                            handleEnergySwitchClickPokemon('battle', 0)
+                        } else if (megaLucarioEXState?.step === 'attach_energy') {
+                            handleMegaLucarioEXAttachClick('battle', 0)
                         } else {
                             handleCardClick(e, battleField!, 'battle', 0)
                         }
@@ -3379,6 +3891,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                     handleIronLeavesEXClickPokemon('bench', i)
                                                 } else if (nPointUpState?.step === 'select_target') {
                                                     handleNPointUpClickPokemon('bench', i)
+                                                } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
+                                                    handleEnergySwitchClickPokemon('bench', i)
+                                                } else if (megaLucarioEXState?.step === 'attach_energy') {
+                                                    handleMegaLucarioEXAttachClick('bench', i)
                                                 } else {
                                                     handleCardClick(e, stack, 'bench', i)
                                                 }
@@ -3976,6 +4492,262 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
             )}
 
+            {/* むしとりセット Modal */}
+            {bugCatchingSetState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-green-600">むしとりセット</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札の上から7枚です。ポケモンまたは基本草エネルギーを2枚まで選んでください。<br />(緑色の枠のカードが選択可能です)</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {bugCatchingSetState.candidates.map((card, i) => {
+                                const isGrassPokemon = isPokemon(card)
+                                const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
+                                const isTarget = isGrassPokemon || isBasicGrassEnergy
+                                const isSelected = bugCatchingSetState.selectedIndices.includes(i)
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-green-600 scale-110 z-10'
+                                                : 'ring-2 ring-green-200 hover:ring-4 hover:ring-green-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleBugCatchingSetSelect(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
+                                                {bugCatchingSetState.selectedIndices.indexOf(i) + 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleBugCatchingSetConfirm}
+                                className="bg-green-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-green-700"
+                            >
+                                {bugCatchingSetState.selectedIndices.length > 0 ? `決定 (${bugCatchingSetState.selectedIndices.length}枚)` : '対象なし・戻す'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* エネルギーつけかえ Overlay / Modal */}
+            {energySwitchState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${energySwitchState.step === 'select_energy' ? 'bg-black/70' : 'bg-transparent pointer-events-none'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${energySwitchState.step === 'select_energy'
+                        ? 'p-6 max-w-xl w-full'
+                        : 'fixed bottom-24 p-4 max-w-sm border-2 border-blue-500'
+                        }`}>
+                        <h2 className={`font-bold text-center text-blue-600 ${energySwitchState.step === 'select_energy' ? 'text-xl mb-4' : 'text-sm mb-1'}`}>エネルギーつけかえ</h2>
+
+                        {energySwitchState.step === 'select_source_pokemon' && (
+                            <p className="text-center text-gray-800 font-bold">エネルギーが付いている自分のポケモンを選択してください</p>
+                        )}
+
+                        {energySwitchState.step === 'select_energy' && (
+                            <>
+                                <p className="text-gray-600 text-center mb-6 text-sm">移動させるエネルギーを1つ選んでください。</p>
+                                <div className="flex flex-wrap justify-center gap-4 mb-8">
+                                    {(energySwitchState.sourceType === 'battle' ? battleField : bench[energySwitchState.sourceIndex!])?.cards.map((card, i) => {
+                                        const isTarget = isEnergy(card)
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                    ? 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
+                                                    : 'opacity-40 grayscale pointer-events-none'
+                                                    }`}
+                                                onClick={() => isTarget && handleEnergySwitchSelectEnergy(i)}
+                                            >
+                                                <Image src={card.imageUrl} alt={card.name} width={100} height={140} className="rounded shadow" unoptimized />
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <div className="flex justify-center">
+                                    <button onClick={() => setEnergySwitchState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
+                                </div>
+                            </>
+                        )}
+
+                        {energySwitchState.step === 'select_target_pokemon' && (
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-gray-800 mb-1">つけ替え先の別のポケモンを選択してください</p>
+                                <button onClick={() => setEnergySwitchState(null)} className="bg-gray-200 text-gray-800 font-bold px-4 py-1 text-xs rounded-full">キャンセル</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* エネルギー回収 Modal */}
+            {energyRetrievalState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-blue-600">エネルギー回収</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを2枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {energyRetrievalState.candidates.map((card, i) => {
+                                const isTarget = isEnergy(card) && !card.subtypes?.includes('Special')
+                                const isSelected = energyRetrievalState.selectedIndices.includes(i)
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-blue-600 scale-110 z-10'
+                                                : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleEnergyRetrievalSelect(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
+                                                {energyRetrievalState.selectedIndices.indexOf(i) + 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleEnergyRetrievalConfirm}
+                                className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700"
+                            >
+                                {energyRetrievalState.selectedIndices.length > 0 ? `決定 (${energyRetrievalState.selectedIndices.length}枚)` : '対象なし・中止'}
+                            </button>
+                            <button onClick={() => setEnergyRetrievalState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">戻る</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ヨルノズク Modal */}
+            {noctowlState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-yellow-600">ヨルノズク: ほうせきさがし</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(黄色の枠のカードが選択可能です)</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {noctowlState.candidates.map((card, i) => {
+                                const isTarget = isTrainer(card)
+                                const isSelected = noctowlState.selectedIndices.includes(i)
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-yellow-600 scale-110 z-10'
+                                                : 'ring-2 ring-yellow-200 hover:ring-4 hover:ring-yellow-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleNoctowlSelect(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-yellow-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
+                                                {noctowlState.selectedIndices.indexOf(i) + 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleNoctowlConfirm}
+                                className="bg-yellow-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-yellow-700"
+                            >
+                                {noctowlState.selectedIndices.length > 0 ? `決定 (${noctowlState.selectedIndices.length}枚)` : '対象なし・戻す'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* メガルカリオex Modal & Overlay */}
+            {megaLucarioEXState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${megaLucarioEXState.step === 'select_energy' ? 'bg-black/70' : 'bg-transparent pointer-events-none'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${megaLucarioEXState.step === 'select_energy'
+                        ? 'p-6 max-w-4xl w-full max-h-[90vh]'
+                        : 'fixed bottom-24 p-4 max-w-sm border-2 border-orange-500'
+                        }`}>
+                        <h2 className={`font-bold text-center text-orange-600 ${megaLucarioEXState.step === 'select_energy' ? 'text-xl mb-2' : 'text-sm mb-1'}`}>メガルカリオex: はどうづき</h2>
+
+                        {megaLucarioEXState.step === 'select_energy' && (
+                            <>
+                                <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本闘エネルギーを3枚まで選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
+                                <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                    {megaLucarioEXState.candidates.map((card, i) => {
+                                        const isTarget = isEnergy(card) && card.name.includes('基本闘エネルギー')
+                                        const isSelected = megaLucarioEXState.selectedIndices.includes(i)
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                    ? isSelected
+                                                        ? 'ring-[6px] ring-orange-600 scale-110 z-10'
+                                                        : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
+                                                    : 'opacity-40 grayscale pointer-events-none'
+                                                    }`}
+                                                onClick={() => isTarget && handleMegaLucarioEXSelectEnergy(i)}
+                                            >
+                                                <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
+                                                        {megaLucarioEXState.selectedIndices.indexOf(i) + 1}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <div className="flex justify-center gap-4">
+                                    <button
+                                        onClick={handleMegaLucarioEXConfirmEnergy}
+                                        className="bg-orange-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-700 disabled:opacity-50"
+                                        disabled={megaLucarioEXState.selectedIndices.length === 0}
+                                    >
+                                        付ける先を選ぶ ({megaLucarioEXState.selectedIndices.length}枚)
+                                    </button>
+                                    <button onClick={() => setMegaLucarioEXState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">戻る</button>
+                                </div>
+                            </>
+                        )}
+
+                        {megaLucarioEXState.step === 'attach_energy' && (
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-gray-800 mb-1">
+                                    {megaLucarioEXState.attachingIndex + 1}枚目: 付けるベンチポケモンを直接クリックしてください
+                                </p>
+                                <div className="flex justify-center items-center gap-4">
+                                    <div className="relative">
+                                        <Image
+                                            src={megaLucarioEXState.candidates[megaLucarioEXState.selectedIndices[megaLucarioEXState.attachingIndex]].imageUrl}
+                                            alt="attaching" width={60} height={84} className="rounded shadow-lg border-2 border-orange-500 animate-pulse" unoptimized
+                                        />
+                                    </div>
+                                    <button onClick={() => setMegaLucarioEXState(null)} className="bg-gray-200 text-gray-800 font-bold px-4 py-1 text-xs rounded-full">キャンセル</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             {/* Iron Leaves ex (Rapid Vernier) Overlay */}
             {ironLeavesEXState && ironLeavesEXState.active && (
                 <div className="fixed inset-0 z-[1000] pointer-events-none">
@@ -4069,153 +4841,160 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             )}
 
             {/* Buddy-Buddy Poffin Modal */}
-            {poffinState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-pink-600">なかよしポフィン</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札からHP70以下のたねポケモンを2枚まで選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
+            {
+                poffinState && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center text-pink-600">なかよしポフィン</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">山札からHP70以下のたねポケモンを2枚まで選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {remaining.map((card, i) => {
-                                const isTarget = isPokemon(card) // HP check not possible with current data
-                                const isSelected = poffinState.selectedIndices.includes(i)
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
-                                            ? isSelected
-                                                ? 'ring-[6px] ring-pink-500 scale-110 z-10'
-                                                : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isTarget && handlePoffinSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
-                                        {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
-                                                {poffinState.selectedIndices.indexOf(i) + 1}
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {remaining.map((card, i) => {
+                                    const isTarget = isPokemon(card) // HP check not possible with current data
+                                    const isSelected = poffinState.selectedIndices.includes(i)
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                ? isSelected
+                                                    ? 'ring-[6px] ring-pink-500 scale-110 z-10'
+                                                    : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isTarget && handlePoffinSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute -top-3 -right-3 bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    {poffinState.selectedIndices.indexOf(i) + 1}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handlePoffinConfirm}
-                                className="bg-pink-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-pink-600"
-                            >
-                                {poffinState.selectedIndices.length > 0 ? `${poffinState.selectedIndices.length}枚をベンチに出す` : '対象なし・決定'}
-                            </button>
-                            <button onClick={() => setPoffinState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handlePoffinConfirm}
+                                    className="bg-pink-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-pink-600"
+                                >
+                                    {poffinState.selectedIndices.length > 0 ? `${poffinState.selectedIndices.length}枚をベンチに出す` : '対象なし・決定'}
+                                </button>
+                                <button onClick={() => setPoffinState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Touko Modal */}
-            {toukoState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-green-600">トウコ</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札から進化ポケモンとエネルギーを1枚ずつ選んでください。<br />(青い枠のカードが選択可能です)</p>
+            {
+                toukoState && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center text-green-600">トウコ</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">山札から進化ポケモンとエネルギーを1枚ずつ選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {remaining.map((card, i) => {
-                                const canSelectPokemon = isPokemon(card)
-                                const canSelectEnergy = isEnergy(card)
-                                const isSelected = toukoState.selectedPokemonIndex === i || toukoState.selectedEnergyIndex === i
-                                const isSelectable = canSelectPokemon || canSelectEnergy
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {remaining.map((card, i) => {
+                                    const canSelectPokemon = isPokemon(card)
+                                    const canSelectEnergy = isEnergy(card)
+                                    const isSelected = toukoState.selectedPokemonIndex === i || toukoState.selectedEnergyIndex === i
+                                    const isSelectable = canSelectPokemon || canSelectEnergy
 
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isSelectable
-                                            ? isSelected
-                                                ? 'ring-[6px] ring-green-600 scale-110 z-10'
-                                                : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isSelectable && handleToukoSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
-                                        {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
-                                                ✓
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isSelectable
+                                                ? isSelected
+                                                    ? 'ring-[6px] ring-green-600 scale-110 z-10'
+                                                    : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isSelectable && handleToukoSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    ✓
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handleToukoConfirm}
-                                className="bg-green-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-green-700"
-                            >
-                                決定
-                            </button>
-                            <button onClick={() => setToukoState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handleToukoConfirm}
+                                    className="bg-green-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-green-700"
+                                >
+                                    決定
+                                </button>
+                                <button onClick={() => setToukoState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Fight Gong Modal */}
-            {fightGongState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ファイトゴング</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札から闘タイプのたねポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
+            {
+                fightGongState && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ファイトゴング</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">山札から闘タイプのたねポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {remaining.map((card, i) => {
-                                const isTarget = isPokemon(card) || isEnergy(card)
-                                const isSelected = fightGongState.selectedIndex === i
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
-                                            ? isSelected
-                                                ? 'ring-[6px] ring-orange-500 scale-110 z-10'
-                                                : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isTarget && handleFightGongSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
-                                        {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
-                                                ✓
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {remaining.map((card, i) => {
+                                    const isTarget = isPokemon(card) || isEnergy(card)
+                                    const isSelected = fightGongState.selectedIndex === i
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                ? isSelected
+                                                    ? 'ring-[6px] ring-orange-500 scale-110 z-10'
+                                                    : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isTarget && handleFightGongSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    ✓
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handleFightGongConfirm}
-                                className="bg-orange-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-600"
-                            >
-                                決定
-                            </button>
-                            <button onClick={() => setFightGongState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handleFightGongConfirm}
+                                    className="bg-orange-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-600"
+                                >
+                                    決定
+                                </button>
+                                <button onClick={() => setFightGongState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Rocket's Lambda Modal */}
-            {lambdaState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-purple-600">ロケット団のラムダ</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(青い枠のカードが選択可能です)</p>
-                        {/* Note: The card text says "Search for up to 2 cards". Wait, Lambda text: "Choose up to 2 non-Pokemon/non-Energy cards?" NO.
+            {
+                lambdaState && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center text-purple-600">ロケット団のラムダ</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(青い枠のカードが選択可能です)</p>
+                            {/* Note: The card text says "Search for up to 2 cards". Wait, Lambda text: "Choose up to 2 non-Pokemon/non-Energy cards?" NO.
                         Rocket's Lambda: "Search your deck for up to 2 cards named Rocket's Admin? No."
                         Let's check the request. "Search deck for Trainer card *1枚*".
                         User prompt said: "Rocket's Lambda: Search deck for *one* Trainer card".
@@ -4223,125 +5002,130 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         Wait, implementation allows selecting ONE index.
                         So text should be "1枚".
                     */}
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {lambdaState.candidates.map((card, i) => {
-                                const isSearchTarget = isTrainer(card)
-                                const isSelected = lambdaState.selectedIndex === i
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
-                                            ? isSelected
-                                                ? 'ring-[6px] ring-purple-600 scale-110 z-10'
-                                                : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isSearchTarget && handleLambdaSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
-                                        {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-purple-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
-                                                ✓
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {lambdaState.candidates.map((card, i) => {
+                                    const isSearchTarget = isTrainer(card)
+                                    const isSelected = lambdaState.selectedIndex === i
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
+                                                ? isSelected
+                                                    ? 'ring-[6px] ring-purple-600 scale-110 z-10'
+                                                    : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isSearchTarget && handleLambdaSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute -top-3 -right-3 bg-purple-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    ✓
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handleLambdaConfirm}
-                                className="bg-purple-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-purple-700"
-                            >
-                                決定
-                            </button>
-                            <button onClick={() => setLambdaState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handleLambdaConfirm}
+                                    className="bg-purple-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-purple-700"
+                                >
+                                    決定
+                                </button>
+                                <button onClick={() => setLambdaState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Night Stretcher Modal */}
-            {nightStretcherState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-indigo-900">夜のタンカ</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">トラッシュからポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
+            {
+                nightStretcherState && (
+                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                            <h2 className="text-xl font-bold mb-2 text-center text-indigo-900">夜のタンカ</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">トラッシュからポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {nightStretcherState.candidates.map((card, i) => {
-                                const isRecoverTarget = isPokemon(card) || isEnergy(card)
-                                const isSelected = nightStretcherState.selectedIndex === i
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isRecoverTarget
-                                            ? isSelected
-                                                ? 'ring-[6px] ring-indigo-900 scale-110 z-10'
-                                                : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isRecoverTarget && handleNightStretcherSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
-                                        {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-indigo-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
-                                                ✓
-                                            </div>
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {nightStretcherState.candidates.map((card, i) => {
+                                    const isRecoverTarget = isPokemon(card) || isEnergy(card)
+                                    const isSelected = nightStretcherState.selectedIndex === i
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isRecoverTarget
+                                                ? isSelected
+                                                    ? 'ring-[6px] ring-indigo-900 scale-110 z-10'
+                                                    : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isRecoverTarget && handleNightStretcherSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute -top-3 -right-3 bg-indigo-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    ✓
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center gap-4">
-                            <button
-                                onClick={handleNightStretcherConfirm}
-                                className="bg-indigo-900 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-indigo-800"
-                            >
-                                決定
-                            </button>
-                            <button onClick={() => setNightStretcherState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handleNightStretcherConfirm}
+                                    className="bg-indigo-900 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-indigo-800"
+                                >
+                                    決定
+                                </button>
+                                <button onClick={() => setNightStretcherState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Poke Pad Modal */}
-            {pokePadState && (
-                <div className="fixed inset-0 bg-black/70 z-[1000] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケパッド</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">
-                            山札からポケモン（「ルールを持つポケモン」をのぞく）を1枚選んでください。<br />
-                            (青色の枠のカードが選択可能です)
-                        </p>
+            {
+                pokePadState && (
+                    <div className="fixed inset-0 bg-black/70 z-[1000] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
+                            <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケパッド</h2>
+                            <p className="text-gray-600 text-center mb-6 text-sm">
+                                山札からポケモン（「ルールを持つポケモン」をのぞく）を1枚選んでください。<br />
+                                (青色の枠のカードが選択可能です)
+                            </p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
-                            {pokePadState.map((card, i) => {
-                                const isSearchTarget = isPokemon(card) && !isRuleBox(card)
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
-                                            ? 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                            : 'opacity-40 grayscale pointer-events-none'
-                                            }`}
-                                        onClick={() => isSearchTarget && handlePokePadSelect(i)}
-                                    >
-                                        <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded shadow" unoptimized />
-                                    </div>
-                                )
-                            })}
-                        </div>
+                            <div className="flex flex-wrap justify-center gap-2 mb-8 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
+                                {pokePadState.map((card, i) => {
+                                    const isSearchTarget = isPokemon(card) && !isRuleBox(card)
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
+                                                ? 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                                : 'opacity-40 grayscale pointer-events-none'
+                                                }`}
+                                            onClick={() => isSearchTarget && handlePokePadSelect(i)}
+                                        >
+                                            <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded shadow" unoptimized />
+                                        </div>
+                                    )
+                                })}
+                            </div>
 
-                        <div className="flex justify-center">
-                            <button onClick={() => setPokePadState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">閉じる</button>
+                            <div className="flex justify-center">
+                                <button onClick={() => setPokePadState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">閉じる</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Teisatsu Shirei Modal */}
             {
@@ -4492,8 +5276,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 )
             }
 
-            {/* Detail Modal Render */}
-            {renderDetailModal()}
 
             {/* Drag Overlay */}
             <DragOverlay dropAnimation={null}>
