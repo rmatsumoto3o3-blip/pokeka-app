@@ -1449,7 +1449,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const stack = battleField
         if (!stack) return
 
-        const cost = stack.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+        const cost = stack.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3
 
         if (confirm(`ワザ『げきりゅうポンプ』を使いますか？\n(100ダメージ、のぞむならエネを${cost}個山札に戻してベンチに120ダメージ)`)) {
             showToast("げきりゅうポンプ: バトル場に100ダメージ")
@@ -1476,7 +1476,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return
         }
 
-        const cost = battleField.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+        const cost = battleField.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3
 
         setOgerponWellspringState(prev => {
             if (!prev) return null
@@ -1493,7 +1493,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     const handleOgerponWellspringConfirmCost = () => {
         if (!ogerponWellspringState || !battleField) return
-        const cost = battleField.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3
+        const cost = battleField.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3
 
         if (ogerponWellspringState.selectedIndices.length !== cost) {
             alert(`エネルギーを${cost}個選択してください`)
@@ -3934,7 +3934,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
                     <div className="bg-white rounded-lg shadow-2xl p-6 max-w-2xl w-full animate-fade-in-up">
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">げきりゅうポンプ: コスト選択</h2>
-                        <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを{battleField?.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3}枚選んでください。</p>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを{battleField?.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3}枚選んでください。</p>
 
                         <div className="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
                             {battleField?.cards.map((card, i) => {
@@ -3965,7 +3965,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <div className="flex justify-center gap-4">
                             <button
                                 onClick={handleOgerponWellspringConfirmCost}
-                                disabled={ogerponWellspringState.selectedIndices.length !== (battleField?.cards.some(c => c.name === 'きらめく結晶') ? 2 : 3)}
+                                disabled={ogerponWellspringState.selectedIndices.length !== (battleField?.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3)}
                                 className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700 disabled:opacity-50"
                             >
                                 山札に戻して攻撃！
