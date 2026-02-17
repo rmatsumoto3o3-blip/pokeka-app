@@ -236,6 +236,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [ironLeavesEXState, setIronLeavesEXState] = useState<IronLeavesEXState | null>(null)
 
+    // Nのポイントアップ State
+    interface NPointUpState {
+        step: 'select_energy' | 'select_target',
+        candidates: Card[],
+        selectedIndex: number | null
+    }
+    const [nPointUpState, setNPointUpState] = useState<NPointUpState | null>(null)
+
+    // シアノ State
+    interface CyanoState {
+        step: 'search',
+        candidates: Card[],
+        selectedIndices: number[]
+    }
+    const [cyanoState, setCyanoState] = useState<CyanoState | null>(null)
+
+    // オーガポン いどのめんex State
+    interface OgerponWellspringState {
+        active: boolean,
+        step: 'select_cost',
+        selectedIndices: number[]
+    }
+    const [ogerponWellspringState, setOgerponWellspringState] = useState<OgerponWellspringState | null>(null)
+
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
             const { active, over } = event
@@ -1299,6 +1323,189 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         showToast(`${energyCard.name}を付け替えました`)
     }
 
+    // --- Nのポイントアップ Logic ---
+    const useNPointUp = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        const energyInTrash = trash.filter(isEnergy)
+        if (energyInTrash.length === 0) {
+            alert("トラッシュに基本エネルギーがありません")
+            return
+        }
+
+        // 1. Move card to trash
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        // 2. Open trash selection
+        setNPointUpState({
+            step: 'select_energy',
+            candidates: [...trash],
+            selectedIndex: null
+        })
+    }
+
+    const handleNPointUpSelectEnergy = (index: number) => {
+        const card = trash[index]
+        if (!isEnergy(card)) {
+            alert("基本エネルギーを選択してください")
+            return
+        }
+        setNPointUpState(prev => prev ? { ...prev, selectedIndex: index } : null)
+    }
+
+    const handleNPointUpConfirmEnergy = () => {
+        if (!nPointUpState || nPointUpState.selectedIndex === null) return
+        setNPointUpState({ ...nPointUpState, step: 'select_target' })
+    }
+
+    const handleNPointUpClickPokemon = (type: 'battle' | 'bench', index: number) => {
+        if (!nPointUpState || nPointUpState.step !== 'select_target' || nPointUpState.selectedIndex === null) return
+        if (type !== 'bench') {
+            alert("ベンチのポケモンを選択してください")
+            return
+        }
+
+        const energyCard = trash[nPointUpState.selectedIndex]
+        const targetStack = bench[index]
+        if (!targetStack) return
+
+        // 1. Remove from trash
+        setTrash(prev => prev.filter((_, i) => i !== nPointUpState.selectedIndex))
+
+        // 2. Attach to bench
+        setBench(prev => {
+            const next = [...prev]
+            const stack = next[index]
+            if (stack) {
+                next[index] = {
+                    ...stack,
+                    cards: [...stack.cards, energyCard],
+                    energyCount: stack.energyCount + 1
+                }
+            }
+            return next
+        })
+
+        showToast(`${energyCard.name}をベンチのポケモンに付けました`)
+        setNPointUpState(null)
+    }
+
+    // --- シアノ (Cyano) Logic ---
+    const useCyano = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+
+        setCyanoState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndices: []
+        })
+    }
+
+    const handleCyanoSelect = (index: number) => {
+        if (!cyanoState) return
+        const card = remaining[index]
+        if (!card.name.includes('ex')) {
+            alert("「ポケモンex」を選択してください")
+            return
+        }
+
+        setCyanoState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 3) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleCyanoConfirm = () => {
+        if (!cyanoState) return
+        const selectedCards = cyanoState.selectedIndices.map(idx => remaining[idx])
+        setHand(prev => [...prev, ...selectedCards])
+
+        const newDeck = remaining.filter((_, i) => !cyanoState.selectedIndices.includes(i)).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setCyanoState(null)
+        showToast(`シアノ: ${selectedCards.length}枚を手札に加え、山札をシャッフルしました`)
+    }
+
+    // --- オーガポン いどのめんex (Ogerpon Wellspring Mask ex) Logic ---
+    const useOgerponWellspring = (source: 'battle' | 'bench', index: number) => {
+        if (source !== 'battle') {
+            alert("バトル場にいる時のみ使用可能です")
+            return
+        }
+
+        const stack = battleField
+        if (!stack) return
+
+        if (confirm("ワザ『げきりゅうポンプ』を使いますか？\n(100ダメージ、のぞむならエネを3個山札に戻してベンチに120ダメージ)")) {
+            showToast("げきりゅうポンプ: バトル場に100ダメージ")
+
+            if (stack.energyCount >= 3) {
+                if (confirm("エネルギーを3個山札に戻して、ベンチに120ダメージ与えますか？")) {
+                    setOgerponWellspringState({
+                        active: true,
+                        step: 'select_cost',
+                        selectedIndices: []
+                    })
+                }
+            } else {
+                alert("エネルギーが3個以上付いていないため、追加効果は使えません")
+            }
+        }
+    }
+
+    const handleOgerponWellspringSelectCost = (cardIndex: number) => {
+        if (!ogerponWellspringState || !battleField) return
+        const card = battleField.cards[cardIndex]
+        if (!isEnergy(card)) {
+            alert("エネルギーカードを選択してください")
+            return
+        }
+
+        setOgerponWellspringState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(cardIndex)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 3) {
+                current.push(cardIndex)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleOgerponWellspringConfirmCost = () => {
+        if (!ogerponWellspringState || ogerponWellspringState.selectedIndices.length !== 3 || !battleField) return
+
+        const selectedCards = ogerponWellspringState.selectedIndices.map(idx => battleField.cards[idx])
+
+        // 1. Remove from Battle Field
+        setBattleField(prev => {
+            if (!prev) return null
+            const newCards = prev.cards.filter((_, i) => !ogerponWellspringState.selectedIndices.includes(i))
+            return { ...prev, cards: newCards, energyCount: prev.energyCount - 3 }
+        })
+
+        // 2. Return to Deck and Shuffle
+        setRemaining(prev => shuffle([...prev, ...selectedCards]))
+
+        showToast("げきりゅうポンプ: エネ3個を山札に戻し、ベンチに120ダメージ！")
+        setOgerponWellspringState(null)
+    }
+
 
     // Ultra Ball Logic
     const useUltraBall = (playedIndex: number) => {
@@ -2347,6 +2554,39 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
+        if (name === 'Nのポイントアップ' && source === 'hand') {
+            actions.push({
+                label: 'Nのポイントアップを使用',
+                action: () => {
+                    useNPointUp(index)
+                    closeMenu()
+                },
+                color: 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+            })
+        }
+
+        if (name === 'シアノ' && source === 'hand') {
+            actions.push({
+                label: 'シアノを使用',
+                action: () => {
+                    useCyano(index)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'オーガポン いどのめんex' && source === 'battle') {
+            actions.push({
+                label: 'ワザ: げきりゅうポンプ',
+                action: () => {
+                    useOgerponWellspring(source, index)
+                    closeMenu()
+                },
+                color: 'bg-blue-100 text-blue-900 border-2 border-blue-300 font-black'
+            })
+        }
+
         return actions
     }
 
@@ -2904,6 +3144,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     onClick={(e) => {
                         if (ironLeavesEXState?.active) {
                             handleIronLeavesEXClickPokemon('battle', 0)
+                        } else if (nPointUpState?.step === 'select_target') {
+                            handleNPointUpClickPokemon('battle', 0)
                         } else {
                             handleCardClick(e, battleField!, 'battle', 0)
                         }
@@ -3125,6 +3367,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             onClick={(e) => {
                                                 if (ironLeavesEXState?.active) {
                                                     handleIronLeavesEXClickPokemon('bench', i)
+                                                } else if (nPointUpState?.step === 'select_target') {
+                                                    handleNPointUpClickPokemon('bench', i)
                                                 } else {
                                                     handleCardClick(e, stack, 'bench', i)
                                                 }
@@ -3557,6 +3801,166 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             >
                                 {meowthEXState.selectedIndex !== null ? '決定' : '対象なし・戻す'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Nのポイントアップ Modal */}
+            {nPointUpState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${nPointUpState.step === 'select_target' ? 'bg-transparent pointer-events-none' : 'bg-black/70 pointer-events-auto'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${nPointUpState.step === 'select_target'
+                        ? 'fixed bottom-24 p-4 max-w-sm border-2 border-orange-500'
+                        : 'p-6 max-w-4xl w-full max-h-[90vh]'
+                        }`}>
+                        <h2 className={`font-bold text-center text-orange-600 ${nPointUpState.step === 'select_target' ? 'text-sm mb-1' : 'text-xl mb-2'}`}>Nのポイントアップ</h2>
+
+                        {nPointUpState.step === 'select_energy' && (
+                            <>
+                                <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
+                                <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                    {nPointUpState.candidates.map((card, i) => {
+                                        const isTarget = isEnergy(card)
+                                        const isSelected = nPointUpState.selectedIndex === i
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                    ? isSelected
+                                                        ? 'ring-[6px] ring-orange-500 scale-110 z-10'
+                                                        : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
+                                                    : 'opacity-40 grayscale pointer-events-none'
+                                                    }`}
+                                                onClick={() => isTarget && handleNPointUpSelectEnergy(i)}
+                                            >
+                                                <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                        ✓
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                <div className="flex justify-center gap-4">
+                                    <button
+                                        onClick={handleNPointUpConfirmEnergy}
+                                        disabled={nPointUpState.selectedIndex === null}
+                                        className="bg-orange-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-700 disabled:opacity-50"
+                                    >
+                                        決定
+                                    </button>
+                                    <button onClick={() => setNPointUpState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                                </div>
+                            </>
+                        )}
+
+                        {nPointUpState.step === 'select_target' && (
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-gray-800 mb-1">付ける先のベンチポケモンを直接クリックしてください</p>
+                                <div className="flex justify-center items-center gap-4">
+                                    <div className="relative">
+                                        <Image
+                                            src={nPointUpState.candidates[nPointUpState.selectedIndex!].imageUrl}
+                                            alt="attaching" width={60} height={84} className="rounded shadow-lg border-2 border-green-500 animate-pulse" unoptimized
+                                        />
+                                    </div>
+                                    <button onClick={() => setNPointUpState(null)} className="bg-gray-200 text-gray-800 font-bold px-4 py-1 text-xs rounded-full">キャンセル</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* シアノ Modal */}
+            {cyanoState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-blue-600">シアノ</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札から「ポケモンex」を3枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {cyanoState.candidates.map((card, i) => {
+                                const isTarget = card.name.includes('ex')
+                                const isSelected = cyanoState.selectedIndices.includes(i)
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-blue-600 scale-110 z-10'
+                                                : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleCyanoSelect(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
+                                                {cyanoState.selectedIndices.indexOf(i) + 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleCyanoConfirm}
+                                className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700"
+                            >
+                                {cyanoState.selectedIndices.length > 0 ? `決定 (${cyanoState.selectedIndices.length}枚)` : '対象なし・戻す'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* オーガポン いどのめんex (Energy Cost Selection) Modal */}
+            {ogerponWellspringState && ogerponWellspringState.step === 'select_cost' && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-2xl w-full animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-2 text-center text-blue-600">げきりゅうポンプ: コスト選択</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを3枚選んでください。</p>
+
+                        <div className="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
+                            {battleField?.cards.map((card, i) => {
+                                const isTarget = isEnergy(card)
+                                const isSelected = ogerponWellspringState.selectedIndices.includes(i)
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            ? isSelected
+                                                ? 'ring-[6px] ring-blue-600 scale-110 z-10'
+                                                : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
+                                            : 'opacity-40 grayscale pointer-events-none'
+                                            }`}
+                                        onClick={() => isTarget && handleOgerponWellspringSelectCost(i)}
+                                    >
+                                        <Image src={card.imageUrl} alt={card.name} width={100} height={140} className="rounded shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white">
+                                                {ogerponWellspringState.selectedIndices.indexOf(i) + 1}
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={handleOgerponWellspringConfirmCost}
+                                disabled={ogerponWellspringState.selectedIndices.length !== 3}
+                                className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                山札に戻して攻撃！
+                            </button>
+                            <button onClick={() => setOgerponWellspringState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
                         </div>
                     </div>
                 </div>
