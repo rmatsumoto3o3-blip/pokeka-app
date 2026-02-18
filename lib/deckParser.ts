@@ -11,6 +11,7 @@ export interface Card {
     imageUrl: string
     supertype: string
     subtypes?: string[]
+    types?: string[]
 }
 
 export async function fetchDeckData(deckCode: string): Promise<CardData[]> {

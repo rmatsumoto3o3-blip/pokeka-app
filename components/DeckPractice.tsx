@@ -306,6 +306,47 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     // ルナトーン State
     const [lunacycleUsedThisTurn, setLunacycleUsedThisTurn] = useState(false)
 
+    // プレシャスキャリー State
+    interface PreciousCarrierState {
+        step: 'search',
+        candidates: Card[],
+        selectedIndices: number[]
+    }
+    const [preciousCarrierState, setPreciousCarrierState] = useState<PreciousCarrierState | null>(null)
+
+    // プライムキャッチャー State
+    interface PrimeCatcherState {
+        step: 'select_opponent' | 'select_own',
+        opponentIndex: number | null
+    }
+    const [primeCatcherState, setPrimeCatcherState] = useState<PrimeCatcherState | null>(null)
+
+    // モモワロウex State
+    const [pecharuntUsedThisTurn, setPecharuntUsedThisTurn] = useState(false)
+    interface PecharuntState {
+        step: 'select_target'
+    }
+    const [pecharuntState, setPecharuntState] = useState<PecharuntState | null>(null)
+
+    // ブースターex State
+    interface FlareonState {
+        step: 'search' | 'attach',
+        candidates: Card[],
+        selectedIndices: number[],
+        attachingIndex: number
+    }
+    const [flareonState, setFlareonState] = useState<FlareonState | null>(null)
+
+    // マシマシラ State
+    const [munkidoriUsedThisTurn, setMunkidoriUsedThisTurn] = useState(false)
+    interface MunkidoriState {
+        step: 'select_source' | 'select_count' | 'select_target',
+        sourceType: 'battle' | 'bench' | null,
+        sourceIndex: number | null,
+        count: number
+    }
+    const [munkidoriState, setMunkidoriState] = useState<MunkidoriState | null>(null)
+
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
             const { active, over } = event
@@ -804,6 +845,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const nextTurn = () => {
         setLunacycleUsedThisTurn(false)
         setOkunoteUsedThisTurn(false)
+        setPecharuntUsedThisTurn(false)
+        setMunkidoriUsedThisTurn(false)
         showToast('次の番になりました')
     }
 
@@ -1588,7 +1631,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const handleBugCatchingSetSelect = (index: number) => {
         if (!bugCatchingSetState) return
         const card = bugCatchingSetState.candidates[index]
-        const isGrassPokemon = isPokemon(card) // Heuristic: allow all pokemon for now as we lack 'types' property
+        const isGrassPokemon = isPokemon(card) && card.types?.includes('Grass')
         const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
 
         if (!isGrassPokemon && !isBasicGrassEnergy) {
@@ -1918,6 +1961,261 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             showToast("エネルギーをベンチポケモンに付けました")
             setMegaLucarioEXState(null)
         }
+    }
+
+    // --- プレシャスキャリー Logic ---
+    const usePreciousCarrier = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+        setPreciousCarrierState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndices: []
+        })
+    }
+
+    const handlePreciousCarrierSelect = (index: number) => {
+        if (!preciousCarrierState) return
+        const card = remaining[index]
+        if (!isPokemon(card) || card.subtypes?.includes('Evolution')) {
+            alert("たねポケモンを選択してください")
+            return
+        }
+        setPreciousCarrierState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else {
+                // Limit to empty bench slots
+                const emptySlots = bench.filter(s => s === null).length
+                if (current.length < emptySlots) {
+                    current.push(index)
+                } else {
+                    alert("ベンチがいっぱいです")
+                }
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handlePreciousCarrierConfirm = () => {
+        if (!preciousCarrierState) return
+        const selectedCards = preciousCarrierState.selectedIndices.map(idx => remaining[idx])
+
+        // Add to bench
+        setBench(prev => {
+            const next = [...prev]
+            let sIdx = 0
+            for (let i = 0; i < next.length && sIdx < selectedCards.length; i++) {
+                if (next[i] === null) {
+                    next[i] = createStack(selectedCards[sIdx])
+                    sIdx++
+                }
+            }
+            return next
+        })
+
+        // Remove from deck and shuffle
+        setRemaining(prev => shuffle(prev.filter((_, i) => !preciousCarrierState.selectedIndices.includes(i))))
+        showToast(`${selectedCards.length}枚をベンチに出しました`)
+        setPreciousCarrierState(null)
+    }
+
+    // --- プライムキャッチャー Logic ---
+    const usePrimeCatcher = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+        setPrimeCatcherState({ step: 'select_opponent', opponentIndex: null })
+        showToast("あいてのベンチポケモンを選択してください")
+    }
+
+    const handlePrimeCatcherOpponentClick = (index: number) => {
+        if (!primeCatcherState || primeCatcherState.step !== 'select_opponent') return
+        // In practice mode, we just record the choice and move to own switch.
+        setPrimeCatcherState(null)
+        setSwapMode({ active: true, sourceType: 'battle', sourceIndex: 0 })
+        showToast("入れ替える自分のポケモンを選択してください")
+    }
+
+    // --- ポケモンいれかえ Logic ---
+    const usePokemonSwitch = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+        setSwapMode({ active: true, sourceType: 'battle', sourceIndex: 0 })
+        showToast("入れ替える自分のポケモンを選択してください")
+    }
+
+    // --- モモワロウex Logic ---
+    const usePecharuntChainOfCommand = (pecharuntIndex: number, pecharuntSource: 'battle' | 'bench') => {
+        if (pecharuntUsedThisTurn) {
+            alert("この番、すでに「しはいのくさり」を使っています")
+            return
+        }
+        setPecharuntState({ step: 'select_target' })
+        showToast("入れ替えるベンチの悪ポケモンを選択してください")
+    }
+
+    const handlePecharuntSelectTarget = (index: number) => {
+        if (!pecharuntState) return
+        const targetStack = bench[index]
+        if (!targetStack) return
+
+        // Check if it's Darkness type and not Pecharunt ex
+        const topCard = getTopCard(targetStack)
+        if (!topCard.types?.includes('Darkness')) {
+            alert("悪ポケモンを選択してください")
+            return
+        }
+        if (topCard.name.includes('モモワロウex')) {
+            alert("モモワロウex以外の悪ポケモンを選択してください")
+            return
+        }
+
+        // Perform Swap
+        const currentBattle = battleField
+        setBattleField(targetStack)
+        setBench(prev => {
+            const next = [...prev]
+            next[index] = currentBattle
+            return next
+        })
+
+        showToast(`${topCard.name}をバトル場に出し、どく状態にしました`)
+        setPecharuntUsedThisTurn(true)
+        setPecharuntState(null)
+    }
+
+    // --- ブースターex Logic ---
+    const useFlareonBurningCharge = (source: 'battle' | 'bench', index: number) => {
+        setFlareonState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndices: [],
+            attachingIndex: 0
+        })
+    }
+
+    const handleFlareonSelectEnergy = (index: number) => {
+        if (!flareonState) return
+        const card = remaining[index]
+        if (!isEnergy(card)) {
+            alert("エネルギーを選択してください")
+            return
+        }
+        setFlareonState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleFlareonConfirmEnergy = () => {
+        if (!flareonState || flareonState.selectedIndices.length === 0) return
+        setFlareonState(prev => prev ? { ...prev, step: 'attach' } : null)
+        showToast("エネルギーを付けるポケモンを選択してください")
+    }
+
+    const handleFlareonAttachClick = (type: 'battle' | 'bench', index: number) => {
+        if (!flareonState || flareonState.step !== 'attach') return
+        const energyCardIndex = flareonState.selectedIndices[flareonState.attachingIndex]
+        const energyCard = remaining[energyCardIndex]
+
+        const applyToStack = (stack: CardStack | null) => {
+            if (!stack) return null
+            return {
+                ...stack,
+                cards: [...stack.cards, energyCard],
+                energyCount: (stack.energyCount || 0) + 1
+            }
+        }
+
+        if (type === 'battle') {
+            setBattleField(prev => applyToStack(prev))
+        } else {
+            setBench(prev => {
+                const next = [...prev]
+                next[index] = applyToStack(next[index])
+                return next
+            })
+        }
+
+        if (flareonState.attachingIndex + 1 < flareonState.selectedIndices.length) {
+            setFlareonState(prev => prev ? { ...prev, attachingIndex: prev.attachingIndex + 1 } : null)
+        } else {
+            // Remove used energies from deck and shuffle
+            setRemaining(prev => shuffle(prev.filter((_, i) => !flareonState.selectedIndices.includes(i))))
+            showToast("エネルギーを付けました")
+            setFlareonState(null)
+        }
+    }
+
+    // --- マシマシラ Logic ---
+    const useMunkidoriAdrenalBrain = (munkidoriIndex: number, munkidoriSource: 'battle' | 'bench') => {
+        if (munkidoriUsedThisTurn) {
+            alert("この番、すでに「アドレナブレイン」を使っています")
+            return
+        }
+        const munkidoriStack = munkidoriSource === 'battle' ? battleField : bench[munkidoriIndex]
+        if (!munkidoriStack || (munkidoriStack.energyCount || 0) === 0) {
+            alert("エネルギーが付いていないため使えません")
+            return
+        }
+        setMunkidoriState({ step: 'select_source', sourceType: null, sourceIndex: null, count: 0 })
+        showToast("ダメカンを動かす自分のポケモンを選択してください")
+    }
+
+    const handleMunkidoriSourceClick = (type: 'battle' | 'bench', index: number) => {
+        if (!munkidoriState || munkidoriState.step !== 'select_source') return
+        const stack = type === 'battle' ? battleField : bench[index]
+        if (!stack || (stack.damage || 0) === 0) {
+            alert("ダメカンが乗っているポケモンを選択してください")
+            return
+        }
+        setMunkidoriState({ ...munkidoriState, step: 'select_count', sourceType: type, sourceIndex: index })
+    }
+
+    const handleMunkidoriConfirmCount = (count: number) => {
+        if (!munkidoriState) return
+        setMunkidoriState({ ...munkidoriState, step: 'select_target', count })
+        showToast("のせ替える相手のポケモンを選択してください")
+    }
+
+    const handleMunkidoriTargetClick = (type: 'battle' | 'bench', index: number) => {
+        if (!munkidoriState || munkidoriState.step !== 'select_target') return
+        // Update source damage
+        const updateDamageVal = (prev: CardStack | null, delta: number) => {
+            if (!prev) return null
+            return { ...prev, damage: Math.max(0, (prev.damage || 0) + delta) }
+        }
+
+        if (munkidoriState.sourceType === 'battle') {
+            setBattleField(prev => updateDamageVal(prev, -munkidoriState.count * 10))
+        } else {
+            setBench(prev => {
+                const next = [...prev]
+                const bIdx = munkidoriState.sourceIndex!
+                next[bIdx] = updateDamageVal(next[bIdx], -munkidoriState.count * 10)
+                return next
+            })
+        }
+
+        showToast(`ダメカンを${munkidoriState.count}個のせ替えました`)
+        setMunkidoriUsedThisTurn(true)
+        setMunkidoriState(null)
     }
 
     // --- ルナトーン (Lunatone) Logic ---
@@ -2671,9 +2969,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             alert("ベンチにポケモンがいません。入れ替えができません。")
             return
         }
-    
+     
         if (playedIndex !== undefined) moveToTrash(playedIndex)
-    
+     
         // Step 1: Select Self Bench (Any Pokemon)
         setOnBoardSelection({
             type: 'move',
@@ -2681,14 +2979,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             title: 'サカキ: 入れ替えるベンチポケモンを選んでください',
             onSelect: (type, index) => {
                 if (type !== 'bench') return
-    
+     
                 const stack = bench[index]
                 if (!stack || stack.cards.length === 0) return
-    
+     
                 // Execute Self Switch
                 switchPokemon(index)
                 setOnBoardSelection(null)
-    
+     
                 // Step 2: Trigger Opponent Switch
                 onEffectTrigger?.('boss_orders', 'opponent')
             }
@@ -3099,6 +3397,72 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-blue-100 text-blue-900 border-2 border-blue-300 font-black'
+            })
+        }
+
+        if (name === 'プレシャスキャリー' && source === 'hand') {
+            actions.push({
+                label: 'プレシャスキャリーを使用',
+                action: () => {
+                    usePreciousCarrier(index)
+                    closeMenu()
+                },
+                color: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+            })
+        }
+
+        if (name === 'プライムキャッチャー' && source === 'hand') {
+            actions.push({
+                label: 'プライムキャッチャーを使用',
+                action: () => {
+                    usePrimeCatcher(index)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'ポケモンいれかえ' && source === 'hand') {
+            actions.push({
+                label: 'ポケモンいれかえを使用',
+                action: () => {
+                    usePokemonSwitch(index)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'モモワロウex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: しはいのくさり',
+                action: () => {
+                    usePecharuntChainOfCommand(index, source as 'battle' | 'bench')
+                    closeMenu()
+                },
+                color: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+            })
+        }
+
+        if (name === 'ブースターex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: 'ワザ: バーニングチャージ',
+                action: () => {
+                    useFlareonBurningCharge(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-red-50 text-red-700 hover:bg-red-100'
+            })
+        }
+
+        if (name === 'マシマシラ' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: アドレナブレイン',
+                action: () => {
+                    useMunkidoriAdrenalBrain(index, source as 'battle' | 'bench')
+                    closeMenu()
+                },
+                color: 'bg-purple-50 text-purple-700 hover:bg-purple-100'
             })
         }
 
