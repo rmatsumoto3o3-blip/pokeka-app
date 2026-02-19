@@ -407,7 +407,8 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                     PokéLixで対戦記録を積み重ねることで、<br />
                                     「後攻時の勝率は40%だが、先攻なら55%ある」<br />
                                     「特定のサブアタッカーを引けた試合の勝率は70%を超える」といった事実が見えてきます。<br />
-                                    「なんとなく」を「確信」に変えることで、大会当日の緊張感の中でも迷いのないプレイングが可能になります。
+                                    「なんとなく」を「確信」に変えることで、<br />
+                                    大会当日の緊張感の中でも迷いのないプレイングが可能になります。
                                 </p>
                             </div>
 
@@ -420,9 +421,12 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                     「なかよしポフィン」や「ネストボール」の枚数、あるいはエネルギーの枚数。<br />
                                     これらを1枚増減させることが、初手の展開率にどれだけ影響するか。<br />
                                     直感に頼らず「確率シミュレーション」を活用したデッキチューニングを推奨しています。<br />
-                                    例えば、60枚デッキに特定のカードを4枚採用した場合、初手7枚（＋最初のドロー1枚）の中にそのカードが含まれる確率は約44.5%です。<br />
-                                    これを「サイド落ち」まで考慮して計算し、プランを構築できるかどうかが、トッププレイヤーへの分かれ道となります。<br />
-                                    「理想盤面の完成確率」を1%でも高める努力。その積み重ねが、大型大会での予選突破を左右する大きな一歩となります。
+                                    例えば、60枚デッキに特定のカードを4枚採用した場合、<br />
+                                    初手7枚（＋最初のドロー1枚）の中にそのカードが含まれる確率は約44.5%です。<br />
+                                    これを「サイド落ち」まで考慮して計算し、<br />
+                                    プランを構築できるかどうかが、トッププレイヤーへの分かれ道となります。<br />
+                                    「理想盤面の完成確率」を1%でも高める努力。<br />
+                                    その積み重ねが、大型大会での予選突破を左右する大きな一歩となります。
                                 </p>
                             </div>
 
@@ -433,8 +437,10 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 </h3>
                                 <p>
                                     仕事や学業で忙しいプレイヤーにとって、物理的なカードを広げて対戦する時間は限られています。<br />
-                                    PokéLixの「一人回しシミュレーター」や「採用率分析」は、隙間時間での「脳内対戦」を強力にサポートします。<br />
-                                    統計的に正しい「キーカード採用率」を参考にしながら、メタゲームに合わせた自分だけの60枚を組み上げる。<br />
+                                    PokéLixの「一人回しシミュレーター」や「採用率分析」は、<br />
+                                    隙間時間での「脳内対戦」を強力にサポートします。<br />
+                                    統計的に正しい「キーカード採用率」を参考にしながら、<br />
+                                    メタゲームに合わせた自分だけの60枚を組み上げる。<br />
                                     「思考の量」を「勝利の質」へ直結させるためのプラットフォームが、ここにあります。
                                 </p>
                             </div>
@@ -496,17 +502,63 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 <div className="text-center mt-12">
                     <button
                         onClick={() => router.push('/auth?mode=signup')}
-                        className="px-8 py-2.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
-                    >
-                        無料で戦績管理を始める
                     </button>
-                </div>
             </div>
-            </section>
+
+                {/* Global Presence Section */}
+                <div className="mt-20 pt-16 border-t border-pink-100">
+                    <div className="bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
+                        {/* Decorative background elements */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-sm font-medium mb-6 backdrop-blur-sm border border-white/10">
+                                <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                                Global Support
+                            </div>
+
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                                PokéLixは世界でも活躍
+                            </h2>
+
+                            <div className="grid md:grid-cols-2 gap-10 items-center">
+                                <div className="space-y-6 text-indigo-100 leading-relaxed">
+                                    <p>
+                                        現在、PokéLixは日本国内の対戦環境をメインとして、日本語を中心に情報を掲載しています。<br />
+                                        しかし、近年では海外からのアクセスも急速に増加しており、世界中のトレーナーから注目を集めるプラットフォームへと進化しています。
+                                    </p>
+                                    <p>
+                                        こうした需要に応えるため、当サイトの「初手確率シミュレーター」は、海外で主流な形式である**PTCGL（Pokémon TCG Live）のテキストデッキコード**を直接読み込み、瞬時に算出できる機能を搭載しました。
+                                    </p>
+                                    <p>
+                                        私たちは、言語の壁を超えて誰もが最高のデータ分析に触れられる環境を目指しています。今後は、海外プレイヤー向けに多言語対応を進め、世界中のポケカファンの架け橋となるサイトを目指してまいります。
+                                    </p>
+                                </div>
+
+                                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                                    <div className="flex items-center gap-3 mb-4 text-pink-300">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span className="text-sm font-bold tracking-wider uppercase">Future Vision</span>
+                                    </div>
+                                    <div className="space-y-4 text-sm italic text-indigo-200/80 leading-relaxed border-l-2 border-pink-500/50 pl-4">
+                                        <p>
+                                            "While PokéLix currently focuses on the Japanese competitive scene, we have seen a significant increase in international traffic. To support our global community, our simulator is fully compatible with PTCGL deck codes. We are committed to expanding our multi-language support to empower trainers worldwide."
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+            </section >
 
 
 
-            <Footer />
+        <Footer />
         </div >
     )
 }
