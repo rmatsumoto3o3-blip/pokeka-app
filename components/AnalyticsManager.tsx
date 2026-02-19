@@ -84,7 +84,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
     const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
-    const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
     const [archetypeLoading, setArchetypeLoading] = useState(false)
 
     const sensors = useSensors(
@@ -293,7 +292,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
             alert('設定を更新しました')
             setManageArchetypeId('')
-            setArchetypeIcons([null, null])
             setArchetypeImageFile(null)
             fetchArchetypes()
         } catch (e: any) {
