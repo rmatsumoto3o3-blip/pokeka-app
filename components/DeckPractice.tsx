@@ -27,7 +27,7 @@ interface DeckPracticeProps {
     compact?: boolean
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
-    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', target: 'opponent') => void
+    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => void
     idPrefix?: string
     mobile?: boolean
     isOpponent?: boolean
@@ -37,7 +37,7 @@ export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
     switchPokemon: (benchIndex: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders') => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
 }
 
@@ -295,13 +295,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [noctowlState, setNoctowlState] = useState<NoctowlState | null>(null)
 
     // メガルカリオex State
-    interface MegaLucarioEXState {
+    interface MegaLucarioEXAttackState {
         step: 'select_energy' | 'attach_energy',
         candidates: Card[],
         selectedIndices: number[],
         attachingIndex: number
     }
-    const [megaLucarioEXState, setMegaLucarioEXState] = useState<MegaLucarioEXState | null>(null)
+    const [megaLucarioEXAttackState, setMegaLucarioEXAttackState] = useState<MegaLucarioEXAttackState | null>(null)
+    const [megaBraveUsedLastTurn, setMegaBraveUsedLastTurn] = useState(false)
 
     // ルナトーン State
     const [lunacycleUsedThisTurn, setLunacycleUsedThisTurn] = useState(false)
@@ -463,7 +464,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 onSelect: config.onSelect
             })
         },
-        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders') => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => {
             if (effect === 'boss_orders') {
                 return
             }
@@ -847,6 +848,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setOkunoteUsedThisTurn(false)
         setPecharuntUsedThisTurn(false)
         setMunkidoriUsedThisTurn(false)
+
+        // Mega Brave reset logic:
+        // If it was used this turn, it becomes "used last turn" (still restricted).
+        // If it was already "used last turn", it becomes false (usable again).
+        setMegaBraveUsedLastTurn(false)
+
         showToast('次の番になりました')
     }
 
@@ -1889,7 +1896,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return
         }
 
-        setMegaLucarioEXState({
+        setMegaLucarioEXAttackState({
             step: 'select_energy',
             candidates: [...trash],
             selectedIndices: [],
@@ -1898,14 +1905,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const handleMegaLucarioEXSelectEnergy = (index: number) => {
-        if (!megaLucarioEXState) return
+        if (!megaLucarioEXAttackState) return
         const card = trash[index]
         if (!isEnergy(card) || !card.name.includes('基本闘エネルギー')) {
             alert("基本闘エネルギーを選択してください")
             return
         }
 
-        setMegaLucarioEXState(prev => {
+        setMegaLucarioEXAttackState(prev => {
             if (!prev) return null
             const current = [...prev.selectedIndices]
             const foundIdx = current.indexOf(index)
@@ -1919,18 +1926,18 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const handleMegaLucarioEXConfirmEnergy = () => {
-        if (!megaLucarioEXState || megaLucarioEXState.selectedIndices.length === 0) return
-        setMegaLucarioEXState(prev => prev ? { ...prev, step: 'attach_energy', attachingIndex: 0 } : null)
+        if (!megaLucarioEXAttackState || megaLucarioEXAttackState.selectedIndices.length === 0) return
+        setMegaLucarioEXAttackState(prev => prev ? { ...prev, step: 'attach_energy', attachingIndex: 0 } : null)
     }
 
     const handleMegaLucarioEXAttachClick = (type: 'battle' | 'bench', index: number) => {
-        if (!megaLucarioEXState || megaLucarioEXState.step !== 'attach_energy') return
+        if (!megaLucarioEXAttackState || megaLucarioEXAttackState.step !== 'attach_energy') return
         if (type !== 'bench') {
             alert("ベンチのポケモンを選択してください")
             return
         }
 
-        const energyCardIndex = megaLucarioEXState.selectedIndices[megaLucarioEXState.attachingIndex]
+        const energyCardIndex = megaLucarioEXAttackState.selectedIndices[megaLucarioEXAttackState.attachingIndex]
         const energyCard = trash[energyCardIndex]
         const targetStack = bench[index]
         if (!targetStack) return
@@ -1953,13 +1960,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         // Better to remove at the end or use ID/ref. 
         // For now let's just mark it done in state.
 
-        if (megaLucarioEXState.attachingIndex + 1 < megaLucarioEXState.selectedIndices.length) {
-            setMegaLucarioEXState(prev => prev ? { ...prev, attachingIndex: prev.attachingIndex + 1 } : null)
+        if (megaLucarioEXAttackState.attachingIndex + 1 < megaLucarioEXAttackState.selectedIndices.length) {
+            setMegaLucarioEXAttackState(prev => prev ? { ...prev, attachingIndex: prev.attachingIndex + 1 } : null)
         } else {
             // Finalize: remove all used cards from trash
-            setTrash(prev => prev.filter((_, i) => !megaLucarioEXState.selectedIndices.includes(i)))
+            setTrash(prev => prev.filter((_, i) => !megaLucarioEXAttackState.selectedIndices.includes(i)))
             showToast("エネルギーをベンチポケモンに付けました")
-            setMegaLucarioEXState(null)
+            setMegaLucarioEXAttackState(null)
         }
     }
 
@@ -2161,6 +2168,114 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             showToast("エネルギーを付けました")
             setFlareonState(null)
         }
+    }
+
+    const useHadozuki = () => {
+        // 1. Apply 130 damage to opponent's active
+        // (Automatic damage logic removed as per user request)
+
+        // Manual damage application via existing updateDamage if we had a direct ref,
+        // but here we trigger an effect that PracticePage should handle.
+        if (onEffectTrigger) {
+            (onEffectTrigger as any)('apply_damage', 130)
+        }
+
+        // 2. Start Energy Acceleration step
+        const energyInTrash = trash.filter(c => c.name === '基本闘エネルギー')
+        if (energyInTrash.length > 0) {
+            setMegaLucarioEXAttackState({
+                step: 'select_energy',
+                candidates: energyInTrash,
+                selectedIndices: [],
+                attachingIndex: 0
+            })
+        } else {
+            showToast('トラッシュに基本闘エネルギーがありません')
+        }
+        closeMenu()
+    }
+
+    const useMegaBrave = () => {
+        if (megaBraveUsedLastTurn) {
+            alert('前の番にメガブレイブを使っているため、このワザは使えません。')
+            return
+        }
+
+        if (onEffectTrigger) {
+            // onEffectTrigger('apply_damage', 270) // Removed
+        }
+        setMegaBraveUsedLastTurn(true)
+        closeMenu()
+    }
+
+    const handleMegaLucarioEnergySelect = (index: number) => {
+        if (!megaLucarioEXAttackState) return
+        const newSelected = [...megaLucarioEXAttackState.selectedIndices]
+        if (newSelected.includes(index)) {
+            newSelected.splice(newSelected.indexOf(index), 1)
+        } else if (newSelected.length < 3) {
+            newSelected.push(index)
+        }
+        setMegaLucarioEXAttackState({ ...megaLucarioEXAttackState, selectedIndices: newSelected })
+    }
+
+    const startMegaLucarioEnergyAttachment = () => {
+        if (!megaLucarioEXAttackState || megaLucarioEXAttackState.selectedIndices.length === 0) return
+        setMegaLucarioEXAttackState({ ...megaLucarioEXAttackState, step: 'attach_energy', attachingIndex: 0 })
+    }
+
+    const applyMegaLucarioEnergy = (type: 'battle' | 'bench', index: number) => {
+        if (!megaLucarioEXAttackState || megaLucarioEXAttackState.step !== 'attach_energy') return
+
+        const energyCard = megaLucarioEXAttackState.candidates[megaLucarioEXAttackState.selectedIndices[megaLucarioEXAttackState.attachingIndex]]
+
+        if (type === 'battle' && battleField) {
+            setBattleField({
+                ...battleField,
+                cards: [...battleField.cards, energyCard],
+                energyCount: battleField.energyCount + 1
+            })
+        } else if (type === 'bench') {
+            setBench(prev => {
+                const next = [...prev]
+                const stack = next[index]
+                if (stack) {
+                    next[index] = {
+                        ...stack,
+                        cards: [...stack.cards, energyCard],
+                        energyCount: stack.energyCount + 1
+                    }
+                }
+                return next
+            })
+        }
+
+        // Remove from trash
+        setTrash(prev => {
+            const next = [...prev]
+            // Need to find the exact card in the original trash. 
+            // This is complex because of duplicates. 
+            // For now, let's just filter one instance.
+            const idxInTrash = next.findIndex(c => c === energyCard)
+            if (idxInTrash !== -1) next.splice(idxInTrash, 1)
+            return next
+        })
+
+        if (megaLucarioEXAttackState.attachingIndex + 1 < megaLucarioEXAttackState.selectedIndices.length) {
+            setMegaLucarioEXAttackState({
+                ...megaLucarioEXAttackState,
+                attachingIndex: megaLucarioEXAttackState.attachingIndex + 1
+            })
+        } else {
+            setMegaLucarioEXAttackState(null)
+            showToast('エネルギーをつけました')
+        }
+    }
+
+
+    const resetMegaBrave = () => {
+        setMegaBraveUsedLastTurn(false)
+        showToast('メガブレイブの使用制限を解除しました')
     }
 
     // --- マシマシラ Logic ---
@@ -2426,7 +2541,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         // Notify parent to start selection on opponent board
         if (onEffectTrigger) {
-            onEffectTrigger('boss_orders', 'opponent')
+            onEffectTrigger('boss_orders')
         }
         alert("相手のベンチポケモンを選択してください")
     }
@@ -2856,7 +2971,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         // Notify parent to trigger opponent
         if (onEffectTrigger) {
-            onEffectTrigger('judge', 'opponent')
+            onEffectTrigger('judge')
         }
         showToast("ジャッジマン: お互いに手札を戻して4枚引きました")
     }
@@ -2958,7 +3073,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         showToast("アポロ: 手札を戻して5枚引きました")
 
         // Trigger opponent
-        onEffectTrigger?.('apollo', 'opponent')
+        onEffectTrigger?.('apollo')
     }
 
     /*
@@ -3570,6 +3685,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                     shuffleDeck()
                     showToast("アカマツの効果を使用しました")
+                }
+
+                if (onBoardSelection) {
                     setOnBoardSelection(null)
                     setAkamatsuState(null)
                 }
@@ -3761,6 +3879,27 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     )}
                     {menu.source === 'battle' && (
                         <>
+                            {getTopCard(menu.card as CardStack).name === 'メガルカリオex' && (
+                                <>
+                                    <button onClick={useHadozuki} className="w-full text-left px-4 py-2 hover:bg-orange-50 text-orange-700 text-sm font-bold flex items-center gap-2 border-b border-orange-100">
+                                        <span>👊</span> はどうづき (130)
+                                    </button>
+                                    <button
+                                        onClick={useMegaBrave}
+                                        disabled={megaBraveUsedLastTurn}
+                                        className={`w-full text-left px-4 py-2 text-sm font-bold flex items-center gap-2 border-b border-orange-100 ${megaBraveUsedLastTurn ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-red-50 text-red-700'}`}
+                                    >
+                                        <span>🔥</span> メガブレイブ (270)
+                                        {megaBraveUsedLastTurn && <span className="text-[10px] font-normal">(使用不可)</span>}
+                                    </button>
+                                    {megaBraveUsedLastTurn && (
+                                        <button onClick={resetMegaBrave} className="w-full text-left px-4 py-1 hover:bg-gray-50 text-gray-500 text-[10px] border-b">
+                                            使用制限をリセット
+                                        </button>
+                                    )}
+                                </>
+                            )}
+
                             <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
@@ -3970,7 +4109,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         // Notify parent to trigger opponent (opponent draws 2)
         if (onEffectTrigger) {
-            onEffectTrigger('unfair_stamp', 'opponent')
+            onEffectTrigger('unfair_stamp')
         }
         alert('手札を全て山札に戻し、自分は5枚引きました。\n相手は2枚引きます。')
     }
@@ -4030,11 +4169,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             handleNPointUpClickPokemon('battle', 0)
                         } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
                             handleEnergySwitchClickPokemon('battle', 0)
-                        } else if (megaLucarioEXState?.step === 'attach_energy') {
-                            handleMegaLucarioEXAttachClick('battle', 0)
-                        } else {
-                            handleCardClick(e, battleField!, 'battle', 0)
                         }
+                        if (megaLucarioEXAttackState && megaLucarioEXAttackState.step === 'attach_energy') {
+                            applyMegaLucarioEnergy('battle', 0)
+                            return
+                        }
+                        handleCardClick(e, battleField!, 'battle', 0)
                     }}
                 >
                     <CascadingStack
@@ -4257,7 +4397,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                     handleNPointUpClickPokemon('bench', i)
                                                 } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
                                                     handleEnergySwitchClickPokemon('bench', i)
-                                                } else if (megaLucarioEXState?.step === 'attach_energy') {
+                                                } else if (megaLucarioEXAttackState?.step === 'attach_energy') {
                                                     handleMegaLucarioEXAttachClick('bench', i)
                                                 } else {
                                                     handleCardClick(e, stack, 'bench', i)
@@ -4445,7 +4585,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {akamatsuState.step === 'select_two' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">山札からちがうタイプの基本エネルギーを2枚まで選んでください。<br />(緑色の枠のカードが選択可能です)</p>
-                                <div className="flex flex-wrap justify-center gap-2 mb-8 max-h-[50vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 max-h-[50vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {akamatsuState.candidates.map((card, i) => {
                                         const isEnergyCard = isEnergy(card)
                                         const isSelected = akamatsuState.selectedIndices.includes(i)
@@ -4521,7 +4661,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-orange-500">シャリタツ: きゃくよせ</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札の上から6枚を見て、サポートを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {tatsugiriState.candidates.map((card, i) => {
                                 const isTarget = isSupporter(card)
                                 const isSelected = tatsugiriState.selectedIndex === i
@@ -4567,7 +4707,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-green-600">オーガポン: みどりのまい</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">手札からこのポケモンにつける基本エネルギーを選んでください。</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {ogerponState.candidates.map((card, i) => {
                                 const isTarget = isEnergy(card) // Simplification, strictly Basic Energy but relying on user or `isEnergy` + confirm check
                                 const isSelected = ogerponState.selectedIndex === i
@@ -4614,7 +4754,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-gray-700">ゾロアーク: とりひき</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">手札からトラッシュするカードを1枚選んでください。</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {zoroarkState.candidates.map((card, i) => {
                                 const isSelected = zoroarkState.selectedIndex === i
                                 return (
@@ -4658,7 +4798,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ニャースex: おくのてキャッチ</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札からサポートカードを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {meowthEXState.candidates.map((card, i) => {
                                 const isTarget = isSupporter(card)
                                 const isSelected = meowthEXState.selectedIndex === i
@@ -4708,7 +4848,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {nPointUpState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
-                                <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {nPointUpState.candidates.map((card, i) => {
                                         const isTarget = isEnergy(card)
                                         const isSelected = nPointUpState.selectedIndex === i
@@ -4771,7 +4911,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">シアノ</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札から「ポケモンex」を3枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {cyanoState.candidates.map((card, i) => {
                                 const isTarget = card.name.includes('ex')
                                 const isSelected = cyanoState.selectedIndices.includes(i)
@@ -4816,7 +4956,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">げきりゅうポンプ: コスト選択</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを{battleField?.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3}枚選んでください。</p>
 
-                        <div className="flex flex-wrap justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
+                        <div className="grid grid-cols-4 justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
                             {battleField?.cards.map((card, i) => {
                                 const isTarget = isEnergy(card)
                                 const isSelected = ogerponWellspringState.selectedIndices.includes(i)
@@ -4863,7 +5003,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-green-600">むしとりセット</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札の上から7枚です。ポケモンまたは基本草エネルギーを2枚まで選んでください。<br />(緑色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {bugCatchingSetState.candidates.map((card, i) => {
                                 const isGrassPokemon = isPokemon(card)
                                 const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
@@ -4919,7 +5059,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {energySwitchState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">移動させるエネルギーを1つ選んでください。</p>
-                                <div className="flex flex-wrap justify-center gap-4 mb-8">
+                                <div className="grid grid-cols-4 justify-center gap-4 mb-8">
                                     {(energySwitchState.sourceType === 'battle' ? battleField : bench[energySwitchState.sourceIndex!])?.cards.map((card, i) => {
                                         const isTarget = isEnergy(card)
                                         return (
@@ -4959,7 +5099,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">エネルギー回収</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを2枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {energyRetrievalState.candidates.map((card, i) => {
                                 const isTarget = isEnergy(card) && !card.subtypes?.includes('Special')
                                 const isSelected = energyRetrievalState.selectedIndices.includes(i)
@@ -5005,7 +5145,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-yellow-600">ヨルノズク: ほうせきさがし</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(黄色の枠のカードが選択可能です)</p>
 
-                        <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {noctowlState.candidates.map((card, i) => {
                                 const isTarget = isTrainer(card)
                                 const isSelected = noctowlState.selectedIndices.includes(i)
@@ -5044,21 +5184,21 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             )}
 
             {/* メガルカリオex Modal & Overlay */}
-            {megaLucarioEXState && (
-                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${megaLucarioEXState.step === 'select_energy' ? 'bg-black/70' : 'bg-transparent pointer-events-none'}`}>
-                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${megaLucarioEXState.step === 'select_energy'
+            {megaLucarioEXAttackState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${megaLucarioEXAttackState.step === 'select_energy' ? 'bg-black/70' : 'bg-transparent pointer-events-none'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${megaLucarioEXAttackState.step === 'select_energy'
                         ? 'p-6 max-w-4xl w-full max-h-[90vh]'
                         : 'fixed bottom-24 p-4 max-w-sm border-2 border-orange-500'
                         }`}>
-                        <h2 className={`font-bold text-center text-orange-600 ${megaLucarioEXState.step === 'select_energy' ? 'text-xl mb-2' : 'text-sm mb-1'}`}>メガルカリオex: はどうづき</h2>
+                        <h2 className={`font-bold text-center text-orange-600 ${megaLucarioEXAttackState.step === 'select_energy' ? 'text-xl mb-2' : 'text-sm mb-1'}`}>メガルカリオex: はどうづき</h2>
 
-                        {megaLucarioEXState.step === 'select_energy' && (
+                        {megaLucarioEXAttackState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本闘エネルギーを3枚まで選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
-                                <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
-                                    {megaLucarioEXState.candidates.map((card, i) => {
+                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                    {megaLucarioEXAttackState.candidates.map((card, i) => {
                                         const isTarget = isEnergy(card) && card.name.includes('基本闘エネルギー')
-                                        const isSelected = megaLucarioEXState.selectedIndices.includes(i)
+                                        const isSelected = megaLucarioEXAttackState.selectedIndices.includes(i)
                                         return (
                                             <div
                                                 key={i}
@@ -5073,7 +5213,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
                                                 {isSelected && (
                                                     <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
-                                                        {megaLucarioEXState.selectedIndices.indexOf(i) + 1}
+                                                        {megaLucarioEXAttackState.selectedIndices.indexOf(i) + 1}
                                                     </div>
                                                 )}
                                             </div>
@@ -5084,28 +5224,28 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                     <button
                                         onClick={handleMegaLucarioEXConfirmEnergy}
                                         className="bg-orange-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-700 disabled:opacity-50"
-                                        disabled={megaLucarioEXState.selectedIndices.length === 0}
+                                        disabled={megaLucarioEXAttackState.selectedIndices.length === 0}
                                     >
-                                        付ける先を選ぶ ({megaLucarioEXState.selectedIndices.length}枚)
+                                        付ける先を選ぶ ({megaLucarioEXAttackState.selectedIndices.length}枚)
                                     </button>
-                                    <button onClick={() => setMegaLucarioEXState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">戻る</button>
+                                    <button onClick={() => setMegaLucarioEXAttackState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">戻る</button>
                                 </div>
                             </>
                         )}
 
-                        {megaLucarioEXState.step === 'attach_energy' && (
+                        {megaLucarioEXAttackState.step === 'attach_energy' && (
                             <div className="text-center">
                                 <p className="text-sm font-bold text-gray-800 mb-1">
-                                    {megaLucarioEXState.attachingIndex + 1}枚目: 付けるベンチポケモンを直接クリックしてください
+                                    {megaLucarioEXAttackState.attachingIndex + 1}枚目: 付けるベンチポケモンを直接クリックしてください
                                 </p>
                                 <div className="flex justify-center items-center gap-4">
                                     <div className="relative">
                                         <Image
-                                            src={megaLucarioEXState.candidates[megaLucarioEXState.selectedIndices[megaLucarioEXState.attachingIndex]].imageUrl}
+                                            src={megaLucarioEXAttackState.candidates[megaLucarioEXAttackState.selectedIndices[megaLucarioEXAttackState.attachingIndex]].imageUrl}
                                             alt="attaching" width={60} height={84} className="rounded shadow-lg border-2 border-orange-500 animate-pulse" unoptimized
                                         />
                                     </div>
-                                    <button onClick={() => setMegaLucarioEXState(null)} className="bg-gray-200 text-gray-800 font-bold px-4 py-1 text-xs rounded-full">キャンセル</button>
+                                    <button onClick={() => setMegaLucarioEXAttackState(null)} className="bg-gray-200 text-gray-800 font-bold px-4 py-1 text-xs rounded-full">キャンセル</button>
                                 </div>
                             </div>
                         )}
@@ -5140,7 +5280,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {ultraBallState.step === 'discard' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュする手札を2枚選んでください。</p>
-                                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                                <div className="grid grid-cols-4 justify-center gap-2 mb-8">
                                     {ultraBallState.candidates.map((card, i) => {
                                         const isSelected = ultraBallState.handIndices.includes(i)
                                         return (
@@ -5178,7 +5318,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {ultraBallState.step === 'search' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">山札からポケモンを1枚選んでください。<br />(緑色の枠のカードが選択可能です)</p>
-                                <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {remaining.map((card, i) => {
                                         const isTarget = isPokemon(card)
                                         return (
@@ -5212,7 +5352,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <h2 className="text-xl font-bold mb-2 text-center text-pink-600">なかよしポフィン</h2>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札からHP70以下のたねポケモンを2枚まで選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
 
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const isTarget = isPokemon(card) // HP check not possible with current data
                                     const isSelected = poffinState.selectedIndices.includes(i)
@@ -5260,7 +5400,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <h2 className="text-xl font-bold mb-2 text-center text-green-600">トウコ</h2>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札から進化ポケモンとエネルギーを1枚ずつ選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const canSelectPokemon = isPokemon(card)
                                     const canSelectEnergy = isEnergy(card)
@@ -5311,7 +5451,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ファイトゴング</h2>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札から闘タイプのたねポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const isTarget = isPokemon(card) || isEnergy(card)
                                     const isSelected = fightGongState.selectedIndex === i
@@ -5366,7 +5506,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         Wait, implementation allows selecting ONE index.
                         So text should be "1枚".
                     */}
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {lambdaState.candidates.map((card, i) => {
                                     const isSearchTarget = isTrainer(card)
                                     const isSelected = lambdaState.selectedIndex === i
@@ -5414,7 +5554,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <h2 className="text-xl font-bold mb-2 text-center text-indigo-900">夜のタンカ</h2>
                             <p className="text-gray-600 text-center mb-6 text-sm">トラッシュからポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {nightStretcherState.candidates.map((card, i) => {
                                     const isRecoverTarget = isPokemon(card) || isEnergy(card)
                                     const isSelected = nightStretcherState.selectedIndex === i
@@ -5465,7 +5605,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 (青色の枠のカードが選択可能です)
                             </p>
 
-                            <div className="flex flex-wrap justify-center gap-2 mb-8 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {pokePadState.map((card, i) => {
                                     const isSearchTarget = isPokemon(card) && !isRuleBox(card)
                                     return (
@@ -5534,7 +5674,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケギア3.0</h2>
                             <p className="text-gray-600 text-center mb-6 text-sm">手札に加えるカードを1枚選んでください。<br />（選ばなかったカードは山札に戻してシャッフルされます）</p>
 
-                            <div className="flex flex-wrap justify-center gap-4">
+                            <div className="grid grid-cols-4 justify-center gap-4">
                                 {pokegearCards.map((card, i) => (
                                     <div
                                         key={i}

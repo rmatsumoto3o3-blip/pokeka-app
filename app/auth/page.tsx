@@ -18,7 +18,6 @@ function AuthContent() {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [nickname, setNickname] = useState('')
-    const [inviteCode, setInviteCode] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const router = useRouter()
@@ -45,7 +44,6 @@ function AuthContent() {
                     options: {
                         data: {
                             nickname: nickname || email.split('@')[0],
-                            invite_code: inviteCode.trim(), // Remove whitespace
                         },
                     },
                 })
@@ -84,32 +82,18 @@ function AuthContent() {
 
                 <form onSubmit={handleAuth} className="space-y-4">
                     {!isLogin && (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    招待コード <span className="text-gray-400 text-xs">(お持ちの方のみ)</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={inviteCode}
-                                    onChange={(e) => setInviteCode(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-                                    placeholder="コードをお持ちの方"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    ニックネーム
-                                </label>
-                                <input
-                                    type="text"
-                                    value={nickname}
-                                    onChange={(e) => setNickname(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
-                                    placeholder="プレイヤー名（任意）"
-                                />
-                            </div>
-                        </>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                ニックネーム
+                            </label>
+                            <input
+                                type="text"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                placeholder="プレイヤー名（任意）"
+                            />
+                        </div>
                     )}
 
                     <div>
@@ -148,6 +132,7 @@ function AuthContent() {
                     >
                         {loading ? '処理中...' : isLogin ? 'ログイン' : '新規登録'}
                     </button>
+
                 </form>
 
                 <div className="mt-6 text-center space-y-3">

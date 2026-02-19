@@ -7,6 +7,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
+import PokemonIconSelector from './PokemonIconSelector'
 
 import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction } from '@/app/actions'
 
@@ -83,6 +84,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
     const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
+    const [archetypeIcons, setArchetypeIcons] = useState<(string | null)[]>([null, null])
     const [archetypeLoading, setArchetypeLoading] = useState(false)
 
     const sensors = useSensors(
@@ -101,7 +103,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     )
 
     useEffect(() => {
-        // Prevent aggressive reset unless IDs actually change (deep comparison proxy)
+        // ... existing implementation ...
         const currentIds = localArchetypes.map(a => a.id).sort().join(',')
         const newIds = archetypes.map(a => a.id).sort().join(',')
 
@@ -111,6 +113,18 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             fetchArchetypes()
         }
     }, [archetypes])
+
+    // Load initial icons when selecting archetype to manage
+    useEffect(() => {
+        if (manageArchetypeId) {
+            const arch = localArchetypes.find(a => a.id === manageArchetypeId) as any
+            if (arch) {
+                setArchetypeIcons([arch.icon_1 || null, arch.icon_2 || null])
+            }
+        } else {
+            setArchetypeIcons([null, null])
+        }
+    }, [manageArchetypeId, localArchetypes])
 
     const fetchArchetypes = async () => {
         const { data } = await supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true })
@@ -254,22 +268,42 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         }
     }
 
-    const handleUpdateArchetypeImage = async () => {
-        if (!manageArchetypeId || !archetypeImageFile) return
+    const handleUpdateArchetypeSettings = async () => {
+        if (!manageArchetypeId) return
         setArchetypeLoading(true)
         try {
-            const fileExt = archetypeImageFile.name.split('.').pop()
-            const fileName = `archetype-covers/${Date.now()}.${fileExt}`
-            const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, archetypeImageFile)
-            if (uploadError) throw uploadError
+            let coverImageUrl: string | undefined = undefined
 
-            const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
-            const { error: updateError } = await supabase.from('deck_archetypes').update({ cover_image_url: data.publicUrl }).eq('id', manageArchetypeId)
+            // Upload image if provided
+            if (archetypeImageFile) {
+                const fileExt = archetypeImageFile.name.split('.').pop()
+                const fileName = `archetype-covers/${Date.now()}.${fileExt}`
+                const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, archetypeImageFile)
+                if (uploadError) throw uploadError
+
+                const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
+                coverImageUrl = data.publicUrl
+            }
+
+            // Update Archetype data
+            const updateData: any = {
+                icon_1: archetypeIcons[0] || null,
+                icon_2: archetypeIcons[1] || null
+            }
+            if (coverImageUrl) updateData.cover_image_url = coverImageUrl
+
+            const { error: updateError } = await supabase
+                .from('deck_archetypes')
+                .update(updateData)
+                .eq('id', manageArchetypeId)
+
             if (updateError) throw updateError
 
-            alert('画像を更新しました')
+            alert('設定を更新しました')
             setManageArchetypeId('')
+            setArchetypeIcons([null, null])
             setArchetypeImageFile(null)
+            fetchArchetypes()
         } catch (e: any) {
             alert('エラー: ' + e.message)
         } finally {
@@ -608,22 +642,29 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        表紙画像を変更 (選択中のタイプ)
-                                    </label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => setArchetypeImageFile(e.target.files?.[0] || null)}
-                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-2"
+                                <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                                    <PokemonIconSelector
+                                        selectedIcons={archetypeIcons}
+                                        onSelect={setArchetypeIcons}
+                                        label="アーキタイプアイコン"
                                     />
+                                    <div className="border-t pt-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            表紙画像を変更
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => setArchetypeImageFile(e.target.files?.[0] || null)}
+                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-4"
+                                        />
+                                    </div>
                                     <button
-                                        onClick={handleUpdateArchetypeImage}
-                                        disabled={!manageArchetypeId || !archetypeImageFile || archetypeLoading}
-                                        className="w-full py-2 bg-white border border-purple-300 text-purple-700 font-bold rounded-md hover:bg-purple-50 disabled:opacity-50"
+                                        onClick={handleUpdateArchetypeSettings}
+                                        disabled={!manageArchetypeId || archetypeLoading}
+                                        className="w-full py-2 bg-purple-600 text-white font-bold rounded-md hover:bg-purple-700 disabled:opacity-50 shadow-sm"
                                     >
-                                        {archetypeLoading ? '更新中...' : '画像を更新'}
+                                        {archetypeLoading ? '保存中...' : '設定を保存'}
                                     </button>
                                 </div>
                             </div>

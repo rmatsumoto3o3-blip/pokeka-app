@@ -195,8 +195,10 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders') => {
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => {
         const targetRef = source === 'player1' ? player2Ref : player1Ref
+
+        // apply_damage logic removed
 
         if (effect === 'boss_orders') {
             targetRef.current?.startSelection({

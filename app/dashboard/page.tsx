@@ -477,12 +477,6 @@ export default function Dashboard() {
 
 
 
-                        <div className="bg-white rounded-xl p-4 border border-pink-100 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-900 mb-2">お知らせ</h3>
-                            <p className="text-xs text-gray-600 leading-relaxed">
-                                ベータ版をご利用いただきありがとうございます。不具合やご要望は開発者までご連絡ください。
-                            </p>
-                        </div>
                     </div>
                 </div>
             </main >

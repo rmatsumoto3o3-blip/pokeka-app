@@ -395,56 +395,77 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
                 {/* Graphs */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Pie Chart */}
-                    <div className="bg-gray-50 rounded-xl p-2.5 flex flex-col items-center">
-                        <h3 className="text-sm font-bold text-gray-500 mb-2">勝率内訳</h3>
-                        <div className="h-64 w-full relative">
+                    {/* Win Rate Gauge Chart */}
+                    <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center relative overflow-hidden">
+                        <h3 className="text-sm font-bold text-gray-500 mb-1 z-10">勝率 (Win Rate)</h3>
+
+                        <div className="h-48 w-full relative -mb-10">
                             {graphData.total > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={graphData.pieData}
                                             cx="50%"
-                                            cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={80}
-                                            paddingAngle={5}
+                                            cy="70%"
+                                            startAngle={180}
+                                            endAngle={0}
+                                            innerRadius={80}
+                                            outerRadius={110}
+                                            paddingAngle={2}
                                             dataKey="value"
+                                            stroke="none"
                                         >
                                             {graphData.pieData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                         </Pie>
                                         <Tooltip />
-                                        <Legend />
                                     </PieChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400">データなし</div>
+                                <div className="flex items-center justify-center h-full text-gray-400 pb-10">データなし</div>
                             )}
+
+                            {/* Center Label for Gauge */}
                             {graphData.total > 0 && (
-                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                                    <div className="text-2xl font-bold text-gray-900">
-                                        {Math.round((graphData.wins / graphData.total) * 100)}%
+                                <div className="absolute top-[65%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                                    <div className="text-4xl font-black text-gray-900 tracking-tighter">
+                                        {Math.round((graphData.wins / graphData.total) * 100)}
+                                        <span className="text-base font-bold text-gray-400 ml-0.5">%</span>
                                     </div>
-                                    <div className="text-xs text-gray-500">勝率</div>
                                 </div>
                             )}
                         </div>
 
-                        {/* First/Second Turn Win Rate Badges */}
+                        {/* Stats Bar */}
+                        <div className="w-full grid grid-cols-3 gap-2 mt-2 z-10">
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">WIN</span>
+                                <span className="text-xl font-bold text-green-500">{graphData.wins}</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">LOSE</span>
+                                <span className="text-xl font-bold text-red-500">{graphData.losses}</span>
+                            </div>
+                            <div className="flex flex-col items-center p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <span className="text-[10px] text-gray-400 font-bold uppercase">DRAW</span>
+                                <span className="text-xl font-bold text-gray-500">{graphData.draws}</span>
+                            </div>
+                        </div>
+
+                        {/* First/Second Turn Win Rate Badges (Re-styled) */}
                         {graphData.total > 0 && (graphData.firstTurnTotal > 0 || graphData.secondTurnTotal > 0) && (
-                            <div className="flex gap-2 justify-center mt-4">
+                            <div className="flex w-full gap-2 mt-3 z-10">
                                 {graphData.firstTurnTotal > 0 && (
-                                    <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-                                        <span className="text-xs font-bold text-blue-700">先攻 {Math.round(graphData.firstTurnWinRate)}%</span>
-                                        <span className="text-xs text-blue-500 ml-1">({graphData.firstTurnWins}/{graphData.firstTurnTotal})</span>
+                                    <div className="flex-1 flex justify-between items-center px-3 py-2 bg-blue-50/50 border border-blue-100 rounded-lg">
+                                        <span className="text-[10px] font-bold text-blue-600">先攻</span>
+                                        <span className="text-sm font-bold text-blue-700">{Math.round(graphData.firstTurnWinRate)}%</span>
                                     </div>
                                 )}
                                 {graphData.secondTurnTotal > 0 && (
-                                    <div className="px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-full">
-                                        <span className="text-xs font-bold text-purple-700">後攻 {Math.round(graphData.secondTurnWinRate)}%</span>
-                                        <span className="text-xs text-purple-500 ml-1">({graphData.secondTurnWins}/{graphData.secondTurnTotal})</span>
+                                    <div className="flex-1 flex justify-between items-center px-3 py-2 bg-purple-50/50 border border-purple-100 rounded-lg">
+                                        <span className="text-[10px] font-bold text-purple-600">後攻</span>
+                                        <span className="text-sm font-bold text-purple-700">{Math.round(graphData.secondTurnWinRate)}%</span>
                                     </div>
                                 )}
                             </div>

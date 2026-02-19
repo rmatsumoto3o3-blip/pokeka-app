@@ -29,6 +29,8 @@ export interface DeckArchetype {
   name: string
   display_order: number | null
   cover_image_url: string | null
+  icon_1: string | null
+  icon_2: string | null
   created_at: string
 }
 
