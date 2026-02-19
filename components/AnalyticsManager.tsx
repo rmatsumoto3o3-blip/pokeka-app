@@ -7,7 +7,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
-import PokemonIconSelector from './PokemonIconSelector'
+// PokemonIconSelector removed for archetypes (automated matching used instead)
 
 import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction } from '@/app/actions'
 
@@ -84,7 +84,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
     const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
-    const [archetypeIcons, setArchetypeIcons] = useState<(string | null)[]>([null, null])
+    const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
     const [archetypeLoading, setArchetypeLoading] = useState(false)
 
     const sensors = useSensors(
@@ -114,17 +114,12 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         }
     }, [archetypes])
 
-    // Load initial icons when selecting archetype to manage
+    // Load initial data when selecting archetype to manage
     useEffect(() => {
         if (manageArchetypeId) {
-            const arch = localArchetypes.find(a => a.id === manageArchetypeId) as any
-            if (arch) {
-                setArchetypeIcons([arch.icon_1 || null, arch.icon_2 || null])
-            }
-        } else {
-            setArchetypeIcons([null, null])
+            // No icons to load here anymore
         }
-    }, [manageArchetypeId, localArchetypes])
+    }, [manageArchetypeId])
 
     const fetchArchetypes = async () => {
         const { data } = await supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true })
@@ -286,10 +281,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             }
 
             // Update Archetype data
-            const updateData: any = {
-                icon_1: archetypeIcons[0] || null,
-                icon_2: archetypeIcons[1] || null
-            }
+            const updateData: any = {}
             if (coverImageUrl) updateData.cover_image_url = coverImageUrl
 
             const { error: updateError } = await supabase
@@ -643,12 +635,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     </div>
                                 </div>
                                 <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
-                                    <PokemonIconSelector
-                                        selectedIcons={archetypeIcons}
-                                        onSelect={setArchetypeIcons}
-                                        label="アーキタイプアイコン"
-                                    />
-                                    <div className="border-t pt-4">
+                                    <div className="pt-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             表紙画像を変更
                                         </label>
