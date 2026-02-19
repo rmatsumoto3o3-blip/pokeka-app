@@ -377,27 +377,61 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             なぜ今、ポケカに「データ分析」が必要なのか？
                         </h2>
 
-                        <div className="space-y-6 text-gray-700 leading-relaxed text-sm md:text-base">
-                            <p>
-                                ポケモンカードゲームの魅力は、単なる運だけでなく、緻密なリソース管理とプレイング、そして何より**「デッキ構築の深さ」**にあります。しかし、現代のポケカシーンでは、SNS上で「tier1」とされるデッキが溢れ、誰でも同じ結論に辿り着きやすい状況（環境の固定化）が生まれています。
-                            </p>
+                        <div className="space-y-8 text-gray-700 leading-relaxed text-sm md:text-base">
+                            <div className="space-y-4">
+                                <p>
+                                    ポケモンカードゲームの魅力は、単なる運だけでなく、緻密なリソース管理とプレイング、そして何より**「デッキ構築の深さ」**にあります。しかし、現代のポケカシーンでは、SNS上で「Tier 1」とされる有力なデッキレシピが一瞬で拡散され、誰もが同じ結論に辿り着きやすい状況（環境の固定化）が生まれています。
+                                </p>
+                                <p>
+                                    このような情報過多の時代において、他のプレイヤーと差をつけるために必要なのは、他人のレシピをコピーすることではなく、**「なぜその60枚なのか」を自分自身のデータで裏付けること**です。
+                                </p>
+                            </div>
 
-                            <p>
-                                こうした中で一歩先を行くためには、**「なんとなくの感覚」を裏付ける具体的なデータ**が欠かせません。「このデッキは後攻時の理想盤面作成率が何%なのか」「特定のメタカードを1枚増やすことで、どの対面に対する勝率が改善されるのか」。こうした問いに答えるために、PokéLixは開発されました。
-                            </p>
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
+                                    <span className="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-sm">Case 1</span>
+                                    「感覚的相性」を「数値的根拠」へ
+                                </h3>
+                                <p>
+                                    「リザードン相手は少し不利かも…」という曖昧な感覚。これを具体的なデータに変えるのが分析の第一歩です。
+                                    PokéLixで対戦記録を積み重ねることで、「後攻時の勝率は40%だが、先攻なら55%ある」「特定のサブアタッカーを引けた試合の勝率は70%を超える」といった事実が見えてきます。
+                                    **「なんとなく」を「確信」に変えること**で、大会当日の緊張感の中でも迷いのないプレイングが可能になります。
+                                </p>
+                            </div>
 
-                            <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4">環境考察とシミュレーションの融合</h3>
-                            <p>
-                                私たちが提供する「環境デッキ分布」や「キーカード採用率」は、単なる数字の羅列ではありません。例えば、上位プレイヤーが密かに行っている**「デッキの最適化（チューニング）」**を、誰でも再現可能な形にすることを目指しています。
-                            </p>
-                            <p>
-                                練習時間が限られている社会人プレイヤーや、より高みを目指す競技プレイヤーのために、デジタル技術を駆使した「一人回し」や「勝率シミュレーション」が新たな解決策となります。物理的なカードがなくても、通勤中や休憩時間に理想の展開を脳内で再構築する。そんな**「ポケカIQを一段階引き上げる体験」**を、このプラットフォームを通じてお届けします。
-                            </p>
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
+                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-sm">Case 2</span>
+                                    0.1%の事故率を削り出す、数学的アプローチ
+                                </h3>
+                                <p>
+                                    「なかよしポフィン」や「ネストボール」の枚数、あるいはエネルギーの枚数。これらを1枚増減させることが、初手の展開率にどれだけ影響するか。
+                                    私たちは、直感に頼らず「確率シミュレーション」を活用したデッキチューニングを推奨しています。
+                                    「サイド落ちを考慮した理想盤面の完成確率」を1%でも高める努力。その積み重ねが、大型大会での予選突破を左右する大きな一歩となります。
+                                </p>
+                            </div>
 
-                            <div className="bg-pink-50/50 p-6 rounded-xl border border-pink-100 mt-8">
-                                <p className="text-pink-800 font-medium italic">
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
+                                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-sm">Case 3</span>
+                                    練習を「効率化」し、時間を資産に変える
+                                </h3>
+                                <p>
+                                    仕事や学業で忙しいプレイヤーにとって、物理的なカードを広げて対戦する時間は限られています。
+                                    PokéLixの「一人回しシミュレーター」や「採用率分析」は、隙間時間での「脳内対戦」を強力にサポートします。
+                                    統計的に正しい「キーカード採用率」を参考にしながら、メタゲームに合わせた自分だけの60枚を組み上げる。
+                                    **「思考の量」を「勝利の質」へ直結させるためのプラットフォーム**が、ここにあります。
+                                </p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-6 md:p-8 rounded-2xl border border-pink-100 mt-12">
+                                <p className="text-pink-900 font-bold mb-4">
                                     「勝てる喜びを、もっと理論的に。」
-                                    PokéLixは、データに基づき勝利を目指す全てのトレーナーに伴走し、ポケモンカード文化のさらなる発展に寄与します。
+                                </p>
+                                <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                                    PokéLixは、データに基づき勝利を目指すすべてのトレーナーに伴走します。
+                                    あなたが積み上げる対戦記録の一行一行が、明日のポケカ文化を形作り、勝利へ導く地図となります。
+                                    さあ、あなたのポケカライフに「分析」という新たな武器を取り入れてみませんか？
                                 </p>
                             </div>
                         </div>
