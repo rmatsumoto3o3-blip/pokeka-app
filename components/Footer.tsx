@@ -11,6 +11,12 @@ export default function Footer() {
 
                     <div className="flex gap-6 text-sm">
                         <Link
+                            href="/about"
+                            className="text-gray-700 hover:text-gray-900 transition font-medium"
+                        >
+                            ポケリスについて
+                        </Link>
+                        <Link
                             href="/beta-terms"
                             className="text-gray-700 hover:text-gray-900 transition font-medium"
                         >

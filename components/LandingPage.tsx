@@ -369,7 +369,41 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
 
 
 
-            {/* Features Section */}
+            {/* NEW: Environment Commentary Section for SEO/Value */}
+            <section className="py-16 bg-gradient-to-b from-white to-pink-50/30">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="bg-white p-8 md:p-12 rounded-3xl border border-pink-100 shadow-sm">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 border-b-2 border-pink-100 pb-4">
+                            なぜ今、ポケカに「データ分析」が必要なのか？
+                        </h2>
+
+                        <div className="space-y-6 text-gray-700 leading-relaxed text-sm md:text-base">
+                            <p>
+                                ポケモンカードゲームの魅力は、単なる運だけでなく、緻密なリソース管理とプレイング、そして何より**「デッキ構築の深さ」**にあります。しかし、現代のポケカシーンでは、SNS上で「tier1」とされるデッキが溢れ、誰でも同じ結論に辿り着きやすい状況（環境の固定化）が生まれています。
+                            </p>
+
+                            <p>
+                                こうした中で一歩先を行くためには、**「なんとなくの感覚」を裏付ける具体的なデータ**が欠かせません。「このデッキは後攻時の理想盤面作成率が何%なのか」「特定のメタカードを1枚増やすことで、どの対面に対する勝率が改善されるのか」。こうした問いに答えるために、PokéLixは開発されました。
+                            </p>
+
+                            <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4">環境考察とシミュレーションの融合</h3>
+                            <p>
+                                私たちが提供する「環境デッキ分布」や「キーカード採用率」は、単なる数字の羅列ではありません。例えば、上位プレイヤーが密かに行っている**「デッキの最適化（チューニング）」**を、誰でも再現可能な形にすることを目指しています。
+                            </p>
+                            <p>
+                                練習時間が限られている社会人プレイヤーや、より高みを目指す競技プレイヤーのために、デジタル技術を駆使した「一人回し」や「勝率シミュレーション」が新たな解決策となります。物理的なカードがなくても、通勤中や休憩時間に理想の展開を脳内で再構築する。そんな**「ポケカIQを一段階引き上げる体験」**を、このプラットフォームを通じてお届けします。
+                            </p>
+
+                            <div className="bg-pink-50/50 p-6 rounded-xl border border-pink-100 mt-8">
+                                <p className="text-pink-800 font-medium italic">
+                                    「勝てる喜びを、もっと理論的に。」
+                                    PokéLixは、データに基づき勝利を目指す全てのトレーナーに伴走し、ポケモンカード文化のさらなる発展に寄与します。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <section id="features" className="py-2.5 md:py-2.5 bg-pink-50"> <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                 <div className="text-center mb-16">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
