@@ -27,8 +27,8 @@ const dotGothic16 = DotGothic16({
 });
 
 export const metadata: Metadata = {
-  title: "⚡️ポケリス⚡️ | ポケカ対戦・確率ツール",
-  description: "ポケモンカードの初手確率計算や一人回しツール、デッキ分析などができるWebアプリです。",
+  title: "PokéLix（ポケリス）| ポケカ環境分析・初手確率シミュレーター",
+  description: "ポケモンカードの環境考察、デッキ分析、初手確率シミュレーター（PTCGL対応）。データに基づいたポケカ戦略をサポートする次世代の分析プラットフォームです。",
   metadataBase: new URL('https://pokelix.jp'),
 };
 
@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
       >
