@@ -502,8 +502,11 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 <div className="text-center mt-12">
                     <button
                         onClick={() => router.push('/auth?mode=signup')}
+                        className="px-8 py-2.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
+                    >
+                        無料で戦績管理を始める
                     </button>
-            </div>
+                </div>
 
                 {/* Global Presence Section */}
                 <div className="mt-20 pt-16 border-t border-pink-100">
@@ -553,12 +556,10 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
                     </div>
                 </div>
+            </div>
+            </section>
+
+            <Footer />
         </div>
-            </section >
-
-
-
-        <Footer />
-        </div >
     )
 }
