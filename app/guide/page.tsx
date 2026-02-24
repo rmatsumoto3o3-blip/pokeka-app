@@ -108,7 +108,7 @@ export default function GuidePage() {
                                     <p className="text-sm text-pink-700 mb-4 font-bold opacity-75">例: v1.0(基本型), v1.1(フトゥー採用)</p>
                                     <p className="text-gray-700 text-sm leading-relaxed">
                                         実際に使用するデッキです。<br />
-                                        1つのフォルダの中に5つまで保存できます。
+                                        デッキ構成の微調整をバージョンとして残せます。
                                     </p>
                                 </div>
                             </div>
@@ -125,17 +125,16 @@ export default function GuidePage() {
                                 <div className="flex flex-col md:flex-row gap-6 items-start">
                                     <div className="bg-white border-2 border-gray-100 shadow-sm rounded-xl p-6 flex-1 w-full">
                                         <span className="text-xs font-bold text-gray-400 mb-1 block">STEP 1</span>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">「作業机」でデッキを展開</h3>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">「フォルダ」を作成する</h3>
                                         <p className="text-gray-600 text-sm">
-                                            まずはログイン後の画面にある「作業机」に、公式等のデッキコードを入力してみましょう。
-                                            カードリストがその場に展開されます。
+                                            まずは右上の「+ フォルダ作成」から、デッキを管理するための共有バインダーを作ります。
                                         </p>
                                     </div>
                                     <div className="bg-white border-2 border-gray-100 shadow-sm rounded-xl p-6 flex-1 w-full">
                                         <span className="text-xs font-bold text-gray-400 mb-1 block">STEP 2</span>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">「フォルダ」を作成する</h3>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">デッキを登録する</h3>
                                         <p className="text-gray-600 text-sm">
-                                            気に入ったデッキが見つかったら、右上の「+ フォルダ作成」から、それを管理するためのバインダーを作ります。
+                                            フォルダ内の「+ バリエーション追加」から、公式等のデッキコードを入力して登録します。
                                         </p>
                                     </div>
                                 </div>
@@ -143,11 +142,11 @@ export default function GuidePage() {
                                 <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-6 md:p-8">
                                     <div className="md:w-3/4">
                                         <span className="text-xs font-bold text-indigo-400 mb-1 block">STEP 3 & 4</span>
-                                        <h3 className="text-2xl font-bold text-indigo-900 mb-4">改造して「カスタム保存」</h3>
+                                        <h3 className="text-2xl font-bold text-indigo-900 mb-4">改造して「更新を保存」</h3>
                                         <p className="text-gray-700 mb-6 leading-relaxed">
                                             ここが最重要ポイントです。<br />
-                                            登録したデッキの「編集」ボタンを押し、カードを入れ替えたり枚数を調整したら、
-                                            そのまま<strong className="text-indigo-600">「保存」</strong>ボタンを押してください。
+                                            登録したデッキの詳細画面で構成を調整したら、
+                                            そのまま<strong className="text-indigo-600">「変更を保存」</strong>ボタンを押してください。
                                         </p>
                                         <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-indigo-100 inline-block">
                                             <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">CUSTOM</span>

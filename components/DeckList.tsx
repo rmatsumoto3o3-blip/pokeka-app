@@ -38,32 +38,9 @@ export default function DeckList({
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
     const [showMockDetail, setShowMockDetail] = useState(false)
 
-    // Local Temp Deck State
-    const [tempDeckCode, setTempDeckCode] = useState<string>('')
-    const [isTempDeckSaved, setIsTempDeckSaved] = useState(false)
-
     useEffect(() => {
-        // Load temp deck from localStorage on mount
-        const saved = localStorage.getItem('pokeka_temp_deck')
-        if (saved) {
-            setTempDeckCode(saved)
-            setIsTempDeckSaved(true)
-        }
         fetchDecks()
     }, [userId])
-
-    const saveTempDeck = () => {
-        if (!tempDeckCode) return
-        localStorage.setItem('pokeka_temp_deck', tempDeckCode)
-        setIsTempDeckSaved(true)
-    }
-
-    const deleteTempDeck = () => {
-        if (!confirm('作業机のデッキを削除しますか？')) return
-        localStorage.removeItem('pokeka_temp_deck')
-        setTempDeckCode('')
-        setIsTempDeckSaved(false)
-    }
 
     const fetchDecks = async () => {
         try {
@@ -162,71 +139,6 @@ export default function DeckList({
 
             <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Work Table (Temp Slot) */}
-                    <div className="bg-blue-50/50 rounded-xl overflow-hidden border-2 border-blue-200 border-dashed hover:border-blue-400 transition shadow-sm hover:shadow-md flex flex-col">
-                        <div className="p-2.5 flex-1 flex flex-col">
-                            <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                <span>🛠️</span>
-                                作業机 (一時保存)
-                            </h3>
-                            <p className="text-sm text-blue-600 mb-4 opacity-80">
-                                DBに保存されない、あなただけの検証スロットです。<br />
-                                ブラウザに保存されます。
-                            </p>
-
-                            <div className="flex-1 flex flex-col justify-center">
-                                {!isTempDeckSaved ? (
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            placeholder="デッキコードを入力"
-                                            value={tempDeckCode}
-                                            onChange={(e) => setTempDeckCode(e.target.value)}
-                                            className="w-full px-2.5 py-2 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                        <button
-                                            onClick={saveTempDeck}
-                                            disabled={!tempDeckCode}
-                                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            作業机に置く
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="bg-white rounded p-2.5 border border-blue-100">
-                                            <div className="text-xs text-gray-500 mb-1">登録中のデッキコード</div>
-                                            <div className="text-lg font-mono font-bold text-gray-800 tracking-wider text-center">{tempDeckCode}</div>
-                                        </div>
-
-                                        <div className="flex gap-2">
-                                            <Link
-                                                href={`/practice?code1=${tempDeckCode}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
-                                            >
-                                                <Image
-                                                    src="/Lucario.png"
-                                                    alt="Practice"
-                                                    width={24}
-                                                    height={24}
-                                                    className="w-5 h-5"
-                                                />
-                                                一人回し
-                                            </Link>
-                                            <button
-                                                onClick={deleteTempDeck}
-                                                className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm font-bold"
-                                            >
-                                                片付ける
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Regular Decks */}
                     {decks.map((deck) => (

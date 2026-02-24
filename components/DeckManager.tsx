@@ -45,9 +45,6 @@ export default function DeckManager({
     const [showMockDetail, setShowMockDetail] = useState(false)
     const [mockDetailTargetDeck, setMockDetailTargetDeck] = useState<DeckWithStats | null>(null)
 
-    // Local Detail State (Work Table)
-    const [showLocalDetail, setShowLocalDetail] = useState(false)
-
     // Folder Expansion State
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
 
@@ -60,31 +57,9 @@ export default function DeckManager({
     const [newDeckCode, setNewDeckCode] = useState('')
     const [newVersionLabel, setNewVersionLabel] = useState('')
 
-    // Local Temp Deck State (Work Table)
-    const [tempDeckCode, setTempDeckCode] = useState<string>('')
-    const [isTempDeckSaved, setIsTempDeckSaved] = useState(false)
-
     useEffect(() => {
-        // Load temp deck from localStorage on mount
-        const saved = localStorage.getItem('pokeka_temp_deck')
-        if (saved) {
-            setTempDeckCode(saved)
-            setIsTempDeckSaved(true)
-        }
         fetchData()
     }, [userId])
-
-    const saveTempDeck = () => {
-        if (!tempDeckCode) return
-        localStorage.setItem('pokeka_temp_deck', tempDeckCode)
-        setIsTempDeckSaved(true)
-    }
-
-    const deleteTempDeck = () => {
-        localStorage.removeItem('pokeka_temp_deck')
-        setTempDeckCode('')
-        setIsTempDeckSaved(false)
-    }
 
     const fetchData = async () => {
         try {
@@ -250,16 +225,6 @@ export default function DeckManager({
                 />
             )}
 
-            {/* Detail Manager Modal (Local / Work Table) */}
-            {showLocalDetail && tempDeckCode && (
-                <DeckDetailManager
-                    onClose={() => setShowLocalDetail(false)}
-                    userId={userId}
-                    initialDeckCode={tempDeckCode}
-                    onUpdate={() => { }} // No parent update needed for local
-                />
-            )}
-
             {/* Match Record Modal */}
             <MatchRecordModal
                 isOpen={!!selectedDeck}
@@ -297,10 +262,10 @@ export default function DeckManager({
 
             <div className="space-y-8">
 
-                {/* 1. Work Table & Folder Controls */}
+                {/* 1. Folder Controls */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-gray-700">ワークスペース</h3>
+                        <h3 className="text-lg font-bold text-gray-700">フォルダ管理</h3>
                         {!isCreatingFolder ? (
                             <button
                                 onClick={() => setIsCreatingFolder(true)}
@@ -324,124 +289,35 @@ export default function DeckManager({
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Work Table */}
-                        <div className="bg-blue-50/50 rounded-xl overflow-hidden border-2 border-blue-200 border-dashed hover:border-blue-400 transition shadow-sm hover:shadow-md flex flex-col">
-                            <div className="p-2.5 flex-1 flex flex-col">
-                                <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-6 h-6 mr-1">
-                                        <Image
-                                            src="/king.png"
-                                            alt="Simulate"
-                                            width={24}
-                                            height={24}
-                                            className="w-5 h-5"
-                                        />
-                                    </span>
-                                    作業机 (一時保存)
-                                </h3>
-                                <p className="text-sm text-blue-600 mb-4 opacity-80">
-                                    DBに保存されない、あなただけの検証スロットです。
-                                </p>
+                    {/* Simulator Portal Card */}
+                    <div className="bg-orange-50/50 rounded-xl overflow-hidden border-2 border-orange-200 border-dashed hover:border-orange-400 transition shadow-sm hover:shadow-md flex flex-col w-full max-w-sm">
+                        <div className="p-2.5 flex-1 flex flex-col">
+                            <h3 className="text-xl font-bold text-orange-900 mb-2 flex items-center gap-2">
+                                <span className="flex items-center justify-center w-6 h-6 mr-1">
+                                    <Image
+                                        src="/king.png"
+                                        alt="Simulate"
+                                        width={24}
+                                        height={24}
+                                        className="w-5 h-5"
+                                    />
+                                </span>
+                                確率シミュレーター
+                            </h3>
+                            <p className="text-sm text-orange-800 mb-4 opacity-80">
+                                初手率・サイド落ち率などを計算して、デッキの安定性を分析します。
+                            </p>
 
-                                <div className="flex-1 flex flex-col justify-center">
-                                    {!isTempDeckSaved ? (
-                                        <div className="space-y-3">
-                                            <input
-                                                type="text"
-                                                placeholder="デッキコードを入力"
-                                                value={tempDeckCode}
-                                                onChange={(e) => setTempDeckCode(e.target.value)}
-                                                className="w-full px-4 py-2 rounded border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                                            />
-                                            <button
-                                                onClick={saveTempDeck}
-                                                disabled={!tempDeckCode}
-                                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                作業机に置く
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            <div className="bg-white rounded p-3 border border-blue-100">
-                                                <div className="text-xs text-gray-500 mb-1">登録中のデッキコード</div>
-                                                <div className="text-lg font-mono font-bold text-gray-800 tracking-wider text-center">{tempDeckCode}</div>
-                                            </div>
-
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => setShowLocalDetail(true)}
-                                                    className="w-full py-2 px-3 bg-white hover:bg-gray-50 text-blue-600 border border-blue-200 rounded-lg transition shadow-sm text-sm font-bold flex items-center justify-center gap-2"
-                                                >
-                                                    <span>📝</span> 詳細・編集
-                                                </button>
-                                            </div>
-
-                                            <div className="flex gap-2">
-                                                <Link
-                                                    href={`/practice?code1=${tempDeckCode}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-sm font-bold flex items-center justify-center gap-2"
-                                                >
-                                                    <Image
-                                                        src="/Lucario.png"
-                                                        alt="Practice"
-                                                        width={24}
-                                                        height={24}
-                                                        className="w-5 h-5"
-                                                    />
-                                                    一人回し
-                                                </Link>
-                                                <button
-                                                    onClick={deleteTempDeck}
-                                                    className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm font-bold"
-                                                >
-                                                    片付ける
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Simulator Portal Card */}
-                        <div className="bg-orange-50/50 rounded-xl overflow-hidden border-2 border-orange-200 border-dashed hover:border-orange-400 transition shadow-sm hover:shadow-md flex flex-col">
-                            <div className="p-2.5 flex-1 flex flex-col">
-                                <h3 className="text-xl font-bold text-orange-900 mb-2 flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-6 h-6 mr-1">
-                                        <Image
-                                            src="/king.png"
-                                            alt="Simulate"
-                                            width={24}
-                                            height={24}
-                                            className="w-5 h-5"
-                                        />
-                                    </span>
-                                    確率シミュレーター
-                                </h3>
-                                <p className="text-sm text-orange-800 mb-4 opacity-80">
-                                    初手率・サイド落ち率などを計算して、デッキの安定性を分析します。
-                                </p>
-
-                                <div className="flex-1 flex flex-col justify-end">
-                                    <Link
-                                        href={tempDeckCode ? `/simulator?code=${tempDeckCode}` : '/simulator'}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="w-full py-2.5 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
-                                    >
-                                        <span>🚀</span>
-                                        {tempDeckCode ? '作業中のデッキを分析' : 'シミュレーターを開く'}
-                                    </Link>
-                                    {tempDeckCode && (
-                                        <div className="mt-2 text-center text-xs text-orange-600 font-medium">
-                                            ※ 作業机のコードを使用します
-                                        </div>
-                                    )}
-                                </div>
+                            <div className="flex-1 flex flex-col justify-end">
+                                <Link
+                                    href="/simulator"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full py-2.5 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
+                                >
+                                    <span>🚀</span>
+                                    シミュレーターを開く
+                                </Link>
                             </div>
                         </div>
                     </div>
