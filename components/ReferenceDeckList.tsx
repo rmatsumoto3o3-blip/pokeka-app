@@ -58,21 +58,6 @@ interface ReferenceDeckListProps {
     gridClassName?: string
 }
 
-const EVENT_TYPES = [
-    'All',
-    'Gym Battle',
-    'City League',
-    'Championship',
-    'Worldwide'
-] as const
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-    'All': 'すべて',
-    'Gym Battle': 'ジムバトル',
-    'City League': 'シティリーグ',
-    'Championship': 'チャンピオンシップ',
-    'Worldwide': 'Worldwide'
-}
 
 export default function ReferenceDeckList({
     // userId removed as unused per lint
@@ -100,7 +85,6 @@ export default function ReferenceDeckList({
     // Edit State
     const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
     const [editName, setEditName] = useState('')
-    const [editEventType, setEditEventType] = useState('')
     const [isSaving, setIsSaving] = useState(false)
 
     // Key Card Drawer State [NEW]
@@ -145,7 +129,6 @@ export default function ReferenceDeckList({
         e.stopPropagation()
         setEditingDeck(deck)
         setEditName(deck.deck_name)
-        setEditEventType(deck.event_type || '')
     }
 
     const handleSaveEdit = async () => {
@@ -156,8 +139,7 @@ export default function ReferenceDeckList({
             const { error } = await supabase
                 .from('reference_decks')
                 .update({
-                    deck_name: editName,
-                    event_type: editEventType || null
+                    deck_name: editName
                 })
                 .eq('id', editingDeck.id)
 
@@ -166,7 +148,7 @@ export default function ReferenceDeckList({
             // Update local state
             setDecks(decks.map(d =>
                 d.id === editingDeck.id
-                    ? { ...d, deck_name: editName, event_type: (editEventType || null) as ReferenceDeck['event_type'] }
+                    ? { ...d, deck_name: editName }
                     : d
             ))
             setEditingDeck(null)
@@ -216,11 +198,8 @@ export default function ReferenceDeckList({
         )
     }
 
-    // Filter Logic (Event)
-    const filteredDecks = decks.filter(deck => {
-        if (selectedEvent === 'All') return true
-        return deck.event_type === selectedEvent
-    })
+    // Filter Logic
+    const filteredDecks = decks
 
     // Helper to get archetype for a deck
     const getArchetypeForDeck = (archetypeId: string | null) => {
@@ -314,34 +293,21 @@ export default function ReferenceDeckList({
                                 className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">イベントタイプ</label>
-                            <select
-                                value={editEventType}
-                                onChange={(e) => setEditEventType(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
-                            >
-                                <option value="">選択してください</option>
-                                {EVENT_TYPES.filter(t => t !== 'All').map(type => (
-                                    <option key={type} value={type}>{EVENT_TYPE_LABELS[type]}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                            <button
-                                onClick={() => setEditingDeck(null)}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                            >
-                                キャンセル
-                            </button>
-                            <button
-                                onClick={handleSaveEdit}
-                                disabled={isSaving}
-                                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                {isSaving ? '保存中...' : '保存する'}
-                            </button>
-                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                        <button
+                            onClick={() => setEditingDeck(null)}
+                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={handleSaveEdit}
+                            disabled={isSaving}
+                            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            {isSaving ? '保存中...' : '保存する'}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -365,7 +331,6 @@ export default function ReferenceDeckList({
                     deckCode={viewerDeckCode || ''}
                     deckName={viewerDeckName}
                 />
-                {renderLegacyModal()}
                 {renderLegacyModal()}
                 {renderEditModal()}
 
@@ -451,12 +416,6 @@ export default function ReferenceDeckList({
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                                        {/* Event Type Badge (Moved here) */}
-                                                        {deck.event_type && (
-                                                            <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200">
-                                                                {EVENT_TYPE_LABELS[deck.event_type] || deck.event_type}
-                                                            </span>
-                                                        )}
 
                                                         {deck.deck_code && (
                                                             <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
@@ -597,21 +556,6 @@ export default function ReferenceDeckList({
             {renderLegacyModal()}
             {renderEditModal()}
 
-            {/* Event Filter Tabs */}
-            <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 no-scrollbar">
-                {EVENT_TYPES.map(type => (
-                    <button
-                        key={type}
-                        onClick={() => setSelectedEvent(type)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedEvent === type
-                            ? 'bg-pink-500 text-white shadow-md'
-                            : 'bg-white text-gray-600 hover:bg-pink-50 border border-pink-100'
-                            }`}
-                    >
-                        {EVENT_TYPE_LABELS[type]}
-                    </button>
-                ))}
-            </div>
 
             {/* Archetype Grid */}
             {(filteredDecks.length === 0) ? (

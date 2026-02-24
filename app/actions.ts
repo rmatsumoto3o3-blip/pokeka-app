@@ -430,7 +430,7 @@ export async function saveDeckVersionAction(
 }
 // --- Phase 36: Deck Analytics Automation ---
 
-export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customEventType?: string, customImageUrl?: string, syncReference: boolean = true) {
+export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customImageUrl?: string, syncReference: boolean = true) {
     try {
         // 1. Check permissions (Admin only)
 
@@ -489,7 +489,6 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
                 .single()
 
             const deckName = customDeckName || archetypeData?.name || 'New Deck'
-            const eventType = customEventType || 'Gym Battle'
 
             // Use custom image if provided, otherwise fallback to first card
             const imageUrl = customImageUrl || (cards.length > 0 ? cards[0].imageUrl : null)
@@ -501,7 +500,6 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
                     deck_code: deckCode,
                     deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
                     image_url: imageUrl,
-                    event_type: eventType,
                     archetype_id: archetypeId
                 }])
 
@@ -736,7 +734,7 @@ export async function updateAnalyzedDeckAction(
     deckCode: string,
     archetypeId: string,
     userId: string,
-    updates: { name: string, eventType: string, imageUrl?: string }
+    updates: { name: string, imageUrl?: string }
 ) {
     try {
         // Admin Check
@@ -750,7 +748,6 @@ export async function updateAnalyzedDeckAction(
             .from('reference_decks')
             .update({
                 deck_name: updates.name,
-                event_type: updates.eventType,
                 image_url: updates.imageUrl // Optional update if provided
             })
             .eq('deck_code', deckCode)

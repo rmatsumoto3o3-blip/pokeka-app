@@ -51,10 +51,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [selectedArchetype, setSelectedArchetype] = useState<string>(archetypes.length > 0 ? archetypes[0].id : '')
     const [inputCode, setInputCode] = useState('')
     const [inputDeckName, setInputDeckName] = useState('')
-
-    const [inputEventType, setInputEventType] = useState('Gym Battle')
     const [syncReference, setSyncReference] = useState(true) // Default to "Both"
-    const [isLoading, setIsLoading] = useState(false)
+    const [loading, setLoading] = useState(false) // Renamed from isLoading
     const [isAdding, setIsAdding] = useState(false)
     const [data, setData] = useState<AnalyticsResult | null>(null)
     const [error, setError] = useState<string | null>(null)
@@ -62,11 +60,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     // Edit State
     const [editingDeck, setEditingDeck] = useState<any | null>(null)
     const [editName, setEditName] = useState('')
-    const [editEventType, setEditEventType] = useState('')
     const [isSaving, setIsSaving] = useState(false)
-
-    // Image Upload State (Deck) - DEPRECATED for individual deck, logic moved to archetype
-    const [deckImageFile, setDeckImageFile] = useState<File | null>(null)
 
     // Phase 44: Scraper State
     const [importMode, setImportMode] = useState<'manual' | 'url'>('manual')
@@ -139,7 +133,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     }, [selectedArchetype])
 
     const refreshAnalytics = async (id: string) => {
-        setIsLoading(true)
+        setLoading(true) // Changed from setIsLoading
         setError(null)
         try {
             const res = await getDeckAnalyticsAction(id)
@@ -159,7 +153,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         } catch (e) {
             setError('エラーが発生しました')
         } finally {
-            setIsLoading(false)
+            setLoading(false) // Changed from setIsLoading
         }
     }
 
@@ -168,7 +162,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const handleEdit = (deck: any) => {
         setEditingDeck(deck)
         setEditName(deck.deck_name || '')
-        setEditEventType(deck.event_type || '')
     }
 
     const handleSaveEdit = async () => {
@@ -179,7 +172,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 editingDeck.deck_code,
                 editingDeck.archetype_id,
                 userId,
-                { name: editName, eventType: editEventType }
+                { name: editName }
             )
             if (res.success) {
                 await refreshAnalytics(selectedArchetype)
@@ -229,7 +222,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
         setArchetypeLoading(true)
         try {
-            const res = await deleteArchetypeAction(manageArchetypeId, userId)
+            const res = await deleteArchetypeAction(manageArchetypeId) // Removed userId argument
             if (res.success) {
                 alert('削除が完了しました')
                 setManageArchetypeId('')
@@ -325,8 +318,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 selectedArchetype,
                 userId,
                 inputDeckName.trim() || undefined,
-                inputEventType || undefined,
-                undefined, // imageUrl is now undefined
                 syncReference
             )
 
@@ -376,7 +367,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         const selectedDecks = scrapedDecks.filter(d => d.selected)
         if (selectedDecks.length === 0) return
 
-        if (!confirm(`${selectedDecks.length}件のデッキを一括登録しますか？\n（イベントタイプ: ${inputEventType}）`)) return
+        if (!confirm(`${selectedDecks.length}件のデッキを一括登録しますか？`)) return
 
         setIsAdding(true)
         let successCount = 0
@@ -389,8 +380,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                     selectedArchetype,
                     userId,
                     deck.name || undefined,
-                    inputEventType || undefined,
-                    undefined,
                     syncReference
                 )
                 if (res.success) successCount++
@@ -523,37 +512,26 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">イベントタイプ</label>
-                                <select
-                                    value={editEventType}
-                                    onChange={(e) => setEditEventType(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
-                                >
-                                    {['Gym Battle', 'City League', 'Championship', 'Worldwide'].map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                                <button
-                                    onClick={() => setEditingDeck(null)}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                >
-                                    キャンセル
-                                </button>
-                                <button
-                                    onClick={handleSaveEdit}
-                                    disabled={isSaving}
-                                    className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                                >
-                                    {isSaving ? '保存中...' : '保存'}
-                                </button>
-                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                            <button
+                                onClick={() => setEditingDeck(null)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={handleSaveEdit}
+                                disabled={isSaving}
+                                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {isSaving ? '保存中...' : '保存'}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
+
             {error && (
                 <div className="bg-red-50 border-l-4 border-red-500 p-4">
                     <p className="text-red-700">{error}</p>
@@ -741,48 +719,9 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         </div>
 
                         {/* New Fields for Sync */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    イベントタイプ (参考デッキ用)
-                                </label>
-                                <select
-                                    value={inputEventType}
-                                    onChange={(e) => setInputEventType(e.target.value)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
-                                >
-                                    {['Gym Battle', 'City League', 'Championship', 'Worldwide'].map(t => (
-                                        <option key={t} value={t}>{t}</option>
-                                    ))}
-                                </select>
 
-                                <div className="mt-4 p-2 bg-gray-50 rounded border border-gray-200">
-                                    <label className="block text-xs font-bold text-gray-500 mb-1">追加オプション</label>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="syncOption"
-                                                checked={!syncReference}
-                                                onChange={() => setSyncReference(false)}
-                                                className="text-blue-600"
-                                            />
-                                            <span className="text-xs text-gray-700">分析のみに追加</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="syncOption"
-                                                checked={syncReference}
-                                                onChange={() => setSyncReference(true)}
-                                                className="text-blue-600"
-                                            />
-                                            <span className="text-xs text-gray-700">分析一覧と参考デッキ(Top)両方に追加</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
+                        <div className="flex gap-4">
+                            <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     デッキ名 <span className="text-pink-500 font-bold">*</span>
                                 </label>
@@ -793,6 +732,32 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     placeholder="例: 優勝デッキ"
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
                                 />
+                            </div>
+
+                            <div className="flex-1 p-2 bg-gray-50 rounded border border-gray-200">
+                                <label className="block text-xs font-bold text-gray-500 mb-1">追加オプション</label>
+                                <div className="flex flex-col gap-1">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="syncOption"
+                                            checked={!syncReference}
+                                            onChange={() => setSyncReference(false)}
+                                            className="text-blue-600"
+                                        />
+                                        <span className="text-xs text-gray-700">分析のみに追加</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="syncOption"
+                                            checked={syncReference}
+                                            onChange={() => setSyncReference(true)}
+                                            className="text-blue-600"
+                                        />
+                                        <span className="text-xs text-gray-700">分析一覧と参考デッキ(Top)両方に追加</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -965,30 +930,32 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             </div>
 
             {/* Results Area */}
-            {isLoading && !data ? (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600 font-medium">データを集計中...</p>
-                </div>
-            ) : (
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-black border-l-4 border-indigo-500 pl-3">集計結果</h2>
-                        {data && (
-                            <div className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200">
-                                母数: <span className="font-bold text-black">{data.totalDecks}</span> デッキ
-                            </div>
-                        )}
+            {
+                loading && !data ? (
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600 font-medium">データを集計中...</p>
                     </div>
+                ) : (
+                    <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold text-black border-l-4 border-indigo-500 pl-3">集計結果</h2>
+                            {data && (
+                                <div className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200">
+                                    母数: <span className="font-bold text-black">{data.totalDecks}</span> デッキ
+                                </div>
+                            )}
+                        </div>
 
-                    {renderCardGrid(categorizedCards.pokemon, 'ポケモン')}
-                    {renderCardGrid(categorizedCards.goods, 'グッズ')}
-                    {renderCardGrid(categorizedCards.tool, 'ポケモンのどうぐ')}
-                    {renderCardGrid(categorizedCards.supporter, 'サポート')}
-                    {renderCardGrid(categorizedCards.stadium, 'スタジアム')}
-                    {renderCardGrid(categorizedCards.energy, 'エネルギー')}
-                </div>
-            )}
+                        {renderCardGrid(categorizedCards.pokemon, 'ポケモン')}
+                        {renderCardGrid(categorizedCards.goods, 'グッズ')}
+                        {renderCardGrid(categorizedCards.tool, 'ポケモンのどうぐ')}
+                        {renderCardGrid(categorizedCards.supporter, 'サポート')}
+                        {renderCardGrid(categorizedCards.stadium, 'スタジアム')}
+                        {renderCardGrid(categorizedCards.energy, 'エネルギー')}
+                    </div>
+                )
+            }
         </div>
     )
 }
