@@ -138,6 +138,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setTimeout(() => setToast(null), 3000)
     }
 
+    const [peekDeckSearch, setPeekDeckSearch] = useState(false)
 
     // Updated Detail Modal State: Holds context about the stack being viewed
     interface DetailModalState {
@@ -3211,7 +3212,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'なかよしポフィン') {
+        if (name.includes('なかよしポフィン')) {
             actions.push({
                 label: 'なかよしポフィンを使用',
                 action: () => {
@@ -3315,7 +3316,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'アンフェアスタンプ') {
+        if (name.includes('アンフェアスタンプ')) {
             actions.push({
                 label: 'アンフェアスタンプを使用',
                 action: () => {
@@ -3326,7 +3327,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'ポケギア3.0') {
+        if (name.includes('ポケギア3.0')) {
             actions.push({
                 label: 'ポケギア3.0を使用',
                 action: () => {
@@ -3515,7 +3516,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'プレシャスキャリー' && source === 'hand') {
+        if (name.includes('プレシャスキャリー') && source === 'hand') {
             actions.push({
                 label: 'プレシャスキャリーを使用',
                 action: () => {
@@ -3526,7 +3527,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (name === 'プライムキャッチャー' && source === 'hand') {
+        if (name.includes('プライムキャッチャー') && source === 'hand') {
             actions.push({
                 label: 'プライムキャッチャーを使用',
                 action: () => {
@@ -3620,10 +3621,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         if (!akamatsuState) return
         const realIdx = akamatsuState.selectedIndices[idxInSelected]
         const cardForHand = akamatsuState.candidates[realIdx]
+        const otherIdx = akamatsuState.selectedIndices.find(i => i !== realIdx)
+        const cardToAttach = otherIdx !== undefined ? akamatsuState.candidates[otherIdx] : null
 
         setHand(prev => [...prev, cardForHand])
 
-        if (akamatsuState.selectedIndices.length === 1) {
+        if (akamatsuState.selectedIndices.length === 1 || !cardToAttach) {
             const nameMatch = cardForHand.name
             let removed = false
             setRemaining(prev => prev.filter(c => {
@@ -3640,20 +3643,20 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         setAkamatsuState({ ...akamatsuState, step: 'select_target', forHandIndex: realIdx })
 
-        // Ensure we have the other index for attachment
-        const otherIdx = akamatsuState.selectedIndices.find(i => i !== realIdx)
-
         // Enable board selection for attachment
         setOnBoardSelection({
             type: 'move',
             source: 'deck',
             title: 'エネルギーを付けるポケモンを選択',
             onSelect: (type, targetIndex) => {
-                if (type === 'battle' || type === 'bench') {
-                    // Execute attachment with captured indices
-                    const cardToAttach = akamatsuState.candidates[otherIdx!]
-                    const cardForHand = akamatsuState.candidates[realIdx]
+                // DON'T use akamatsuState.step here as it will be stale in this closure
+                // Instead, rely on the fact that this callback existing means we are in selection mode
 
+                // Clear state immediately to prevent re-triggering via double clicks
+                setAkamatsuState(null)
+                setOnBoardSelection(null)
+
+                if (type === 'battle' || type === 'bench') {
                     const applyToStack = (stack: CardStack | null) => {
                         if (!stack) return null
                         return {
@@ -3673,23 +3676,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         })
                     }
 
-                    const names = [cardForHand.name, cardToAttach.name]
+                    // Robust Deck Removal: Only remove if we have the names
+                    const namesToRemove = [cardForHand.name, cardToAttach.name]
                     setRemaining(prev => {
                         let next = [...prev]
-                        names.forEach(n => {
+                        namesToRemove.forEach(n => {
                             const idx = next.findIndex(c => c.name === n)
                             if (idx !== -1) next.splice(idx, 1)
                         })
-                        return next
+                        // Shuffle as part of the same state update for consistency
+                        return next.sort(() => Math.random() - 0.5)
                     })
 
-                    shuffleDeck()
                     showToast("アカマツの効果を使用しました")
-                }
-
-                if (onBoardSelection) {
-                    setOnBoardSelection(null)
-                    setAkamatsuState(null)
                 }
             }
         })
@@ -4574,25 +4573,39 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Akamatsu (Crispin) Modal */}
             {akamatsuState && (
-                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${akamatsuState.step === 'select_target' ? 'bg-transparent pointer-events-none' : 'bg-black/70 pointer-events-auto'
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${akamatsuState.step === 'select_target' ? 'bg-transparent pointer-events-none' : (peekDeckSearch ? 'bg-black/10 pointer-events-auto' : 'bg-black/60 pointer-events-auto')
                     }`}>
-                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${akamatsuState.step === 'select_target'
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up transition-all duration-300 pointer-events-auto ${akamatsuState.step === 'select_target'
                         ? 'fixed bottom-24 p-4 max-w-sm border-2 border-orange-500'
-                        : 'p-6 max-w-4xl w-full max-h-[90vh]'
+                        : peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto'
                         }`}>
-                        <h2 className={`font-bold text-center text-orange-600 ${akamatsuState.step === 'select_target' ? 'text-sm mb-1' : 'text-xl mb-2'}`}>アカマツ</h2>
+                        <div className="flex justify-between items-start mb-2">
+                            <h2 className={`font-bold text-orange-600 ${akamatsuState.step === 'select_target' ? 'text-sm' : 'text-xl flex-1 text-center ml-8'}`}>アカマツ</h2>
+                            {akamatsuState.step !== 'select_target' && (
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                    title="盤面を見る"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
 
                         {akamatsuState.step === 'select_two' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">山札からちがうタイプの基本エネルギーを2枚まで選んでください。<br />(緑色の枠のカードが選択可能です)</p>
-                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 max-h-[50vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 max-h-[50vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {akamatsuState.candidates.map((card, i) => {
                                         const isEnergyCard = isEnergy(card)
                                         const isSelected = akamatsuState.selectedIndices.includes(i)
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isEnergyCard
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isEnergyCard
                                                     ? isSelected
                                                         ? 'ring-[6px] ring-orange-500 scale-110 z-10'
                                                         : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]'
@@ -4600,7 +4613,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                     }`}
                                                 onClick={() => isEnergyCard && handleAkamatsuSelectEnergy(i)}
                                             >
-                                                <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded shadow" unoptimized />
+                                                <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded-lg shadow" unoptimized />
                                                 {isSelected && (
                                                     <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20">
                                                         {akamatsuState.selectedIndices.indexOf(i) + 1}
@@ -4656,19 +4669,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Tatsugiri (Customer Service) Modal */}
             {tatsugiriState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-orange-500">シャリタツ: きゃくよせ</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-orange-500 flex-1 text-center ml-8">シャリタツ: きゃくよせ</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札の上から6枚を見て、サポートを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {tatsugiriState.candidates.map((card, i) => {
                                 const isTarget = isSupporter(card)
                                 const isSelected = tatsugiriState.selectedIndex === i
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-orange-500 scale-110 z-10'
                                                 : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -4676,9 +4700,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             }`}
                                         onClick={() => isTarget && handleTatsugiriSelect(i)}
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                         {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                            <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                 ✓
                                             </div>
                                         )}
@@ -4694,7 +4718,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             >
                                 {tatsugiriState.selectedIndex !== null ? '決定' : '対象なし・終了'}
                             </button>
-                            {/* No cancel button needed if "Confirm" handles "None selected" as "Shuffle back" */}
                         </div>
                     </div>
                 </div>
@@ -4702,19 +4725,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Ogerpon Teal Mask ex (Teal Dance) Modal */}
             {ogerponState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-green-600">オーガポン: みどりのまい</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-green-600 flex-1 text-center ml-8">オーガポン: みどりのまい</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         <p className="text-gray-600 text-center mb-6 text-sm">手札からこのポケモンにつける基本エネルギーを選んでください。</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {ogerponState.candidates.map((card, i) => {
                                 const isTarget = isEnergy(card) // Simplification, strictly Basic Energy but relying on user or `isEnergy` + confirm check
                                 const isSelected = ogerponState.selectedIndex === i
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-green-600 scale-110 z-10'
                                                 : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -4722,9 +4756,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             }`}
                                         onClick={() => isTarget && handleOgerponSelect(i)}
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                         {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                            <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                 ✓
                                             </div>
                                         )}
@@ -4749,26 +4783,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Zoroark ex (Trade) Modal */}
             {zoroarkState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-gray-700">ゾロアーク: とりひき</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-700 flex-1 text-center ml-8">ゾロアーク: とりひき</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         <p className="text-gray-600 text-center mb-6 text-sm">手札からトラッシュするカードを1枚選んでください。</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {zoroarkState.candidates.map((card, i) => {
                                 const isSelected = zoroarkState.selectedIndex === i
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isSelected
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSelected
                                             ? 'ring-[6px] ring-gray-600 scale-110 z-10'
                                             : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
                                             }`}
                                         onClick={() => handleZoroarkSelect(i)}
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                         {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-gray-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                            <div className="absolute -top-3 -right-3 bg-gray-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                 ✓
                                             </div>
                                         )}
@@ -4793,19 +4838,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Meowth ex (Trump Card Catch) Modal */}
             {meowthEXState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ニャースex: おくのてキャッチ</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-orange-600 flex-1 text-center ml-8">ニャースex: おくのてキャッチ</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札からサポートカードを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {meowthEXState.candidates.map((card, i) => {
                                 const isTarget = isSupporter(card)
                                 const isSelected = meowthEXState.selectedIndex === i
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-orange-600 scale-110 z-10'
                                                 : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
@@ -4813,9 +4869,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             }`}
                                         onClick={() => isTarget && handleMeowthEXSelect(i)}
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                         {isSelected && (
-                                            <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                            <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                 ✓
                                             </div>
                                         )}
@@ -4838,24 +4894,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Nのポイントアップ Modal */}
             {nPointUpState && (
-                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-colors duration-300 ${nPointUpState.step === 'select_target' ? 'bg-transparent pointer-events-none' : 'bg-black/70 pointer-events-auto'}`}>
-                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up overflow-y-auto pointer-events-auto ${nPointUpState.step === 'select_target'
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${nPointUpState.step === 'select_target' ? 'bg-transparent pointer-events-none' : (peekDeckSearch ? 'bg-black/10' : 'bg-black/60')}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl animate-fade-in-up transition-all duration-300 pointer-events-auto ${nPointUpState.step === 'select_target'
                         ? 'fixed bottom-24 p-4 max-w-sm border-2 border-orange-500'
-                        : 'p-6 max-w-4xl w-full max-h-[90vh]'
+                        : peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto'
                         }`}>
-                        <h2 className={`font-bold text-center text-orange-600 ${nPointUpState.step === 'select_target' ? 'text-sm mb-1' : 'text-xl mb-2'}`}>Nのポイントアップ</h2>
+                        <div className="flex justify-between items-start mb-2">
+                            <h2 className={`font-bold text-orange-600 ${nPointUpState.step === 'select_target' ? 'text-sm' : 'text-xl flex-1 text-center ml-8'}`}>Nのポイントアップ</h2>
+                            {nPointUpState.step !== 'select_target' && (
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
 
                         {nPointUpState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを1枚選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
-                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {nPointUpState.candidates.map((card, i) => {
                                         const isTarget = isEnergy(card)
                                         const isSelected = nPointUpState.selectedIndex === i
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                                     ? isSelected
                                                         ? 'ring-[6px] ring-orange-500 scale-110 z-10'
                                                         : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
@@ -4863,9 +4932,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                     }`}
                                                 onClick={() => isTarget && handleNPointUpSelectEnergy(i)}
                                             >
-                                                <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                                <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                                 {isSelected && (
-                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                    <div className="absolute -top-3 -right-3 bg-orange-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                         ✓
                                                     </div>
                                                 )}
@@ -4906,19 +4975,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* シアノ Modal */}
             {cyanoState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-blue-600">シアノ</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-blue-600 flex-1 text-center ml-8">シアノ</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札から「ポケモンex」を3枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {cyanoState.candidates.map((card, i) => {
                                 const isTarget = card.name.includes('ex')
                                 const isSelected = cyanoState.selectedIndices.includes(i)
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-blue-600 scale-110 z-10'
                                                 : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
@@ -4926,7 +5006,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             }`}
                                         onClick={() => isTarget && handleCyanoSelect(i)}
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                         {isSelected && (
                                             <div className="absolute -top-3 -right-3 bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                 {cyanoState.selectedIndices.indexOf(i) + 1}
@@ -4956,14 +5036,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">げきりゅうポンプ: コスト選択</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札に戻すエネルギーを{battleField?.cards.some(c => c.name.includes('きらめく結晶')) ? 2 : 3}枚選んでください。</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-4 mb-8 p-4 bg-gray-50 rounded-inner">
                             {battleField?.cards.map((card, i) => {
                                 const isTarget = isEnergy(card)
                                 const isSelected = ogerponWellspringState.selectedIndices.includes(i)
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-blue-600 scale-110 z-10'
                                                 : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
@@ -5003,7 +5083,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-green-600">むしとりセット</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札の上から7枚です。ポケモンまたは基本草エネルギーを2枚まで選んでください。<br />(緑色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {bugCatchingSetState.candidates.map((card, i) => {
                                 const isGrassPokemon = isPokemon(card)
                                 const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
@@ -5012,7 +5092,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-green-600 scale-110 z-10'
                                                 : 'ring-2 ring-green-200 hover:ring-4 hover:ring-green-400 hover:scale-105'
@@ -5059,13 +5139,13 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {energySwitchState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">移動させるエネルギーを1つ選んでください。</p>
-                                <div className="grid grid-cols-4 justify-center gap-4 mb-8">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-4 mb-8">
                                     {(energySwitchState.sourceType === 'battle' ? battleField : bench[energySwitchState.sourceIndex!])?.cards.map((card, i) => {
                                         const isTarget = isEnergy(card)
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                                     ? 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
                                                     : 'opacity-40 grayscale pointer-events-none'
                                                     }`}
@@ -5099,14 +5179,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-blue-600">エネルギー回収</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本エネルギーを2枚まで選んでください。<br />(青色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {energyRetrievalState.candidates.map((card, i) => {
                                 const isTarget = isEnergy(card) && !card.subtypes?.includes('Special')
                                 const isSelected = energyRetrievalState.selectedIndices.includes(i)
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-blue-600 scale-110 z-10'
                                                 : 'ring-2 ring-blue-200 hover:ring-4 hover:ring-blue-400 hover:scale-105'
@@ -5145,14 +5225,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <h2 className="text-xl font-bold mb-2 text-center text-yellow-600">ヨルノズク: ほうせきさがし</h2>
                         <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(黄色の枠のカードが選択可能です)</p>
 
-                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {noctowlState.candidates.map((card, i) => {
                                 const isTarget = isTrainer(card)
                                 const isSelected = noctowlState.selectedIndices.includes(i)
                                 return (
                                     <div
                                         key={i}
-                                        className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                        className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                             ? isSelected
                                                 ? 'ring-[6px] ring-yellow-600 scale-110 z-10'
                                                 : 'ring-2 ring-yellow-200 hover:ring-4 hover:ring-yellow-400 hover:scale-105'
@@ -5195,14 +5275,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {megaLucarioEXAttackState.step === 'select_energy' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュから基本闘エネルギーを3枚まで選んでください。<br />(オレンジ色の枠のカードが選択可能です)</p>
-                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {megaLucarioEXAttackState.candidates.map((card, i) => {
                                         const isTarget = isEnergy(card) && card.name.includes('基本闘エネルギー')
                                         const isSelected = megaLucarioEXAttackState.selectedIndices.includes(i)
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg ${isTarget
                                                     ? isSelected
                                                         ? 'ring-[6px] ring-orange-600 scale-110 z-10'
                                                         : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105'
@@ -5273,26 +5353,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Ultra Ball Modal */}
             {ultraBallState && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                        <h2 className="text-xl font-bold mb-2 text-center text-yellow-600">ハイパーボール</h2>
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-yellow-600 flex-1 text-center ml-8">ハイパーボール</h2>
+                            <button
+                                onClick={() => setPeekDeckSearch(true)}
+                                className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                    <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
 
                         {ultraBallState.step === 'discard' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">トラッシュする手札を2枚選んでください。</p>
-                                <div className="grid grid-cols-4 justify-center gap-2 mb-8">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8">
                                     {ultraBallState.candidates.map((card, i) => {
                                         const isSelected = ultraBallState.handIndices.includes(i)
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isSelected ? 'ring-4 ring-yellow-500 scale-105 z-10' : 'hover:scale-105 opacity-100'
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSelected ? 'ring-4 ring-yellow-500 scale-105 z-10' : 'hover:scale-105'
                                                     }`}
                                                 onClick={() => handleUltraBallDiscardSelection(i)}
                                             >
-                                                <Image src={card.imageUrl} alt={card.name} width={100} height={140} className="rounded shadow" unoptimized />
+                                                <Image src={card.imageUrl} alt={card.name} width={100} height={140} className="rounded-lg shadow" unoptimized />
                                                 {isSelected && (
-                                                    <div className="absolute inset-0 bg-yellow-500/20 rounded flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-yellow-500/20 rounded-lg flex items-center justify-center">
                                                         <div className="bg-yellow-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white">
                                                             ✓
                                                         </div>
@@ -5318,19 +5409,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         {ultraBallState.step === 'search' && (
                             <>
                                 <p className="text-gray-600 text-center mb-6 text-sm">山札からポケモンを1枚選んでください。<br />(緑色の枠のカードが選択可能です)</p>
-                                <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                                <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                     {remaining.map((card, i) => {
                                         const isTarget = isPokemon(card)
                                         return (
                                             <div
                                                 key={i}
-                                                className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                                className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                                     ? 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-110 z-10'
                                                     : 'opacity-40 grayscale pointer-events-none'
                                                     }`}
                                                 onClick={() => isTarget && handleUltraBallSearchSelect(i)}
                                             >
-                                                <Image src={card.imageUrl} alt={card.name} width={80} height={112} className="rounded shadow" unoptimized />
+                                                <Image src={card.imageUrl} alt={card.name} width={80} height={112} className="rounded-lg shadow" unoptimized />
                                             </div>
                                         )
                                     })}
@@ -5347,19 +5438,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Buddy-Buddy Poffin Modal */}
             {
                 poffinState && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                            <h2 className="text-xl font-bold mb-2 text-center text-pink-600">なかよしポフィン</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-pink-600 flex-1 text-center ml-8">なかよしポフィン</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札からHP70以下のたねポケモンを2枚まで選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
 
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const isTarget = isPokemon(card) // HP check not possible with current data
                                     const isSelected = poffinState.selectedIndices.includes(i)
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                                 ? isSelected
                                                     ? 'ring-[6px] ring-pink-500 scale-110 z-10'
                                                     : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]'
@@ -5367,9 +5469,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 }`}
                                             onClick={() => isTarget && handlePoffinSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                             {isSelected && (
-                                                <div className="absolute -top-3 -right-3 bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                <div className="absolute -top-3 -right-3 bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center">
                                                     {poffinState.selectedIndices.indexOf(i) + 1}
                                                 </div>
                                             )}
@@ -5395,12 +5497,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Touko Modal */}
             {
                 toukoState && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                            <h2 className="text-xl font-bold mb-2 text-center text-green-600">トウコ</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-green-600 flex-1 text-center ml-8">トウコ</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札から進化ポケモンとエネルギーを1枚ずつ選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const canSelectPokemon = isPokemon(card)
                                     const canSelectEnergy = isEnergy(card)
@@ -5410,7 +5523,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isSelectable
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSelectable
                                                 ? isSelected
                                                     ? 'ring-[6px] ring-green-600 scale-110 z-10'
                                                     : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -5418,9 +5531,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 }`}
                                             onClick={() => isSelectable && handleToukoSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                             {isSelected && (
-                                                <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                <div className="absolute -top-3 -right-3 bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                     ✓
                                                 </div>
                                             )}
@@ -5446,19 +5559,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Fight Gong Modal */}
             {
                 fightGongState && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                            <h2 className="text-xl font-bold mb-2 text-center text-orange-600">ファイトゴング</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-orange-600 flex-1 text-center ml-8">ファイトゴング</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札から闘タイプのたねポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {remaining.map((card, i) => {
                                     const isTarget = isPokemon(card) || isEnergy(card)
                                     const isSelected = fightGongState.selectedIndex === i
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isTarget
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget
                                                 ? isSelected
                                                     ? 'ring-[6px] ring-orange-500 scale-110 z-10'
                                                     : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -5466,9 +5590,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 }`}
                                             onClick={() => isTarget && handleFightGongSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                             {isSelected && (
-                                                <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                     ✓
                                                 </div>
                                             )}
@@ -5494,26 +5618,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Rocket's Lambda Modal */}
             {
                 lambdaState && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                            <h2 className="text-xl font-bold mb-2 text-center text-purple-600">ロケット団のラムダ</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-purple-600 flex-1 text-center ml-8">ロケット団のラムダ</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">山札からトレーナーズを2枚まで選んでください。<br />(青い枠のカードが選択可能です)</p>
-                            {/* Note: The card text says "Search for up to 2 cards". Wait, Lambda text: "Choose up to 2 non-Pokemon/non-Energy cards?" NO.
-                        Rocket's Lambda: "Search your deck for up to 2 cards named Rocket's Admin? No."
-                        Let's check the request. "Search deck for Trainer card *1枚*".
-                        User prompt said: "Rocket's Lambda: Search deck for *one* Trainer card".
-                        Okay, I implemented select ONE. My text above says 1.
-                        Wait, implementation allows selecting ONE index.
-                        So text should be "1枚".
-                    */}
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {lambdaState.candidates.map((card, i) => {
                                     const isSearchTarget = isTrainer(card)
                                     const isSelected = lambdaState.selectedIndex === i
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSearchTarget
                                                 ? isSelected
                                                     ? 'ring-[6px] ring-purple-600 scale-110 z-10'
                                                     : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -5521,9 +5649,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 }`}
                                             onClick={() => isSearchTarget && handleLambdaSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                             {isSelected && (
-                                                <div className="absolute -top-3 -right-3 bg-purple-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                <div className="absolute -top-3 -right-3 bg-purple-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                     ✓
                                                 </div>
                                             )}
@@ -5549,19 +5677,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Night Stretcher Modal */}
             {
                 nightStretcherState && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70">
-                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
-                            <h2 className="text-xl font-bold mb-2 text-center text-indigo-900">夜のタンカ</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-indigo-900 flex-1 text-center ml-8">夜のタンカ</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">トラッシュからポケモンまたは基本エネルギーを1枚選んでください。<br />(青い枠のカードが選択可能です)</p>
 
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {nightStretcherState.candidates.map((card, i) => {
                                     const isRecoverTarget = isPokemon(card) || isEnergy(card)
                                     const isSelected = nightStretcherState.selectedIndex === i
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isRecoverTarget
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isRecoverTarget
                                                 ? isSelected
                                                     ? 'ring-[6px] ring-indigo-900 scale-110 z-10'
                                                     : 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105'
@@ -5569,9 +5708,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 }`}
                                             onClick={() => isRecoverTarget && handleNightStretcherSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
                                             {isSelected && (
-                                                <div className="absolute -top-3 -right-3 bg-indigo-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">
+                                                <div className="absolute -top-3 -right-3 bg-indigo-900 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center border">
                                                     ✓
                                                 </div>
                                             )}
@@ -5597,27 +5736,38 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Poke Pad Modal */}
             {
                 pokePadState && (
-                    <div className="fixed inset-0 bg-black/70 z-[1000] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケパッド</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-blue-600 flex-1 text-center ml-8">ポケパッド</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">
                                 山札からポケモン（「ルールを持つポケモン」をのぞく）を1枚選んでください。<br />
                                 (青色の枠のカードが選択可能です)
                             </p>
 
-                            <div className="grid grid-cols-4 justify-center gap-2 mb-8 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-inner shadow-inner">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {pokePadState.map((card, i) => {
                                     const isSearchTarget = isPokemon(card) && !isRuleBox(card)
                                     return (
                                         <div
                                             key={i}
-                                            className={`relative cursor-pointer transition-all duration-200 ${isSearchTarget
+                                            className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSearchTarget
                                                 ? 'ring-2 ring-blue-400 hover:ring-4 hover:ring-blue-500 hover:scale-105 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                                                 : 'opacity-40 grayscale pointer-events-none'
                                                 }`}
                                             onClick={() => isSearchTarget && handlePokePadSelect(i)}
                                         >
-                                            <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded shadow" unoptimized />
+                                            <Image src={card.imageUrl} alt={card.name} width={90} height={126} className="rounded-lg shadow" unoptimized />
                                         </div>
                                     )
                                 })}
@@ -5669,38 +5819,49 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Pokegear 3.0 Modal */}
             {
                 pokegearCards && (
-                    <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg p-6 max-w-4xl w-full shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto">
-                            <h2 className="text-xl font-bold mb-2 text-center text-blue-600">ポケギア3.0</h2>
+                    <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                        <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-blue-600 flex-1 text-center ml-8">ポケギア3.0</h2>
+                                <button
+                                    onClick={() => setPeekDeckSearch(true)}
+                                    className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                             <p className="text-gray-600 text-center mb-6 text-sm">手札に加えるカードを1枚選んでください。<br />（選ばなかったカードは山札に戻してシャッフルされます）</p>
 
-                            <div className="grid grid-cols-4 justify-center gap-4">
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                                 {pokegearCards.map((card, i) => (
                                     <div
                                         key={i}
-                                        className="relative group cursor-pointer hover:scale-105 transition-transform"
+                                        className="relative group cursor-pointer hover:scale-105 transition-transform w-fit mx-auto"
                                         onClick={() => handlePokegearSelect(i)}
                                     >
-                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs font-bold px-2 py-0.5 rounded shadow z-10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow z-10 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                             手札に加える
                                         </div>
                                         <Image
                                             src={card.imageUrl}
                                             alt={card.name}
-                                            width={120}
-                                            height={168}
+                                            width={100}
+                                            height={140}
                                             className="rounded-lg shadow-lg border-2 border-transparent hover:border-blue-500"
                                             unoptimized
                                         />
-                                        <div className="mt-1 text-center text-xs font-bold text-gray-700 truncate w-[120px]">{card.name}</div>
+                                        <div className="mt-1 text-center text-[10px] font-bold text-gray-700 truncate w-[100px]">{card.name}</div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="mt-8 flex justify-center">
+                            <div className="mt-4 flex justify-center">
                                 <button
                                     onClick={handlePokegearCancel}
-                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-full"
+                                    className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-6 py-2 rounded-full shadow-sm"
                                 >
                                     加えない (全て戻す)
                                 </button>
@@ -5832,6 +5993,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
                 ) : null}
             </DragOverlay>
+
+            {/* Peek Restoration Layer */}
+            {peekDeckSearch && (
+                <div
+                    className="fixed inset-0 z-[2000] cursor-pointer group"
+                    onClick={() => setPeekDeckSearch(false)}
+                >
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/60 text-white px-8 py-4 rounded-full font-bold shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        タップして戻る
+                    </div>
+                </div>
+            )}
 
             {/* Toast Notification */}
             <AnimatePresence>
