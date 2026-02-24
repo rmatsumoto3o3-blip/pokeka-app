@@ -222,7 +222,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
         setArchetypeLoading(true)
         try {
-            const res = await deleteArchetypeAction(manageArchetypeId) // Removed userId argument
+            const res = await deleteArchetypeAction(manageArchetypeId, userId)
             if (res.success) {
                 alert('削除が完了しました')
                 setManageArchetypeId('')
@@ -318,6 +318,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 selectedArchetype,
                 userId,
                 inputDeckName.trim() || undefined,
+                undefined, // customImageUrl
                 syncReference
             )
 
@@ -380,6 +381,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                     selectedArchetype,
                     userId,
                     deck.name || undefined,
+                    undefined, // customImageUrl
                     syncReference
                 )
                 if (res.success) successCount++
