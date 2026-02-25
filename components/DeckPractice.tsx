@@ -391,7 +391,92 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [brocksScoutState, setBrocksScoutState] = useState<BrocksScoutState | null>(null)
 
+    // タケルライコex State
+    interface RagingBoltState {
+        step: 'select_energy'
+        selectedEnergies: {
+            source: 'battle' | 'bench'
+            targetIndex: number
+            cardIndex: number
+            card: Card
+        }[]
+    }
+    const [ragingBoltState, setRagingBoltState] = useState<RagingBoltState | null>(null)
+
     // --- New Card Effect Handlers ---
+
+    // タケルライコex (Raging Bolt ex) Logic
+    const handleBurstingRoar = () => {
+        // Discard hand
+        setTrash(prev => [...prev, ...hand])
+        setHand([])
+        // Draw 6
+        const drawCount = Math.min(6, remaining.length)
+        const drawnCards = remaining.slice(0, drawCount)
+        const newDeck = remaining.slice(drawCount)
+        setHand(drawnCards)
+        setRemaining(newDeck)
+        alert(`手札をトラッシュし、山札を${drawCount}枚引きました`)
+    }
+
+    const handleExtremeAscentToggleEnergy = (source: 'battle' | 'bench', targetIndex: number, cardIndex: number, card: Card) => {
+        if (!ragingBoltState) return
+        setRagingBoltState(prev => {
+            if (!prev) return null
+            const isSelected = prev.selectedEnergies.some(e => e.source === source && e.targetIndex === targetIndex && e.cardIndex === cardIndex)
+            if (isSelected) {
+                return {
+                    ...prev,
+                    selectedEnergies: prev.selectedEnergies.filter(e => !(e.source === source && e.targetIndex === targetIndex && e.cardIndex === cardIndex))
+                }
+            } else {
+                return {
+                    ...prev,
+                    selectedEnergies: [...prev.selectedEnergies, { source, targetIndex, cardIndex, card }]
+                }
+            }
+        })
+    }
+
+    const handleExtremeAscentConfirm = () => {
+        if (!ragingBoltState) return
+        const toDiscard = ragingBoltState.selectedEnergies
+        const discardedCards = toDiscard.map(e => e.card)
+
+        // Group by target to handle multiple card removals from single stack
+        const battleDiscardIndices = toDiscard.filter(e => e.source === 'battle').map(e => e.cardIndex)
+        const benchDiscardsByIdx: { [key: number]: number[] } = {}
+        toDiscard.filter(e => e.source === 'bench').forEach(e => {
+            if (!benchDiscardsByIdx[e.targetIndex]) benchDiscardsByIdx[e.targetIndex] = []
+            benchDiscardsByIdx[e.targetIndex].push(e.cardIndex)
+        })
+
+        // Execute discard
+        if (battleField && battleDiscardIndices.length > 0) {
+            setBattleField(prev => {
+                if (!prev) return null
+                const newCards = prev.cards.filter((_, i) => !battleDiscardIndices.includes(i))
+                return { ...prev, cards: newCards }
+            })
+        }
+
+        Object.entries(benchDiscardsByIdx).forEach(([idxStr, cardIndices]) => {
+            const idx = parseInt(idxStr)
+            setBench(prev => {
+                const next = [...prev]
+                const stack = next[idx]
+                if (stack) {
+                    const newCards = stack.cards.filter((_, i) => !cardIndices.includes(i))
+                    next[idx] = { ...stack, cards: newCards }
+                }
+                return next
+            })
+        })
+
+        setTrash(prev => [...prev, ...discardedCards])
+        setRagingBoltState(null)
+        alert(`${discardedCards.length}枚のエネルギーをトラッシュしました`)
+    }
 
     // Dawn (ヒカリ) Logic
     const handleDawnSelect = (index: number) => {
@@ -3482,17 +3567,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         alert("この番、すでに別の「ファンコール」を使っています")
                         return
                     }
-                    // Fan Call can only be used on the first turn
-                    // We don't have a strict turn counter, but we can assume it's usable if hand/bench/field is at starting state or let user decide?
-                    // User request says "最初の自分の番にだけ1回使える". 
-                    // Let's implement the logic if possible or just show a warning.
-                    if (source === 'hand') {
-                        // Ability - don't necessarily trash the card if it's an ability of a Pokemon in hand? 
-                        // But Fan Call is an ability of Spin Rotom. Usually used from bench or hand (if it's a specific "coming into play" or "from hand" thing).
-                        // Spin Rotom's Fan Call is "最初の自分の番にだけ1回使える" (Can use once on your first turn).
-                        // In PKMN TCG, usually abilities are used from the field. 
-                        // But some are from hand. Let's assume it can be used from either for flexibility in solo play.
-                    }
                     setFanCallState({
                         step: 'search',
                         candidates: [...remaining],
@@ -3502,6 +3576,28 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            })
+        }
+
+        if (name === 'タケルライコex') {
+            actions.push({
+                label: 'はじけるほうこう (ワザ)',
+                action: () => {
+                    handleBurstingRoar()
+                    closeMenu()
+                },
+                color: 'bg-yellow-50 text-yellow-800 hover:bg-yellow-100'
+            })
+            actions.push({
+                label: 'きょくらいごう (ワザ)',
+                action: () => {
+                    setRagingBoltState({
+                        step: 'select_energy',
+                        selectedEnergies: []
+                    })
+                    closeMenu()
+                },
+                color: 'bg-red-50 text-red-800 hover:bg-red-100'
             })
         }
 
@@ -5924,6 +6020,88 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     </div>
                 )
+            )}
+
+            {/* Raging Bolt ex (タケルライコex) UI */}
+            {ragingBoltState && (
+                <div className="fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up overflow-y-auto">
+                        <div className="text-center mb-6">
+                            <h2 className="text-xl font-bold text-red-600">きょくらいごう (タケルライコex)</h2>
+                            <p className="text-gray-600 text-sm mt-2">
+                                自分の場のポケモンについている基本エネルギーを好きなだけ選び、トラッシュしてください。
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            {/* Battle Field */}
+                            {battleField && battleField.cards.some((c, i) => i > 0 && isEnergy(c) && (c.subtypes?.includes('Basic') || !c.subtypes?.includes('Special'))) && (
+                                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                    <h3 className="text-red-700 font-bold mb-3 text-center">バトル場</h3>
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        {battleField.cards.map((card, i) => {
+                                            if (i === 0) return null // Skip the Pokemon card itself
+                                            if (!(isEnergy(card) && (card.subtypes?.includes('Basic') || !card.subtypes?.includes('Special')))) return null
+                                            const isSelected = ragingBoltState.selectedEnergies.some(e => e.source === 'battle' && e.cardIndex === i)
+                                            return (
+                                                <div key={i} className={`relative cursor-pointer transition-all ${isSelected ? 'ring-4 ring-red-500 scale-105' : 'hover:scale-105 opacity-60'}`} onClick={() => handleExtremeAscentToggleEnergy('battle', 0, i, card)}>
+                                                    <Image src={card.imageUrl} alt={card.name} width={60} height={84} className="rounded shadow" unoptimized />
+                                                    {isSelected && (
+                                                        <div className="absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center">
+                                                            <div className="bg-red-500 text-white p-1 rounded-full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Bench */}
+                            {bench.map((stack, benchIdx) => {
+                                if (!stack || !stack.cards.some((c, i) => i > 0 && isEnergy(c) && (c.subtypes?.includes('Basic') || !c.subtypes?.includes('Special')))) return null
+                                return (
+                                    <div key={benchIdx} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                        <h3 className="text-gray-700 font-bold mb-3 text-center">ベンチ {benchIdx + 1}</h3>
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                            {stack.cards.map((card, i) => {
+                                                if (i === 0) return null
+                                                if (!(isEnergy(card) && (card.subtypes?.includes('Basic') || !card.subtypes?.includes('Special')))) return null
+                                                const isSelected = ragingBoltState.selectedEnergies.some(e => e.source === 'bench' && e.targetIndex === benchIdx && e.cardIndex === i)
+                                                return (
+                                                    <div key={i} className={`relative cursor-pointer transition-all ${isSelected ? 'ring-4 ring-red-500 scale-105' : 'hover:scale-105 opacity-60'}`} onClick={() => handleExtremeAscentToggleEnergy('bench', benchIdx, i, card)}>
+                                                        <Image src={card.imageUrl} alt={card.name} width={60} height={84} className="rounded shadow" unoptimized />
+                                                        {isSelected && (
+                                                            <div className="absolute inset-0 bg-red-500/20 rounded-lg flex items-center justify-center">
+                                                                <div className="bg-red-500 text-white p-1 rounded-full">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                                    </svg>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            <button onClick={handleExtremeAscentConfirm} className="bg-red-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-red-700">
+                                {ragingBoltState.selectedEnergies.length > 0 ? `${ragingBoltState.selectedEnergies.length}枚をトラッシュする` : 'トラッシュせずに終了'}
+                            </button>
+                            <button onClick={() => setRagingBoltState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Tera Orb (テラスタルオーブ) Modal */}
