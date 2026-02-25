@@ -403,6 +403,38 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [ragingBoltState, setRagingBoltState] = useState<RagingBoltState | null>(null)
 
+
+    // サマヨール・ヨノワール (Dusclops/Dusknoir) Logic
+    const handleCursedBomb = (source: 'battle' | 'bench', index: number, damage: number) => {
+        let stack: CardStack | null = null
+        if (source === 'battle') {
+            stack = battleField
+            setBattleField(null)
+        } else {
+            stack = bench[index]
+            setBench(prev => {
+                const next = [...prev]
+                next[index] = null
+                return next
+            })
+        }
+
+        if (stack) {
+            setTrash(prev => [...prev, ...stack!.cards])
+            alert(`カースドボムを使用。このポケモンをきぜつさせ、ダメカンを${damage}個のせます。`)
+        }
+    }
+
+    // フーディン・ユンゲラー (Alakazam/Kadabra) Logic
+    const handlePsychicDraw = (drawCount: number) => {
+        const count = Math.min(drawCount, remaining.length)
+        const drawnCards = remaining.slice(0, count)
+        const newDeck = remaining.slice(count)
+        setHand(prev => [...prev, ...drawnCards])
+        setRemaining(newDeck)
+        alert(`特性サイコドローで山札を${count}枚引きました。`)
+    }
+
     // --- New Card Effect Handlers ---
 
     // タケルライコex (Raging Bolt ex) Logic
@@ -3511,6 +3543,31 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+            })
+        }
+
+
+        if (name === 'サマヨール' || name === 'ヨノワール') {
+            const damage = name === 'ヨノワール' ? 13 : 5
+            actions.push({
+                label: `カースドボムを使用 (${damage}個)`,
+                action: () => {
+                    handleCursedBomb(source as 'battle' | 'bench', index, damage)
+                    closeMenu()
+                },
+                color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+            })
+        }
+
+        if (name === 'フーディン' || name === 'ユンゲラー') {
+            const drawCount = name === 'フーディン' ? 3 : 2
+            actions.push({
+                label: `サイコドロー (${drawCount}枚)`,
+                action: () => {
+                    handlePsychicDraw(drawCount)
+                    closeMenu()
+                },
+                color: 'bg-blue-100 text-blue-700 hover:bg-blue-200'
             })
         }
 
