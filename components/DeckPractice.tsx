@@ -348,6 +348,250 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         count: number
     }
     const [munkidoriState, setMunkidoriState] = useState<MunkidoriState | null>(null)
+    const [fanCallUsedThisTurn, setFanCallUsedThisTurn] = useState(false)
+
+    // ヒカリ State
+    interface DawnState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndices: number[]
+    }
+    const [dawnState, setDawnState] = useState<DawnState | null>(null)
+
+    // スピンロトム (Fan Call) State
+    interface FanCallState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndices: number[]
+    }
+    const [fanCallState, setFanCallState] = useState<FanCallState | null>(null)
+
+    // ガラスのラッパ State
+    interface GlassTrumpetState {
+        step: 'select_energy' | 'select_target'
+        candidates: Card[] // Energies in trash
+        selectedEnergyIndices: number[]
+        targetBenchIndices: number[]
+    }
+    const [glassTrumpetState, setGlassTrumpetState] = useState<GlassTrumpetState | null>(null)
+
+    // テラスタルオーブ State
+    interface TeraOrbState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndex: number | null
+    }
+    const [teraOrbState, setTeraOrbState] = useState<TeraOrbState | null>(null)
+
+    // タケシのスカウト State
+    interface BrocksScoutState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndices: number[]
+    }
+    const [brocksScoutState, setBrocksScoutState] = useState<BrocksScoutState | null>(null)
+
+    // --- New Card Effect Handlers ---
+
+    // Dawn (ヒカリ) Logic
+    const handleDawnSelect = (index: number) => {
+        if (!dawnState) return
+        setDawnState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 3) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleDawnConfirm = () => {
+        if (!dawnState) return
+        const selectedCards = dawnState.selectedIndices.map(idx => remaining[idx])
+        setHand(prev => [...prev, ...selectedCards])
+        const newDeck = remaining.filter((_, i) => !dawnState.selectedIndices.includes(i)).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setDawnState(null)
+        alert("手札に加え、山札をシャッフルしました")
+    }
+
+    const handleDawnCancel = () => {
+        if (dawnState) {
+            setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
+            alert("山札をシャッフルしました")
+        }
+        setDawnState(null)
+    }
+
+    // Fan Call (スピンロトム) Logic
+    const handleFanCallSelect = (index: number) => {
+        if (!fanCallState) return
+        setFanCallState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 3) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleFanCallConfirm = () => {
+        if (!fanCallState) return
+        const selectedCards = fanCallState.selectedIndices.map(idx => remaining[idx])
+        setHand(prev => [...prev, ...selectedCards])
+        const newDeck = remaining.filter((_, i) => !fanCallState.selectedIndices.includes(i)).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setFanCallState(null)
+        alert("手札に加え、山札をシャッフルしました")
+    }
+
+    const handleFanCallCancel = () => {
+        if (fanCallState) {
+            setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
+            alert("山札をシャッフルしました")
+        }
+        setFanCallState(null)
+    }
+
+    // Glass Trumpet (ガラスのラッパ) Logic
+    const handleGlassTrumpetEnergySelect = (candidateIndex: number) => {
+        if (!glassTrumpetState) return
+        setGlassTrumpetState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedEnergyIndices]
+            const foundIdx = current.indexOf(candidateIndex)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(candidateIndex)
+            }
+            return { ...prev, selectedEnergyIndices: current }
+        })
+    }
+
+    const handleGlassTrumpetConfirmEnergy = () => {
+        if (!glassTrumpetState) return
+        setGlassTrumpetState(prev => prev ? { ...prev, step: 'select_target' } : null)
+    }
+
+    const handleGlassTrumpetTargetSelect = (type: 'battle' | 'bench', index: number) => {
+        if (!glassTrumpetState || glassTrumpetState.step !== 'select_target') return
+        if (glassTrumpetState.selectedEnergyIndices.length === 0) return
+
+        if (type !== 'bench') {
+            alert("ベンチのポケモンを選択してください")
+            return
+        }
+
+        if (glassTrumpetState.targetBenchIndices.includes(index)) {
+            alert("すでにこのポケモンにエネルギーを付けました")
+            return
+        }
+
+        const energyIndexInCandidates = glassTrumpetState.selectedEnergyIndices[0]
+        const energyCard = glassTrumpetState.candidates[energyIndexInCandidates]
+
+        // Attach energy
+        setBench(prev => {
+            const next = [...prev]
+            if (next[index]) {
+                const stack = next[index]!
+                next[index] = {
+                    ...stack,
+                    cards: [...stack.cards, energyCard],
+                    energyCount: stack.energyCount + 1
+                }
+            }
+            return next
+        })
+
+        // If this Pokemon is currently being viewed in the detail modal, we might need to update that state too, 
+        // but usually the detail modal uses the latest props if passed down. 
+        // In this component, renderDetailModal uses selectedDetail state.
+
+        // Remove from trash
+        setTrash(prev => {
+            const next = [...prev]
+            const foundIdx = next.indexOf(energyCard)
+            if (foundIdx !== -1) next.splice(foundIdx, 1)
+            return next
+        })
+
+        setGlassTrumpetState(prev => {
+            if (!prev) return null
+            const remainingEnergies = prev.selectedEnergyIndices.slice(1)
+            const newTargetIndices = [...prev.targetBenchIndices, index]
+            if (remainingEnergies.length === 0) return null
+            return {
+                ...prev,
+                selectedEnergyIndices: remainingEnergies,
+                targetBenchIndices: newTargetIndices,
+                step: 'select_target'
+            }
+        })
+
+        if (glassTrumpetState.selectedEnergyIndices.length === 1) {
+            alert("エネルギーをつけました。効果を終了します。")
+        }
+    }
+
+    // Tera Orb (テラスタルオーブ) Logic
+    const handleTeraOrbSelect = (index: number) => {
+        if (!teraOrbState) return
+        const card = remaining[index]
+        if (!isPokemon(card)) {
+            alert("ポケモンを選んでください")
+            return
+        }
+        setHand(prev => [...prev, card])
+        const newDeck = remaining.filter((_, i) => i !== index).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setTeraOrbState(null)
+        alert(`${card.name}を手札に加え、山札をシャッフルしました`)
+    }
+
+    // Brock's Scout (タケシのスカウト) Logic
+    const handleBrocksScoutSelect = (index: number) => {
+        if (!brocksScoutState) return
+        setBrocksScoutState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleBrocksScoutConfirm = () => {
+        if (!brocksScoutState) return
+        const selectedCards = brocksScoutState.selectedIndices.map(idx => remaining[idx])
+
+        // Validation (heuristic)
+        const hasEvolution = selectedCards.some(c => c.subtypes?.includes('Evolution') || c.name.includes('VMAX') || c.name.includes('VSTAR'))
+        if (hasEvolution && selectedCards.length > 1) {
+            alert("進化ポケモンを選ぶ場合は1枚までです")
+            return
+        }
+
+        setHand(prev => [...prev, ...selectedCards])
+        const newDeck = remaining.filter((_, i) => !brocksScoutState.selectedIndices.includes(i)).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setBrocksScoutState(null)
+        alert("手札に加え、山札をシャッフルしました")
+    }
+
 
     useImperativeHandle(ref, () => ({
         handleExternalDragEnd: (event: any) => {
@@ -849,6 +1093,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setOkunoteUsedThisTurn(false)
         setPecharuntUsedThisTurn(false)
         setMunkidoriUsedThisTurn(false)
+        setFanCallUsedThisTurn(false)
 
         // Mega Brave reset logic:
         // If it was used this turn, it becomes "used last turn" (still restricted).
@@ -1441,7 +1686,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(prev => prev.filter((_, i) => i !== handIndex))
         setTrash(prev => [...prev, card])
 
-        // 2. Open trash selection
         setNPointUpState({
             step: 'select_energy',
             candidates: [...trash],
@@ -2452,6 +2696,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setUltraBallState(null)
     }
 
+
+
     // Buddy-Buddy Poffin Logic
     const usePoffin = (playedIndex: number) => {
         // Move Poffin to trash
@@ -3209,6 +3455,107 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+            })
+        }
+
+        if (name === 'ヒカリ') {
+            actions.push({
+                label: 'ヒカリを使用',
+                action: () => {
+                    if (source === 'hand') moveToTrash(index)
+                    setDawnState({
+                        step: 'search',
+                        candidates: [...remaining],
+                        selectedIndices: []
+                    })
+                    closeMenu()
+                },
+                color: 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+            })
+        }
+
+        if (name === 'スピンロトム') {
+            actions.push({
+                label: 'ファンコールを使用',
+                action: () => {
+                    if (fanCallUsedThisTurn) {
+                        alert("この番、すでに別の「ファンコール」を使っています")
+                        return
+                    }
+                    // Fan Call can only be used on the first turn
+                    // We don't have a strict turn counter, but we can assume it's usable if hand/bench/field is at starting state or let user decide?
+                    // User request says "最初の自分の番にだけ1回使える". 
+                    // Let's implement the logic if possible or just show a warning.
+                    if (source === 'hand') {
+                        // Ability - don't necessarily trash the card if it's an ability of a Pokemon in hand? 
+                        // But Fan Call is an ability of Spin Rotom. Usually used from bench or hand (if it's a specific "coming into play" or "from hand" thing).
+                        // Spin Rotom's Fan Call is "最初の自分の番にだけ1回使える" (Can use once on your first turn).
+                        // In PKMN TCG, usually abilities are used from the field. 
+                        // But some are from hand. Let's assume it can be used from either for flexibility in solo play.
+                    }
+                    setFanCallState({
+                        step: 'search',
+                        candidates: [...remaining],
+                        selectedIndices: []
+                    })
+                    setFanCallUsedThisTurn(true)
+                    closeMenu()
+                },
+                color: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            })
+        }
+
+        if (name === 'ガラスのラッパ') {
+            actions.push({
+                label: 'ガラスのラッパを使用',
+                action: () => {
+                    const basicEnergies = trash.filter(c => isEnergy(c) && (c.subtypes?.includes('Basic') || !c.subtypes?.includes('Special')))
+                    if (basicEnergies.length === 0) {
+                        alert("トラッシュに基本エネルギーがありません")
+                        return
+                    }
+                    if (source === 'hand') moveToTrash(index)
+                    setGlassTrumpetState({
+                        step: 'select_energy',
+                        candidates: basicEnergies,
+                        selectedEnergyIndices: [],
+                        targetBenchIndices: []
+                    })
+                    closeMenu()
+                },
+                color: 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+            })
+        }
+
+        if (name === 'テラスタルオーブ') {
+            actions.push({
+                label: 'テラスタルオーブを使用',
+                action: () => {
+                    if (source === 'hand') moveToTrash(index)
+                    setTeraOrbState({
+                        step: 'search',
+                        candidates: [...remaining],
+                        selectedIndex: null
+                    })
+                    closeMenu()
+                },
+                color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+            })
+        }
+
+        if (name === 'タケシのスカウト') {
+            actions.push({
+                label: 'タケシのスカウトを使用',
+                action: () => {
+                    if (source === 'hand') moveToTrash(index)
+                    setBrocksScoutState({
+                        step: 'search',
+                        candidates: [...remaining],
+                        selectedIndices: []
+                    })
+                    closeMenu()
+                },
+                color: 'bg-stone-200 text-stone-800 hover:bg-stone-300'
             })
         }
 
@@ -4169,6 +4516,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
                             handleEnergySwitchClickPokemon('battle', 0)
                         }
+                        if (glassTrumpetState?.step === 'select_target') {
+                            handleGlassTrumpetTargetSelect('battle', 0)
+                            return
+                        }
                         if (megaLucarioEXAttackState && megaLucarioEXAttackState.step === 'attach_energy') {
                             applyMegaLucarioEnergy('battle', 0)
                             return
@@ -4396,6 +4747,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                     handleNPointUpClickPokemon('bench', i)
                                                 } else if (energySwitchState?.step === 'select_source_pokemon' || energySwitchState?.step === 'select_target_pokemon') {
                                                     handleEnergySwitchClickPokemon('bench', i)
+                                                } else if (glassTrumpetState?.step === 'select_target') {
+                                                    handleGlassTrumpetTargetSelect('bench', i)
                                                 } else if (megaLucarioEXAttackState?.step === 'attach_energy') {
                                                     handleMegaLucarioEXAttachClick('bench', i)
                                                 } else {
@@ -5431,6 +5784,207 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Dawn (ヒカリ) Modal */}
+            {dawnState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-blue-600 flex-1 text-center ml-8">ヒカリ</h2>
+                            <button onClick={() => setPeekDeckSearch(true)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からたね、1進化、2進化をそれぞれ1枚ずつ選んでください。<br />(緑色の枠のカードが選択可能です)</p>
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {remaining.map((card, i) => {
+                                const isTarget = isPokemon(card)
+                                const isSelected = dawnState.selectedIndices.includes(i)
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-blue-500 scale-110 z-10' : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleDawnSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center">{dawnState.selectedIndices.indexOf(i) + 1}</div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center gap-4">
+                            <button onClick={handleDawnConfirm} className="bg-blue-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-blue-700">
+                                {dawnState.selectedIndices.length > 0 ? `${dawnState.selectedIndices.length}枚を手札に加える` : '対象なし・決定'}
+                            </button>
+                            <button onClick={handleDawnCancel} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Fan Call (ファンコール) Modal */}
+            {fanCallState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-700 flex-1 text-center ml-8">ファンコール</h2>
+                            <button onClick={() => setPeekDeckSearch(true)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からHP100以下の無色ポケモンを3枚まで選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {remaining.map((card, i) => {
+                                const isTarget = isPokemon(card)
+                                const isSelected = fanCallState.selectedIndices.includes(i)
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-gray-500 scale-110 z-10' : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleFanCallSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-gray-600 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center">{fanCallState.selectedIndices.indexOf(i) + 1}</div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center gap-4">
+                            <button onClick={handleFanCallConfirm} className="bg-gray-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-gray-700">
+                                {fanCallState.selectedIndices.length > 0 ? `${fanCallState.selectedIndices.length}枚を手札に加える` : '対象なし・決定'}
+                            </button>
+                            <button onClick={handleFanCallCancel} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Glass Trumpet (ガラスのラッパ) UI */}
+            {glassTrumpetState && (
+                glassTrumpetState.step === 'select_energy' ? (
+                    <div className="fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up overflow-y-auto">
+                            <div className="text-center mb-6">
+                                <h2 className="text-xl font-bold text-cyan-600">ガラスのラッパ</h2>
+                                <p className="text-gray-600 text-sm mt-2">
+                                    トラッシュから基本エネルギーを2枚選んでください。
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8">
+                                {glassTrumpetState.candidates.map((card, i) => {
+                                    const isSelected = glassTrumpetState.selectedEnergyIndices.includes(i)
+                                    return (
+                                        <div key={i} className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isSelected ? 'ring-4 ring-cyan-500 scale-105 z-10' : 'hover:scale-105'}`} onClick={() => handleGlassTrumpetEnergySelect(i)}>
+                                            <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                            {isSelected && (
+                                                <div className="absolute inset-0 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                                                    <div className="bg-cyan-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white">{glassTrumpetState.selectedEnergyIndices.indexOf(i) + 1}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            <div className="flex justify-center gap-4">
+                                <button onClick={handleGlassTrumpetConfirmEnergy} className="bg-cyan-600 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-cyan-700 disabled:opacity-50" disabled={glassTrumpetState.selectedEnergyIndices.length === 0}>
+                                    付けるポケモンを選ぶ ({glassTrumpetState.selectedEnergyIndices.length}枚)
+                                </button>
+                                <button onClick={() => setGlassTrumpetState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[2000] animate-bounce-in w-full max-w-lg px-4">
+                        <div className="bg-cyan-600 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4 border-2 border-cyan-400 backdrop-blur-md bg-opacity-90">
+                            <div className="flex items-center gap-4 min-w-0">
+                                <div className="flex -space-x-4 flex-shrink-0">
+                                    {glassTrumpetState.selectedEnergyIndices.map((idx, i) => (
+                                        <div key={i} className="relative">
+                                            <div className="w-10 h-14 rounded overflow-hidden border-2 border-white shadow-lg">
+                                                <Image src={trash[idx].imageUrl} alt="energy" width={40} height={56} className="object-cover" unoptimized />
+                                            </div>
+                                            {i === 0 && <div className="absolute -top-2 -left-2 bg-yellow-400 text-black text-[10px] font-black px-1.5 py-0.5 rounded-full border border-white">次</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                    <span className="font-black text-sm sm:text-base tracking-wider truncate">対象のポケモンを選択してください</span>
+                                    <span className="text-cyan-100 text-[10px] sm:text-xs font-bold">ベンチのポケモンをクリックしてエネルギーを付けます</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setGlassTrumpetState(null)}
+                                className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors flex-shrink-0"
+                                title="キャンセル"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                )
+            )}
+
+            {/* Tera Orb (テラスタルオーブ) Modal */}
+            {teraOrbState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-indigo-700 flex-1 text-center ml-8">テラスタルオーブ</h2>
+                            <button onClick={() => setPeekDeckSearch(true)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からポケモンを1枚選んでください。<br />(緑色の枠のカードが選択可能です)</p>
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {remaining.map((card, i) => {
+                                const isTarget = isPokemon(card)
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget ? 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-110 z-10' : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleTeraOrbSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={80} height={112} className="rounded-lg shadow" unoptimized />
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center">
+                            <button onClick={() => { setRemaining(prev => [...prev].sort(() => Math.random() - 0.5)); setTeraOrbState(null); alert("山札をシャッフルしました"); }} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">対象なし・中止</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Brock's Scout (タケシのスカウト) Modal */}
+            {brocksScoutState && (
+                <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
+                    <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-stone-800 flex-1 text-center ml-8">タケシのスカウト</h2>
+                            <button onClick={() => setPeekDeckSearch(true)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札からたねポケモンを2枚まで、または進化ポケモンを1枚選んでください。<br />(緑色の枠のポケモンが選択可能です)</p>
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {remaining.map((card, i) => {
+                                const isTarget = isPokemon(card)
+                                const isSelected = brocksScoutState.selectedIndices.includes(i)
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all duration-200 rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-stone-600 scale-110 z-10' : 'ring-2 ring-green-400 hover:ring-4 hover:ring-green-500 hover:scale-105 shadow-[0_0_15px_rgba(74,222,128,0.5)]') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleBrocksScoutSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                        {isSelected && (
+                                            <div className="absolute -top-3 -right-3 bg-stone-800 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs text-center">{brocksScoutState.selectedIndices.indexOf(i) + 1}</div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center gap-4">
+                            <button onClick={handleBrocksScoutConfirm} className="bg-stone-800 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-stone-900">
+                                {brocksScoutState.selectedIndices.length > 0 ? `${brocksScoutState.selectedIndices.length}枚を手札に加える` : '対象なし・決定'}
+                            </button>
+                            <button onClick={() => { setRemaining(prev => [...prev].sort(() => Math.random() - 0.5)); setBrocksScoutState(null); alert("山札をシャッフルしました"); }} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                        </div>
                     </div>
                 </div>
             )}
