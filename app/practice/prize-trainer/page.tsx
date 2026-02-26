@@ -110,7 +110,7 @@ export default function PrizeTrainerPage() {
             <div className="max-w-6xl mx-auto space-y-6">
                 <header className="text-center space-y-2">
                     <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
-                        PRIZE TRAINER <span className="text-pink-500">β</span>
+                        PRIZE TRAINER
                     </h1>
                     <p className="text-slate-500 text-sm">サイドにある6枚を山札から推論せよ。</p>
                 </header>
