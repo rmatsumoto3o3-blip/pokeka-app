@@ -97,15 +97,6 @@ export default function PrizeTrainerPage() {
 
     const currentTotalGuesses = Object.values(selectedPrizeGuesses).reduce((a, b) => a + b, 0)
 
-    // Memoize random rotations for deck to prevent re-shuffling on every render
-    const deckVisuals = useMemo(() => {
-        return deckAfterSetup.map(() => ({
-            rotate: (Math.random() - 0.5) * 6, // -3 to 3 deg
-            x: (Math.random() - 0.5) * 8,      // -4 to 4 px
-            y: (Math.random() - 0.5) * 8       // -4 to 4 px
-        }))
-    }, [deckAfterSetup])
-
     // Timer
     useEffect(() => {
         let interval: any
