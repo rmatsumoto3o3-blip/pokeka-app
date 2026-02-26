@@ -19,6 +19,15 @@ export default function PrizeTrainerPage() {
     const [feedback, setFeedback] = useState('')
     const [accuracyScore, setAccuracyScore] = useState<number | null>(null)
     const [timer, setTimer] = useState(0)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            setIsLoggedIn(!!session)
+        }
+        checkAuth()
+    }, [])
 
     // Start training
     const startTraining = async () => {
@@ -120,16 +129,39 @@ export default function PrizeTrainerPage() {
     return (
         <div className="min-h-screen bg-slate-50 py-8 px-4 relative">
             <div className="max-w-6xl mx-auto space-y-6">
-                {/* Back Button */}
-                <div className="flex justify-start">
+                {/* Navigation Buttons */}
+                <div className="flex justify-start gap-2">
+                    {gameState === 'idle' ? (
+                        <Link
+                            href="/practice"
+                            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
+                            前画面へ
+                        </Link>
+                    ) : (
+                        <button
+                            onClick={() => setGameState('idle')}
+                            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m15 18-6-6 6-6" />
+                            </svg>
+                            入力に戻る
+                        </button>
+                    )}
+
                     <Link
-                        href="/practice"
+                        href={isLoggedIn ? "/dashboard" : "/"}
                         className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m15 18-6-6 6-6" />
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
                         </svg>
-                        戻る
+                        TOPへ
                     </Link>
                 </div>
 
