@@ -152,7 +152,7 @@ export default function PrizeTrainerPage() {
                                 {deckAfterSetup.map((card, i) => (
                                     <div
                                         key={`${card.name}-${i}`}
-                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-md opacity-90 hover:opacity-100 transition-opacity"
+                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-md opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer"
                                     >
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                     </div>
@@ -165,9 +165,12 @@ export default function PrizeTrainerPage() {
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
-                                <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar">
+                                <div className="flex gap-2 overflow-x-auto pb-6 pt-2 custom-scrollbar">
                                     {hand.map((card, i) => (
-                                        <div key={`hand-${i}`} className="flex-shrink-0 w-16 md:w-24 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg">
+                                        <div
+                                            key={`hand-${i}`}
+                                            className="flex-shrink-0 w-20 md:w-28 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-3 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer"
+                                        >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                         </div>
                                     ))}
