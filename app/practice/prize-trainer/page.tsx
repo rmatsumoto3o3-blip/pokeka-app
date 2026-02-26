@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { CardData, fetchDeckData } from '@/lib/deckParser'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
@@ -96,6 +96,18 @@ export default function PrizeTrainerPage() {
 
     const currentTotalGuesses = Object.values(selectedPrizeGuesses).reduce((a, b) => a + b, 0)
 
+    // Group deck cards by name to save space and eliminate scrolls
+    const groupedDeck = useMemo(() => {
+        const groups: Record<string, { card: CardData, count: number }> = {}
+        deckAfterSetup.forEach(c => {
+            if (!groups[c.name]) {
+                groups[c.name] = { card: c, count: 0 }
+            }
+            groups[c.name].count++
+        })
+        return Object.values(groups)
+    }, [deckAfterSetup])
+
     // Timer
     useEffect(() => {
         let interval: any
@@ -148,13 +160,17 @@ export default function PrizeTrainerPage() {
                                     TIME: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 gap-3 p-2 pr-4 custom-scrollbar">
-                                {deckAfterSetup.map((card, i) => (
+                            <div className="flex-1 overflow-y-auto grid grid-cols-5 md:grid-cols-7 lg:grid-cols-8 gap-2 p-1 pr-3 custom-scrollbar">
+                                {groupedDeck.map((group, i) => (
                                     <div
-                                        key={`${card.name}-${i}`}
-                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-md opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer"
+                                        key={`${group.card.name}-${i}`}
+                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-1 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer group"
                                     >
-                                        <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                        <Image src={group.card.imageUrl} alt={group.card.name} fill className="object-cover" unoptimized />
+                                        {/* Quantity Badge */}
+                                        <div className="absolute bottom-1 right-1 bg-slate-900 border border-slate-700 text-white text-[10px] font-black px-1.5 py-0.5 rounded shadow-lg z-20 group-hover:scale-110 transition-transform">
+                                            x{group.count}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -165,11 +181,11 @@ export default function PrizeTrainerPage() {
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
-                                <div className="flex gap-2 overflow-x-auto pb-6 pt-2 custom-scrollbar">
+                                <div className="flex flex-wrap gap-2 pb-2">
                                     {hand.map((card, i) => (
                                         <div
                                             key={`hand-${i}`}
-                                            className="flex-shrink-0 w-20 md:w-28 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-3 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer"
+                                            className="w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer"
                                         >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                         </div>
