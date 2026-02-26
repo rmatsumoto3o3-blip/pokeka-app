@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { type Card, shuffle } from '@/lib/deckParser'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
+import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
 import {
     DndContext,
     useSensors,
@@ -404,6 +405,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [ragingBoltState, setRagingBoltState] = useState<RagingBoltState | null>(null)
 
 
+
+
     // サマヨール・ヨノワール (Dusclops/Dusknoir) Logic
     const handleCursedBomb = (source: 'battle' | 'bench', index: number, damage: number) => {
         let stack: CardStack | null = null
@@ -509,6 +512,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setRagingBoltState(null)
         alert(`${discardedCards.length}枚のエネルギーをトラッシュしました`)
     }
+
+
 
     // Dawn (ヒカリ) Logic
     const handleDawnSelect = (index: number) => {
@@ -6798,6 +6803,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
                 </div>
             )}
+
+
 
             {/* Toast Notification */}
             <AnimatePresence>

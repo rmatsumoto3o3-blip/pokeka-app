@@ -104,12 +104,18 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 確率シミュ
                             </Link>
 
-                            {/* Row 3 (Full Width) */}
+                            {/* Row 3 */}
                             <Link
                                 href="/global-simulator"
-                                className="col-span-2 w-full px-8 py-2.5 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold text-sm sm:text-base shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transform hover:scale-[1.02] transition-all duration-200 flex items-center justify-center"
+                                className="px-4 py-2.5 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center gap-1"
                             >
-                                🌎 Global Simulator (PTCGL Import)
+                                🌎 Global Sim
+                            </Link>
+                            <Link
+                                href="/practice/prize-trainer"
+                                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:bg-slate-800 transition-all duration-200 flex items-center justify-center gap-1"
+                            >
+                                🏆 サイド推論
                             </Link>
                         </div>
                     </div>
