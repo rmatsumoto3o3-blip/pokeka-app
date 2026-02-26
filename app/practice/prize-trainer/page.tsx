@@ -11,6 +11,7 @@ export default function PrizeTrainerPage() {
     const [deckCode, setDeckCode] = useState('')
     const [fullDeck, setFullDeck] = useState<CardData[]>([])
     const [prizes, setPrizes] = useState<CardData[]>([])
+    const [hand, setHand] = useState<CardData[]>([])
     const [deckAfterSetup, setDeckAfterSetup] = useState<CardData[]>([])
     const [selectedPrizeGuesses, setSelectedPrizeGuesses] = useState<Record<string, number>>({})
     const [gameState, setGameState] = useState<'idle' | 'setup' | 'playing' | 'result'>('idle')
@@ -44,6 +45,7 @@ export default function PrizeTrainerPage() {
             const remaining = shuffled.slice(13) // Keep randomized for better training
 
             setPrizes(prizeCards)
+            setHand(handCards)
             setDeckAfterSetup(remaining)
             setGameState('playing')
             setTimer(0)
@@ -151,6 +153,20 @@ export default function PrizeTrainerPage() {
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Starting Hand Display */}
+                            <div className="pt-4 border-t border-slate-100">
+                                <h3 className="text-xs font-black text-slate-400 mb-3 tracking-widest uppercase">
+                                    👋 Starting Hand (これらのカードも山札にはありません)
+                                </h3>
+                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                    {hand.map((card, i) => (
+                                        <div key={i} className="flex-shrink-0 w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-200 shadow-sm">
+                                            <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
