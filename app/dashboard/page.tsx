@@ -219,6 +219,12 @@ export default function Dashboard() {
                                     />
                                     一人回し
                                 </Link>
+                                <Link
+                                    href="/practice/prize-trainer"
+                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-slate-900 hover:bg-slate-800 transition ml-2 shadow-sm gap-1"
+                                >
+                                    🏆 サイド推論
+                                </Link>
                                 {isAdmin && (
                                     <button
                                         onClick={() => setActiveTab('articles')}
