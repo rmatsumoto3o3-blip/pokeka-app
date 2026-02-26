@@ -138,7 +138,7 @@ export default function PrizeTrainerPage() {
                 {gameState === 'playing' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Searchable Deck List */}
-                        <div className="lg:col-span-2 bg-white rounded-2xl border p-6 space-y-4 shadow-sm h-[70vh] flex flex-col">
+                        <div className="lg:col-span-2 bg-white rounded-2xl border p-6 space-y-4 shadow-sm h-[85vh] flex flex-col">
                             <div className="flex justify-between items-center">
                                 <h2 className="font-bold flex items-center gap-2">
                                     🔍 山札の中身 ({deckAfterSetup.length}枚)
@@ -171,38 +171,38 @@ export default function PrizeTrainerPage() {
                         </div>
 
                         {/* Inference Console */}
-                        <div className="bg-slate-900 text-white rounded-2xl p-6 space-y-6 shadow-xl flex flex-col">
+                        <div className="bg-white border-2 border-slate-200 text-slate-900 rounded-2xl p-6 space-y-6 shadow-sm flex flex-col h-[85vh]">
                             <div>
                                 <h3 className="text-lg font-bold mb-1">サイド落ち推論</h3>
-                                <p className="text-slate-400 text-xs">元のデッキリストからサイドにあると思う6枚を選択してください。</p>
+                                <p className="text-slate-500 text-xs font-medium">元のデッキリストからサイドにあると思う6枚を選択してください。</p>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-1">
+                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
                                 {fullDeck.map((card, i) => {
                                     const count = selectedPrizeGuesses[card.name] || 0
                                     return (
                                         <div
                                             key={i}
-                                            className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border ${count > 0 ? 'bg-pink-600/10 border-pink-500/50' : 'border-slate-800'}`}
+                                            className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border-2 transition-colors ${count > 0 ? 'bg-pink-50 border-pink-200' : 'border-slate-50 bg-slate-50/30'}`}
                                         >
                                             <div className="flex-1 min-w-0 pr-2">
-                                                <div className="truncate font-bold text-slate-100">{card.name}</div>
-                                                <div className="text-[10px] text-slate-500">デッキ内: {card.quantity}枚</div>
+                                                <div className="truncate font-bold text-slate-800">{card.name}</div>
+                                                <div className="text-[10px] text-slate-400">デッキ内: {card.quantity}枚</div>
                                             </div>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => changeGuessCount(card.name, -1)}
-                                                    className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30"
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
                                                     disabled={count === 0}
                                                 >
                                                     -
                                                 </button>
-                                                <span className={`w-4 text-center font-mono font-black ${count > 0 ? 'text-pink-400' : 'text-slate-600'}`}>
+                                                <span className={`w-5 text-center font-mono font-black text-base ${count > 0 ? 'text-pink-600' : 'text-slate-300'}`}>
                                                     {count}
                                                 </span>
                                                 <button
                                                     onClick={() => changeGuessCount(card.name, 1)}
-                                                    className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center hover:bg-slate-700 disabled:opacity-30"
+                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
                                                     disabled={currentTotalGuesses >= 6 || count >= card.quantity}
                                                 >
                                                     +
@@ -213,17 +213,17 @@ export default function PrizeTrainerPage() {
                                 })}
                             </div>
 
-                            <div className="pt-4 border-t border-slate-800">
-                                <div className="flex justify-between text-xs mb-2">
-                                    <span>選択済み</span>
-                                    <span className={currentTotalGuesses === 6 ? 'text-pink-400 font-bold' : ''}>
-                                        {currentTotalGuesses} / 6
+                            <div className="pt-4 border-t border-slate-100">
+                                <div className="flex justify-between text-xs mb-3 font-bold text-slate-500">
+                                    <span>選択済みカード</span>
+                                    <span className={currentTotalGuesses === 6 ? 'text-pink-600 uppercase tracking-tighter' : ''}>
+                                        {currentTotalGuesses} / 6 枚
                                     </span>
                                 </div>
                                 <button
                                     onClick={handleSubmit}
                                     disabled={currentTotalGuesses === 0}
-                                    className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-100 transition disabled:opacity-30"
+                                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-slate-800 transition-all disabled:opacity-30 shadow-lg shadow-slate-200 transform active:scale-95"
                                 >
                                     回答を送信
                                 </button>
