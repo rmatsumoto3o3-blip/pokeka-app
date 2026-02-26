@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { CardData, fetchDeckData } from '@/lib/deckParser'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
 
 export default function PrizeTrainerPage() {
@@ -96,6 +97,15 @@ export default function PrizeTrainerPage() {
 
     const currentTotalGuesses = Object.values(selectedPrizeGuesses).reduce((a, b) => a + b, 0)
 
+    // Memoize random rotations for deck to prevent re-shuffling on every render
+    const deckVisuals = useMemo(() => {
+        return deckAfterSetup.map(() => ({
+            rotate: (Math.random() - 0.5) * 6, // -3 to 3 deg
+            x: (Math.random() - 0.5) * 8,      // -4 to 4 px
+            y: (Math.random() - 0.5) * 8       // -4 to 4 px
+        }))
+    }, [deckAfterSetup])
+
     // Timer
     useEffect(() => {
         let interval: any
@@ -148,26 +158,58 @@ export default function PrizeTrainerPage() {
                                     TIME: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 gap-2 pr-2 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 gap-x-4 gap-y-6 p-4 pr-6 custom-scrollbar">
                                 {deckAfterSetup.map((card, i) => (
-                                    <div key={i} className="aspect-[2/3] relative rounded overflow-hidden border border-slate-200 shadow-sm opacity-90">
+                                    <motion.div
+                                        key={`${card.name}-${i}`}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{
+                                            opacity: 0.9,
+                                            scale: 1,
+                                            rotate: deckVisuals[i]?.rotate || 0,
+                                            x: deckVisuals[i]?.x || 0,
+                                            y: deckVisuals[i]?.y || 0
+                                        }}
+                                        whileHover={{ scale: 1.1, opacity: 1, zIndex: 10, rotate: 0 }}
+                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg bg-white"
+                                    >
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
-                                    </div>
+                                    </motion.div>
                                 ))}
                             </div>
 
-                            {/* Starting Hand Display */}
-                            <div className="pt-4 border-t border-slate-800">
-                                <h3 className="text-xs font-black text-slate-500 mb-3 tracking-widest uppercase flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
-                                    Starting Hand (これらのカードも山札にはありません)
+                            {/* Starting Hand Display - Fan Shape */}
+                            <div className="pt-8 border-t border-slate-800 flex flex-col items-center">
+                                <h3 className="text-[10px] font-black text-slate-500 mb-12 tracking-[0.2em] uppercase flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-pulse"></span>
+                                    Starting Hand
                                 </h3>
-                                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                                    {hand.map((card, i) => (
-                                        <div key={i} className="flex-shrink-0 w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-xl transform hover:scale-105 transition-transform">
-                                            <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
-                                        </div>
-                                    ))}
+                                <div className="relative h-32 w-full max-w-lg flex justify-center">
+                                    {hand.map((card, i) => {
+                                        const total = hand.length
+                                        const index = i
+                                        const mid = (total - 1) / 2
+                                        const rotate = (index - mid) * 8 // 8 degree steps
+                                        const x = (index - mid) * 45     // 45px horizontal spread
+                                        const y = Math.pow(index - mid, 2) * 4 // Quadratic arc
+
+                                        return (
+                                            <motion.div
+                                                key={`hand-${i}`}
+                                                initial={{ opacity: 0, y: 100, rotate: 0 }}
+                                                animate={{ opacity: 1, y, x, rotate }}
+                                                whileHover={{
+                                                    y: y - 40,
+                                                    scale: 1.2,
+                                                    zIndex: 50,
+                                                    transition: { type: 'spring', stiffness: 300 }
+                                                }}
+                                                className="absolute w-20 md:w-24 aspect-[2/3] rounded-lg overflow-hidden border-2 border-slate-700 shadow-2xl bg-white origin-bottom cursor-pointer"
+                                            >
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                            </motion.div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         </div>
