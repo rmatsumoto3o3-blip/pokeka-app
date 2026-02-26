@@ -118,8 +118,21 @@ export default function PrizeTrainerPage() {
     }, [gameState])
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 px-4">
+        <div className="min-h-screen bg-slate-50 py-8 px-4 relative">
             <div className="max-w-6xl mx-auto space-y-6">
+                {/* Back Button */}
+                <div className="flex justify-start">
+                    <Link
+                        href="/practice"
+                        className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                        戻る
+                    </Link>
+                </div>
+
                 <header className="text-center space-y-2">
                     <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
                         PRIZE TRAINER
