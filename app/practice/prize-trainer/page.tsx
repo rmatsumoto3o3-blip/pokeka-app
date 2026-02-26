@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { CardData, fetchDeckData } from '@/lib/deckParser'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
@@ -12,6 +13,7 @@ export default function PrizeTrainerPage() {
     const [fullDeck, setFullDeck] = useState<CardData[]>([])
     const [prizes, setPrizes] = useState<CardData[]>([])
     const [hand, setHand] = useState<CardData[]>([])
+    const router = useRouter()
     const [deckAfterSetup, setDeckAfterSetup] = useState<CardData[]>([])
     const [selectedPrizeGuesses, setSelectedPrizeGuesses] = useState<Record<string, number>>({})
     const [gameState, setGameState] = useState<'idle' | 'setup' | 'playing' | 'result'>('idle')
@@ -132,15 +134,15 @@ export default function PrizeTrainerPage() {
                 {/* Navigation Buttons */}
                 <div className="flex justify-start gap-2">
                     {gameState === 'idle' ? (
-                        <Link
-                            href="/practice"
+                        <button
+                            onClick={() => router.back()}
                             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            前画面へ
-                        </Link>
+                            戻る
+                        </button>
                     ) : (
                         <button
                             onClick={() => setGameState('idle')}
@@ -149,7 +151,7 @@ export default function PrizeTrainerPage() {
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="m15 18-6-6 6-6" />
                             </svg>
-                            入力に戻る
+                            入力画面へ戻る
                         </button>
                     )}
 
