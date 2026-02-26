@@ -138,12 +138,13 @@ export default function PrizeTrainerPage() {
                 {gameState === 'playing' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Searchable Deck List */}
-                        <div className="lg:col-span-2 bg-white rounded-2xl border p-6 space-y-4 shadow-sm h-[85vh] flex flex-col">
+                        <div className="lg:col-span-2 bg-slate-950 rounded-2xl border-4 border-slate-800 p-6 space-y-4 shadow-2xl h-[85vh] flex flex-col">
                             <div className="flex justify-between items-center">
-                                <h2 className="font-bold flex items-center gap-2">
-                                    🔍 山札の中身 ({deckAfterSetup.length}枚)
+                                <h2 className="font-bold flex items-center gap-2 text-white text-lg">
+                                    <Image src="/king.png" alt="King" width={28} height={28} className="object-contain" />
+                                    山札の中身 ({deckAfterSetup.length}枚)
                                 </h2>
-                                <span className="font-mono bg-slate-100 px-2 py-1 rounded text-sm text-slate-600">
+                                <span className="font-mono bg-slate-800 px-3 py-1 rounded-full text-sm text-pink-400 font-bold border border-slate-700">
                                     TIME: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                                 </span>
                             </div>
@@ -156,13 +157,14 @@ export default function PrizeTrainerPage() {
                             </div>
 
                             {/* Starting Hand Display */}
-                            <div className="pt-4 border-t border-slate-100">
-                                <h3 className="text-xs font-black text-slate-400 mb-3 tracking-widest uppercase">
-                                    👋 Starting Hand (これらのカードも山札にはありません)
+                            <div className="pt-4 border-t border-slate-800">
+                                <h3 className="text-xs font-black text-slate-500 mb-3 tracking-widest uppercase flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
+                                    Starting Hand (これらのカードも山札にはありません)
                                 </h3>
                                 <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                                     {hand.map((card, i) => (
-                                        <div key={i} className="flex-shrink-0 w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-200 shadow-sm">
+                                        <div key={i} className="flex-shrink-0 w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-xl transform hover:scale-105 transition-transform">
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                         </div>
                                     ))}
