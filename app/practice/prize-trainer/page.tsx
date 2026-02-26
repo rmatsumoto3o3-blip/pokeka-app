@@ -41,7 +41,7 @@ export default function PrizeTrainerPage() {
             // Setup side (6) and hand (7) - only need remaining deck for user to see
             const prizeCards = shuffled.slice(0, 6)
             const handCards = shuffled.slice(6, 13)
-            const remaining = shuffled.slice(13).sort((a, b) => a.name.localeCompare(b.name)) // Sorted for easier searching
+            const remaining = shuffled.slice(13) // Keep randomized for better training
 
             setPrizes(prizeCards)
             setDeckAfterSetup(remaining)
