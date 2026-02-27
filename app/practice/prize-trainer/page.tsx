@@ -139,6 +139,13 @@ export default function PrizeTrainerPage() {
     const currentTotalGuesses = Object.values(selectedPrizeGuesses).reduce((a, b) => a + b, 0)
 
 
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60)
+        const secs = seconds % 60
+        if (mins > 0) return `${mins}分${secs}秒`
+        return `${secs}秒`
+    }
+
     // Timer
     useEffect(() => {
         let interval: any
@@ -183,7 +190,7 @@ export default function PrizeTrainerPage() {
                             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                             <polyline points="9 22 9 12 15 12 15 22" />
                         </svg>
-                        TOPへ
+                        TOPへ戻る
                     </Link>
                 </div>
 
@@ -195,40 +202,63 @@ export default function PrizeTrainerPage() {
                 </header>
 
                 {gameState === 'idle' && (
-                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-md mx-auto space-y-4">
-                        <label className="block text-sm font-bold text-slate-700">デッキコードを入力 (公式サイト)</label>
-                        <input
-                            type="text"
-                            value={deckCode}
-                            onChange={e => setDeckCode(e.target.value)}
-                            placeholder="例: pXpyyy-XXXXXX-XXXXXX"
-                            className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-pink-500 outline-none"
-                        />
-                        <button
-                            onClick={startTraining}
-                            disabled={loading || !deckCode}
-                            className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition disabled:opacity-50"
-                        >
-                            {loading ? '読み込み中...' : 'トレーニング開始'}
-                        </button>
+                    <div className="max-w-2xl mx-auto py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="text-center space-y-4">
+                            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">
+                                Prize Trainer
+                                <span className="block text-lg font-bold text-pink-500 mt-2 uppercase tracking-[0.3em]">サイド落ち推論特訓</span>
+                            </h1>
+                            <p className="text-slate-500 font-medium">
+                                デッキコードを入力して、サイドに落ちた6枚を当てる訓練を開始しましょう。
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 ml-1">デッキコード</label>
+                                <input
+                                    type="text"
+                                    value={deckCode}
+                                    onChange={(e) => setDeckCode(e.target.value)}
+                                    placeholder="例: pypMMp-mRE82M-pSypMy"
+                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 text-lg font-mono focus:outline-none focus:border-slate-900 transition-all"
+                                />
+                            </div>
+                            <button
+                                onClick={startTraining}
+                                disabled={loading || !deckCode}
+                                className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-slate-200 hover:-translate-y-1 active:translate-y-0"
+                            >
+                                {loading ? 'デッキを読み込み中...' : '特訓を開始する'}
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {gameState === 'playing' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Searchable Deck List */}
-                        <div className="lg:col-span-2 bg-slate-950 rounded-2xl border-4 border-slate-800 p-3 space-y-4 shadow-2xl h-[85vh] flex flex-col">
-                            <div className="flex justify-between items-center">
-                                <h2 className="font-bold flex items-center gap-2 text-white text-lg">
-                                    <Image src="/king.png" alt="King" width={28} height={28} className="object-contain" />
-                                    山札の中身 ({deckAfterSetup.length}枚)
-                                </h2>
-                                <span className="font-mono bg-slate-800 px-3 py-1 rounded-full text-sm text-pink-400 font-bold border border-slate-700">
-                                    TIME: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
-                                </span>
+                    <div className="flex flex-col h-[85vh] md:h-[80vh] md:flex-row gap-6 relative">
+                        {/* Deck Cards List - Left Side */}
+                        <div className="flex-1 flex flex-col min-w-0 bg-slate-900 rounded-3xl overflow-hidden shadow-2xl relative">
+                            {/* Mobile Timer Overlay */}
+                            <div className="md:hidden absolute top-4 right-4 z-50 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-700 text-white font-mono text-xs shadow-xl">
+                                ⏱️ {formatTime(timer)}
                             </div>
+
+                            <div className="p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-lg font-black text-white leading-none">残り山札</h2>
+                                    <p className="text-slate-400 text-[10px] font-bold mt-1">
+                                        ここから 6 枚がサイドに落ちています。({deckAfterSetup.length}枚)
+                                    </p>
+                                </div>
+                                <div className="hidden md:block bg-slate-800 px-4 py-2 rounded-xl text-white font-mono shadow-inner border border-slate-700">
+                                    <span className="text-slate-400 mr-2 text-xs uppercase font-black">Time</span>
+                                    {formatTime(timer)}
+                                </div>
+                            </div>
+
                             <div
-                                className="flex-1 overflow-y-auto flex flex-wrap content-start md:grid md:grid-cols-6 lg:grid-cols-8 gap-y-1 md:gap-1.5 p-[5px] pl-[11%] pt-6 md:pl-[5px] md:pt-[5px] custom-scrollbar overflow-x-hidden"
+                                className="flex-1 overflow-y-auto flex flex-wrap content-start md:grid md:grid-cols-6 lg:grid-cols-8 gap-y-0 md:gap-1.5 p-[10px] md:p-[5px] custom-scrollbar overflow-x-hidden"
                                 onTouchMove={handleTouchUpdate}
                                 onTouchStart={handleTouchUpdate}
                                 onTouchEnd={handleTouchEnd}
@@ -238,7 +268,7 @@ export default function PrizeTrainerPage() {
                                     <div
                                         key={`${card.name}-${i}`}
                                         data-touch-id={`deck-${i}`}
-                                        className={`w-[20%] -ml-[10%] -mt-6 md:mt-0 md:w-auto md:ml-0 aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
+                                        className={`w-[20%] -ml-[10%] -mt-3 md:mt-0 md:w-auto md:ml-0 aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
                                             ${activeTouchId === `deck-${i}` ? '-translate-y-12 scale-150 z-50 shadow-2xl opacity-100 brightness-110' : ''}`}
                                         style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
@@ -372,10 +402,19 @@ export default function PrizeTrainerPage() {
                                     </div>
                                     <h2 className="text-xl font-black text-slate-900">結果発表</h2>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Accuracy</div>
-                                    <div className="text-3xl font-black text-slate-900 leading-none">
-                                        {accuracyScore !== null ? `${accuracyScore}%` : '---'}
+                                <div className="flex gap-6 items-center">
+                                    <div className="text-right">
+                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Time</div>
+                                        <div className="text-xl font-black text-slate-700 leading-none">
+                                            {formatTime(timer)}
+                                        </div>
+                                    </div>
+                                    <div className="w-px h-8 bg-slate-100" />
+                                    <div className="text-right">
+                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Accuracy</div>
+                                        <div className="text-3xl font-black text-slate-900 leading-none">
+                                            {accuracyScore !== null ? `${accuracyScore}%` : '---'}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
