@@ -194,12 +194,6 @@ export default function PrizeTrainerPage() {
                     </Link>
                 </div>
 
-                <header className="text-center space-y-2">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
-                        PRIZE TRAINER
-                    </h1>
-                    <p className="text-slate-500 text-sm">サイドにある6枚を山札から推論せよ。</p>
-                </header>
 
                 {gameState === 'idle' && (
                     <div className="max-w-2xl mx-auto py-12 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
