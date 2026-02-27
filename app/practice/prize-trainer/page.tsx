@@ -396,11 +396,8 @@ export default function PrizeTrainerPage() {
                         <div className="bg-white p-6 md:p-8 rounded-3xl shadow-2xl border space-y-6">
                             {/* Compact Header */}
                             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-xl shadow-lg shadow-slate-200">
-                                        🏆
-                                    </div>
-                                    <h2 className="text-xl font-black text-slate-900">結果発表</h2>
+                                <div className="flex items-center">
+                                    <h2 className="text-xl font-black text-slate-900 border-l-4 border-slate-900 pl-3">結果発表</h2>
                                 </div>
                                 <div className="flex gap-6 items-center">
                                     <div className="text-right">
