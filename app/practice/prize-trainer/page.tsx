@@ -202,7 +202,7 @@ export default function PrizeTrainerPage() {
                 {gameState === 'playing' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Searchable Deck List */}
-                        <div className="lg:col-span-2 bg-slate-950 rounded-2xl border-4 border-slate-800 p-6 space-y-4 shadow-2xl h-[85vh] flex flex-col">
+                        <div className="lg:col-span-2 bg-slate-950 rounded-2xl border-4 border-slate-800 p-3 space-y-4 shadow-2xl h-[85vh] flex flex-col">
                             <div className="flex justify-between items-center">
                                 <h2 className="font-bold flex items-center gap-2 text-white text-lg">
                                     <Image src="/king.png" alt="King" width={28} height={28} className="object-contain" />
@@ -213,7 +213,7 @@ export default function PrizeTrainerPage() {
                                 </span>
                             </div>
                             <div
-                                className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 p-2 pr-4 custom-scrollbar"
+                                className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1.5 p-[5px] custom-scrollbar"
                                 onTouchMove={handleTouchUpdate}
                                 onTouchStart={handleTouchUpdate}
                                 onTouchEnd={handleTouchEnd}
@@ -233,13 +233,13 @@ export default function PrizeTrainerPage() {
                             </div>
 
                             {/* Starting Hand Display - Clean List */}
-                            <div className="pt-6 border-t border-slate-800">
-                                <h3 className="text-[10px] font-black text-slate-500 mb-3 tracking-[0.2em] uppercase flex items-center gap-2">
+                            <div className="pt-4 border-t border-slate-800 p-[5px]">
+                                <h3 className="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em] uppercase flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
                                 <div
-                                    className="flex flex-wrap gap-2 pb-2"
+                                    className="flex flex-wrap gap-1 pb-1"
                                     onTouchMove={handleTouchUpdate}
                                     onTouchStart={handleTouchUpdate}
                                     onTouchEnd={handleTouchEnd}
@@ -250,7 +250,7 @@ export default function PrizeTrainerPage() {
                                             key={`hand-${i}`}
                                             data-touch-id={`hand-${i}`}
                                             className={`w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer select-none
-                                                ${activeTouchId === `hand-${i}` ? '-translate-y-20 scale-175 z-50 shadow-2xl brightness-110' : ''}`}
+                                                ${activeTouchId === `hand-${i}` ? '-translate-y-18 scale-150 z-50 shadow-2xl brightness-110' : ''}`}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
