@@ -200,7 +200,8 @@ export default function PrizeTrainerPage() {
                                 {deckAfterSetup.map((card, i) => (
                                     <div
                                         key={`${card.name}-${i}`}
-                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer"
+                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 active:-translate-y-4 active:scale-110 active:z-50 active:shadow-2xl transition-all duration-200 cursor-pointer select-none"
+                                        style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                     </div>
