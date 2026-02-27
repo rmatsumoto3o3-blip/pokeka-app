@@ -382,43 +382,93 @@ export default function PrizeTrainerPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-end px-2">
-                                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                                        <span className="w-2 h-4 bg-pink-500 rounded-full"></span>
-                                        実際のサイド落ち (正解)
-                                    </h3>
-                                    <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                                        正解数: <span className="text-pink-600 font-black">
-                                            {prizes.reduce((acc, card, i) => {
-                                                const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
-                                                return acc + (selectedPrizeGuesses[card.name] >= cardOccurrences ? 1 : 0)
-                                            }, 0)}
-                                        </span> / 6 枚
+                            <div className="space-y-8">
+                                {/* Section 1: Your Guess */}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end px-2">
+                                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                            <span className="w-2 h-4 bg-blue-500 rounded-full"></span>
+                                            あなたの予想 (Your Guess)
+                                        </h3>
+                                    </div>
+                                    <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                                        {(() => {
+                                            // Reconstruct guessed cards array based on selectedPrizeGuesses
+                                            const guessedCards: any[] = []
+                                            Object.entries(selectedPrizeGuesses).forEach(([name, count]) => {
+                                                const cardInfo = fullDeck.find(d => d.name === name)
+                                                if (cardInfo) {
+                                                    for (let i = 0; i < count; i++) {
+                                                        guessedCards.push(cardInfo)
+                                                    }
+                                                }
+                                            })
+
+                                            // Fill to 6 if needed (though usually 6)
+                                            return guessedCards.slice(0, 6).map((card, i) => {
+                                                const prevSameCards = guessedCards.slice(0, i).filter(c => c.name === card.name).length
+                                                const actualCount = prizes.filter(p => p.name === card.name).length
+                                                const isCorrect = actualCount > prevSameCards
+
+                                                return (
+                                                    <div key={`guess-${i}`} className={`flex flex-col gap-1.5 p-1.5 rounded-xl border-2 transition-all ${isCorrect ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-red-200 bg-red-50 opacity-80'}`}>
+                                                        <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-sm">
+                                                            <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                        </div>
+                                                        <div className="text-[9px] font-black text-slate-900 truncate px-0.5">{card.name}</div>
+                                                        <div className="flex items-center justify-center">
+                                                            {isCorrect ? (
+                                                                <span className="text-[10px] font-black text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full ring-1 ring-blue-200">CORRECT</span>
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-red-600 bg-red-100 px-2 py-0.5 rounded-full ring-1 ring-red-200">WRONG</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })
+                                        })()}
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-3 md:grid-cols-6 gap-3 pb-4">
-                                    {prizes.map((card, i) => {
-                                        const guessedCount = selectedPrizeGuesses[card.name] || 0
-                                        const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
-                                        const isCorrect = guessedCount >= cardOccurrences
 
-                                        return (
-                                            <div key={i} className={`flex flex-col gap-1.5 p-1.5 rounded-xl border-2 transition-all ${isCorrect ? 'border-green-500 bg-green-50 shadow-sm' : 'border-slate-100 bg-slate-50/50 opacity-60'}`}>
-                                                <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-sm">
-                                                    <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                {/* Section 2: Actual Prizes */}
+                                <div className="space-y-4 pt-4 border-t border-slate-100">
+                                    <div className="flex justify-between items-end px-2">
+                                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                            <span className="w-2 h-4 bg-pink-500 rounded-full"></span>
+                                            実際のサイド落ち (Correct Prizes)
+                                        </h3>
+                                        <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                            正解数: <span className="text-pink-600 font-black">
+                                                {prizes.reduce((acc, card, i) => {
+                                                    const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
+                                                    return acc + (selectedPrizeGuesses[card.name] >= cardOccurrences ? 1 : 0)
+                                                }, 0)}
+                                            </span> / 6 枚
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 md:grid-cols-6 gap-3 pb-4">
+                                        {prizes.map((card, i) => {
+                                            const guessedCount = selectedPrizeGuesses[card.name] || 0
+                                            const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
+                                            const isCorrect = guessedCount >= cardOccurrences
+
+                                            return (
+                                                <div key={`prize-${i}`} className={`flex flex-col gap-1.5 p-1.5 rounded-xl border-2 transition-all ${isCorrect ? 'border-green-500 bg-green-50 shadow-sm' : 'border-slate-100 bg-slate-50/50 opacity-60'}`}>
+                                                    <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-sm">
+                                                        <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                    </div>
+                                                    <div className="text-[9px] font-black text-slate-900 truncate px-0.5">{card.name}</div>
+                                                    <div className="flex items-center justify-center">
+                                                        {isCorrect ? (
+                                                            <span className="text-[10px] font-black text-green-600 bg-green-100 px-2 py-0.5 rounded-full ring-1 ring-green-200">MATCH!</span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">MISS</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="text-[9px] font-black text-slate-900 truncate px-0.5">{card.name}</div>
-                                                <div className="flex items-center justify-center">
-                                                    {isCorrect ? (
-                                                        <span className="text-[10px] font-black text-green-600 bg-green-100 px-2 py-0.5 rounded-full ring-1 ring-green-200">MATCH!</span>
-                                                    ) : (
-                                                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">MISS</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                            )
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
