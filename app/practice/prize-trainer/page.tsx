@@ -224,7 +224,7 @@ export default function PrizeTrainerPage() {
                                         key={`${card.name}-${i}`}
                                         data-touch-id={`deck-${i}`}
                                         className={`aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
-                                            ${activeTouchId === `deck-${i}` ? '-translate-y-4 scale-110 z-50 shadow-2xl opacity-100' : ''}`}
+                                            ${activeTouchId === `deck-${i}` ? '-translate-y-12 scale-150 z-50 shadow-2xl opacity-100 brightness-110' : ''}`}
                                         style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
@@ -250,7 +250,7 @@ export default function PrizeTrainerPage() {
                                             key={`hand-${i}`}
                                             data-touch-id={`hand-${i}`}
                                             className={`w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer select-none
-                                                ${activeTouchId === `hand-${i}` ? '-translate-y-6 scale-125 z-50 shadow-2xl' : ''}`}
+                                                ${activeTouchId === `hand-${i}` ? '-translate-y-20 scale-175 z-50 shadow-2xl brightness-110' : ''}`}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
