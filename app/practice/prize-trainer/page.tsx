@@ -258,7 +258,7 @@ export default function PrizeTrainerPage() {
                             </div>
 
                             <div
-                                className="flex-1 overflow-y-auto flex flex-wrap content-start md:grid md:grid-cols-6 lg:grid-cols-8 gap-y-0 md:gap-1.5 p-[10px] md:p-[5px] custom-scrollbar overflow-x-hidden"
+                                className="flex-1 overflow-y-auto flex flex-wrap content-start pl-[11%] pt-12 md:pl-[5px] md:pt-[5px] md:grid md:grid-cols-6 lg:grid-cols-8 gap-y-0 md:gap-1.5 p-[10px] custom-scrollbar overflow-x-hidden"
                                 onTouchMove={handleTouchUpdate}
                                 onTouchStart={handleTouchUpdate}
                                 onTouchEnd={handleTouchEnd}
@@ -279,7 +279,7 @@ export default function PrizeTrainerPage() {
 
                             {/* Starting Hand Display - Clean List */}
                             <div className="pt-4 border-t border-slate-800 p-[5px]">
-                                <h3 className="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em] uppercase flex items-center gap-2">
+                                <h3 className="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em] uppercase flex items-center gap-2 px-2">
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
