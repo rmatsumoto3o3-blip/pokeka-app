@@ -96,10 +96,24 @@ export default function PrizeTrainerPage() {
             actualCounts[p.name] = (actualCounts[p.name] || 0) + 1
         })
 
+        // Local accuracy calculation (Mathematical)
+        let matches = 0
+        Object.keys(selectedPrizeGuesses).forEach(name => {
+            const guessed = selectedPrizeGuesses[name] || 0
+            const actual = actualCounts[name] || 0
+            matches += Math.min(guessed, actual)
+        })
+        const localScore = Math.round((matches / 6) * 100)
+        setAccuracyScore(localScore)
+
         const res = await getPrizeTrainerFeedbackAction(selectedPrizeGuesses, actualCounts)
         if (res.success) {
             setFeedback(res.message || '')
-            setAccuracyScore(res.accuracyScore || 0)
+            // Optional: overwrite with AI score if different logic is used, 
+            // but usually mathematical one is the baseline.
+            if (res.accuracyScore !== undefined) {
+                setAccuracyScore(res.accuracyScore)
+            }
         }
     }
 
@@ -332,11 +346,13 @@ export default function PrizeTrainerPage() {
 
                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
                                 <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">Inference Accuracy</div>
-                                <div className="text-5xl font-black text-slate-900">{accuracyScore}%</div>
+                                <div className="text-5xl font-black text-slate-900">
+                                    {accuracyScore !== null ? `${accuracyScore}%` : '---'}
+                                </div>
                                 <div className="w-full max-w-xs mx-auto h-2 bg-slate-200 rounded-full mt-4 overflow-hidden">
                                     <div
                                         className="h-full bg-pink-500 transition-all duration-1000 ease-out"
-                                        style={{ width: `${accuracyScore}%` }}
+                                        style={{ width: `${accuracyScore || 0}%` }}
                                     />
                                 </div>
                             </div>
