@@ -479,6 +479,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         <h2 className="text-4xl md:text-5xl font-black text-white mt-2 tracking-tight">
                             サイド確認練習ツール<br className="md:hidden" /> (Prize Trainer) の使い方
                         </h2>
+                        <span className="block text-pink-400 font-bold mt-4 text-lg">世界唯一（※Rii調べ）のサイド確認練習ツール</span>
                         <p className="mt-6 text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
                             「サイド落ち」の把握はトッププレイヤーへの必須条件。<br />
                             山札と手札から、サイドにある6枚を瞬時に見抜く力を養いましょう。
