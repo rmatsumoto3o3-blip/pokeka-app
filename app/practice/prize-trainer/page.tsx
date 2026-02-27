@@ -367,7 +367,7 @@ export default function PrizeTrainerPage() {
                             <div className="inline-block p-4 bg-slate-50 rounded-full mb-2">
                                 <span className="text-5xl">🏆</span>
                             </div>
-                            <h2 className="text-3xl font-black">結果発表</h2>
+                            <h2 className="text-3xl font-black text-slate-900">結果発表</h2>
 
                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
                                 <div className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-1">Inference Accuracy</div>
@@ -382,32 +382,44 @@ export default function PrizeTrainerPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 py-4">
-                                {prizes.map((card, i) => {
-                                    const actualCounts: Record<string, number> = {}
-                                    prizes.forEach(p => actualCounts[p.name] = (actualCounts[p.name] || 0) + 1)
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end px-2">
+                                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                        <span className="w-2 h-4 bg-pink-500 rounded-full"></span>
+                                        実際のサイド落ち (正解)
+                                    </h3>
+                                    <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                                        正解数: <span className="text-pink-600 font-black">
+                                            {prizes.reduce((acc, card, i) => {
+                                                const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
+                                                return acc + (selectedPrizeGuesses[card.name] >= cardOccurrences ? 1 : 0)
+                                            }, 0)}
+                                        </span> / 6 枚
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 md:grid-cols-6 gap-3 pb-4">
+                                    {prizes.map((card, i) => {
+                                        const guessedCount = selectedPrizeGuesses[card.name] || 0
+                                        const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
+                                        const isCorrect = guessedCount >= cardOccurrences
 
-                                    const guessedCount = selectedPrizeGuesses[card.name] || 0
-                                    // Identify if this specific card (by index) was "matched"
-                                    // Logic: if we guessed N of this card, and it's one of the first N of this card in the actual prizes
-                                    const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
-                                    const isCorrect = guessedCount >= cardOccurrences
-
-                                    return (
-                                        <div key={i} className={`flex flex-col gap-2 p-2 rounded-xl border ${isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50 opacity-80'}`}>
-                                            <div className="aspect-[2/3] relative rounded overflow-hidden shadow-sm">
-                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                        return (
+                                            <div key={i} className={`flex flex-col gap-1.5 p-1.5 rounded-xl border-2 transition-all ${isCorrect ? 'border-green-500 bg-green-50 shadow-sm' : 'border-slate-100 bg-slate-50/50 opacity-60'}`}>
+                                                <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-sm">
+                                                    <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                </div>
+                                                <div className="text-[9px] font-black text-slate-900 truncate px-0.5">{card.name}</div>
+                                                <div className="flex items-center justify-center">
+                                                    {isCorrect ? (
+                                                        <span className="text-[10px] font-black text-green-600 bg-green-100 px-2 py-0.5 rounded-full ring-1 ring-green-200">MATCH!</span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">MISS</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="text-[10px] font-bold text-slate-700 truncate">{card.name}</div>
-                                            <div className="text-[9px] flex justify-between">
-                                                <span className="text-slate-400">予想: {guessedCount}</span>
-                                                <span className={isCorrect ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                                                    {isCorrect ? 'OK' : 'MISS'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
+                                        )
+                                    })}
+                                </div>
                             </div>
 
                             {feedback ? (
