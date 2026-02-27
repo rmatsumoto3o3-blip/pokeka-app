@@ -39,6 +39,16 @@ function getSupabaseAdmin() {
     return createClient(url, key)
 }
 
+// Public Client for Read Operations (Standard RLS)
+function getSupabasePublic() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) {
+        throw new Error('Supabase URL or Anon Key is missing. Please check your environment variables.')
+    }
+    return createClient(url, key)
+}
+
 // --- Constants ---
 const ADMIN_EMAILS = ['r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local', 'player1@pokeka.local']
 
@@ -595,10 +605,10 @@ export async function getAllReferenceDecksAction() {
         let allDecks: any[] = []
         let from = 0
         const step = 1000
-        const supabaseAdmin = getSupabaseAdmin()
+        const supabasePublic = getSupabasePublic()
 
         while (true) {
-            const { data, error } = await supabaseAdmin
+            const { data, error } = await supabasePublic
                 .from('reference_decks')
                 .select('*')
                 .range(from, from + step - 1)
