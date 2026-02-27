@@ -450,9 +450,9 @@ export default function PrizeTrainerPage() {
                                                         </div>
                                                         <div className="flex items-center justify-center py-0.5">
                                                             {isCorrect ? (
-                                                                <span className="text-[10px] font-black text-blue-600">CORRECT</span>
+                                                                <span className="text-[10px] font-black text-blue-600">正解</span>
                                                             ) : (
-                                                                <span className="text-[10px] font-black text-red-600">WRONG</span>
+                                                                <span className="text-[10px] font-black text-red-600">不正解</span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -491,9 +491,9 @@ export default function PrizeTrainerPage() {
                                                     </div>
                                                     <div className="flex items-center justify-center py-0.5">
                                                         {isCorrect ? (
-                                                            <span className="text-[10px] font-black text-green-600">MATCH!</span>
+                                                            <span className="text-[10px] font-black text-green-600">一致</span>
                                                         ) : (
-                                                            <span className="text-[10px] font-black text-slate-400">MISS</span>
+                                                            <span className="text-[10px] font-black text-slate-400">不一致</span>
                                                         )}
                                                     </div>
                                                 </div>
