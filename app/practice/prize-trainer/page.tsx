@@ -217,7 +217,8 @@ export default function PrizeTrainerPage() {
                                     {hand.map((card, i) => (
                                         <div
                                             key={`hand-${i}`}
-                                            className="w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer"
+                                            className="w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 active:-translate-y-6 active:scale-125 active:z-50 transition-all duration-200 cursor-pointer select-none"
+                                            style={{ WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
                                         </div>
