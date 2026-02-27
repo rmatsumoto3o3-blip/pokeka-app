@@ -227,7 +227,7 @@ export default function PrizeTrainerPage() {
                                 </span>
                             </div>
                             <div
-                                className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1.5 p-[5px] custom-scrollbar"
+                                className="flex-1 overflow-y-auto flex flex-wrap content-start md:grid md:grid-cols-6 lg:grid-cols-8 gap-y-3 md:gap-1.5 p-[5px] custom-scrollbar overflow-x-hidden"
                                 onTouchMove={handleTouchUpdate}
                                 onTouchStart={handleTouchUpdate}
                                 onTouchEnd={handleTouchEnd}
@@ -237,7 +237,7 @@ export default function PrizeTrainerPage() {
                                     <div
                                         key={`${card.name}-${i}`}
                                         data-touch-id={`deck-${i}`}
-                                        className={`aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
+                                        className={`w-[20%] -ml-[10%] first:ml-0 md:w-auto md:ml-0 aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
                                             ${activeTouchId === `deck-${i}` ? '-translate-y-12 scale-150 z-50 shadow-2xl opacity-100 brightness-110' : ''}`}
                                         style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
