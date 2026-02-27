@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { CardData, fetchDeckData } from '@/lib/deckParser'
 import { supabase } from '@/lib/supabase'
@@ -22,6 +22,22 @@ export default function PrizeTrainerPage() {
     const [accuracyScore, setAccuracyScore] = useState<number | null>(null)
     const [timer, setTimer] = useState(0)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [activeTouchId, setActiveTouchId] = useState<string | null>(null)
+
+    const handleTouchUpdate = useCallback((e: React.TouchEvent) => {
+        const touch = e.touches[0]
+        const target = document.elementFromPoint(touch.clientX, touch.clientY)
+        const cardEl = target?.closest('[data-touch-id]')
+        if (cardEl) {
+            setActiveTouchId(cardEl.getAttribute('data-touch-id'))
+        } else {
+            setActiveTouchId(null)
+        }
+    }, [])
+
+    const handleTouchEnd = useCallback(() => {
+        setActiveTouchId(null)
+    }, [])
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -196,11 +212,19 @@ export default function PrizeTrainerPage() {
                                     TIME: {Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, '0')}
                                 </span>
                             </div>
-                            <div className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 p-2 pr-4 custom-scrollbar">
+                            <div
+                                className="flex-1 overflow-y-auto grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 p-2 pr-4 custom-scrollbar"
+                                onTouchMove={handleTouchUpdate}
+                                onTouchStart={handleTouchUpdate}
+                                onTouchEnd={handleTouchEnd}
+                                onTouchCancel={handleTouchEnd}
+                            >
                                 {deckAfterSetup.map((card, i) => (
                                     <div
                                         key={`${card.name}-${i}`}
-                                        className="aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 active:-translate-y-4 active:scale-110 active:z-50 active:shadow-2xl transition-all duration-200 cursor-pointer select-none"
+                                        data-touch-id={`deck-${i}`}
+                                        className={`aspect-[2/3] relative rounded overflow-hidden border border-slate-800 shadow-sm opacity-90 hover:opacity-100 hover:-translate-y-2 hover:scale-105 hover:shadow-xl hover:z-10 transition-all duration-200 cursor-pointer select-none
+                                            ${activeTouchId === `deck-${i}` ? '-translate-y-4 scale-110 z-50 shadow-2xl opacity-100' : ''}`}
                                         style={{ WebkitTapHighlightColor: 'transparent' }}
                                     >
                                         <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
@@ -214,11 +238,19 @@ export default function PrizeTrainerPage() {
                                     <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
-                                <div className="flex flex-wrap gap-2 pb-2">
+                                <div
+                                    className="flex flex-wrap gap-2 pb-2"
+                                    onTouchMove={handleTouchUpdate}
+                                    onTouchStart={handleTouchUpdate}
+                                    onTouchEnd={handleTouchEnd}
+                                    onTouchCancel={handleTouchEnd}
+                                >
                                     {hand.map((card, i) => (
                                         <div
                                             key={`hand-${i}`}
-                                            className="w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 active:-translate-y-6 active:scale-125 active:z-50 transition-all duration-200 cursor-pointer select-none"
+                                            data-touch-id={`hand-${i}`}
+                                            className={`w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer select-none
+                                                ${activeTouchId === `hand-${i}` ? '-translate-y-6 scale-125 z-50 shadow-2xl' : ''}`}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         >
                                             <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
