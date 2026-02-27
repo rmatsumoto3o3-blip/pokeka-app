@@ -465,6 +465,80 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                     </div>
                 </div >
             </section >
+            {/* NEW: Prize Trainer Usage Guide */}
+            <section className="py-20 bg-slate-900 overflow-hidden relative">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center mb-16">
+                        <div className="inline-flex items-center gap-2 bg-pink-500/20 px-4 py-2 rounded-full border border-pink-500/30 mb-6">
+                            <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
+                            <span className="text-pink-400 font-black tracking-widest uppercase text-xs">New Practice Tool</span>
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black text-white mt-2 tracking-tight">
+                            サイド確認練習ツール<br className="md:hidden" /> (Prize Trainer) の使い方
+                        </h2>
+                        <p className="mt-6 text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
+                            「サイド落ち」の把握はトッププレイヤーへの必須条件。<br />
+                            山札と手札から、サイドにある6枚を瞬時に見抜く力を養いましょう。
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+                        {/* Step 1 */}
+                        <div className="bg-slate-800/40 backdrop-blur-md p-10 rounded-[40px] border border-slate-700/50 hover:border-pink-500/50 transition-all duration-500 group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-slate-700/10 pointer-events-none">1</div>
+                            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-pink-500 group-hover:text-white transition-all duration-500 shadow-xl">
+                                ⌨️
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-4">デッキコードを入力</h3>
+                            <p className="text-slate-400 leading-relaxed">
+                                公式デッキエディタのコードを入力して開始。<br />
+                                自分の今のデッキを使って、実戦さながらのサイド落ちを再現します。
+                            </p>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="bg-slate-800/40 backdrop-blur-md p-10 rounded-[40px] border border-slate-700/50 hover:border-purple-500/50 transition-all duration-500 group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-slate-700/10 pointer-events-none">2</div>
+                            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all duration-500 shadow-xl">
+                                🔍
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-4">サイド落ちを推論</h3>
+                            <p className="text-slate-400 leading-relaxed">
+                                山札・手札を確認し、サイドにある6枚を予想。モバイルでも使いやすい「なぞり拡大操作」で、素早くカードを確認できます。
+                            </p>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="bg-slate-800/40 backdrop-blur-md p-10 rounded-[40px] border border-slate-700/50 hover:border-blue-500/50 transition-all duration-500 group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-slate-700/10 pointer-events-none">3</div>
+                            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-500 shadow-xl">
+                                ⏱️
+                            </div>
+                            <h3 className="text-2xl font-black text-white mb-4">スコアとタイムを計測</h3>
+                            <p className="text-slate-400 leading-relaxed">
+                                正解率だけでなく「回答時間」も記録。<br />
+                                精度とスピードを同時に磨くことで、限られた対戦時間内の判断力を最大化します。
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <Link
+                            href="/practice/prize-trainer"
+                            className="inline-flex items-center px-12 py-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl font-black text-xl hover:shadow-[0_0_40px_rgba(236,72,153,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
+                        >
+                            特訓を開始する
+                            <svg className="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
             <section id="features" className="py-2.5 md:py-2.5 bg-pink-50"> <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                 <div className="text-center mb-16">
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
