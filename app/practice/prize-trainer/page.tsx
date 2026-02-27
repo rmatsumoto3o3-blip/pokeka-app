@@ -291,7 +291,6 @@ export default function PrizeTrainerPage() {
                                         >
                                             <div className="flex-1 min-w-0 pr-2">
                                                 <div className="truncate font-bold text-slate-800">{card.name}</div>
-                                                <div className="text-[10px] text-slate-400">デッキ内: {card.quantity}枚</div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
