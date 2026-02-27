@@ -23,6 +23,7 @@ export default function PrizeTrainerPage() {
     const [timer, setTimer] = useState(0)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [activeTouchId, setActiveTouchId] = useState<string | null>(null)
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
     const handleTouchUpdate = useCallback((e: React.TouchEvent) => {
         const touch = e.touches[0]
@@ -274,62 +275,87 @@ export default function PrizeTrainerPage() {
                             </div>
                         </div>
 
-                        {/* Inference Console */}
-                        <div className="bg-white border-2 border-slate-200 text-slate-900 rounded-2xl p-6 space-y-6 shadow-sm flex flex-col h-[85vh]">
-                            <div>
-                                <h3 className="text-lg font-bold mb-1">サイド落ち推論</h3>
-                                <p className="text-slate-500 text-xs font-medium">元のデッキリストからサイドにあると思う6枚を選択してください。</p>
-                            </div>
+                        {/* Mobile Overlay Backdrop */}
+                        {isDrawerOpen && (
+                            <div
+                                className="md:hidden fixed inset-0 bg-slate-900/60 z-[90] animate-in fade-in duration-300"
+                                onClick={() => setIsDrawerOpen(false)}
+                            />
+                        )}
 
-                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
-                                {fullDeck.map((card, i) => {
-                                    const count = selectedPrizeGuesses[card.name] || 0
-                                    return (
-                                        <div
-                                            key={i}
-                                            className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border-2 transition-colors ${count > 0 ? 'bg-pink-50 border-pink-200' : 'border-slate-50 bg-slate-50/30'}`}
-                                        >
-                                            <div className="flex-1 min-w-0 pr-2">
-                                                <div className="truncate font-bold text-slate-800">{card.name}</div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => changeGuessCount(card.name, -1)}
-                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
-                                                    disabled={count === 0}
-                                                >
-                                                    -
-                                                </button>
-                                                <span className={`w-5 text-center font-mono font-black text-base ${count > 0 ? 'text-pink-600' : 'text-slate-300'}`}>
-                                                    {count}
-                                                </span>
-                                                <button
-                                                    onClick={() => changeGuessCount(card.name, 1)}
-                                                    className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
-                                                    disabled={currentTotalGuesses >= 6 || count >= card.quantity}
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                        {/* Inference Console - Sliding Drawer on Mobile */}
+                        <div className={`
+                            fixed inset-y-0 right-0 z-[100] w-[90%] md:w-auto md:relative md:inset-auto md:z-0
+                            bg-white md:bg-transparent shadow-2xl md:shadow-none
+                            transform transition-transform duration-300 ease-in-out
+                            ${isDrawerOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+                        `}>
+                            {/* Toggle Button for Mobile */}
+                            <button
+                                onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+                                className="md:hidden absolute left-[-40px] top-1/2 -translate-y-1/2 w-10 h-16 bg-white border-2 border-r-0 border-slate-200 rounded-l-xl shadow-[-4px_0_15px_rgba(0,0,0,0.1)] flex items-center justify-center text-slate-400"
+                            >
+                                <span className={`transform transition-transform duration-300 font-black text-xl ${isDrawerOpen ? 'rotate-180' : ''}`}>
+                                    ‹
+                                </span>
+                            </button>
 
-                            <div className="pt-4 border-t border-slate-100">
-                                <div className="flex justify-between text-xs mb-3 font-bold text-slate-500">
-                                    <span>選択済みカード</span>
-                                    <span className={currentTotalGuesses === 6 ? 'text-pink-600 uppercase tracking-tighter' : ''}>
-                                        {currentTotalGuesses} / 6 枚
-                                    </span>
+                            <div className="bg-white border-2 border-slate-200 text-slate-900 md:rounded-2xl p-6 space-y-6 flex flex-col h-full md:h-[85vh] overflow-hidden">
+                                <div>
+                                    <h3 className="text-lg font-bold mb-1">サイド落ち推論</h3>
+                                    <p className="text-slate-500 text-xs font-medium">元のデッキリストからサイドにあると思う6枚を選択してください。</p>
                                 </div>
-                                <button
-                                    onClick={handleSubmit}
-                                    disabled={currentTotalGuesses === 0}
-                                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-slate-800 transition-all disabled:opacity-30 shadow-lg shadow-slate-200 transform active:scale-95"
-                                >
-                                    回答を送信
-                                </button>
+
+                                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-2">
+                                    {fullDeck.map((card, i) => {
+                                        const count = selectedPrizeGuesses[card.name] || 0
+                                        return (
+                                            <div
+                                                key={i}
+                                                className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border-2 transition-colors ${count > 0 ? 'bg-pink-50 border-pink-200' : 'border-slate-50 bg-slate-50/30'}`}
+                                            >
+                                                <div className="flex-1 min-w-0 pr-2">
+                                                    <div className="truncate font-bold text-slate-800">{card.name}</div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => changeGuessCount(card.name, -1)}
+                                                        className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
+                                                        disabled={count === 0}
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className={`w-5 text-center font-mono font-black text-base ${count > 0 ? 'text-pink-600' : 'text-slate-300'}`}>
+                                                        {count}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => changeGuessCount(card.name, 1)}
+                                                        className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-50 text-slate-600 font-bold transition-all disabled:opacity-20 shadow-sm"
+                                                        disabled={currentTotalGuesses >= 6 || count >= card.quantity}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="pt-4 border-t border-slate-100">
+                                    <div className="flex justify-between text-xs mb-3 font-bold text-slate-500">
+                                        <span>選択済みカード</span>
+                                        <span className={currentTotalGuesses === 6 ? 'text-pink-600 uppercase tracking-tighter' : ''}>
+                                            {currentTotalGuesses} / 6 枚
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={currentTotalGuesses === 0}
+                                        className="w-full bg-slate-900 text-white py-4 rounded-xl font-black hover:bg-slate-800 transition-all disabled:opacity-30 shadow-lg shadow-slate-200 transform active:scale-95"
+                                    >
+                                        回答を送信
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
