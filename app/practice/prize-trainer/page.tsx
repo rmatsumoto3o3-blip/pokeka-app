@@ -254,7 +254,7 @@ export default function PrizeTrainerPage() {
                                     Starting Hand (手札)
                                 </h3>
                                 <div
-                                    className="flex flex-wrap gap-1 pb-1"
+                                    className="flex flex-wrap pl-[10%] md:pl-0 pb-1"
                                     onTouchMove={handleTouchUpdate}
                                     onTouchStart={handleTouchUpdate}
                                     onTouchEnd={handleTouchEnd}
@@ -264,7 +264,7 @@ export default function PrizeTrainerPage() {
                                         <div
                                             key={`hand-${i}`}
                                             data-touch-id={`hand-${i}`}
-                                            className={`w-16 md:w-20 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer select-none
+                                            className={`w-[20%] -ml-[10%] first:ml-0 md:w-20 md:ml-0 aspect-[2/3] relative rounded overflow-hidden border border-slate-700 shadow-lg hover:-translate-y-2 hover:scale-110 hover:shadow-2xl hover:z-10 transition-all duration-200 cursor-pointer select-none
                                                 ${activeTouchId === `hand-${i}` ? '-translate-y-18 scale-150 z-50 shadow-2xl brightness-110' : ''}`}
                                             style={{ WebkitTapHighlightColor: 'transparent' }}
                                         >
