@@ -290,8 +290,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         setSimResult(result)
     }
 
-    // Modal Component for Selection
-    const CardSelectorModal = () => {
+    // Modal Component for Selection (Render Function to prevent remounting)
+    const renderCardSelectorModal = () => {
         if (!isSelectorOpen) return null
 
         // Group cards for easier selection
@@ -371,7 +371,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
-            <CardSelectorModal />
+            {renderCardSelectorModal()}
 
             {/* Input Section - Hide if Cards are already loaded (Global Mode) */}
             {!isGlobal && (
