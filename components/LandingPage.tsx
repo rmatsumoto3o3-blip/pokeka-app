@@ -128,7 +128,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                     <div className="flex flex-col md:flex-row items-center justify-center gap-8">
                         {/* TOYGER Ad */}
                         <div className="flex flex-col items-center w-full max-w-sm">
-                            <span className="text-xs text-gray-400 mb-1">PR: サプライ買うならTOYGER</span>
+                            <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
                             <a
                                 href="https://shopa.jp/9293M3MEXQ2Z"
                                 target="_blank"
@@ -146,7 +146,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
                         {/* Dot Picture Promotion */}
                         <div className="flex flex-col items-center w-full max-w-sm">
-                            <span className="text-xs text-gray-400 mb-1">PR: ドット絵ご提供者様(下記タップでXへ)</span>
+                            <span className="text-xs text-gray-400 mb-1">ドット絵ご提供者様(下記タップでXへ)</span>
                             <a
                                 href="https://twitter.com/komori541milk"
                                 target="_blank"
