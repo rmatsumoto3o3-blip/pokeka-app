@@ -490,32 +490,46 @@ function PracticeContent() {
                 <div className="mt-16 mb-8 max-w-4xl mx-auto px-4">
                     <div className="bg-white rounded-xl p-6 md:p-10 shadow-sm border border-gray-100">
                         <h2 className="text-xl md:text-2xl font-bold text-gray-800 border-b pb-4 mb-6">
-                            📖 1人回しツールの使い方
+                            📖 1人回しツールの価値と活用法
                         </h2>
                         <div className="space-y-6 text-gray-600 leading-relaxed">
                             <section>
-                                <h3 className="font-bold text-gray-900 mb-2">⚡️ ブラウザで手軽に対戦練習</h3>
+                                <h3 className="font-bold text-gray-900 mb-2 text-lg">⚡️ なぜ「1人回し」が必要なのか？</h3>
+                                <p className="mb-4">
+                                    ポケモンカードにおいて、理想の展開を安定して行える力（練度）は最強の武器です。
+                                    1人回しは、対戦相手がいない時間でも**「この手札なら次どのカードを持ってくるべきか」「限られたリソースで最大打点を出すルートは何か」**を深く考察できる貴重な時間となります。
+                                </p>
                                 <p>
-                                    公式デッキコードを入力するだけで、仮想のテーブルトップでデッキを動かすことができます。
-                                    自分と相手の2つのデッキを読み込めば、一人で交互に操作して対面練習（一人回し）が可能です。
+                                    本ツールでは、物理的なカードを広げるスペースや準備の時間を必要としません。
+                                    公式デッキコードを読み込むだけで、PCやスマートフォンから即座に対戦シミュレーションを開始できます。
                                 </p>
                             </section>
 
+                            <section className="bg-pink-50 p-5 rounded-xl border border-pink-100">
+                                <h3 className="font-bold text-pink-900 mb-2">💡 練習の質を上げるテクニック</h3>
+                                <ul className="list-disc list-inside space-y-2 ml-2 text-sm text-pink-950">
+                                    <li><strong>先攻・後攻の両方を試す:</strong> 自分のデッキがどちらを取った時に事故りやすいか、解消法は何かを模索しましょう。</li>
+                                    <li><strong>「もしも」を想定する:</strong> 「次の番にナンジャモを使われたら？」「ボスの指令でエースを呼ばれたら？」と仮定して、リカバリーの練習を行います。</li>
+                                    <li><strong>サイド落ちの把握:</strong> 山札を確認した際、どの重要パーツがサイドに落ちているかを瞬時に把握し、それに基づいたゲームプランを組む練習になります。</li>
+                                </ul>
+                            </section>
+
                             <section>
-                                <h3 className="font-bold text-gray-900 mb-2">👆 操作方法</h3>
-                                <ul className="list-disc list-inside space-y-1 ml-2">
-                                    <li><strong>カード移動:</strong> ドラッグ＆ドロップで手札、ベンチ、バトル場、トラッシュへ自由に移動できます。</li>
-                                    <li><strong>山札確認:</strong> デッキをクリックすると中身を確認し、特定のカードを手札に加えたりサイド落ちを確認できます。</li>
-                                    <li><strong>ダメカン:</strong> 画面中央のダメカンをドラッグしてポケモンに乗せることができます。</li>
-                                    <li><strong>特殊状態:</strong> カードをタップしてメニューから「状態異常」や「進化」を選択できます。</li>
+                                <h3 className="font-bold text-gray-900 mb-2">👆 主な操作ガイド</h3>
+                                <ul className="list-disc list-inside space-y-1 ml-2 text-sm">
+                                    <li><strong>基本操作:</strong> ドラッグ＆ドロップでカードをシームレスに移動可能（ベンチ、バトル場、トラッシュ、ロスト）。</li>
+                                    <li><strong>カード詳細メニュー:</strong> タップで進化、状態異常、ダメカン操作、山札の上下移動などの詳細なアクションが可能です。</li>
+                                    <li><strong>山札管理:</strong> 山札をクリックして中身を確認したり、ランダムにシャッフルしたり、特定のカードをサーチできます。</li>
                                 </ul>
                             </section>
 
                             <section className="bg-blue-50 p-4 rounded-lg mt-4">
-                                <h3 className="font-bold text-blue-900 mb-1">📱 スマホ・タブレット対応</h3>
-                                <p className="text-sm text-blue-800">
-                                    外出先や移動中でも練習ができるよう、スマートフォンでのタッチ操作に完全対応しています。
-                                    ちょっとした空き時間に、新デッキの初動確認やコンボの練習にお使いください。
+                                <h3 className="font-bold text-blue-900 mb-1 flex items-center gap-2">
+                                    <span>📱</span> スマホ・タブレットでの練習に最適
+                                </h3>
+                                <p className="text-sm text-blue-800 leading-relaxed">
+                                    電車での移動時間や休憩時間など、ちょっとした隙間時間で新デッキの「回し心地」を確認できるよう調整されています。
+                                    タッチ操作で直感的にカードを動かし、コンボの実現性を体で覚えましょう。
                                 </p>
                             </section>
                         </div>

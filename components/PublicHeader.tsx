@@ -38,6 +38,18 @@ export default function PublicHeader() {
 
                     <div className="flex gap-2 md:gap-3 items-center">
                         <Link
+                            href="/guide"
+                            className="hidden lg:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
+                        >
+                            活用ガイド
+                        </Link>
+                        <Link
+                            href="/about"
+                            className="hidden lg:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
+                        >
+                            ポケリスについて
+                        </Link>
+                        <Link
                             href="/articles"
                             className="hidden md:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
                         >

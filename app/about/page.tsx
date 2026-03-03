@@ -62,7 +62,7 @@ export default function AboutPage() {
                                 <span className="text-pink-500 text-xl">✔</span>
                                 <div>
                                     <strong className="block text-gray-900">プレイヤー同士の知見共有</strong>
-                                    ベータテスターの皆様と共に、常に最新のカードロジックや統計手法を取り入れ、進化し続けています。
+                                    ユーザーの皆様と共に、常に最新のカードロジックや統計手法を取り入れ、進化し続けています。
                                 </div>
                             </li>
                         </ul>

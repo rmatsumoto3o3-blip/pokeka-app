@@ -5,8 +5,11 @@ export default function Footer() {
         <footer className="bg-black/20 border-t border-white/10 mt-12">
             <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="text-gray-600 text-sm font-medium">
+                    <div className="text-gray-600 text-[10px] md:text-sm font-medium">
                         © 株式会社3O3 / Rii
+                        <p className="mt-1 text-[10px] opacity-60 leading-tight">
+                            当サイトはファン有志による非公式サイトであり、株式会社ポケモン様、任天堂株式会社様とは一切関係ありません。
+                        </p>
                     </div>
 
                     <div className="flex gap-6 text-sm">
@@ -15,12 +18,6 @@ export default function Footer() {
                             className="text-gray-700 hover:text-gray-900 transition font-medium"
                         >
                             ポケリスについて
-                        </Link>
-                        <Link
-                            href="/beta-terms"
-                            className="text-gray-700 hover:text-gray-900 transition font-medium"
-                        >
-                            ベータテスター募集
                         </Link>
                         <Link
                             href="/guide"

@@ -124,10 +124,10 @@ export default function AddDeckForm({
 
             {isLimitReached ? (
                 <div className="mb-4 p-4 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
-                    <p className="font-bold">⚠️ ベータ版の上限に達しました</p>
+                    <p className="font-bold">⚠️ デッキ作成の上限に達しました</p>
                     <p className="text-sm mt-1">
-                        ベータ期間中は1ユーザーにつき{maxDecks}個までしかデッキを作成できません。
-                        既存のデッキを削除するか、正式リリースをお待ちください。
+                        現在のプランでは1ユーザーにつき{maxDecks}個までしかデッキを作成できません。
+                        既存のデッキを削除して整理してください。
                     </p>
                     {onClose && (
                         <button

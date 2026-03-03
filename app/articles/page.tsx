@@ -85,8 +85,10 @@ export default async function ArticlesPage() {
                 </div>
 
                 {(!articles || articles.length === 0) && (
-                    <div className="text-center py-20 bg-gray-50 rounded-2xl mt-8">
-                        <p className="text-gray-500 text-lg">記事はまだありません。公開をお待ちください！</p>
+                    <div className="text-center py-20 bg-gray-50 rounded-3xl mt-8 border-2 border-dashed border-gray-200">
+                        <div className="text-4xl mb-4">✍️</div>
+                        <h2 className="text-xl font-bold text-gray-800 mb-2">準備中</h2>
+                        <p className="text-gray-500 max-w-sm mx-auto">現在、最新の環境考察や攻略記事を執筆中です。公開まで今しばらくお待ちください！</p>
                     </div>
                 )}
 

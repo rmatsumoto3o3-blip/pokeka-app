@@ -38,7 +38,7 @@ export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
     switchPokemon: (benchIndex: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
 }
 
@@ -831,10 +831,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 onSelect: config.onSelect
             })
         },
-        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number) => {
             if (effect === 'boss_orders') {
                 return
             }
+
+            if (effect === 'apply_damage' && amount !== undefined) {
+                if (battleField) {
+                    const newDamage = (battleField.damage || 0) + amount
+                    setBattleField({ ...battleField, damage: newDamage })
+                    showToast(`相手の技により ${amount} ダメージを受けました`)
+                } else {
+                    showToast('バトル場にポケモンがいません（ダメージ不発）')
+                }
+                return
+            }
+
             // Triggered by opponent usage
             const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
             setRemaining(newDeck)
@@ -4383,6 +4395,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     )}
                     {menu.source === 'battle' && (
                         <>
+                            <button onClick={handleGeneralAttack} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-700 text-sm font-bold flex items-center gap-2 border-b border-red-100">
+                                <span>💥</span> 技を使う（ダメージ）
+                            </button>
+
                             {getTopCard(menu.card as CardStack).name === 'メガルカリオex' && (
                                 <>
                                     <button onClick={useHadozuki} className="w-full text-left px-4 py-2 hover:bg-orange-50 text-orange-700 text-sm font-bold flex items-center gap-2 border-b border-orange-100">
@@ -4408,7 +4424,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
                             <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
-                            {/* Attachments list logic could go here if crowded */}
                         </>
                     )}
                     {menu.source === 'bench' && (
