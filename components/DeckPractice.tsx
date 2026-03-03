@@ -4395,31 +4395,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     )}
                     {menu.source === 'battle' && (
                         <>
-                            <button onClick={handleGeneralAttack} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-700 text-sm font-bold flex items-center gap-2 border-b border-red-100">
-                                <span>💥</span> 技を使う（ダメージ）
-                            </button>
-
-                            {getTopCard(menu.card as CardStack).name === 'メガルカリオex' && (
-                                <>
-                                    <button onClick={useHadozuki} className="w-full text-left px-4 py-2 hover:bg-orange-50 text-orange-700 text-sm font-bold flex items-center gap-2 border-b border-orange-100">
-                                        <span>👊</span> はどうづき (130)
-                                    </button>
-                                    <button
-                                        onClick={useMegaBrave}
-                                        disabled={megaBraveUsedLastTurn}
-                                        className={`w-full text-left px-4 py-2 text-sm font-bold flex items-center gap-2 border-b border-orange-100 ${megaBraveUsedLastTurn ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'hover:bg-red-50 text-red-700'}`}
-                                    >
-                                        <span>🔥</span> メガブレイブ (270)
-                                        {megaBraveUsedLastTurn && <span className="text-[10px] font-normal">(使用不可)</span>}
-                                    </button>
-                                    {megaBraveUsedLastTurn && (
-                                        <button onClick={resetMegaBrave} className="w-full text-left px-4 py-1 hover:bg-gray-50 text-gray-500 text-[10px] border-b">
-                                            使用制限をリセット
-                                        </button>
-                                    )}
-                                </>
-                            )}
-
                             <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
