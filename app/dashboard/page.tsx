@@ -20,6 +20,7 @@ import MatchAnalytics from '@/components/MatchAnalytics'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 export default function Dashboard() {
     const [userId, setUserId] = useState<string | null>(null)
@@ -402,8 +403,13 @@ export default function Dashboard() {
 
                         {/* Mobile Ad Slot (Visible only on mobile) */}
                         <div className="lg:hidden mt-8 space-y-6">
-                            {/* Mobile Article List */}
+                            {/* Mobile PR row */}
                             <div className="mb-6 space-y-4">
+                                <AdPlaceholder
+                                    slot="1093986865"
+                                    format="rectangle"
+                                    className="mb-4"
+                                />
                                 <div>
                                     <span className="text-[10px] text-gray-400 block mb-1">PR: サプライ買うならTOYGER</span>
                                     <a
@@ -438,7 +444,6 @@ export default function Dashboard() {
                                 </div>
                                 <SideArticleList />
                             </div>
-
                         </div>
                     </div>
 
@@ -446,6 +451,11 @@ export default function Dashboard() {
                     <div className="hidden lg:block lg:col-span-1 space-y-6 sticky top-24">
                         {/* Sidebar Article List (Top Priority) */}
                         <div className="mb-6 space-y-4">
+                            <AdPlaceholder
+                                slot="1093986865"
+                                format="rectangle"
+                                className="mb-4"
+                            />
                             <div>
                                 <span className="text-[10px] text-gray-400 block mb-1">PR: サプライ買うならTOYGER</span>
                                 <a
