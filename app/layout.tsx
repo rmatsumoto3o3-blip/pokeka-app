@@ -37,24 +37,25 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  <html lang="ja">
-    <body
-      className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
-    >
-      <Script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2951381820280282"
-        crossOrigin="anonymous"
-        strategy="afterInteractive"
-      />
+  return (
+    <html lang="ja">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
+      >
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2951381820280282"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
 
-      {/* Google Analytics */}
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=G-2JW6DYQYSD"
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-2JW6DYQYSD"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
@@ -62,9 +63,9 @@ export default function RootLayout({
             gtag('config', 'G-2JW6DYQYSD');
             gtag('config', 'G-P0FYS2RRM2');
           `}
-      </Script>
-      {children}
-    </body>
-  </html>
+        </Script>
+        {children}
+      </body>
+    </html>
   );
 }
