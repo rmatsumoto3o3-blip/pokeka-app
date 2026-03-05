@@ -127,7 +127,26 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             <section className="py-2.5 bg-white">
                 <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
                     <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                        {/* PR Position 1 (Formerly TOYGER) */}
+                        {/* TOYGER Ad */}
+                        <div className="flex flex-col items-center w-full max-w-sm">
+                            <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
+                            <a
+                                href="https://shopa.jp/9293M3MEXQ2Z"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full hover:opacity-90 transition-opacity"
+                            >
+                                <Image
+                                    src="/ad_sponsor_toyger.png"
+                                    alt="サプライ買うならTOYGER"
+                                    width={400}
+                                    height={150}
+                                    className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
+                                />
+                            </a>
+                        </div>
+
+                        {/* AdSense Unit */}
                         <div className="w-full max-w-sm">
                             <AdPlaceholder
                                 slot="1093986865"
@@ -135,13 +154,24 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 className="my-2"
                             />
                         </div>
-                        {/* PR Position 2 (Formerly Dot Picture) */}
-                        <div className="w-full max-w-sm">
-                            <AdPlaceholder
-                                slot="1093986865"
-                                format="rectangle"
-                                className="my-2"
-                            />
+
+                        {/* Dot Picture Promotion */}
+                        <div className="flex flex-col items-center w-full max-w-sm">
+                            <span className="text-xs text-gray-400 mb-1">ドット絵ご提供者様(下記タップでXへ)</span>
+                            <a
+                                href="https://twitter.com/komori541milk"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-[94%] hover:opacity-90 transition-opacity cursor-pointer mx-auto"
+                            >
+                                <Image
+                                    src="/dotpicture.png"
+                                    alt="ドット絵ご提供者様"
+                                    width={1715}
+                                    height={589}
+                                    className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
+                                />
+                            </a>
                         </div>
                     </div>
                 </div>
