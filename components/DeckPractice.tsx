@@ -29,6 +29,7 @@ interface DeckPracticeProps {
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
     onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => void
+    onAttackTrigger?: (damage: number, targetType: 'battle' | 'bench', targetIndex: number) => void
     idPrefix?: string
     mobile?: boolean
     isOpponent?: boolean
@@ -84,7 +85,7 @@ interface AttachmentTarget {
     index: number
 }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, onEffectTrigger }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, onEffectTrigger, onAttackTrigger }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
     const [trash, setTrash] = useState<Card[]>([])
@@ -140,6 +141,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const [peekDeckSearch, setPeekDeckSearch] = useState(false)
+    const [damageSelector, setDamageSelector] = useState<{
+        isOpen: boolean
+        source: 'battle' | 'bench'
+        index: number
+        damage?: number
+    } | null>(null)
 
     // Updated Detail Modal State: Holds context about the stack being viewed
     interface DetailModalState {
@@ -831,18 +838,34 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 onSelect: config.onSelect
             })
         },
-        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number) => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => {
             if (effect === 'boss_orders') {
                 return
             }
 
             if (effect === 'apply_damage' && amount !== undefined) {
-                if (battleField) {
-                    const newDamage = (battleField.damage || 0) + amount
-                    setBattleField({ ...battleField, damage: newDamage })
-                    showToast(`相手の技により ${amount} ダメージを受けました`)
-                } else {
-                    showToast('バトル場にポケモンがいません（ダメージ不発）')
+                const targetRef = targetType || 'battle'
+                const targetIdx = targetIndex || 0
+
+                if (targetRef === 'battle') {
+                    if (battleField) {
+                        const newDamage = (battleField.damage || 0) + amount
+                        setBattleField({ ...battleField, damage: newDamage })
+                        showToast(`相手の技により バトル場に ${amount} ダメージを受けました`)
+                    } else {
+                        showToast('バトル場にポケモンがいません（ダメージ不発）')
+                    }
+                } else if (targetRef === 'bench') {
+                    const stack = bench[targetIdx]
+                    if (stack) {
+                        const newBench = [...bench]
+                        const newDamage = (stack.damage || 0) + amount
+                        newBench[targetIdx] = { ...stack, damage: newDamage }
+                        setBench(newBench)
+                        showToast(`相手の技により ベンチ(${targetIdx + 1})に ${amount} ダメージを受けました`)
+                    } else {
+                        showToast('指定されたベンチにポケモンがいません')
+                    }
                 }
                 return
             }
@@ -1504,7 +1527,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         // Attach
         if (targetSource === 'battle') {
             if (battleField) {
-                playToBattleField(selectedIndex) // Wait, `playToBattleField` expects index in HAND. 
+                // playToBattleField(selectedIndex) // Wait, `playToBattleField` expects index in HAND. 
                 // But we modified hand! `playToBattleField` uses `hand[index]`.
                 // We need to manually update the stack.
                 // Actually `playToBattleField` does: `const card = hand[index]; ... setBattleField(...) ... setHand(...)`.
@@ -1934,6 +1957,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         if (confirm(`ワザ『げきりゅうポンプ』を使いますか？\n(100ダメージ、のぞむならエネを${cost}個山札に戻してベンチに120ダメージ)`)) {
             showToast("げきりゅうポンプ: バトル場に100ダメージ")
+            onAttackTrigger?.(100, 'battle', 0)
 
             if (stack.energyCount >= cost) {
                 if (confirm(`エネルギーを${cost}個山札に戻して、ベンチに120ダメージ与えますか？`)) {
@@ -1983,18 +2007,27 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         const selectedCards = ogerponWellspringState.selectedIndices.map(idx => battleField.cards[idx])
 
-        // 1. Remove from Battle Field
+        // Finalize
+        setRemaining(prev => shuffle([...prev, ...selectedCards]))
         setBattleField(prev => {
             if (!prev) return null
             const newCards = prev.cards.filter((_, i) => !ogerponWellspringState.selectedIndices.includes(i))
             return { ...prev, cards: newCards, energyCount: prev.energyCount - cost }
         })
 
-        // 2. Return to Deck and Shuffle
-        setRemaining(prev => shuffle([...prev, ...selectedCards]))
-
-        showToast(`げきりゅうポンプ: エネ${cost}個を山札に戻し、ベンチに120ダメージ！`)
+        showToast("エネルギーを山札に戻しました。ベンチへのダメージを選択してください。")
         setOgerponWellspringState(null)
+
+        // Open damage selector specifically for 120 damage to bench
+        setDamageSelector({
+            isOpen: true,
+            source: 'bench',
+            index: 0, // Will be handled by the UI or just use generic apply
+            damage: 120
+        })
+        // Note: For sniper attacks like this, ideally we'd have a specific target selection.
+        // For now, opening the generic selector is okay, or we can just send it if simple.
+        // User said "bench" can select, so generic selector is good.
     }
 
     // --- むしとりセット (Bug Catching Set) Logic ---
@@ -2269,9 +2302,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const stack = source === 'battle' ? battleField : bench[index]
         if (!stack) return
 
+        // 1. Send 130 damage to opponent's battle field
+        showToast("波動突き: 相手のバトル場に130ダメージ")
+        onAttackTrigger?.(130, 'battle', 0)
+
+        // 2. Start Energy Acceleration step
         const fightingEnergies = trash.filter(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
         if (fightingEnergies.length === 0) {
-            alert("トラッシュに基本闘エネルギーがありません")
+            showToast("トラッシュに基本闘エネルギーがないため、追加効果はスキップします")
             return
         }
 
@@ -2481,6 +2519,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // --- ブースターex Logic ---
     const useFlareonBurningCharge = (source: 'battle' | 'bench', index: number) => {
+        // 1. Send 130 damage to opponent's battle field
+        showToast("バーニングチャージ: 相手のバトル場に130ダメージ")
+        onAttackTrigger?.(130, 'battle', 0)
+
         setFlareonState({
             step: 'search',
             candidates: [...remaining],
@@ -2547,44 +2589,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             showToast("エネルギーを付けました")
             setFlareonState(null)
         }
-    }
-
-    const useHadozuki = () => {
-        // 1. Apply 130 damage to opponent's active
-        // (Automatic damage logic removed as per user request)
-
-        // Manual damage application via existing updateDamage if we had a direct ref,
-        // but here we trigger an effect that PracticePage should handle.
-        if (onEffectTrigger) {
-            (onEffectTrigger as any)('apply_damage', 130)
-        }
-
-        // 2. Start Energy Acceleration step
-        const energyInTrash = trash.filter(c => c.name === '基本闘エネルギー')
-        if (energyInTrash.length > 0) {
-            setMegaLucarioEXAttackState({
-                step: 'select_energy',
-                candidates: energyInTrash,
-                selectedIndices: [],
-                attachingIndex: 0
-            })
-        } else {
-            showToast('トラッシュに基本闘エネルギーがありません')
-        }
-        closeMenu()
-    }
-
-    const useMegaBrave = () => {
-        if (megaBraveUsedLastTurn) {
-            alert('前の番にメガブレイブを使っているため、このワザは使えません。')
-            return
-        }
-
-        if (onEffectTrigger) {
-            // onEffectTrigger('apply_damage', 270) // Removed
-        }
-        setMegaBraveUsedLastTurn(true)
-        closeMenu()
     }
 
     const handleMegaLucarioEnergySelect = (index: number) => {
@@ -4398,6 +4402,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
+                            <button
+                                onClick={() => {
+                                    setDamageSelector({ isOpen: true, source: 'battle', index: 0 })
+                                    closeMenu()
+                                }}
+                                className="w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-black flex items-center gap-2"
+                            >
+                                <span>⚔️</span> 技を打つ
+                            </button>
                             <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
                     )}
@@ -4405,9 +4418,76 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <>
                             <button onClick={() => benchToHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={() => swapBenchToBattle(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">バトル場へ</button>
+                            <button
+                                onClick={() => {
+                                    setDamageSelector({ isOpen: true, source: 'bench', index: menu.index })
+                                    closeMenu()
+                                }}
+                                className="w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-black flex items-center gap-2"
+                            >
+                                <span>⚔️</span> 技を打つ（狙撃）
+                            </button>
                             <button onClick={() => benchToTrash(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
                     )}
+                </div>
+            </div>,
+            document.body
+        )
+    }
+
+    // Damage Selector for Attacks
+    const renderDamageSelector = () => {
+        if (!damageSelector || !damageSelector.isOpen) return null
+
+        const damageOptions = [30, 50, 100, 120, 140, 150, 180, 200, 220, 240, 280, 300, 330]
+
+        return createPortal(
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDamageSelector(null)}>
+                <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                    <h3 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                        <span className="text-red-600">⚔️</span> ダメージを選択
+                    </h3>
+                    <div className="grid grid-cols-3 gap-2 mb-6">
+                        {damageOptions.map(dmg => (
+                            <button
+                                key={dmg}
+                                onClick={() => {
+                                    const finalDmg = damageSelector.damage || dmg
+                                    onAttackTrigger?.(finalDmg, damageSelector.source, damageSelector.index)
+                                    setDamageSelector(null)
+                                    showToast(`${finalDmg} ダメージを相手に送信しました`)
+                                }}
+                                className="py-3 bg-gray-50 hover:bg-red-50 hover:text-red-600 border border-gray-200 rounded-lg font-black text-sm transition-all"
+                            >
+                                {dmg}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <input
+                            type="number"
+                            placeholder="自由入力"
+                            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 font-bold"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const val = parseInt((e.target as HTMLInputElement).value)
+                                    if (!isNaN(val)) {
+                                        onAttackTrigger?.(val, damageSelector.source, damageSelector.index)
+                                        setDamageSelector(null)
+                                        showToast(`${val} ダメージを相手に送信しました`)
+                                    }
+                                }
+                            }}
+                        />
+                        <button
+                            onClick={() => setDamageSelector(null)}
+                            className="px-4 py-2 text-gray-400 font-bold hover:text-gray-600"
+                        >
+                            キャンセル
+                        </button>
+                    </div>
                 </div>
             </div>,
             document.body
@@ -4695,12 +4775,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     return (
         <div className={`w-full ${compact ? "space-y-0.5 sm:space-y-2" : "space-y-4"} relative`}>
-            {/* Context Menu */}
             {/* Render Context Menu */}
             {renderMenu()}
-
-            {/* Render Detail Modal */}
             {renderDetailModal()}
+            {renderDamageSelector()}
 
             {/* Swap Prompt */}
             {swapMode && (

@@ -321,6 +321,7 @@ function PracticeContent() {
                                                 setStadium2(null)
                                             }}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player1', effect)}
+                                            onAttackTrigger={(dmg, type, idx) => player2Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
                                         />
                                     </div>
                                 )}
@@ -444,6 +445,7 @@ function PracticeContent() {
                                                 setStadium1(null)
                                             }}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player2', effect)}
+                                            onAttackTrigger={(dmg, type, idx) => player1Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
                                         />
                                     </div>
                                 )}
