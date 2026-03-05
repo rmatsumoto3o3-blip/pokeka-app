@@ -39,7 +39,7 @@ export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
     switchPokemon: (benchIndex: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number) => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
 }
 
