@@ -3,6 +3,7 @@
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import SimulatorManager from '@/components/SimulatorManager'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 export default async function SimulatorPage({
     searchParams,
@@ -30,8 +31,14 @@ export default async function SimulatorPage({
 
                     <SimulatorManager initialDeckCode={code} />
 
+                    <AdPlaceholder
+                        slot="1093986865"
+                        format="auto"
+                        className="mt-12 mb-8"
+                    />
+
                     {/* Content for AdSense (SEO & Value) */}
-                    <div className="mt-20 prose prose-pink max-w-none bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="prose prose-pink max-w-none bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                         <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-800 border-b pb-4 mb-6">
                             <span className="text-3xl">📝</span>
                             初手確率シミュレーターの重要性と使い方
