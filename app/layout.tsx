@@ -37,7 +37,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+  <html lang="ja">
     <body
       className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
     >
@@ -65,6 +65,6 @@ export default function RootLayout({
       </Script>
       {children}
     </body>
-    </html >
+  </html>
   );
 }
