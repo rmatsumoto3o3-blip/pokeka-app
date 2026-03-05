@@ -4590,15 +4590,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
-                            <button
-                                onClick={() => {
-                                    setDamageSelector({ isOpen: true, source: 'battle', index: 0 })
-                                    closeMenu()
-                                }}
-                                className="w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-black flex items-center gap-2"
-                            >
-                                <span>⚔️</span> 技を打つ
-                            </button>
                             <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
                     )}
@@ -4606,15 +4597,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         <>
                             <button onClick={() => benchToHand(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
                             <button onClick={() => swapBenchToBattle(menu.index)} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">バトル場へ</button>
-                            <button
-                                onClick={() => {
-                                    setDamageSelector({ isOpen: true, source: 'bench', index: menu.index })
-                                    closeMenu()
-                                }}
-                                className="w-full text-left px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-black flex items-center gap-2"
-                            >
-                                <span>⚔️</span> 技を打つ（狙撃）
-                            </button>
                             <button onClick={() => benchToTrash(menu.index)} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
                     )}
