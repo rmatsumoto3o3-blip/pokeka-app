@@ -13,6 +13,7 @@ import CardSearchAnalysis from '@/components/CardSearchAnalysis'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 interface LandingPageProps {
     decks: ReferenceDeck[]
@@ -222,6 +223,12 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             <CardSearchAnalysis initialArchetypes={archetypes} />
                         </div>
                     </div>
+
+                    <AdPlaceholder
+                        slot="1093986865"
+                        format="auto"
+                        className="mt-12 mb-4"
+                    />
 
                     <div className="mt-8" id="key-card-adoption">
                         <div className="mb-4">
