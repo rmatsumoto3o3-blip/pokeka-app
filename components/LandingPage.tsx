@@ -391,8 +391,16 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
             </section>
 
 
-
-            {/* NEW: Environment Commentary Section for SEO/Value */}
+            {/* Ad Unit: Between Articles and Environment Commentary */}
+            <section className="bg-white">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
+                    <AdPlaceholder
+                        slot="1093986865"
+                        format="auto"
+                        className="py-4"
+                    />
+                </div>
+            </section>
             <section className="py-16 bg-gradient-to-b from-white to-pink-50/30">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="bg-white p-8 md:p-12 rounded-3xl border border-pink-100 shadow-sm">
