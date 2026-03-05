@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
 interface AdPlaceholderProps {
     slot?: string
@@ -7,12 +7,28 @@ interface AdPlaceholderProps {
     className?: string
 }
 
+declare global {
+    interface Window {
+        adsbygoogle: any[]
+    }
+}
+
 export default function AdPlaceholder({
     slot = '0000000000',
     format = 'responsive',
     label = 'スポンサーリンク',
     className = ''
 }: AdPlaceholderProps) {
+    useEffect(() => {
+        try {
+            if (typeof window !== 'undefined') {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+            }
+        } catch (e) {
+            console.error('AdSense error:', e);
+        }
+    }, []);
+
     return (
         <div className={`flex flex-col items-center justify-center my-8 ${className}`}>
             <span className="text-[10px] uppercase tracking-[0.2em] mb-2 text-gray-400 font-bold">{label}</span>
@@ -24,9 +40,6 @@ export default function AdPlaceholder({
                     data-ad-slot={slot}
                     data-ad-format={format}
                     data-full-width-responsive="true"></ins>
-                <script>
-                    (adsbygoogle = window.adsbygoogle || []).push({ });
-                </script>
             </div>
         </div>
     );
