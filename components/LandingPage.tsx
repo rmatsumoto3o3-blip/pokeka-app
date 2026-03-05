@@ -52,9 +52,9 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
                     </h1>
                     <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200 px-2">
-                        環境考察、優勝デッキ情報。<br className="hidden sm:block" />
-                        あなたのポケカライフを充実させる機能がここに。<br className="hidden sm:block" />
-                        <span className="font-bold text-pink-600 block sm:inline mt-1 sm:mt-0">シミュレーションでデッキを分析</span>
+                        <span className="block sm:inline">環境考察、優勝デッキ情報。</span>
+                        <span className="block sm:inline">あなたのポケカライフを充実させる機能がここに。</span>
+                        <span className="font-bold text-pink-600 block mt-1">シミュレーションでデッキを分析</span>
                     </p>
                     <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
                         <div className="grid grid-cols-2 gap-3 w-full max-w-2xl px-2 sm:px-0">
@@ -565,104 +565,116 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 </div>
             </section>
 
-            <section id="features" className="py-2.5 md:py-2.5 bg-pink-50"> <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                <div className="text-center mb-16">
-                    <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
-                    <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
+            {/* Ad Unit: Between Prize Trainer and Features */}
+            <section className="bg-white">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
+                    <AdPlaceholder
+                        slot="1093986865"
+                        format="auto"
+                        className="py-4"
+                    />
                 </div>
+            </section>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-                    {[
-                        {
-                            icon: <Image
-                                src="/Alakazam.png"
-                                alt="Alakazam"
-                                width={48}
-                                height={48}
-                                className="w-12 h-12 mx-auto"
-                            />,
-                            title: "勝率を自動計算",
-                            description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
-                        },
-                        {
-                            icon: "📝",
-                            title: "詳細な対戦記録",
-                            description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
-                        },
-                        {
-                            icon: "🔍",
-                            title: "参考デッキ閲覧",
-                            description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
-                        }
-                    ].map((feature, index) => (
-                        <div key={index} className="bg-white rounded-2xl p-2.5 md:p-2.5 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl">
-                            <div className="text-4xl md:text-5xl mb-4 md:mb-6">{feature.icon}</div>
-                            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
-                            <p className="text-sm md:text-base text-gray-600 leading-relaxed">
-                                {feature.description}
-                            </p>
-                        </div>
-                    ))}
-                </div>
+            <section id="features" className="py-2.5 md:py-2.5 bg-pink-50">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
+                    <div className="text-center mb-16">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
+                        <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
+                    </div>
 
-                <div className="text-center mt-12">
-                    <button
-                        onClick={() => router.push('/auth?mode=signup')}
-                        className="px-8 py-2.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
-                    >
-                        無料で戦績管理を始める
-                    </button>
-                </div>
-
-                {/* Global Presence Section */}
-                <div className="mt-20 pt-16 border-t border-pink-100">
-                    <div className="bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
-                        {/* Decorative background elements */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
-
-                        <div className="relative z-10">
-                            <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-sm font-medium mb-6 backdrop-blur-sm border border-white/10">
-                                <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
-                                Global Support
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                        {[
+                            {
+                                icon: <Image
+                                    src="/Alakazam.png"
+                                    alt="Alakazam"
+                                    width={48}
+                                    height={48}
+                                    className="w-12 h-12 mx-auto"
+                                />,
+                                title: "勝率を自動計算",
+                                description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
+                            },
+                            {
+                                icon: "📝",
+                                title: "詳細な対戦記録",
+                                description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
+                            },
+                            {
+                                icon: "🔍",
+                                title: "参考デッキ閲覧",
+                                description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
+                            }
+                        ].map((feature, index) => (
+                            <div key={index} className="bg-white rounded-2xl p-6 md:p-8 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl text-center">
+                                <div className="flex justify-center items-center h-16 mb-4 md:mb-6 text-4xl md:text-5xl">
+                                    {feature.icon}
+                                </div>
+                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
+                                <p className="text-gray-600 text-sm md:text-base leading-relaxed">{feature.description}</p>
                             </div>
+                        ))}
+                    </div>
 
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                                PokéLixは世界でも活躍
-                            </h2>
+                    <div className="text-center mt-12">
+                        <button
+                            onClick={() => router.push('/auth?mode=signup')}
+                            className="px-8 py-2.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
+                        >
+                            無料で戦績管理を始める
+                        </button>
+                    </div>
 
-                            <div className="grid md:grid-cols-2 gap-10 items-center">
-                                <div className="space-y-6 text-indigo-100 leading-relaxed">
-                                    <p>
-                                        現在、PokéLixは日本国内の対戦環境をメインとして、日本語を中心に情報を掲載しています。<br />
-                                        しかし、近年では海外からのアクセスも急速に増加しており、世界中のトレーナーから注目を集めるプラットフォームへと進化しています。
-                                    </p>
-                                    <p>
-                                        こうした需要に応えるため、当サイトの「初手確率シミュレーター」は、海外で主流な形式であるPTCGL（Pokémon TCG Live）のテキストデッキコードを直接読み込み、瞬時に算出できる機能を搭載しました。
-                                    </p>
-                                    <p>
-                                        私たちは、言語の壁を超えて誰もが最高のデータ分析に触れられる環境を目指しています。今後は、海外プレイヤー向けに多言語対応を進め、世界中のポケカファンの架け橋となるサイトを目指してまいります。
-                                    </p>
+                    {/* Global Presence Section */}
+                    <div className="mt-20 pt-16 border-t border-pink-100">
+                        <div className="bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
+                            {/* Decorative background elements */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+
+                            <div className="relative z-10">
+                                <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-sm font-medium mb-6 backdrop-blur-sm border border-white/10">
+                                    <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+                                    Global Support
                                 </div>
 
-                                <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                                    <div className="flex items-center gap-3 mb-4 text-pink-300">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span className="text-sm font-bold tracking-wider uppercase">Future Vision</span>
-                                    </div>
-                                    <div className="space-y-4 text-sm italic text-indigo-200/80 leading-relaxed border-l-2 border-pink-500/50 pl-4">
+                                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                                    PokéLixは世界でも活躍
+                                </h2>
+
+                                <div className="grid md:grid-cols-2 gap-10 items-center">
+                                    <div className="space-y-6 text-indigo-100 leading-relaxed">
                                         <p>
-                                            "While PokéLix currently focuses on the Japanese competitive scene, we have seen a significant increase in international traffic. To support our global community, our simulator is fully compatible with PTCGL deck codes. We are committed to expanding our multi-language support to empower trainers worldwide."
+                                            現在、PokéLixは日本国内の対戦環境をメインとして、日本語を中心に情報を掲載しています。<br />
+                                            しかし、近年では海外からのアクセスも急速に増加しており、世界中のトレーナーから注目を集めるプラットフォームへと進化しています。
                                         </p>
+                                        <p>
+                                            こうした需要に応えるため、当サイトの「初手確率シミュレーター」は、海外で主流な形式であるPTCGL（Pokémon TCG Live）のテキストデッキコードを直接読み込み、瞬時に算出できる機能を搭載しました。
+                                        </p>
+                                        <p>
+                                            私たちは、言語の壁を超えて誰もが最高のデータ分析に触れられる環境を目指しています。今後は、海外プレイヤー向けに多言語対応を進め、世界中のポケカファンの架け橋となるサイトを目指してまいります。
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                                        <div className="flex items-center gap-3 mb-4 text-pink-300">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span className="text-sm font-bold tracking-wider uppercase">Future Vision</span>
+                                        </div>
+                                        <div className="space-y-4 text-sm italic text-indigo-200/80 leading-relaxed border-l-2 border-pink-500/50 pl-4">
+                                            <p>
+                                                "While PokéLix currently focuses on the Japanese competitive scene, we have seen a significant increase in international traffic. To support our global community, our simulator is fully compatible with PTCGL deck codes. We are committed to expanding our multi-language support to empower trainers worldwide."
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
             </section>
 
             <Footer />
