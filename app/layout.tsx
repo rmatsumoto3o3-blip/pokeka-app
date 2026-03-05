@@ -26,6 +26,8 @@ const dotGothic16 = DotGothic16({
   subsets: ["latin"],
 });
 
+import AdSenseScript from "@/components/AdSenseScript";
+
 export const metadata: Metadata = {
   title: "PokéLix（ポケリス）| ポケカ環境分析・初手確率シミュレーター",
   description: "ポケモンカードの環境考察、デッキ分析、初手確率シミュレーター（PTCGL対応）。データに基づいたポケカ戦略をサポートする次世代の分析プラットフォームです。",
@@ -42,12 +44,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
       >
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2951381820280282"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        <AdSenseScript />
 
         {/* Google Analytics */}
         <Script
