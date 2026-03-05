@@ -202,6 +202,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
     const [nightStretcherState, setNightStretcherState] = useState<NightStretcherState | null>(null)
 
+    // Genesect ex (Metal Signal) State
+    interface GenesectState {
+        step: 'search'
+        candidates: Card[]
+        selectedIndices: number[]
+    }
+    const [genesectState, setGenesectState] = useState<GenesectState | null>(null)
+
+    // Archaludon ex (Alloy Build) State
+    interface ArchaludonState {
+        step: 'select_energy' | 'select_target'
+        candidates: Card[] // From Trash
+        selectedEnergyIndices: number[]
+        target: { type: 'battle' | 'bench'; index: number } | null
+    }
+    const [archaludonState, setArchaludonState] = useState<ArchaludonState | null>(null)
+
     // Tatsugiri State
     interface TatsugiriState {
         step: 'search'
@@ -2245,6 +2262,144 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setEnergyRetrievalState(null)
     }
 
+    // --- Mega Kangaskhan ex (Otsukai Dash) Logic ---
+    const useKangaskhanEX = (source: 'battle' | 'bench', index: number) => {
+        if (source !== 'battle') {
+            alert("この特性はバトル場にいるときしか使えません")
+            return
+        }
+        if (remaining.length === 0) {
+            alert("山札がありません")
+            return
+        }
+
+        const drawCount = Math.min(2, remaining.length)
+        const drew = remaining.slice(0, drawCount)
+        setRemaining(prev => prev.slice(drawCount))
+        setHand(prev => [...prev, ...drew])
+        showToast(`おつかいダッシュ: ${drawCount}枚引きました`)
+    }
+
+    // --- Genesect ex (Metal Signal) Logic ---
+    const useGenesectEX = () => {
+        setGenesectState({
+            step: 'search',
+            candidates: [...remaining],
+            selectedIndices: []
+        })
+    }
+
+    const handleGenesectSelect = (index: number) => {
+        if (!genesectState) return
+        const card = remaining[index]
+        // Note: Currently we don't have strict type data in Card object, 
+        // but user can filter or we just let them pick any Pokemon as per Metal Signal.
+        if (!isPokemon(card)) {
+            alert("ポケモンを選択してください")
+            return
+        }
+
+        setGenesectState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedIndices: current }
+        })
+    }
+
+    const handleGenesectConfirm = () => {
+        if (!genesectState) return
+        const selectedCards = genesectState.selectedIndices.map(idx => remaining[idx])
+        setHand(prev => [...prev, ...selectedCards])
+        setRemaining(prev => shuffle(prev.filter((_, i) => !genesectState.selectedIndices.includes(i))))
+        showToast(`メタルシグナル: ${selectedCards.length}枚を手札に加えました`)
+        setGenesectState(null)
+    }
+
+    // --- Archaludon ex (Alloy Build) Logic ---
+    const useArchaludonEX = (handIndex?: number) => {
+        // Find Steel Energies in trash
+        const steelEnergies = trash.filter(c => c.supertype === 'Energy' && c.name.includes('基本鋼'))
+        if (steelEnergies.length === 0) {
+            alert("トラッシュに基本鋼エネルギーがありません")
+            return
+        }
+
+        if (handIndex !== undefined) {
+            // If used from hand (to evolve), move it to trash first? 
+            // Usually evolution happens by drag-drop. 
+            // If manually triggered, we assume it's already on board or being played.
+        }
+
+        setArchaludonState({
+            step: 'select_energy',
+            candidates: [...trash],
+            selectedEnergyIndices: [],
+            target: null
+        })
+    }
+
+    const handleArchaludonEnergySelect = (index: number) => {
+        if (!archaludonState) return
+        const card = trash[index]
+        if (!(card.supertype === 'Energy' && card.name.includes('基本鋼'))) {
+            alert("基本鋼エネルギーを選択してください")
+            return
+        }
+
+        setArchaludonState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedEnergyIndices]
+            const foundIdx = current.indexOf(index)
+            if (foundIdx !== -1) {
+                current.splice(foundIdx, 1)
+            } else if (current.length < 2) {
+                current.push(index)
+            }
+            return { ...prev, selectedEnergyIndices: current }
+        })
+    }
+
+    const handleArchaludonTargetSelect = (type: 'battle' | 'bench', index: number) => {
+        if (!archaludonState) return
+        const selectedEnergies = archaludonState.selectedEnergyIndices.map(idx => trash[idx])
+
+        // Attach energy to target
+        if (type === 'battle') {
+            setBattle(prev => {
+                if (!prev) return prev
+                return {
+                    ...prev,
+                    cards: [...prev.cards, ...selectedEnergies],
+                    energyCount: prev.energyCount + selectedEnergies.length
+                }
+            })
+        } else {
+            setBench(prev => {
+                const newBench = [...prev]
+                const stack = newBench[index]
+                if (stack) {
+                    newBench[index] = {
+                        ...stack,
+                        cards: [...stack.cards, ...selectedEnergies],
+                        energyCount: stack.energyCount + selectedEnergies.length
+                    }
+                }
+                return newBench
+            })
+        }
+
+        // Remove from trash
+        setTrash(prev => prev.filter((_, i) => !archaludonState.selectedEnergyIndices.includes(i)))
+        showToast(`ごうきんビルド: エネ加速しました`)
+        setArchaludonState(null)
+    }
+
     const useNoctowl = (handIndex: number) => {
         const card = hand[handIndex]
         if (!card) return
@@ -3990,6 +4145,39 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+            })
+        }
+
+        if (name === 'メガガルーラex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: おつかいダッシュ',
+                action: () => {
+                    useKangaskhanEX(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            })
+        }
+
+        if (name === 'ゲノセクトex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: メタルシグナル',
+                action: () => {
+                    useGenesectEX()
+                    closeMenu()
+                },
+                color: 'bg-red-50 text-red-700 hover:bg-red-100'
+            })
+        }
+
+        if (name === 'ブリジュラスex' && (source === 'hand' || source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: ごうきんビルド',
+                action: () => {
+                    useArchaludonEX(source === 'hand' ? index : undefined)
+                    closeMenu()
+                },
+                color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
             })
         }
 
@@ -5931,6 +6119,223 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             )}
 
             {/* Ultra Ball Modal */}
+            {/* Noctowl Selection Modal */}
+            {noctowlState && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setNoctowlState(null)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b flex justify-between items-center bg-yellow-50">
+                            <div>
+                                <h3 className="text-xl font-black text-yellow-900">特性: ほうせきさがし (山札検索)</h3>
+                                <p className="text-sm text-yellow-700">トレーナーズを2枚まで選択してください</p>
+                            </div>
+                            <button onClick={() => setNoctowlState(null)} className="text-gray-400 hover:text-gray-600 p-2">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                {noctowlState.candidates.map((card, i) => {
+                                    const isSelected = noctowlState.selectedIndices.includes(i)
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => handleNoctowlSelect(i)}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isSelected ? 'ring-4 ring-yellow-500 scale-105 z-10' : 'opacity-80 hover:opacity-100'}`}
+                                        >
+                                            <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-md">
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
+                                                        <div className="bg-yellow-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg">✓</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-center font-bold truncate">{card.name}</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="font-bold text-gray-600">{noctowlState.selectedIndices.length} / 2 枚選択中</span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setNoctowlState(null)} className="px-6 py-2 text-gray-500 font-bold">キャンセル</button>
+                                <button
+                                    onClick={handleNoctowlConfirm}
+                                    className="bg-yellow-600 text-white font-black px-10 py-3 rounded-full shadow-lg hover:bg-yellow-700 transition active:scale-95"
+                                >
+                                    手札に加える
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Genesect ex Selection Modal */}
+            {genesectState && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setGenesectState(null)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b flex justify-between items-center bg-red-50">
+                            <div>
+                                <h3 className="text-xl font-black text-red-900">特性: メタルシグナル (山札検索)</h3>
+                                <p className="text-sm text-red-700">鋼タイプのポケモンを2枚まで選択してください</p>
+                            </div>
+                            <button onClick={() => setGenesectState(null)} className="text-gray-400 hover:text-gray-600 p-2">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                {genesectState.candidates.map((card, i) => {
+                                    const isSelected = genesectState.selectedIndices.includes(i)
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => handleGenesectSelect(i)}
+                                            className={`relative cursor-pointer transition-all duration-200 ${isSelected ? 'ring-4 ring-red-500 scale-105 z-10' : 'opacity-80 hover:opacity-100'}`}
+                                        >
+                                            <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-md">
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                                                        <div className="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg">✓</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="mt-1 text-[10px] text-center font-bold truncate">{card.name}</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="font-bold text-gray-600">{genesectState.selectedIndices.length} / 2 枚選択中</span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setGenesectState(null)} className="px-6 py-2 text-gray-500 font-bold">キャンセル</button>
+                                <button
+                                    onClick={handleGenesectConfirm}
+                                    className="bg-red-600 text-white font-black px-10 py-3 rounded-full shadow-lg hover:bg-red-700 transition active:scale-95"
+                                >
+                                    手札に加える
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Archaludon ex Selection Modal */}
+            {archaludonState && archaludonState.step === 'select_energy' && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setArchaludonState(null)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b flex justify-between items-center bg-blue-50">
+                            <div>
+                                <h3 className="text-xl font-black text-blue-900">特性: ごうきんビルド (トラッシュ検索)</h3>
+                                <p className="text-sm text-blue-700">基本鋼エネルギーを2枚まで選択してください</p>
+                            </div>
+                            <button onClick={() => setArchaludonState(null)} className="text-gray-400 hover:text-gray-600 p-2">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                {archaludonState.candidates.map((card, i) => {
+                                    const isSelected = archaludonState.selectedEnergyIndices.includes(i)
+                                    const isSteel = card.supertype === 'Energy' && card.name.includes('基本鋼')
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => isSteel && handleArchaludonEnergySelect(i)}
+                                            className={`relative cursor-pointer transition-all duration-200 
+                                                ${isSteel ? '' : 'grayscale opacity-30 cursor-not-allowed'}
+                                                ${isSelected ? 'ring-4 ring-blue-500 scale-105 z-10' : 'hover:opacity-100'}
+                                            `}
+                                        >
+                                            <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-md">
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                                                        <div className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg">✓</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="font-bold text-gray-600">{archaludonState.selectedEnergyIndices.length} / 2 枚選択中</span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setArchaludonState(null)} className="px-6 py-2 text-gray-500 font-bold">キャンセル</button>
+                                <button
+                                    onClick={() => setArchaludonState(prev => prev ? { ...prev, step: 'select_target' } : null)}
+                                    disabled={archaludonState.selectedEnergyIndices.length === 0}
+                                    className="bg-blue-600 text-white font-black px-10 py-3 rounded-full shadow-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:shadow-none transition active:scale-95"
+                                >
+                                    つける先を選択
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Archaludon Target Selection Modal */}
+            {archaludonState && archaludonState.step === 'select_target' && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => setArchaludonState(null)} />
+                    <div className="relative text-center w-full max-w-2xl px-4">
+                        <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-blue-500 mb-8">
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">エネルギーをつける先を選択</h3>
+                            <p className="text-blue-600 font-bold">バトル場またはベンチのポケモンを選択してください</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Battle Field Option */}
+                            {battle && (
+                                <button
+                                    onClick={() => handleArchaludonTargetSelect('battle', 0)}
+                                    className="w-full bg-white hover:bg-blue-50 p-6 rounded-2xl border-2 border-transparent hover:border-blue-500 transition-all flex items-center gap-6 group"
+                                >
+                                    <div className="w-16 h-24 relative flex-shrink-0 group-hover:scale-105 transition">
+                                        <Image src={getTopCard(battle).imageUrl} alt="" fill className="object-cover rounded-lg shadow" unoptimized />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-xs font-bold text-gray-500 mb-1 tracking-widest uppercase">Battle Field</div>
+                                        <div className="text-xl font-black text-gray-900">{getTopCard(battle).name}</div>
+                                    </div>
+                                </button>
+                            )}
+
+                            {/* Bench Options */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {bench.map((stack, i) => stack && (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleArchaludonTargetSelect('bench', i)}
+                                        className="bg-white hover:bg-blue-50 p-4 rounded-2xl border-2 border-transparent hover:border-blue-500 transition-all flex items-center gap-4 group"
+                                    >
+                                        <div className="w-12 h-16 relative flex-shrink-0 group-hover:scale-105 transition">
+                                            <Image src={getTopCard(stack).imageUrl} alt="" fill className="object-cover rounded-lg shadow" unoptimized />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="text-xs font-bold text-gray-500 mb-0.5 tracking-widest uppercase">Bench {i + 1}</div>
+                                            <div className="text-sm font-black text-gray-900 truncate max-w-[120px]">{getTopCard(stack).name}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setArchaludonState(prev => prev ? { ...prev, step: 'select_energy' } : null)}
+                            className="mt-12 bg-gray-800 text-white font-bold px-12 py-3 rounded-full hover:bg-gray-700 transition active:scale-95"
+                        >
+                            戻る
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {ultraBallState && (
                 <div className={`fixed inset-0 z-[1000] flex items-center justify-center p-4 transition-all duration-300 ${peekDeckSearch ? 'bg-black/10' : 'bg-black/60'}`}>
                     <div className={`bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] animate-fade-in-up transition-all duration-300 ${peekDeckSearch ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 overflow-y-auto'}`}>
