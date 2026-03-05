@@ -27,14 +27,14 @@ export default function AdPlaceholder({
         } catch (e) {
             console.error('AdSense error:', e);
         }
-    }, []);
+    }, [slot]); // Re-run if slot changes (though usually slots don't change for a component instance)
 
     return (
-        <div className={`flex flex-col items-center justify-center my-12 ${className}`}>
-            <span className="text-[10px] uppercase tracking-[0.2em] mb-3 text-gray-400 font-bold">{label}</span>
-            <div className="w-full max-w-5xl mx-auto overflow-hidden flex items-center justify-center min-h-[100px]">
+        <div className={`flex flex-col items-center justify-center ${className}`}>
+            <span className="text-[10px] uppercase tracking-[0.2em] mb-2 text-gray-400 font-bold">{label}</span>
+            <div className="w-full flex items-center justify-center overflow-hidden min-h-[100px]">
                 <ins className="adsbygoogle"
-                    style={{ display: 'block', width: '100%' }}
+                    style={{ display: 'block', width: '100%', minWidth: '250px' }}
                     data-ad-client="ca-pub-2951381820280282"
                     data-ad-slot={slot}
                     data-ad-format={format}
