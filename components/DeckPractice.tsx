@@ -2067,11 +2067,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const handleBugCatchingSetSelect = (index: number) => {
         if (!bugCatchingSetState) return
         const card = bugCatchingSetState.candidates[index]
-        const isGrassPokemon = isPokemon(card) && card.types?.includes('Grass')
+        const isAnyPokemon = isPokemon(card)
         const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
 
-        if (!isGrassPokemon && !isBasicGrassEnergy) {
-            alert("草ポケモンまたは基本草エネルギーを選択してください")
+        if (!isAnyPokemon && !isBasicGrassEnergy) {
+            alert("ポケモンまたは基本草エネルギーを選択してください")
             return
         }
 
@@ -5834,9 +5834,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                         <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
                             {bugCatchingSetState.candidates.map((card, i) => {
-                                const isGrassPokemon = isPokemon(card)
+                                const isAnyPokemon = isPokemon(card)
                                 const isBasicGrassEnergy = isEnergy(card) && card.name.includes('基本草エネルギー')
-                                const isTarget = isGrassPokemon || isBasicGrassEnergy
+                                const isTarget = isAnyPokemon || isBasicGrassEnergy
                                 const isSelected = bugCatchingSetState.selectedIndices.includes(i)
                                 return (
                                     <div
