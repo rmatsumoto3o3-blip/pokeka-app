@@ -64,7 +64,7 @@ export default function ReferenceDeckList({
     userEmail,
     initialDecks = [],
     initialArchetypes = [],
-    gridClassName = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
+    gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
 }: ReferenceDeckListProps) {
     const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)

@@ -134,11 +134,16 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
         const RADIAN = Math.PI / 180
         const sin = Math.sin(-RADIAN * midAngle)
         const cos = Math.cos(-RADIAN * midAngle)
+
+        // Mobile optimizations for label lines
+        const labelLineOffset = isMobile ? 8 : 20
+        const labelHorizontalOffset = isMobile ? 12 : 22
+
         const sx = cx + (outerRadius + 5) * cos
         const sy = cy + (outerRadius + 5) * sin
-        const mx = cx + (outerRadius + 20) * cos
-        const my = cy + (outerRadius + 20) * sin
-        const ex = mx + (cos >= 0 ? 1 : -1) * 22
+        const mx = cx + (outerRadius + labelLineOffset) * cos
+        const my = cy + (outerRadius + labelLineOffset) * sin
+        const ex = mx + (cos >= 0 ? 1 : -1) * labelHorizontalOffset
         const ey = my
         const textAnchor = cos >= 0 ? 'start' : 'end'
 
@@ -149,21 +154,21 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
                 <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" strokeWidth={1.5} />
                 <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
                 <text
-                    x={ex + (cos >= 0 ? 1 : -1) * 26}
+                    x={ex + (cos >= 0 ? 1 : -1) * (isMobile ? 18 : 26)}
                     y={ey}
                     dy={4}
                     textAnchor={textAnchor}
                     fill="#374151"
-                    className="text-[10px] font-bold"
+                    className={`${isMobile ? 'text-[8px]' : 'text-[10px]'} font-bold`}
                 >
                     {`${name} ${(percent * 100).toFixed(0)}%`}
                 </text>
                 {icon && (
                     <image
-                        x={cos >= 0 ? ex + 2 : ex - 22}
-                        y={ey - 10}
-                        width={20}
-                        height={20}
+                        x={cos >= 0 ? ex + 2 : ex - (isMobile ? 18 : 22)}
+                        y={ey - (isMobile ? 8 : 10)}
+                        width={isMobile ? 16 : 20}
+                        height={isMobile ? 16 : 20}
                         href={`/pokemon-icons/${icon}.png`}
                     />
                 )}
@@ -184,8 +189,8 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
                             cy="50%"
                             labelLine={true}
                             label={renderCustomizedLabel}
-                            outerRadius={isMobile ? 100 : 120}
-                            innerRadius={isMobile ? 60 : 70}
+                            outerRadius={isMobile ? 85 : 120}
+                            innerRadius={isMobile ? 50 : 70}
                             startAngle={90}
                             endAngle={-270}
                             fill="#8884d8"
