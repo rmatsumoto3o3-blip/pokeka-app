@@ -429,6 +429,20 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         setSelectedDeleteDecks(newSet)
     }
 
+    const toggleAllDeleteSelection = () => {
+        if (!data?.decks) return
+
+        const allAlreadySelected = data.decks.every(d => selectedDeleteDecks.has(d.id))
+
+        if (allAlreadySelected) {
+            setSelectedDeleteDecks(new Set())
+        } else {
+            const newSet = new Set(selectedDeleteDecks)
+            data.decks.forEach(d => newSet.add(d.id))
+            setSelectedDeleteDecks(newSet)
+        }
+    }
+
     const handleBulkRemove = async () => {
         if (selectedDeleteDecks.size === 0) return
         if (!confirm(`${selectedDeleteDecks.size}件のデッキを削除しますか？\nこの操作は取り消せません。`)) return
@@ -865,7 +879,16 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
                         <div className="border-t pt-4">
                             <h4 className="text-sm font-bold text-gray-900 mb-3 flex justify-between items-center">
-                                <span>登録済みデッキ一覧</span>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        checked={data?.decks?.length ? data.decks.every(d => selectedDeleteDecks.has(d.id)) : false}
+                                        onChange={toggleAllDeleteSelection}
+                                        className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 cursor-pointer"
+                                        title="すべて選択"
+                                    />
+                                    <span>登録済みデッキ一覧</span>
+                                </div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-gray-500 font-normal text-xs">Total: {data?.totalDecks || 0}</span>
                                     {selectedDeleteDecks.size > 0 && (
