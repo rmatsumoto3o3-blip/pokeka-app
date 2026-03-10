@@ -41,7 +41,6 @@ export interface DeckPracticeRef {
     switchPokemon: (benchIndex: number) => void
     receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
-    useLunaCycle: () => void
 }
 
 interface MenuState {
@@ -741,7 +740,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
 
     useImperativeHandle(ref, () => ({
-        useLunaCycle: () => useLunaCycle('stadium'),
         handleExternalDragEnd: (event: any) => {
             const { active, over } = event
             if (!over) return
@@ -2874,22 +2872,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     // --- ルナサイクル (Luna Cycle) Logic ---
-    const useLunaCycle = (source: 'battle' | 'bench' | 'stadium', index?: number) => {
+    const useLunaCycle = (source: 'battle' | 'bench', index?: number) => {
         if (lunacycleUsedThisTurn) {
             alert("「ルナサイクル」は既にこの番に使われています")
             return
         }
 
-        const energyInHand = hand.findIndex(c => isEnergy(c))
+        const energyInHand = hand.findIndex(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
         if (energyInHand === -1) {
-            alert("手札にエネルギーカードがありません")
+            alert("手札に「基本闘エネルギー」がありません")
             return
         }
 
-        if (confirm("手札のエネルギーを1枚トラッシュして、山札を3枚引きますか？")) {
+        if (confirm("手札の「基本闘エネルギー」を1枚トラッシュして、山札を3枚引きますか？")) {
             setHand(prev => {
                 const next = [...prev]
-                const energyIdx = next.findIndex(c => isEnergy(c))
+                const energyIdx = next.findIndex(c => isEnergy(c) && c.name.includes('基本闘エネルギー'))
                 if (energyIdx !== -1) {
                     const card = next[energyIdx]
                     setTrash(t => [...t, card])
@@ -4180,11 +4178,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             })
         }
 
-        if (externalStadium?.name.includes('ルナサイクル')) {
+        if (name === 'ルナトーン' && (source === 'battle' || source === 'bench')) {
             actions.push({
-                label: 'スタジアム: ルナサイクルを使用',
+                label: '特性: ルナサイクル',
                 action: () => {
-                    useLunaCycle('stadium')
+                    useLunaCycle(source as 'battle' | 'bench', index)
                     closeMenu()
                 },
                 color: 'bg-purple-100 text-purple-800 hover:bg-purple-200 font-bold'
