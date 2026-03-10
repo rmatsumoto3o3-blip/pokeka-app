@@ -229,8 +229,17 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         </div>
 
                         {/* Card Search Analysis [NEW] */}
-                        <div className="h-full">
-                            <CardSearchAnalysis initialArchetypes={archetypes} />
+                        <div>
+                            <div className="mb-4">
+                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                    <span className="text-2xl md:text-3xl">🔍</span>
+                                    カード検索
+                                </h3>
+                                <p className="text-gray-600 mt-1">採用率と平均枚数を分析</p>
+                            </div>
+                            <div className="bg-white rounded-2xl border-2 border-orange-100 shadow-sm p-4 h-[500px]">
+                                <CardSearchAnalysis initialArchetypes={archetypes} />
+                            </div>
                         </div>
                     </div>
 

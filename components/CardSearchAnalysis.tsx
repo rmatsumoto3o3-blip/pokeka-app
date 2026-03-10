@@ -44,10 +44,12 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
         }
     }
 
-    // Filter cards by search term
-    const filteredGlobal = globalData.filter(c =>
-        c.card_name.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 5) // Show only top 5 matches to avoid clutter
+    // Filter cards by search term or archetype
+    const filteredGlobal = searchTerm.length > 0
+        ? globalData.filter(c =>
+            c.card_name.toLowerCase().includes(searchTerm.toLowerCase())
+        ).slice(0, 5)
+        : (selectedArchetypeId ? (archetypeData[selectedArchetypeId] || []).slice(0, 5) : [])
 
     // Get stats for a specific card
     const getStatsForCard = (cardName: string) => {
@@ -68,14 +70,7 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
     }
 
     return (
-        <div className="bg-white rounded-2xl border-2 border-orange-100 shadow-sm p-4 h-full flex flex-col">
-            <div className="mb-4">
-                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                    🔍 カード検索
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">分析済みデッキ内の採用率と平均枚数を比較</p>
-            </div>
-
+        <div className="h-full flex flex-col">
             <div className="space-y-3 mb-6">
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">カード名</label>
@@ -108,7 +103,7 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
                     <div className="flex items-center justify-center py-10">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                     </div>
-                ) : searchTerm.length > 0 ? (
+                ) : (searchTerm.length > 0 || selectedArchetypeId.length > 0) ? (
                     <div className="space-y-6">
                         {filteredGlobal.length > 0 ? (
                             filteredGlobal.map((card) => {
