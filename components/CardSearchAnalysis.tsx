@@ -103,7 +103,7 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
                     <div className="flex items-center justify-center py-10">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                     </div>
-                ) : (searchTerm.length > 0 || selectedArchetypeId.length > 0) ? (
+                ) : (searchTerm.length > 0) ? (
                     <div className="space-y-6">
                         {filteredGlobal.length > 0 ? (
                             filteredGlobal.map((card) => {
@@ -188,12 +188,57 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
                             <div className="text-center py-10 text-gray-400 text-sm">
                                 カードが見つかりません
                             </div>
-                        )
-                        }
+                        )}
+                    </div>
+                ) : selectedArchetypeId ? (
+                    <div className="space-y-6">
+                        {['Pokemon', 'Goods', 'Tool', 'Supporter', 'Stadium', 'Energy'].map((category) => {
+                            const archetypeCards = archetypeData[selectedArchetypeId] || []
+                            const categoryCards = archetypeCards.filter(c => (c as any).category === category)
+                            if (categoryCards.length === 0) return null
+
+                            return (
+                                <div key={category} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-gray-100 pb-1">
+                                        {category}
+                                    </h4>
+                                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                                        {categoryCards.map((card, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex-shrink-0 w-24 text-center cursor-pointer group"
+                                                onClick={() => setSearchTerm(card.card_name)}
+                                            >
+                                                <div className="relative aspect-[3/4] mb-1.5 rounded-lg overflow-hidden shadow-sm border border-gray-100 bg-gray-50 group-hover:border-orange-200 transition-colors">
+                                                    {card.image_url ? (
+                                                        <Image
+                                                            src={card.image_url}
+                                                            alt={card.card_name}
+                                                            fill
+                                                            className="object-cover"
+                                                            unoptimized
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px]">Img</div>
+                                                    )}
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold py-0.5">
+                                                        {card.adoption_quantity}枚
+                                                    </div>
+                                                    <div className="absolute top-0 right-0 bg-orange-600/90 text-white text-[9px] font-bold px-1 py-0.5 rounded-bl-lg">
+                                                        {card.adoption_rate}%
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-gray-700 font-medium truncate px-1">{card.card_name}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-10 text-gray-400 text-sm">
-                        カード名を入力して分析を開始
+                        カード名を入力、またはアーキタイプを選択して分析を開始
                     </div>
                 )}
             </div>
