@@ -1051,6 +1051,7 @@ interface FeaturedCardStat {
     current_adoption_rate: number
     trend_history: { date: string, dateLabel: string, rate: number }[]
     image_url: string | null
+    top_archetype?: { name: string, rate: number }
 }
 
 export async function getFeaturedCardsWithStatsAction(): Promise<{ success: boolean, data?: FeaturedCardStat[], error?: string }> {
@@ -1094,24 +1095,45 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
 
         const { data: recentDecks } = await getSupabaseAdmin()
             .from('analyzed_decks')
-            .select('cards_json')
+            .select('cards_json, archetype_id')
             .order('created_at', { ascending: false })
-            .limit(500) // Increase to 500 to cover more cards
+            .limit(1000) // Increase to 1000 to cover more variety
 
         const imageMap = new Map<string, string>()
+        const archetypeAdoptionMap = new Map<string, Map<string, number>>() // CardName -> Map<ArchetypeId, Count>
+        const archetypeTotalMap = new Map<string, number>() // ArchetypeId -> Count
 
         if (recentDecks) {
             for (const deck of recentDecks) {
+                const archId = deck.archetype_id
+                archetypeTotalMap.set(archId, (archetypeTotalMap.get(archId) || 0) + 1)
+
                 const cards = deck.cards_json as CardData[]
                 if (Array.isArray(cards)) {
+                    const uniqueNamesInDeck = new Set<string>()
                     for (const c of cards) {
                         if (c.imageUrl && !imageMap.has(c.name)) {
                             imageMap.set(c.name, c.imageUrl)
                         }
+                        uniqueNamesInDeck.add(c.name)
+                    }
+
+                    for (const name of uniqueNamesInDeck) {
+                        if (!archetypeAdoptionMap.has(name)) {
+                            archetypeAdoptionMap.set(name, new Map())
+                        }
+                        const archMap = archetypeAdoptionMap.get(name)!
+                        archMap.set(archId, (archMap.get(archId) || 0) + 1)
                     }
                 }
             }
         }
+
+        // Fetch Archetype Names
+        const { data: archetypeNames } = await getSupabaseAdmin()
+            .from('deck_archetypes')
+            .select('id, name')
+        const archNameMap = new Map(archetypeNames?.map(a => [a.id, a.name]) || [])
 
         for (const card of featured) {
             const cardHistory = history?.filter(h => h.card_name === card.card_name) || []
@@ -1119,6 +1141,30 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
 
             // Get from map
             const img = imageMap.get(card.card_name) || null
+
+            // Calculate Top Archetype
+            let topArch: { name: string, rate: number } | undefined
+            const adoptionRates = archetypeAdoptionMap.get(card.card_name)
+            if (adoptionRates) {
+                let maxRate = -1
+                let bestArchId = ""
+
+                adoptionRates.forEach((count, archId) => {
+                    const totalForArch = archetypeTotalMap.get(archId) || 1
+                    const rate = (count / totalForArch) * 100
+                    if (rate > maxRate) {
+                        maxRate = rate
+                        bestArchId = archId
+                    }
+                })
+
+                if (bestArchId && maxRate > 0) {
+                    topArch = {
+                        name: archNameMap.get(bestArchId) || "Unknown",
+                        rate: parseFloat(maxRate.toFixed(1))
+                    }
+                }
+            }
 
             results.push({
                 id: card.id,
@@ -1129,7 +1175,8 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
                     dateLabel: new Date(h.recorded_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
                     rate: h.adoption_rate
                 })),
-                image_url: img
+                image_url: img,
+                top_archetype: topArch
             })
         }
 

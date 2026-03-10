@@ -11,6 +11,7 @@ interface FeaturedCardStat {
     current_adoption_rate: number
     trend_history: { date: string, dateLabel: string, rate: number }[]
     image_url: string | null
+    top_archetype?: { name: string, rate: number }
 }
 
 export default function FeaturedCardTrends() {
@@ -113,6 +114,12 @@ export default function FeaturedCardTrends() {
                                 {selectedCard.current_adoption_rate.toFixed(1)}
                                 <span className="text-sm text-gray-500 font-normal ml-1">%</span>
                             </div>
+                            {selectedCard.top_archetype && (
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                    <span className="bg-gray-100 px-1 rounded mr-1">Top</span>
+                                    {selectedCard.top_archetype.name} ({selectedCard.top_archetype.rate}%)
+                                </div>
+                            )}
                         </div>
                     </div>
 
