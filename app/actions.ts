@@ -475,7 +475,7 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
             .single()
 
         if (existing) {
-            return { success: false, error: 'このデッキコードは既にこのアーキタイプに登録されています。' }
+            return { success: false, error: 'このデッキコードは既にこのデッキタイプに登録されています。' }
         }
 
         const { error: insertError } = await getSupabaseAdmin()

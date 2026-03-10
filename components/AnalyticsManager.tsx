@@ -721,7 +721,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                     <div className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                分析対象のデッキタイプ (アーキタイプ)
+                                分析対象のデッキタイプ
                             </label>
                             <select
                                 value={selectedArchetype}

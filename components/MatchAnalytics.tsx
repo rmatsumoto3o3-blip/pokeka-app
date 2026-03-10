@@ -359,7 +359,7 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
 
                             {/* Archetypes (Folders) */}
                             {archetypes.length > 0 && (
-                                <optgroup label="📁 フォルダ (アーキタイプ集計)">
+                                <optgroup label="📁 フォルダ (デッキタイプ集計)">
                                     {archetypes.map(arch => (
                                         <option key={`arch_${arch.id}`} value={`arch_${arch.id}`}>
                                             {arch.name} (合計)

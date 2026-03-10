@@ -60,11 +60,11 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
         return {
             rate: [
                 { name: '全体', value: parseFloat(global?.adoption_rate || '0') },
-                { name: 'アーキタイプ', value: parseFloat(arch?.adoption_rate || '0') }
+                { name: 'デッキタイプ', value: parseFloat(arch?.adoption_rate || '0') }
             ],
             qty: [
                 { name: '全体', value: parseFloat(global?.adoption_quantity || '0') },
-                { name: 'アーキタイプ', value: parseFloat(arch?.adoption_quantity || '0') }
+                { name: 'デッキタイプ', value: parseFloat(arch?.adoption_quantity || '0') }
             ]
         }
     }
@@ -84,7 +84,7 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
                 </div>
 
                 <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">比較対象アーキタイプ</label>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">比較対象デッキ</label>
                     <select
                         value={selectedArchetypeId}
                         onChange={(e) => setSelectedArchetypeId(e.target.value)}
@@ -238,7 +238,7 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
                     </div>
                 ) : (
                     <div className="text-center py-10 text-gray-400 text-sm">
-                        カード名を入力、またはアーキタイプを選択して分析を開始
+                        カード名を入力、またはデッキタイプを選択して分析を開始
                     </div>
                 )}
             </div>

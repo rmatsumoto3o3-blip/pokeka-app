@@ -66,7 +66,7 @@ export default function DeckDetailMock({ onClose }: { onClose: () => void }) {
                 {/* Header */}
                 <div className="bg-blue-600 text-white p-4 flex justify-between items-start">
                     <div>
-                        <div className="text-xs font-bold opacity-80 mb-1">デッキアーキタイプ</div>
+                        <div className="text-xs font-bold opacity-80 mb-1">デッキタイプ</div>
                         <h2 className="text-2xl font-bold flex items-center gap-2">
                             🔥 {MOCK_ARCHETYPE.name}
                         </h2>

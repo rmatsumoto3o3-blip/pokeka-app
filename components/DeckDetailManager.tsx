@@ -222,7 +222,7 @@ export default function DeckDetailManager({
                 <div className="bg-blue-600 text-white p-4 flex justify-between items-start">
                     <div>
                         <div className="text-xs font-bold opacity-80 mb-1 flex items-center gap-2">
-                            デッキアーキタイプ
+                            デッキタイプ
                             <select
                                 className="bg-blue-700 text-white border border-blue-500 rounded text-xs px-1 py-0.5 cursor-pointer hover:bg-blue-800 transition focus:outline-none"
                                 value={archetype?.id || 'ROOT'}
@@ -397,7 +397,7 @@ export default function DeckDetailManager({
                                 <h4 className="text-xs font-bold text-blue-800 mb-2">💡 Tips</h4>
                                 <ul className="text-[11px] text-blue-700 space-y-2 leading-relaxed">
                                     <li>• 一人回し後の「今の山札を登録」で調整内容を保存できます。</li>
-                                    <li>• フォルダ（アーキタイプ）ごとにバージョンを管理できます。</li>
+                                    <li>• フォルダ（デッキタイプ）ごとにバージョンを管理できます。</li>
                                 </ul>
                             </div>
                         </div>
