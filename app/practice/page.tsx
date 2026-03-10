@@ -374,6 +374,17 @@ function PracticeContent() {
                                                                             className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-[9999] bg-white rounded shadow-xl border overflow-hidden min-w-[120px]"
                                                                             onClick={e => e.stopPropagation()}
                                                                         >
+                                                                            {activeStadium.name.includes('ルナサイクル') && (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        player1Ref.current?.useLunaCycle()
+                                                                                        setShowStadiumMenu(false)
+                                                                                    }}
+                                                                                    className="w-full text-left px-4 py-2 hover:bg-blue-50 text-blue-600 text-sm font-bold transition-colors whitespace-nowrap border-b"
+                                                                                >
+                                                                                    ルナサイクルを使用
+                                                                                </button>
+                                                                            )}
                                                                             <button
                                                                                 onClick={trashStadium}
                                                                                 className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold transition-colors whitespace-nowrap"
