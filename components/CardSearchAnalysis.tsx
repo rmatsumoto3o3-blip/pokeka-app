@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getGlobalDeckAnalyticsAction } from '@/app/actions'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from 'recharts'
 import Image from 'next/image'
+import { CalendarIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import type { DeckArchetype } from '@/lib/supabase'
 
 interface CardStat {
@@ -24,15 +25,20 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
     const [loading, setLoading] = useState(true)
     const [globalData, setGlobalData] = useState<CardStat[]>([])
     const [archetypeData, setArchetypeData] = useState<Record<string, CardStat[]>>({})
+    const [startDate, setStartDate] = useState<string>('')
+    const [endDate, setEndDate] = useState<string>('')
 
     useEffect(() => {
         fetchData()
     }, [])
 
-    const fetchData = async () => {
+    const fetchData = async (overrideStart?: string, overrideEnd?: string) => {
         try {
             setLoading(true)
-            const res = await getGlobalDeckAnalyticsAction()
+            const sDate = overrideStart !== undefined ? overrideStart : (startDate || undefined)
+            const eDate = overrideEnd !== undefined ? overrideEnd : (endDate || undefined)
+
+            const res = await getGlobalDeckAnalyticsAction(sDate, eDate)
             if (res.success) {
                 setGlobalData(res.globalAnalytics || [])
                 setArchetypeData(res.analyticsByArchetype || {})
@@ -69,9 +75,64 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
         }
     }
 
+    const handleClearDates = () => {
+        setStartDate('')
+        setEndDate('')
+        fetchData('', '') // Pass empty strings to override current state during fetch
+    }
+
+    const handleApplyFilter = () => {
+        fetchData()
+    }
+
     return (
         <div className="h-full flex flex-col">
             <div className="space-y-3 mb-6">
+                {/* Filter Section */}
+                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3">
+                    <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase">
+                        <CalendarIcon className="w-4 h-4 mr-1 text-orange-400" />
+                        集計期間
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="text"
+                            placeholder="MM/DD"
+                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                            value={startDate}
+                            maxLength={5}
+                            onChange={(e) => setStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                        />
+                        <span className="text-gray-400 text-xs">〜</span>
+                        <input
+                            type="text"
+                            placeholder="MM/DD"
+                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                            value={endDate}
+                            maxLength={5}
+                            onChange={(e) => setEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 ml-auto">
+                        <button
+                            onClick={handleApplyFilter}
+                            className="px-3 py-1 bg-white border border-orange-200 hover:border-orange-500 text-orange-600 text-xs font-bold rounded shadow-sm transition-colors"
+                        >
+                            絞り込み
+                        </button>
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={handleClearDates}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                title="期間をクリア"
+                            >
+                                <XMarkIcon className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">カード名</label>
                     <input

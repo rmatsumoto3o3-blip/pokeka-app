@@ -1115,8 +1115,23 @@ interface FeaturedCardStat {
     top_archetype?: { name: string, rate: number }
 }
 
-export async function getFeaturedCardsWithStatsAction(): Promise<{ success: boolean, data?: FeaturedCardStat[], error?: string }> {
+export async function getFeaturedCardsWithStatsAction(
+    startDateStr?: string, // format: "MM/DD"
+    endDateStr?: string    // format: "MM/DD"
+): Promise<{ success: boolean, data?: FeaturedCardStat[], error?: string }> {
     try {
+        // Parse dates into comparable numbers (e.g., "03/14" -> 314)
+        let startNum: number | null = null
+        let endNum: number | null = null
+        if (startDateStr) {
+            const [m, d] = startDateStr.split('/').map(Number)
+            startNum = m * 100 + d
+        }
+        if (endDateStr) {
+            const [m, d] = endDateStr.split('/').map(Number)
+            endNum = m * 100 + d
+        }
+
         // 1. Get Featured Cards
         const { data: featured, error: fErr } = await getSupabaseAdmin()
             .from('featured_cards')
@@ -1140,29 +1155,57 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
 
         if (hErr) throw hErr
 
-        // 3. Get Card Image (from analyzed decks cache or search)
-        // Optimization: We don't store image in featured_cards.
-        // We can scan analyzed_decks or hardcode or just pick one.
-        // Let's grab the image from the LATEST snapshot if we store it?
-        // 3. Get Card Image
-        // We need to fetch an image for each card. We can try to find the most recent usage.
-        const results: FeaturedCardStat[] = []
-
-        // Revised Strategy:
-        // 1. Fetch featured cards
-        // 2. Fetch history
-        // 3. Fetch specific recent decks to find images.
-        // To be efficient: Fetch last 50 decks once. Create Map<CardName, ImageUrl>.
-
-        const { data: recentDecks } = await getSupabaseAdmin()
+        // 3. Get Card Image and calculate base stats
+        // Fetch last 1000 decks or so
+        const { data: recentDecksData } = await getSupabaseAdmin()
             .from('analyzed_decks')
-            .select('cards_json, archetype_id')
+            .select('deck_code, cards_json, archetype_id')
             .order('created_at', { ascending: false })
-            .limit(1000) // Increase to 1000 to cover more variety
+            .limit(1000)
+
+        let recentDecks = recentDecksData || []
+
+        // 3.5 Filter decks if dates are provided
+        const isFiltering = startNum !== null && endNum !== null
+        if (isFiltering && recentDecks.length > 0) {
+            const deckCodes = [...new Set(recentDecks.map(d => d.deck_code))]
+            let refDecks: any[] = []
+            // Fetch reference decks in chunks
+            for (let i = 0; i < deckCodes.length; i += 500) {
+                const chunk = deckCodes.slice(i, i + 500)
+                const { data: refData } = await getSupabaseAdmin()
+                    .from('reference_decks')
+                    .select('deck_code, deck_name')
+                    .in('deck_code', chunk)
+                if (refData) refDecks = refDecks.concat(refData)
+            }
+
+            const deckNameMap = new Map<string, string>()
+            refDecks.forEach(ref => deckNameMap.set(ref.deck_code, ref.deck_name))
+
+            recentDecks = recentDecks.filter(deck => {
+                const deckName = deckNameMap.get(deck.deck_code)
+                if (!deckName) return false
+
+                const match = deckName.match(/^(\d{1,2})\/(\d{1,2})/)
+                if (!match) return false
+
+                const m = parseInt(match[1], 10)
+                const d = parseInt(match[2], 10)
+                const deckDateNum = m * 100 + d
+
+                if (startNum! > endNum!) {
+                    return deckDateNum >= startNum! || deckDateNum <= endNum!
+                } else {
+                    return deckDateNum >= startNum! && deckDateNum <= endNum!
+                }
+            })
+        }
 
         const imageMap = new Map<string, string>()
         const archetypeAdoptionMap = new Map<string, Map<string, number>>() // CardName -> Map<ArchetypeId, Count>
         const archetypeTotalMap = new Map<string, number>() // ArchetypeId -> Count
+        const overallAdoptionCount = new Map<string, number>() // CardName -> Count
 
         if (recentDecks) {
             for (const deck of recentDecks) {
@@ -1180,6 +1223,9 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
                     }
 
                     for (const name of uniqueNamesInDeck) {
+                        // Global adoption per card in filtered set
+                        overallAdoptionCount.set(name, (overallAdoptionCount.get(name) || 0) + 1)
+
                         if (!archetypeAdoptionMap.has(name)) {
                             archetypeAdoptionMap.set(name, new Map())
                         }
@@ -1196,9 +1242,20 @@ export async function getFeaturedCardsWithStatsAction(): Promise<{ success: bool
             .select('id, name')
         const archNameMap = new Map(archetypeNames?.map(a => [a.id, a.name]) || [])
 
+        const results: FeaturedCardStat[] = []
+        const totalDecksCount = recentDecks.length || 1 // Prevent division by zero
+
         for (const card of featured) {
             const cardHistory = history?.filter(h => h.card_name === card.card_name) || []
-            const current = cardHistory.length > 0 ? cardHistory[cardHistory.length - 1].adoption_rate : 0
+
+            // Calculate current adoption rate based on filtered decks if querying by date
+            let current = 0
+            if (isFiltering) {
+                const count = overallAdoptionCount.get(card.card_name) || 0
+                current = (count / totalDecksCount) * 100
+            } else {
+                current = cardHistory.length > 0 ? cardHistory[cardHistory.length - 1].adoption_rate : 0
+            }
 
             // Get from map
             const img = imageMap.get(card.card_name) || null

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getFeaturedCardsWithStatsAction } from '@/app/actions'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import Image from 'next/image'
+import { CalendarIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface FeaturedCardStat {
     id: string
@@ -18,16 +19,26 @@ export default function FeaturedCardTrends() {
     const [cards, setCards] = useState<FeaturedCardStat[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+    const [startDate, setStartDate] = useState<string>('')
+    const [endDate, setEndDate] = useState<string>('')
+
+    const loadData = async (overrideStart?: string, overrideEnd?: string) => {
+        setLoading(true)
+        const sDate = overrideStart !== undefined ? overrideStart : (startDate || undefined)
+        const eDate = overrideEnd !== undefined ? overrideEnd : (endDate || undefined)
+
+        const res = await getFeaturedCardsWithStatsAction(sDate, eDate)
+        if (res.success && res.data && res.data.length > 0) {
+            setCards(res.data)
+            // Keep selected card if it still exists in the new data, otherwise select first
+            if (!selectedCardId || !res.data.find(c => c.id === selectedCardId)) {
+                setSelectedCardId(res.data[0].id)
+            }
+        }
+        setLoading(false)
+    }
 
     useEffect(() => {
-        const loadData = async () => {
-            const res = await getFeaturedCardsWithStatsAction()
-            if (res.success && res.data && res.data.length > 0) {
-                setCards(res.data)
-                setSelectedCardId(res.data[0].id) // Default to first
-            }
-            setLoading(false)
-        }
         loadData()
     }, [])
 
@@ -36,18 +47,74 @@ export default function FeaturedCardTrends() {
 
     const selectedCard = cards.find(c => c.id === selectedCardId) || cards[0]
 
+    const handleClearDates = () => {
+        setStartDate('')
+        setEndDate('')
+        loadData('', '')
+    }
+
+    const handleApplyFilter = () => {
+        loadData()
+    }
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                <Image
-                    src="/Eevee.png"
-                    alt="Trending"
-                    width={28}
-                    height={28}
-                    className="w-7 h-7 mr-2"
-                />
-                注目カード採用率（全期間）
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center">
+                    <Image
+                        src="/Eevee.png"
+                        alt="Trending"
+                        width={28}
+                        height={28}
+                        className="w-7 h-7 mr-2"
+                    />
+                    注目カード採用率{startDate || endDate ? `（${startDate || '*'} 〜 ${endDate || '*'}）` : '（全期間）'}
+                </h2>
+
+                {/* Filter Section */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase">
+                        <CalendarIcon className="w-4 h-4 mr-1 text-orange-400" />
+                        期間
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <input
+                            type="text"
+                            placeholder="MM/DD"
+                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                            value={startDate}
+                            maxLength={5}
+                            onChange={(e) => setStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                        />
+                        <span className="text-gray-400 text-xs">〜</span>
+                        <input
+                            type="text"
+                            placeholder="MM/DD"
+                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                            value={endDate}
+                            maxLength={5}
+                            onChange={(e) => setEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                        />
+                    </div>
+                    <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+                        <button
+                            onClick={handleApplyFilter}
+                            className="px-3 py-1 bg-white border border-orange-200 hover:border-orange-500 text-orange-600 text-xs font-bold rounded shadow-sm transition-colors"
+                        >
+                            絞り込み
+                        </button>
+                        {(startDate || endDate) && (
+                            <button
+                                onClick={handleClearDates}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                title="期間をクリア"
+                            >
+                                <XMarkIcon className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             {/* Master: Card Grid */}
             <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3 mb-6">
