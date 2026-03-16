@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { getGlobalDeckAnalyticsAction } from '@/app/actions'
+import { CalendarIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface KeyCardAdoption {
     id: string
@@ -30,13 +31,16 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
     const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>({})
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
+    const [startDate, setStartDate] = useState<string>('')
+    const [endDate, setEndDate] = useState<string>('')
 
     useEffect(() => {
         fetchKeyCards()
     }, [])
 
-    const fetchKeyCards = async () => {
+    const fetchKeyCards = async (overrideStart?: string, overrideEnd?: string) => {
         try {
+            setLoading(true)
             // Fetch Archetypes
             const { data: archetypesData, error: archError } = await supabase
                 .from('deck_archetypes')
@@ -46,8 +50,11 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
             if (archError) throw archError
             setArchetypes(archetypesData || [])
 
-            // Fetch Global Analytics (Automated)
-            const result = await getGlobalDeckAnalyticsAction()
+            // Fetch Global Analytics (Automated, with optional date filters)
+            const result = await getGlobalDeckAnalyticsAction(
+                overrideStart !== undefined ? overrideStart : (startDate || undefined),
+                overrideEnd !== undefined ? overrideEnd : (endDate || undefined)
+            )
             if (result.success && result.analyticsByArchetype) {
                 setAnalyticsData(result.analyticsByArchetype)
             }
@@ -69,8 +76,66 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
 
     if (loading) return <div className="text-center py-4 text-gray-500">読み込み中...</div>
 
+    if (loading) return <div className="text-center py-4 text-gray-500">読み込み中...</div>
+
+    const handleClearDates = () => {
+        setStartDate('')
+        setEndDate('')
+        fetchKeyCards('', '') // Pass empty strings to override current state during fetch
+    }
+
+    const handleApplyFilter = () => {
+        fetchKeyCards()
+    }
+
     return (
         <div className="space-y-4">
+            {/* Filter Section */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-3">
+                <div className="flex items-center text-sm font-medium text-gray-700">
+                    <CalendarIcon className="w-5 h-5 mr-1.5 text-orange-400" />
+                    集計期間:
+                </div>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder="MM/DD"
+                        className="w-20 px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                        value={startDate}
+                        maxLength={5}
+                        onChange={(e) => setStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                    />
+                    <span className="text-gray-500">〜</span>
+                    <input
+                        type="text"
+                        placeholder="MM/DD"
+                        className="w-20 px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                        value={endDate}
+                        maxLength={5}
+                        onChange={(e) => setEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                    />
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto sm:ml-0">
+                    <button
+                        onClick={handleApplyFilter}
+                        className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-md shadow-sm transition-colors"
+                    >
+                        絞り込み
+                    </button>
+                    {(startDate || endDate) && (
+                        <button
+                            onClick={handleClearDates}
+                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                            title="期間をクリア"
+                        >
+                            <XMarkIcon className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
+                <p className="w-full text-xs text-gray-400 mt-1">※例: 3/1 や 03/14 のように入力してください</p>
+            </div>
+
             {archetypes.map((archetype) => {
                 const archetypeCards = analyticsData[archetype.id] || []
                 if (archetypeCards.length === 0) return null // Skip empty archetypes

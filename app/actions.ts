@@ -778,8 +778,23 @@ export interface GlobalAnalyticsResult {
     error?: string
 }
 
-export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsResult> {
+export async function getGlobalDeckAnalyticsAction(
+    startDateStr?: string, // format: "MM/DD"
+    endDateStr?: string    // format: "MM/DD"
+): Promise<GlobalAnalyticsResult> {
     try {
+        // Parse dates into comparable numbers (e.g., "03/14" -> 314)
+        let startNum: number | null = null
+        let endNum: number | null = null
+        if (startDateStr) {
+            const [m, d] = startDateStr.split('/').map(Number)
+            startNum = m * 100 + d
+        }
+        if (endDateStr) {
+            const [m, d] = endDateStr.split('/').map(Number)
+            endNum = m * 100 + d
+        }
+
         // 1. Fetch all analyzed decks with pagination (bypass 1000 row limit)
         let decks: any[] = []
         let from = 0
@@ -802,12 +817,58 @@ export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsRes
 
         if (decks.length === 0) return { success: true, analyticsByArchetype: {} }
 
+        // 1.5 Fetch Reference Decks to get deck names (for date extraction)
+        const deckCodes = [...new Set(decks.map(d => d.deck_code))]
+        let refDecks: any[] = []
+        // Fetch reference decks in chunks to avoid URL size limits if too many
+        for (let i = 0; i < deckCodes.length; i += 500) {
+            const chunk = deckCodes.slice(i, i + 500)
+            const { data: refData } = await getSupabaseAdmin()
+                .from('reference_decks')
+                .select('deck_code, deck_name')
+                .in('deck_code', chunk)
+            if (refData) refDecks = refDecks.concat(refData)
+        }
+
+        // Map deck_code to deck_name
+        const deckNameMap = new Map<string, string>()
+        refDecks.forEach(ref => deckNameMap.set(ref.deck_code, ref.deck_name))
+
+        // 1.6 Filter decks based on extracted date
+        const isFiltering = startNum !== null && endNum !== null
+        let filteredDecks = decks
+
+        if (isFiltering) {
+            filteredDecks = decks.filter(deck => {
+                const deckName = deckNameMap.get(deck.deck_code)
+                if (!deckName) return false // No name, ignore when filtering
+
+                // Regex to match "M/D" or "MM/DD" at the beginning of the string
+                const match = deckName.match(/^(\d{1,2})\/(\d{1,2})/)
+                if (!match) return false // No date found
+
+                const m = parseInt(match[1], 10)
+                const d = parseInt(match[2], 10)
+                const deckDateNum = m * 100 + d
+
+                // Handle year wrap-around logic (e.g., standard comparison within same year assumption)
+                // If startNum > endNum (e.g., 12/01 to 01/15), handle it as OR condition
+                if (startNum! > endNum!) {
+                    return deckDateNum >= startNum! || deckDateNum <= endNum!
+                } else {
+                    return deckDateNum >= startNum! && deckDateNum <= endNum!
+                }
+            })
+        }
+
+        if (filteredDecks.length === 0) return { success: true, analyticsByArchetype: {} }
+
         // 2. Aggregate per Archetype
         const analyticsByArchetype: Record<string, any[]> = {}
         const deckCountsByArchetype: Record<string, number> = {}
 
         // Group decks by archetype
-        decks.forEach(deck => {
+        filteredDecks.forEach(deck => {
             if (!deckCountsByArchetype[deck.archetype_id]) deckCountsByArchetype[deck.archetype_id] = 0
             deckCountsByArchetype[deck.archetype_id]++
         })
@@ -815,7 +876,7 @@ export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsRes
         // Temporary storage for stats per archetype
         const statsByArchetype: Record<string, Record<string, any>> = {}
 
-        decks.forEach(deck => {
+        filteredDecks.forEach(deck => {
             const archId = deck.archetype_id
             if (!statsByArchetype[archId]) statsByArchetype[archId] = {}
 
@@ -844,9 +905,9 @@ export async function getGlobalDeckAnalyticsAction(): Promise<GlobalAnalyticsRes
 
         // 3. Aggregate Global Stats
         const globalStats: Record<string, any> = {}
-        const totalDecksGlobal = decks.length
+        const totalDecksGlobal = filteredDecks.length
 
-        decks.forEach(deck => {
+        filteredDecks.forEach(deck => {
             const cards = deck.cards_json as CardData[]
             const seenInThisDeckGlobal = new Set<string>()
 
