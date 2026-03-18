@@ -32,49 +32,59 @@ export default function MathLearningTool() {
         const type = Math.random() > 0.5 ? 'plus' : 'minus'
 
         if (currentDiff === 'easy') {
-            // 初級：繰り上がり・繰り下がりなし (10単位)
+            // かんたん：繰り上がり・繰り下がりなし（10単位）
             if (type === 'plus') {
-                // 十の位の合計が 9 以下になるように
-                const t1 = Math.floor(Math.random() * 8 + 1) // 1-8
-                const t2 = Math.floor(Math.random() * (10 - t1)) // 繰り上がりなし
-                const h1 = Math.floor(Math.random() * 2) // 0-1
-                const h2 = Math.floor(Math.random() * 2) // 0-1
+                // 10の位で繰り上がらない：t1+t2 < 10
+                const t1 = Math.floor(Math.random() * 9 + 1) // 1-9
+                const t2 = Math.floor(Math.random() * (10 - t1)) // 0〜(9-t1)
+                const h1 = Math.floor(Math.random() * 3) // 0-2 (0, 100, 200)
+                const h2 = Math.floor(Math.random() * (3 - h1)) // 100の位も繰り上がらないように
                 v1 = h1 * 100 + t1 * 10
                 v2 = h2 * 100 + t2 * 10
                 ans = v1 + v2
                 text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
             } else {
-                // 十の位が相手より大きい (繰り下がりなし)
+                // 10の位で繰り下がらない：t1 >= t2
                 const t1 = Math.floor(Math.random() * 9 + 1) // 1-9
-                const t2 = Math.floor(Math.random() * (t1 + 1))
-                const h1 = Math.floor(Math.random() * 2 + 1) // 1-2 (100-200)
-                const h2 = Math.floor(Math.random() * (h1 + 1))
+                const t2 = Math.floor(Math.random() * (t1 + 1)) // 0〜t1
+                const h1 = Math.floor(Math.random() * 3 + 1) // 1-3 (100, 200, 300)
+                const h2 = Math.floor(Math.random() * h1) // 100の位も繰り下がらないように
                 v1 = h1 * 100 + t1 * 10
                 v2 = h2 * 100 + t2 * 10
                 ans = v1 - v2
                 text = `HP ${v1} の ポケモンが、\n${v2} ダメージ うけたら、\nのこりの HPは いくつ？`
             }
         } else if (currentDiff === 'normal') {
-            // 中級：繰り上がり・繰り下がりあり (最大500)
+            // ふつう：繰り上がり・繰り下がりあり
             if (type === 'plus') {
-                v1 = Math.floor(Math.random() * 28 + 1) * 10
-                v2 = Math.floor(Math.random() * 8 + 1) * 10
+                // 繰り上がりが発生するまでループ（差別化のため）
+                // 10の位の和が10以上になるもの
+                do {
+                    v1 = Math.floor(Math.random() * 28 + 1) * 10 // 10~280
+                    v2 = Math.floor(Math.random() * 8 + 1) * 10  // 10~80
+                } while (((v1 % 100) + (v2 % 100)) < 100); 
+                
                 ans = v1 + v2
                 text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
             } else {
-                v1 = Math.floor(Math.random() * 41 + 10) * 10 
-                do { v2 = Math.floor(Math.random() * 50 + 1) * 10 } while (v2 > v1)
+                // 繰り下がりが発生するまでループ
+                // 10の位が v1 < v2 になるもの
+                do {
+                    v1 = Math.floor(Math.random() * 41 + 10) * 10 // 100~500
+                    v2 = Math.floor(Math.random() * 15 + 1) * 10  // 10~150
+                } while (v2 > v1 || (v1 % 100) >= (v2 % 100));
+                
                 ans = v1 - v2
                 text = `HP ${v1} の ポケモンが、\n${v2} ダメージ うけたら、\nのこりの HPは いくつ？`
             }
         } else if (currentDiff === 'hard') {
-            // 上級：かけ算
+            // むずかしい：かけ算
             const baseDamage = [10, 20, 30, 40, 50][Math.floor(Math.random() * 5)]
             const multiplier = Math.floor(Math.random() * 8 + 2) // 2-9
             ans = baseDamage * multiplier
             text = `エネルギー 1まいに つき ${baseDamage} ダメージ。\nエネルギーが ${multiplier}まい ついていたら\n何ダメージ？`
         } else {
-            // エクストラ：弱点・抵抗力
+            // ちょーむずい：弱点・抵抗力
             const isWeakness = Math.random() > 0.5
             if (isWeakness) {
                 v1 = Math.floor(Math.random() * 13 + 1) * 20 // 20-260
