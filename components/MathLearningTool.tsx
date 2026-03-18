@@ -34,9 +34,9 @@ export default function MathLearningTool() {
         if (currentDiff === 'easy') {
             // かんたん：繰り上がり・繰り下がりなし（10単位）
             if (type === 'plus') {
-                // 10の位で繰り上がらない：t1+t2 < 10
-                const t1 = Math.floor(Math.random() * 9 + 1) // 1-9
-                const t2 = Math.floor(Math.random() * (10 - t1)) // 0〜(9-t1)
+                // 10の位で繰り上がらない：t1+t2 < 10, かつ t2 >= 1 (10ダメージ以上にする)
+                const t1 = Math.floor(Math.random() * 8 + 1) // 1-8
+                const t2 = Math.floor(Math.random() * (9 - t1) + 1) // 1〜(9-t1)
                 const h1 = Math.floor(Math.random() * 3) // 0-2 (0, 100, 200)
                 const h2 = Math.floor(Math.random() * (3 - h1)) // 100の位も繰り上がらないように
                 v1 = h1 * 100 + t1 * 10
@@ -44,9 +44,9 @@ export default function MathLearningTool() {
                 ans = v1 + v2
                 text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
             } else {
-                // 10の位で繰り下がらない：t1 >= t2
+                // 10の位で繰り下がらない：t1 >= t2, かつ t2 >= 1 (10ダメージ以上にする)
                 const t1 = Math.floor(Math.random() * 9 + 1) // 1-9
-                const t2 = Math.floor(Math.random() * (t1 + 1)) // 0〜t1
+                const t2 = Math.floor(Math.random() * t1 + 1) // 1〜t1
                 const h1 = Math.floor(Math.random() * 3 + 1) // 1-3 (100, 200, 300)
                 const h2 = Math.floor(Math.random() * h1) // 100の位も繰り下がらないように
                 v1 = h1 * 100 + t1 * 10
