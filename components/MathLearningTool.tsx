@@ -153,7 +153,7 @@ export default function MathLearningTool() {
                         onClick={() => selectDifficulty('easy')} 
                         className="bg-green-400 hover:bg-green-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
                     >
-                        【しょきゅう】 くりあがり なし
+                        かんたん
                     </motion.button>
                     <motion.button 
                         whileHover={{ scale: 1.02 }}
@@ -161,7 +161,7 @@ export default function MathLearningTool() {
                         onClick={() => selectDifficulty('normal')} 
                         className="bg-blue-400 hover:bg-blue-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
                     >
-                        【ちゅうきゅう】 くりあがり あり
+                        ふつう
                     </motion.button>
                     <motion.button 
                         whileHover={{ scale: 1.02 }}
@@ -169,7 +169,7 @@ export default function MathLearningTool() {
                         onClick={() => selectDifficulty('hard')} 
                         className="bg-orange-400 hover:bg-orange-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
                     >
-                        【じょうきゅう】 かけざん
+                        むずかしい
                     </motion.button>
                     <motion.button 
                         whileHover={{ scale: 1.02 }}
@@ -177,7 +177,7 @@ export default function MathLearningTool() {
                         onClick={() => selectDifficulty('extra')} 
                         className="bg-purple-500 hover:bg-purple-600 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
                     >
-                        【エクストラ】 じゃくてん・ていこうりょく
+                        ちょーむずい
                     </motion.button>
                 </div>
             </div>
@@ -194,7 +194,7 @@ export default function MathLearningTool() {
                         スコア: {score}
                     </div>
                     <button onClick={resetToHome} className="text-xs font-bold text-gray-400 hover:text-gray-600 text-left px-2">
-                        ← レベルを かめる
+                        ← レベルを かえる
                     </button>
                 </div>
                 <div className="flex gap-1">
