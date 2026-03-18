@@ -118,6 +118,12 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             >
                                 🏆 サイド推論
                             </Link>
+                            <Link
+                                href="/kids"
+                                className="px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
+                            >
+                                ポケカで算数
+                            </Link>
                         </div>
                     </div>
                 </div>
