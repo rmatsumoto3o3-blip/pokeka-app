@@ -34,7 +34,7 @@ export default function MathLearningTool() {
         let v1 = 0, v2 = 0, ans = 0, text = ""
         
         if (type === 'plus') {
-            v1 = Math.floor(Math.random() * 50 + 1) * 10 // 最大500
+            v1 = Math.floor(Math.random() * 28 + 1) * 10 // 最大280 (VSTARのHPを意識)
             v2 = Math.floor(Math.random() * 8 + 1) * 10 // 最大80
             ans = v1 + v2
             text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
