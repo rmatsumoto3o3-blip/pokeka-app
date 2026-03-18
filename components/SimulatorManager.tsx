@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -18,6 +18,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
     const [cards, setCards] = useState<CardData[]>(initialCards)
     const [error, setError] = useState<string | null>(null)
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
+    const [simResult, setSimResult] = useState<{ and: string, or: string } | null>(null)
+    const [randomHand, setRandomHand] = useState<CardData[]>([])
 
     const isGlobal = initialCards.length > 0
 
@@ -62,6 +64,10 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         confirm: lang === 'ja' ? '決定' : 'Done',
         selectedCount: lang === 'ja' ? '枚選択中' : ' selected',
         noImage: lang === 'ja' ? 'No Image' : 'No Image',
+        andProb: lang === 'ja' ? 'すべて引く確率 (AND)' : 'All Met (AND)',
+        orProb: lang === 'ja' ? 'どれか引く確率 (OR)' : 'At least one (OR)',
+        sampleHand: lang === 'ja' ? '初手ドロー（例）' : 'Sample Opening Hand',
+        drawAgain: lang === 'ja' ? 'もう一度引く' : 'Draw Again',
     }
 
     const handleSimulate = useCallback(async (codeOverride?: string) => {
@@ -111,6 +117,14 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             setCards(initialCards)
         }
     }, [initialCards])
+
+    // Auto-draw when cards are loaded
+    useEffect(() => {
+        if (cards.length > 0 && randomHand.length === 0) {
+            const hand = drawRandomHand(cards)
+            setRandomHand(hand)
+        }
+    }, [cards, randomHand.length])
 
     // Categorize
     const categorizedCards = {
@@ -232,7 +246,6 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
     const [selectedCardNames, setSelectedCardNames] = useState<string[]>([])
     const [isSelectorOpen, setIsSelectorOpen] = useState(false)
     const [targetQtyInput, setTargetQtyInput] = useState<number>(1)
-    const [simResult, setSimResult] = useState<string | null>(null)
 
     const handleToggleCardSelection = (cardName: string) => {
         if (selectedCardNames.includes(cardName)) {
@@ -288,6 +301,15 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             targetQuantity: t.targetQuantity
         })))
         setSimResult(result)
+
+        // Draw random hand
+        const hand = drawRandomHand(cards)
+        setRandomHand(hand)
+    }
+
+    const handleDrawAgain = () => {
+        const hand = drawRandomHand(cards)
+        setRandomHand(hand)
     }
 
     // Modal Component for Selection (Render Function to prevent remounting)
@@ -413,6 +435,42 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                 </div>
             )}
 
+            {/* Random Hand Display (Quick Draw) - Show as soon as cards are loaded */}
+            {cards.length > 0 && randomHand.length > 0 && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-violet-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <span className="text-2xl">🃏</span> {t.sampleHand}
+                        </h4>
+                        <button
+                            onClick={handleDrawAgain}
+                            className="text-sm font-bold text-violet-600 hover:text-violet-800 bg-violet-50 px-4 py-2 rounded-full border border-violet-100 shadow-sm transition active:scale-95 flex items-center gap-2"
+                        >
+                            <span className="text-base">🔄</span> {t.drawAgain}
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                        {randomHand.map((c, i) => (
+                            <div key={i} className="relative aspect-[63/88] rounded-lg overflow-hidden bg-gray-100 shadow-md group border border-gray-50">
+                                {c.imageUrl ? (
+                                    <Image
+                                        src={c.imageUrl}
+                                        alt={c.name}
+                                        fill
+                                        className="object-cover transition-transform group-hover:scale-110"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
+                                        {c.name}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Custom Hand Simulation Section */}
             {cards.length > 0 && (
                 <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 rounded-xl shadow-sm border-2 border-violet-100 mb-10">
@@ -506,11 +564,21 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                         </button>
 
                         {simResult !== null && (
-                            <div className="flex items-center gap-3 animate-in fade-in zoom-in duration-300 bg-white md:bg-transparent p-2 rounded-lg md:p-0">
-                                <span className="text-sm font-bold text-gray-500 whitespace-nowrap">{t.successProb}:</span>
-                                <span className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
-                                    {simResult}%
-                                </span>
+                            <div className="flex flex-col gap-4 w-full md:w-auto animate-in fade-in zoom-in duration-300">
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="bg-white p-3 rounded-xl border border-violet-100 shadow-sm flex flex-col items-center min-w-[140px]">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase">{t.andProb}</span>
+                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
+                                            {simResult.and}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-xl border border-fuchsia-100 shadow-sm flex flex-col items-center min-w-[140px]">
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase">{t.orProb}</span>
+                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-pink-500">
+                                            {simResult.or}%
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

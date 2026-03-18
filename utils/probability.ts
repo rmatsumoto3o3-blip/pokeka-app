@@ -189,25 +189,22 @@ export interface CustomHandTarget {
 
 /**
  * Simulates drawing an opening hand of 7 cards from a 60 card deck.
- * Calculates probability that ALL targets are met simultaneously.
+ * Calculates probability for both AND (all met) and OR (at least one met).
  * Uses Monte Carlo simulation.
  * 
- * @param targets List of card constraints (e.g. "Pidgey: need 1", "Candy: need 1")
+ * @param targets List of card constraints
  * @param trials Number of simulations (default 100000)
- * @returns Success rate string (e.g. "45.2")
+ * @returns Object with 'and' and 'or' probabilities
  */
-export function simulateCustomHandProbability(targets: CustomHandTarget[], trials: number = 100000): string {
-    if (!targets || targets.length === 0) return '0.0'
+export function simulateCustomHandProbability(targets: CustomHandTarget[], trials: number = 100000): { and: string, or: string } {
+    if (!targets || targets.length === 0) return { and: '0.0', or: '0.0' }
 
-    let successCount = 0
+    let successCountAnd = 0
+    let successCountOr = 0
     const deckSize = 60
     const handSize = 7
 
-    // 1. Construct representative deck array
-    // Integers representing card types. 0 = Filler. 1..N = Target Indices + 1.
     const baseDeck: number[] = []
-
-    // Safety check for total cards
     let totalTargetCards = 0
     targets.forEach((t, i) => {
         const typeId = i + 1
@@ -217,22 +214,14 @@ export function simulateCustomHandProbability(targets: CustomHandTarget[], trial
         totalTargetCards += t.deckQuantity
     })
 
-    if (totalTargetCards > deckSize) return 'Error'
+    if (totalTargetCards > deckSize) return { and: 'Error', or: 'Error' }
 
-    // Fill remaining with 0
     for (let i = baseDeck.length; i < deckSize; i++) {
         baseDeck.push(0)
     }
 
-    // 2. Run Simulation
     for (let i = 0; i < trials; i++) {
-        // Fisher-Yates Shuffle (Optimization: Only need first 7)
-        // Actually, shuffling first 7 is enough? No, need to pick 7 random from 60.
-        // Standard shuffle is fast enough for N=60.
-
-        const currentDeck = [...baseDeck] // Copy
-
-        // Shuffle at least first `handSize` elements
+        const currentDeck = [...baseDeck]
         for (let j = 0; j < handSize; j++) {
             const r = j + Math.floor(Math.random() * (deckSize - j))
             const temp = currentDeck[j]
@@ -241,9 +230,6 @@ export function simulateCustomHandProbability(targets: CustomHandTarget[], trial
         }
 
         const hand = currentDeck.slice(0, handSize)
-
-        // 3. Check Conditions
-        // Count occurrences in hand
         const counts = new Map<number, number>()
         for (const cardType of hand) {
             if (cardType > 0) {
@@ -252,19 +238,50 @@ export function simulateCustomHandProbability(targets: CustomHandTarget[], trial
         }
 
         let allMet = true
+        let anyMet = false
         for (let t = 0; t < targets.length; t++) {
             const typeId = t + 1
             const count = counts.get(typeId) || 0
-            if (count < targets[t].targetQuantity) {
+            if (count >= targets[t].targetQuantity) {
+                anyMet = true
+            } else {
                 allMet = false
-                break
             }
         }
 
-        if (allMet) {
-            successCount++
-        }
+        if (allMet) successCountAnd++
+        if (anyMet) successCountOr++
     }
 
-    return ((successCount / trials) * 100).toFixed(1)
+    return {
+        and: ((successCountAnd / trials) * 100).toFixed(1),
+        or: ((successCountOr / trials) * 100).toFixed(1)
+    }
+}
+
+/**
+ * Shuffles a pool of cards and returns the first 7 cards.
+ */
+import { type CardData } from '@/lib/deckParser'
+
+export function drawRandomHand(cards: CardData[]): CardData[] {
+    // 1. Reconstruct full 60 card deck from quantities
+    const fullDeck: CardData[] = []
+    cards.forEach(c => {
+        for (let i = 0; i < c.quantity; i++) {
+            fullDeck.push({ ...c })
+        }
+    })
+
+    // If deck is smaller than 7 (shouldn't happen with code), just return it
+    if (fullDeck.length <= 7) return fullDeck
+
+    // 2. Shuffle (Fisher-Yates)
+    for (let i = fullDeck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]
+    }
+
+    // 3. Return top 7
+    return fullDeck.slice(0, 7)
 }
