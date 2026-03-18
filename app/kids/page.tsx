@@ -9,9 +9,6 @@ export default function KidsPage() {
                     <h1 className="text-4xl md:text-6xl font-black text-orange-600 mb-4 drop-shadow-sm">
                         ポケカで算数
                     </h1>
-                    <p className="text-lg md:text-xl text-orange-800 font-bold opacity-80">
-                        ポケモンの パワーで、<br className="sm:hidden" />さんすうを もっと たのしく！
-                    </p>
                 </div>
 
                 <div className="relative">
