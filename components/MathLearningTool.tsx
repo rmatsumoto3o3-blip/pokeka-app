@@ -84,16 +84,32 @@ export default function MathLearningTool() {
             ans = baseDamage * multiplier
             text = `エネルギー 1まいに つき ${baseDamage} ダメージ。\nエネルギーが ${multiplier}まい ついていたら\n何ダメージ？`
         } else {
-            // ちょーむずい：弱点・抵抗力
-            const isWeakness = Math.random() > 0.5
-            if (isWeakness) {
-                v1 = Math.floor(Math.random() * 13 + 1) * 20 // 20-260
+            // ちょーむずい：複合計算（かけ算・足し算・引き算）
+            const rand = Math.random()
+            if (rand < 0.25) {
+                // 弱点 (×2)
+                v1 = Math.floor(Math.random() * 15 + 1) * 10 // 10-150
                 ans = v1 * 2
                 text = `${v1} ダメージの ワザで、\nじゃくてん(×2)を ついたら、\n何ダメージ？`
-            } else {
+            } else if (rand < 0.5) {
+                // 抵抗力 (-30)
                 v1 = Math.floor(Math.random() * 20 + 5) * 10 // 50-250
                 ans = v1 - 30
                 text = `${v1} ダメージの ワザ。\nあいてに ていこうりょく(-30)が あったら、\n何ダメージ？`
+            } else if (rand < 0.75) {
+                // 複合A：ベース + (枚数 × 追加) - 抵抗力
+                const base = [30, 50, 80, 100][Math.floor(Math.random() * 4)]
+                const add = [10, 20, 30][Math.floor(Math.random() * 3)]
+                const count = Math.floor(Math.random() * 4 + 1) // 1-4
+                ans = base + (add * count) - 30
+                text = `${base} ダメージの ワザ。\nエネルギー 1まいに つき ＋${add} ダメージ。\nエネルギーが ${count}まい ついていて、\nていこうりょく(-30)の あいてには 何ダメージ？`
+            } else {
+                // 複合B：(ベース + 枚数 × 追加) × 2 (弱点)
+                const base = [20, 40, 60][Math.floor(Math.random() * 3)]
+                const add = [10, 20][Math.floor(Math.random() * 2)]
+                const count = Math.floor(Math.random() * 3 + 1) // 1-3
+                ans = (base + (add * count)) * 2
+                text = `${base} ダメージの ワザ。\nエネルギー 1まいに つき ＋${add} ダメージ。\nエネルギーが ${count}まい ついていて、\nじゃくてん(×2)の あいてには 何ダメージ？`
             }
         }
 
