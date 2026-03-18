@@ -4,18 +4,18 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
+type Difficulty = 'easy' | 'normal' | 'hard' | 'extra'
+
 interface Question {
     id: string
-    type: 'plus' | 'minus' | 'multi'
+    type: string
     text: string
-    val1: number
-    val2: number
     answer: number
     choices: number[]
-    image?: string
 }
 
 export default function MathLearningTool() {
+    const [difficulty, setDifficulty] = useState<Difficulty | null>(null)
     const [score, setScore] = useState(0)
     const [question, setQuestion] = useState<Question | null>(null)
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null)
@@ -27,62 +27,100 @@ export default function MathLearningTool() {
         'bg-yellow-400', 'bg-blue-400', 'bg-green-400', 'bg-pink-400'
     ]
 
-    const generateQuestion = () => {
-        const types: ('plus' | 'minus')[] = ['plus', 'minus']
-        const type = types[Math.floor(Math.random() * types.length)]
-        
+    const generateQuestion = (currentDiff: Difficulty) => {
         let v1 = 0, v2 = 0, ans = 0, text = ""
-        
-        if (type === 'plus') {
-            v1 = Math.floor(Math.random() * 28 + 1) * 10 // 最大280 (VSTARのHPを意識)
-            v2 = Math.floor(Math.random() * 8 + 1) * 10 // 最大80
-            ans = v1 + v2
-            text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
+        const type = Math.random() > 0.5 ? 'plus' : 'minus'
+
+        if (currentDiff === 'easy') {
+            // 初級：繰り上がり・繰り下がりなし (10単位)
+            if (type === 'plus') {
+                // 十の位の合計が 9 以下になるように
+                const t1 = Math.floor(Math.random() * 8 + 1) // 1-8
+                const t2 = Math.floor(Math.random() * (10 - t1)) // 繰り上がりなし
+                const h1 = Math.floor(Math.random() * 2) // 0-1
+                const h2 = Math.floor(Math.random() * 2) // 0-1
+                v1 = h1 * 100 + t1 * 10
+                v2 = h2 * 100 + t2 * 10
+                ans = v1 + v2
+                text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
+            } else {
+                // 十の位が相手より大きい (繰り下がりなし)
+                const t1 = Math.floor(Math.random() * 9 + 1) // 1-9
+                const t2 = Math.floor(Math.random() * (t1 + 1))
+                const h1 = Math.floor(Math.random() * 2 + 1) // 1-2 (100-200)
+                const h2 = Math.floor(Math.random() * (h1 + 1))
+                v1 = h1 * 100 + t1 * 10
+                v2 = h2 * 100 + t2 * 10
+                ans = v1 - v2
+                text = `HP ${v1} の ポケモンが、\n${v2} ダメージ うけたら、\nのこりの HPは いくつ？`
+            }
+        } else if (currentDiff === 'normal') {
+            // 中級：繰り上がり・繰り下がりあり (最大500)
+            if (type === 'plus') {
+                v1 = Math.floor(Math.random() * 28 + 1) * 10
+                v2 = Math.floor(Math.random() * 8 + 1) * 10
+                ans = v1 + v2
+                text = `${v1} ダメージに、\n＋${v2} したら 合計は 何ダメージ？`
+            } else {
+                v1 = Math.floor(Math.random() * 41 + 10) * 10 
+                do { v2 = Math.floor(Math.random() * 50 + 1) * 10 } while (v2 > v1)
+                ans = v1 - v2
+                text = `HP ${v1} の ポケモンが、\n${v2} ダメージ うけたら、\nのこりの HPは いくつ？`
+            }
+        } else if (currentDiff === 'hard') {
+            // 上級：かけ算
+            const baseDamage = [10, 20, 30, 40, 50][Math.floor(Math.random() * 5)]
+            const multiplier = Math.floor(Math.random() * 8 + 2) // 2-9
+            ans = baseDamage * multiplier
+            text = `エネルギー 1まいに つき ${baseDamage} ダメージ。\nエネルギーが ${multiplier}まい ついていたら\n何ダメージ？`
         } else {
-            v1 = Math.floor(Math.random() * 41 + 10) * 10 // 100〜500
-            // v2 が v1 を超えないように（答えがマイナスにならないように）ガード
-            do {
-                v2 = Math.floor(Math.random() * 50 + 1) * 10
-            } while (v2 > v1)
-            
-            ans = v1 - v2
-            text = `HP ${v1} の ポケモンが、\n${v2} ダメージ うけたら、\nのこりの HPは いくつ？`
+            // エクストラ：弱点・抵抗力
+            const isWeakness = Math.random() > 0.5
+            if (isWeakness) {
+                v1 = Math.floor(Math.random() * 13 + 1) * 20 // 20-260
+                ans = v1 * 2
+                text = `${v1} ダメージの ワザで、\nじゃくてん(×2)を ついたら、\n何ダメージ？`
+            } else {
+                v1 = Math.floor(Math.random() * 20 + 5) * 10 // 50-250
+                ans = v1 - 30
+                text = `${v1} ダメージの ワザ。\nあいてに ていこうりょく(-30)が あったら、\n何ダメージ？`
+            }
         }
 
         const choices = [ans]
         while (choices.length < 4) {
-            // 乱数の範囲を広げ（-50〜+50）、かつ結果が10未満にならないように調整
             const diff = (Math.floor(Math.random() * 11) - 5) * 10
-            const wrong = Math.max(10, ans + (diff === 0 ? 10 : diff))
+            const wrong = Math.max(10, ans + (diff === 0 ? 20 : diff))
             if (!choices.includes(wrong)) choices.push(wrong)
         }
 
         setQuestion({
             id: Date.now().toString(),
-            type,
+            type: currentDiff,
             text,
-            val1: v1,
-            val2: v2,
             answer: ans,
             choices: choices.sort(() => Math.random() - 0.5)
         })
         setFeedback(null)
     }
 
-    useEffect(() => {
-        generateQuestion()
-    }, [])
+    const selectDifficulty = (diff: Difficulty) => {
+        setDifficulty(diff)
+        setScore(0)
+        setLives(5)
+        setIsGameOver(false)
+        generateQuestion(diff)
+    }
 
     const handleAnswer = (choice: number) => {
-        if (isGameOver) return
+        if (isGameOver || !difficulty) return
 
         if (choice === question?.answer) {
             setFeedback('correct')
             setScore(prev => prev + 10)
-            
             setTimeout(() => {
                 setFeedback(null)
-                generateQuestion()
+                generateQuestion(difficulty)
             }, 800)
         } else {
             setFeedback('wrong')
@@ -97,11 +135,53 @@ export default function MathLearningTool() {
         }
     }
 
-    const resetGame = () => {
+    const resetToHome = () => {
+        setDifficulty(null)
         setScore(0)
         setLives(5)
         setIsGameOver(false)
-        generateQuestion()
+    }
+
+    if (!difficulty) {
+        return (
+            <div className="max-w-2xl mx-auto p-8 bg-white rounded-3xl shadow-xl border-4 border-yellow-200">
+                <h2 className="text-3xl font-black text-center text-gray-800 mb-8">むずかしさを えらんでね！</h2>
+                <div className="grid grid-cols-1 gap-4">
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => selectDifficulty('easy')} 
+                        className="bg-green-400 hover:bg-green-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
+                    >
+                        【しょきゅう】 くりあがり なし
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => selectDifficulty('normal')} 
+                        className="bg-blue-400 hover:bg-blue-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
+                    >
+                        【ちゅうきゅう】 くりあがり あり
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => selectDifficulty('hard')} 
+                        className="bg-orange-400 hover:bg-orange-500 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
+                    >
+                        【じょうきゅう】 かけざん
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => selectDifficulty('extra')} 
+                        className="bg-purple-500 hover:bg-purple-600 text-white text-xl font-black py-6 rounded-2xl shadow-lg transition-all"
+                    >
+                        【エクストラ】 じゃくてん・ていこうりょく
+                    </motion.button>
+                </div>
+            </div>
+        )
     }
 
     if (!question) return null
@@ -109,8 +189,13 @@ export default function MathLearningTool() {
     return (
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-3xl shadow-xl border-4 border-yellow-200 overflow-hidden">
             <div className="flex justify-between items-center mb-8">
-                <div className="bg-yellow-100 px-4 py-2 rounded-full font-black text-yellow-700">
-                    スコア: {score}
+                <div className="flex flex-col gap-1">
+                    <div className="bg-yellow-100 px-4 py-1 rounded-full font-black text-yellow-700 text-sm">
+                        スコア: {score}
+                    </div>
+                    <button onClick={resetToHome} className="text-xs font-bold text-gray-400 hover:text-gray-600 text-left px-2">
+                        ← レベルを かめる
+                    </button>
                 </div>
                 <div className="flex gap-1">
                     {[...Array(5)].map((_, i) => (
@@ -137,11 +222,14 @@ export default function MathLearningTool() {
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={resetGame}
+                                onClick={() => selectDifficulty(difficulty)}
                                 className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-2xl font-black py-4 rounded-2xl shadow-lg"
                             >
                                 もういちど あそぶ
                             </motion.button>
+                            <button onClick={resetToHome} className="text-gray-500 font-bold hover:underline">
+                                レベルを かえる
+                            </button>
                         </div>
                     </motion.div>
                 ) : (
