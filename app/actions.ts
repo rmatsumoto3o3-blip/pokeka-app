@@ -1113,6 +1113,7 @@ interface FeaturedCardStat {
     trend_history: { date: string, dateLabel: string, rate: number }[]
     image_url: string | null
     top_archetype?: { name: string, rate: number }
+    archetype_stats?: { name: string, rate: number }[]
 }
 
 export async function getFeaturedCardsWithStatsAction(
@@ -1260,29 +1261,24 @@ export async function getFeaturedCardsWithStatsAction(
             // Get from map
             const img = imageMap.get(card.card_name) || null
 
-            // Calculate Top Archetype
-            let topArch: { name: string, rate: number } | undefined
+            // Calculate Archetype Stats
+            const archStats: { name: string, rate: number }[] = []
             const adoptionRates = archetypeAdoptionMap.get(card.card_name)
             if (adoptionRates) {
-                let maxRate = -1
-                let bestArchId = ""
-
                 adoptionRates.forEach((count, archId) => {
                     const totalForArch = archetypeTotalMap.get(archId) || 1
                     const rate = (count / totalForArch) * 100
-                    if (rate > maxRate) {
-                        maxRate = rate
-                        bestArchId = archId
+                    if (rate > 0) {
+                        archStats.push({
+                            name: archNameMap.get(archId) || "Unknown",
+                            rate: parseFloat(rate.toFixed(1))
+                        })
                     }
                 })
-
-                if (bestArchId && maxRate > 0) {
-                    topArch = {
-                        name: archNameMap.get(bestArchId) || "Unknown",
-                        rate: parseFloat(maxRate.toFixed(1))
-                    }
-                }
+                archStats.sort((a, b) => b.rate - a.rate)
             }
+
+            const topArch = archStats.length > 0 ? archStats[0] : undefined
 
             results.push({
                 id: card.id,
@@ -1294,7 +1290,8 @@ export async function getFeaturedCardsWithStatsAction(
                     rate: h.adoption_rate
                 })),
                 image_url: img,
-                top_archetype: topArch
+                top_archetype: topArch,
+                archetype_stats: archStats
             })
         }
 

@@ -13,12 +13,14 @@ interface FeaturedCardStat {
     trend_history: { date: string, dateLabel: string, rate: number }[]
     image_url: string | null
     top_archetype?: { name: string, rate: number }
+    archetype_stats?: { name: string, rate: number }[]
 }
 
 export default function FeaturedCardTrends() {
     const [cards, setCards] = useState<FeaturedCardStat[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+    const [selectedArchName, setSelectedArchName] = useState<string | null>(null) // null means Global
     const [startDate, setStartDate] = useState<string>('')
     const [endDate, setEndDate] = useState<string>('')
 
@@ -33,6 +35,7 @@ export default function FeaturedCardTrends() {
             // Keep selected card if it still exists in the new data, otherwise select first
             if (!selectedCardId || !res.data.find(c => c.id === selectedCardId)) {
                 setSelectedCardId(res.data[0].id)
+                setSelectedArchName(null) // Reset to Global on card change if needed, or keep?
             }
         }
         setLoading(false)
@@ -55,6 +58,11 @@ export default function FeaturedCardTrends() {
 
     const handleApplyFilter = () => {
         loadData()
+    }
+
+    const handleCardSelect = (id: string) => {
+        setSelectedCardId(id)
+        setSelectedArchName(null) // Default to Global
     }
 
     return (
@@ -123,7 +131,7 @@ export default function FeaturedCardTrends() {
                     return (
                         <div
                             key={card.id}
-                            onClick={() => setSelectedCardId(card.id)}
+                            onClick={() => handleCardSelect(card.id)}
                             className={`
                                 cursor-pointer rounded-lg overflow-hidden border transition-all duration-200 relative group
                                 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500 ring-offset-1 shadow-md' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}
@@ -166,27 +174,52 @@ export default function FeaturedCardTrends() {
             {/* Detail: Chart Area */}
             {selectedCard && (
                 <div className="p-2.5 bg-gray-50 border border-gray-100 rounded-xl animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-14 relative rounded overflow-hidden border border-gray-200 shadow-sm hidden md:block">
                                 {selectedCard.image_url && <Image src={selectedCard.image_url} alt={selectedCard.card_name} fill className="object-cover" />}
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-gray-900">{selectedCard.card_name}</h3>
-                                <p className="text-xs text-gray-500">全期間の採用率推移</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                                    {selectedArchName ? `${selectedArchName} 内の採用率` : '全体の採用率推移'}
+                                </p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <div className="text-2xl font-black text-blue-600 tracking-tight">
-                                {selectedCard.current_adoption_rate.toFixed(1)}
-                                <span className="text-sm text-gray-500 font-normal ml-1">%</span>
+
+                        <div className="flex flex-col items-end">
+                            <div className="text-3xl font-black text-blue-600 tracking-tighter flex items-baseline gap-1">
+                                {selectedArchName 
+                                    ? selectedCard.archetype_stats?.find(s => s.name === selectedArchName)?.rate.toFixed(1)
+                                    : selectedCard.current_adoption_rate.toFixed(1)
+                                }
+                                <span className="text-sm text-gray-400 font-bold">%</span>
                             </div>
-                            {selectedCard.top_archetype && (
-                                <div className="text-[10px] text-gray-400 mt-1">
-                                    <span className="bg-gray-100 px-1 rounded mr-1">Top</span>
-                                    {selectedCard.top_archetype.name} ({selectedCard.top_archetype.rate}%)
-                                </div>
-                            )}
+                            
+                            {/* Archetype Selector Chips */}
+                            <div className="flex gap-1.5 overflow-x-auto max-w-[280px] no-scrollbar py-1">
+                                <button
+                                    onClick={() => setSelectedArchName(null)}
+                                    className={`
+                                        flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all
+                                        ${!selectedArchName ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}
+                                    `}
+                                >
+                                    全体
+                                </button>
+                                {selectedCard.archetype_stats?.map((stat, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedArchName(stat.name)}
+                                        className={`
+                                            flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all
+                                            ${selectedArchName === stat.name ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}
+                                        `}
+                                    >
+                                        {stat.name}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
