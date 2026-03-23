@@ -664,28 +664,23 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: 'å
         const step = 1000
         const supabaseAdmin = getSupabaseAdmin()
 
-        while (true) {
-            let query = getSupabaseAdmin()
-                .from('analyzed_decks')
-                .select('*')
-                .eq('archetype_id', archetypeId)
-                .gte('created_at', ANALYTICS_START_DATE)
-            
-            if (eventRank) {
-                query = query.eq('event_rank', eventRank)
-            }
-
-            const { data, error } = await query
-                .range(from, from + step - 1)
-                .order('created_at', { ascending: false })
-
-            if (error) throw error
-            if (!data || data.length === 0) break
-
-            decks = decks.concat(data)
-            if (data.length < step) break
-            from += step
+        let query = getSupabaseAdmin()
+            .from('analyzed_decks')
+            .select('id, deck_code, event_rank, archetype_id, created_at, cards_json')
+            .eq('archetype_id', archetypeId)
+            .gte('created_at', ANALYTICS_START_DATE)
+        
+        if (eventRank) {
+            query = query.eq('event_rank', eventRank)
         }
+
+        const { data, error } = await query
+            .order('created_at', { ascending: false })
+            .limit(500)
+
+        if (error) throw error
+        decks = data || []
+
         if (!decks || decks.length === 0) {
             return { success: true, decks: [], analytics: [], totalDecks: 0 }
         }
@@ -845,7 +840,7 @@ export async function getGlobalDeckAnalyticsAction(
             .from('analyzed_decks')
             .select('deck_code, cards_json, archetype_id, created_at')
             .order('created_at', { ascending: false })
-            .limit(1500)
+            .limit(500)
 
         if (dErr) throw dErr
         let decks = decksData || []
@@ -1280,7 +1275,7 @@ export async function getFeaturedCardsWithStatsAction(
             .from('analyzed_decks')
             .select('deck_code, cards_json, archetype_id')
             .order('created_at', { ascending: false })
-            .limit(1000)
+            .limit(500)
         
         if (eventRank) {
             query = query.eq('event_rank', eventRank)
