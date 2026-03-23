@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 // PokemonIconSelector removed for archetypes (automated matching used instead)
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName, backfillEventRanksAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName, backfillEventRanksAction, calculateDeckStatisticsAction } from '@/app/actions'
 
 import Image from 'next/image'
 
@@ -79,6 +79,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [isManageMode, setIsManageMode] = useState(false) // Toggle for Archetype Manager
     const [isBackfilling, setIsBackfilling] = useState(false)
     const [backfillCount, setBackfillCount] = useState<number | null>(null)
+    const [isCalculating, setIsCalculating] = useState(false)
     const [rankFilter, setRankFilter] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | undefined>(undefined)
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
@@ -496,6 +497,25 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         }
     }
 
+    const handleCalculateStats = async () => {
+        if (!confirm('全デッキデータを集計して結果データベースを更新しますか？\n（SupabaseのEgress削減のための事前集計処理です。数分かかる場合があります。）')) return
+        
+        setIsCalculating(true)
+        setError(null)
+        try {
+            const res = await calculateDeckStatisticsAction(userId)
+            if (res.success) {
+                alert(res.message || '集計が完了しました。')
+            } else {
+                setError(res.error || '不明なエラーが発生しました')
+            }
+        } catch (e) {
+            setError((e as Error).message)
+        } finally {
+            setIsCalculating(false)
+        }
+    }
+
     // Categorize for display
     const categorizedCards = {
         pokemon: data?.analytics.filter(c => c.supertype === 'Pokémon') || [],
@@ -646,6 +666,20 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         ✅ {backfillCount} 件のランクを更新しました！
                                     </span>
                                 )}
+                            </div>
+                            
+                            <hr className="my-4 border-orange-200" />
+                            <p className="text-xs text-orange-700 mb-4">
+                                登録されている全デッキデータを読み込み、カードの採用率等の統計データを再計算して専用のデータベーステーブル（Egress対策用）に保存します。※数分かかる場合があります。
+                            </p>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleCalculateStats}
+                                    disabled={isCalculating}
+                                    className="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-sm"
+                                >
+                                    {isCalculating ? '集計データを更新中...' : '集計データを更新（Egress対策用）'}
+                                </button>
                             </div>
                         </div>
 
