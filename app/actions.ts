@@ -635,7 +635,7 @@ export async function getAllReferenceDecksAction() {
         while (true) {
             const { data, error } = await supabasePublic
                 .from('reference_decks')
-                .select('*')
+                .select('id, deck_name, deck_code, deck_url, image_url, event_type, archetype_id, created_at')
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -665,7 +665,7 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         while (true) {
             const { data, error } = await getSupabasePublic()
                 .from('analyzed_decks')
-                .select('*')
+                .select('id, user_id, deck_code, archetype_id, cards_json, created_at')
                 .eq('archetype_id', archetypeId)
                 .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
@@ -1015,7 +1015,7 @@ export async function syncAnalyzedDecksToReferencesAction(userId: string) {
         // 2. Fetch all analyzed decks
         const { data: analyzedDecks, error: fetchError } = await getSupabaseAdmin()
             .from('analyzed_decks')
-            .select('*')
+            .select('id, user_id, deck_code, archetype_id, cards_json, created_at')
 
         if (fetchError) throw fetchError
         if (!analyzedDecks) return { success: true, count: 0 }
