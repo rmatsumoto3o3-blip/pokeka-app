@@ -840,17 +840,17 @@ export async function getGlobalDeckAnalyticsAction(
                 archData.forEach(stat => {
                     if (!analyticsByArchetype[stat.archetype_id]) analyticsByArchetype[stat.archetype_id] = []
                     analyticsByArchetype[stat.archetype_id].push({
-                        name: stat.card_name,
-                        imageUrl: stat.image_url,
-                        supertype: stat.supertype,
-                        subtypes: stat.subtypes,
-                        adoptionRate: stat.total_decks > 0 ? (stat.adoption_count / stat.total_decks) * 100 : 0,
-                        avgQuantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count) : 0
+                        id: stat.card_name,
+                        card_name: stat.card_name,
+                        image_url: stat.image_url,
+                        category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
+                        adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : "0.0",
+                        adoption_rate: stat.total_decks > 0 ? ((stat.adoption_count / stat.total_decks) * 100).toFixed(1) : "0.0"
                     })
                 })
                 // Sort each archetype's cards by adoption rate
                 Object.keys(analyticsByArchetype).forEach(archId => {
-                    analyticsByArchetype[archId].sort((a, b) => b.adoptionRate - a.adoptionRate)
+                    analyticsByArchetype[archId].sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
                 })
             }
 
