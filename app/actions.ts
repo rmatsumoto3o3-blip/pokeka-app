@@ -32,9 +32,13 @@ import { createClient } from '@supabase/supabase-js'
 // Service Role Client for Admin Operations (Bypass RLS)
 function getSupabaseAdmin() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    let key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!key) {
+        console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to ANON key. Private writes will fail.')
+        key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    }
     if (!url || !key) {
-        throw new Error('Supabase URL or Service Role Key is missing. Please check your environment variables.')
+        throw new Error('Supabase URL or Key is missing. Please check your environment variables.')
     }
     return createClient(url, key)
 }
