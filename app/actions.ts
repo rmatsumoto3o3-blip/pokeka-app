@@ -665,7 +665,7 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: 'å
         const supabaseAdmin = getSupabaseAdmin()
 
         while (true) {
-            let query = getSupabasePublic()
+            let query = getSupabaseAdmin()
                 .from('analyzed_decks')
                 .select('*')
                 .eq('archetype_id', archetypeId)
