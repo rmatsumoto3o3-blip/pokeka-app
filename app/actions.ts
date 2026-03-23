@@ -445,8 +445,8 @@ export async function saveDeckVersionAction(
  */
 export async function detectRankFromName(name: string): Promise<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | null> {
     if (!name) return null
+    if (name.includes('準優勝')) return '準優勝' // Check 준優勝 (Runner-Up) first
     if (name.includes('優勝')) return '優勝'
-    if (name.includes('準優勝')) return '準優勝'
     if (name.match(/ベスト4|TOP4|Top 4/i)) return 'TOP4'
     if (name.match(/ベスト8|TOP8|Top 8/i)) return 'TOP8'
     return null
@@ -1083,50 +1083,56 @@ export async function backfillEventRanksAction(userId: string) {
         let updatedCount = 0
 
         // 1. Update reference_decks
-        let from = 0
+        let refFrom = 0
         const step = 200
         while (true) {
             const { data: refDecks, error: fetchError } = await supabaseAdmin
                 .from('reference_decks')
-                .select('id, deck_name, deck_code')
-                .is('event_rank', null) // Only those without rank
-                .range(from, from + step - 1)
+                .select('id, deck_name, event_rank')
+                .range(refFrom, refFrom + step - 1)
 
             if (fetchError) throw fetchError
             if (!refDecks || refDecks.length === 0) break
 
             for (const deck of refDecks) {
-                const rank = await detectRankFromName(deck.deck_name)
-                if (rank) {
+                const detected = await detectRankFromName(deck.deck_name)
+                // Update if: 1. No rank yet, OR 2. Detected rank is different from current rank
+                if (detected && detected !== deck.event_rank) {
                     await supabaseAdmin
                         .from('reference_decks')
-                        .update({ event_rank: rank })
+                        .update({ event_rank: detected })
                         .eq('id', deck.id)
                     updatedCount++
                 }
             }
 
             if (refDecks.length < step) break
-            from += step
+            refFrom += step
         }
 
-        // 2. Update analyzed_decks directly (those not covered by reference_decks or without rank)
-        const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
-            .from('analyzed_decks')
-            .select('id, deck_name')
-            .is('event_rank', null)
+        // 2. Update analyzed_decks directly
+        let anaFrom = 0
+        while (true) {
+            const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('id, deck_name, event_rank')
+                .range(anaFrom, anaFrom + step - 1)
 
-        if (!analyzedError && analyzedDecks) {
+            if (analyzedError) throw analyzedError
+            if (!analyzedDecks || analyzedDecks.length === 0) break
+
             for (const deck of analyzedDecks) {
-                const rank = await detectRankFromName(deck.deck_name || '')
-                if (rank) {
+                const detected = await detectRankFromName(deck.deck_name || '')
+                if (detected && detected !== deck.event_rank) {
                     await supabaseAdmin
                         .from('analyzed_decks')
-                        .update({ event_rank: rank })
+                        .update({ event_rank: detected })
                         .eq('id', deck.id)
                     updatedCount++
                 }
             }
+            if (analyzedDecks.length < step) break
+            anaFrom += step
         }
 
         return { success: true, count: updatedCount }
