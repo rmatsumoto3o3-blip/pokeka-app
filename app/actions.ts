@@ -440,7 +440,27 @@ export async function saveDeckVersionAction(
 }
 // --- Phase 36: Deck Analytics Automation ---
 
-export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: string, userId: string, customDeckName?: string, customImageUrl?: string, syncReference: boolean = true) {
+/**
+ * Helper to detect event rank from deck name
+ */
+export async function detectRankFromName(name: string): Promise<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | null> {
+    if (!name) return null
+    if (name.includes('優勝')) return '優勝'
+    if (name.includes('準優勝')) return '準優勝'
+    if (name.match(/ベスト4|TOP4|Top 4/i)) return 'TOP4'
+    if (name.match(/ベスト8|TOP8|Top 8/i)) return 'TOP8'
+    return null
+}
+
+export async function addDeckToAnalyticsAction(
+    deckCode: string,
+    archetypeId: string,
+    userId: string,
+    customDeckName?: string,
+    customImageUrl?: string,
+    syncReference: boolean = true,
+    eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
+) {
     try {
         // 1. Check permissions (Admin only)
 
@@ -478,13 +498,17 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
             return { success: false, error: 'このデッキコードは既にこのデッキタイプに登録されています。' }
         }
 
+        // Auto-detect rank if not provided
+        const rank = eventRank || (customDeckName ? await detectRankFromName(customDeckName) : null)
+
         const { error: insertError } = await getSupabaseAdmin()
             .from('analyzed_decks')
             .insert([{
                 user_id: userId,
                 deck_code: deckCode,
                 archetype_id: archetypeId,
-                cards_json: cards
+                cards_json: cards,
+                event_rank: rank
             }])
 
         if (insertError) throw insertError
@@ -510,7 +534,8 @@ export async function addDeckToAnalyticsAction(deckCode: string, archetypeId: st
                     deck_code: deckCode,
                     deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
                     image_url: imageUrl,
-                    archetype_id: archetypeId
+                    archetype_id: archetypeId,
+                    event_rank: rank
                 }])
 
             if (refError) {
@@ -610,7 +635,7 @@ export async function getAllReferenceDecksAction() {
         while (true) {
             const { data, error } = await supabasePublic
                 .from('reference_decks')
-                .select('*')
+                .select('*, event_rank')
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -640,7 +665,7 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         while (true) {
             const { data, error } = await supabaseAdmin
                 .from('analyzed_decks')
-                .select('*')
+                .select('*, event_rank')
                 .eq('archetype_id', archetypeId)
                 .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
@@ -744,7 +769,7 @@ export async function updateAnalyzedDeckAction(
     deckCode: string,
     archetypeId: string,
     userId: string,
-    updates: { name: string, imageUrl?: string }
+    updates: { name: string, imageUrl?: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8' }
 ) {
     try {
         // Admin Check
@@ -753,17 +778,30 @@ export async function updateAnalyzedDeckAction(
             return { success: false, error: '権限がありません' }
         }
 
-        // Update Reference Deck
-        const { error } = await getSupabaseAdmin()
+        // 1. Update Reference Deck (Name, Rank, Image)
+        const refUpdates: any = {
+            deck_name: updates.name,
+            image_url: updates.imageUrl,
+            event_rank: updates.eventRank
+        }
+        
+        const { error: refError } = await getSupabaseAdmin()
             .from('reference_decks')
-            .update({
-                deck_name: updates.name,
-                image_url: updates.imageUrl // Optional update if provided
-            })
+            .update(refUpdates)
             .eq('deck_code', deckCode)
             .eq('archetype_id', archetypeId)
 
-        if (error) throw error
+        if (refError) throw refError
+
+        // 2. Update Analyzed Deck (Rank)
+        if (updates.eventRank !== undefined) {
+            const { error: anaError } = await getSupabaseAdmin()
+                .from('analyzed_decks')
+                .update({ event_rank: updates.eventRank })
+                .eq('deck_code', deckCode)
+                .eq('archetype_id', archetypeId)
+            if (anaError) throw anaError
+        }
 
         return { success: true }
     } catch (e) {

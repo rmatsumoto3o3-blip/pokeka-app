@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 // PokemonIconSelector removed for archetypes (automated matching used instead)
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName } from '@/app/actions'
 
 import Image from 'next/image'
 
@@ -51,6 +51,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [selectedArchetype, setSelectedArchetype] = useState<string>(archetypes.length > 0 ? archetypes[0].id : '')
     const [inputCode, setInputCode] = useState('')
     const [inputDeckName, setInputDeckName] = useState('')
+    const [inputEventRank, setInputEventRank] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | ''>('')
     const [syncReference, setSyncReference] = useState(true) // Default to "Both"
     const [loading, setLoading] = useState(false) // Renamed from isLoading
     const [isAdding, setIsAdding] = useState(false)
@@ -60,6 +61,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     // Edit State
     const [editingDeck, setEditingDeck] = useState<any | null>(null)
     const [editName, setEditName] = useState('')
+    const [editEventRank, setEditEventRank] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | ''>('')
     const [isSaving, setIsSaving] = useState(false)
 
     // Phase 44: Scraper State
@@ -161,7 +163,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
     const handleEdit = (deck: any) => {
         setEditingDeck(deck)
-        setEditName(deck.deck_name || '')
+        setEditName(deck.reference_decks?.[0]?.deck_name || deck.deck_name || '')
+        setEditEventRank(deck.event_rank || '')
     }
 
     const handleSaveEdit = async () => {
@@ -172,7 +175,10 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 editingDeck.deck_code,
                 editingDeck.archetype_id,
                 userId,
-                { name: editName }
+                { 
+                    name: editName,
+                    eventRank: (editEventRank || undefined) as any
+                }
             )
             if (res.success) {
                 await refreshAnalytics(selectedArchetype)
@@ -319,7 +325,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 userId,
                 inputDeckName.trim() || undefined,
                 undefined, // customImageUrl
-                syncReference
+                syncReference,
+                (inputEventRank || undefined) as any
             )
 
             if (res.success) {
@@ -527,6 +534,20 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     onChange={(e) => setEditName(e.target.value)}
                                     className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">戦績ランク</label>
+                                <select
+                                    value={editEventRank}
+                                    onChange={(e) => setEditEventRank(e.target.value as any)}
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                >
+                                    <option value="">(なし)</option>
+                                    <option value="優勝">優勝</option>
+                                    <option value="準優勝">準優勝</option>
+                                    <option value="TOP4">TOP4</option>
+                                    <option value="TOP8">TOP8</option>
+                                </select>
                             </div>
                         </div>
                         <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
@@ -744,10 +765,32 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 <input
                                     type="text"
                                     value={inputDeckName}
-                                    onChange={(e) => setInputDeckName(e.target.value)}
+                                    onChange={async (e) => {
+                                        const val = e.target.value
+                                        setInputDeckName(val)
+                                        const detected = await detectRankFromName(val)
+                                        if (detected) setInputEventRank(detected)
+                                    }}
                                     placeholder="例: 優勝デッキ"
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
                                 />
+                            </div>
+
+                            <div className="w-40">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    戦績
+                                </label>
+                                <select
+                                    value={inputEventRank}
+                                    onChange={(e) => setInputEventRank(e.target.value as any)}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                >
+                                    <option value="">なし</option>
+                                    <option value="優勝">優勝</option>
+                                    <option value="準優勝">準優勝</option>
+                                    <option value="TOP4">TOP4</option>
+                                    <option value="TOP8">TOP8</option>
+                                </select>
                             </div>
 
                             <div className="flex-1 p-2 bg-gray-50 rounded border border-gray-200">

@@ -74,7 +74,18 @@ export interface ReferenceDeck {
   deck_url: string | null
   image_url: string | null
   event_type: 'City League' | 'Championship' | 'Worldwide' | 'Gym Battle' | null
+  event_rank: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null
   archetype_id: string | null
+  created_at: string
+}
+
+export interface AnalyzedDeck {
+  id: string
+  user_id: string
+  deck_code: string
+  archetype_id: string
+  cards_json: CardData[]
+  event_rank: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null
   created_at: string
 }
 
