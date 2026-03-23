@@ -714,7 +714,7 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: 'å
         if (eventRank) {
             statsQuery = statsQuery.eq('event_rank', eventRank)
         } else {
-            statsQuery = statsQuery.is('event_rank', null) // Match "ALL" ranks
+            statsQuery = statsQuery.eq('event_rank', 'ALL') // Match "ALL" ranks
         }
 
         const { data: statsData, error: statsError } = await statsQuery
@@ -816,7 +816,7 @@ export async function getGlobalDeckAnalyticsAction(
         if (startNum === null && endNum === null) {
             let gQuery = getSupabaseAdmin().from('global_card_stats').select('*')
             if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
-            else gQuery = gQuery.is('event_rank', null)
+            else gQuery = gQuery.eq('event_rank', 'ALL')
             
             const { data: globalData } = await gQuery
             const totalDecksGlobal = globalData && globalData.length > 0 ? globalData[0].total_decks : 1
@@ -832,7 +832,7 @@ export async function getGlobalDeckAnalyticsAction(
 
             let aQuery = getSupabaseAdmin().from('archetype_card_stats').select('*')
             if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
-            else aQuery = aQuery.is('event_rank', null)
+            else aQuery = aQuery.eq('event_rank', 'ALL')
             
             const { data: archData } = await aQuery
             const analyticsByArchetype: Record<string, any[]> = {}
@@ -1301,7 +1301,7 @@ export async function getFeaturedCardsWithStatsAction(
                 .in('card_name', names)
             
             if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
-            else gQuery = gQuery.is('event_rank', null)
+            else gQuery = gQuery.eq('event_rank', 'ALL')
             
             const { data: gData } = await gQuery
 
@@ -1311,7 +1311,7 @@ export async function getFeaturedCardsWithStatsAction(
                 .in('card_name', names)
             
             if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
-            else aQuery = aQuery.is('event_rank', null)
+            else aQuery = aQuery.eq('event_rank', 'ALL')
 
             const { data: aData } = await aQuery
 
@@ -1853,12 +1853,16 @@ export async function calculateDeckStatisticsAction(userId: string) {
         const archDeckCount = new Map<string, Set<string>>() // archetypeId_eventRank -> Set<deck_code>
         const globalDeckCount = new Map<string, Set<string>>() // eventRank -> Set<deck_code>
 
+        // Clear existing corrupted table data before recalculation
+        await supabaseAdmin.from('archetype_card_stats').delete().neq('card_name', '')
+        await supabaseAdmin.from('global_card_stats').delete().neq('card_name', '')
+
         // Initialize maps safely
         const getOrCreateStat = (map: Map<string, any>, key: string, name: string, supertype: string, subtypes: any, imageUrl: string, archId?: string, rank?: string) => {
             if (!map.has(key)) {
                 map.set(key, {
                     archetype_id: archId,
-                    event_rank: rank || null,
+                    event_rank: rank || 'ALL', // Use 'ALL' instead of null to fix Postgres UNIQUE NULL issue
                     card_name: name,
                     supertype: supertype,
                     subtypes: subtypes,
@@ -1871,7 +1875,7 @@ export async function calculateDeckStatisticsAction(userId: string) {
         }
 
         for (const deck of decksData) {
-            const rank = deck.event_rank || null
+            const rank = deck.event_rank // Can be null
             const archId = deck.archetype_id
             const cards = deck.cards_json as CardData[]
             const dCode = deck.deck_code
@@ -1883,14 +1887,18 @@ export async function calculateDeckStatisticsAction(userId: string) {
             const gAllKey = `ALL`
 
             // Add deck_code to sets
-            if (!archDeckCount.has(archBaseKey)) archDeckCount.set(archBaseKey, new Set())
+            if (rank) {
+                if (!archDeckCount.has(archBaseKey)) archDeckCount.set(archBaseKey, new Set())
+                archDeckCount.get(archBaseKey)!.add(dCode)
+                
+                if (!globalDeckCount.has(gBaseKey)) globalDeckCount.set(gBaseKey, new Set())
+                globalDeckCount.get(gBaseKey)!.add(dCode)
+            }
+            
             if (!archDeckCount.has(archAllKey)) archDeckCount.set(archAllKey, new Set())
-            if (!globalDeckCount.has(gBaseKey)) globalDeckCount.set(gBaseKey, new Set())
-            if (!globalDeckCount.has(gAllKey)) globalDeckCount.set(gAllKey, new Set())
-
-            archDeckCount.get(archBaseKey)!.add(dCode)
             archDeckCount.get(archAllKey)!.add(dCode)
-            globalDeckCount.get(gBaseKey)!.add(dCode)
+            
+            if (!globalDeckCount.has(gAllKey)) globalDeckCount.set(gAllKey, new Set())
             globalDeckCount.get(gAllKey)!.add(dCode)
 
             // Track adoption per deck
@@ -1899,32 +1907,37 @@ export async function calculateDeckStatisticsAction(userId: string) {
             if (!Array.isArray(cards)) continue;
 
             for (const c of cards) {
-                // Archetype Specific Stats (Specific Rank & All Ranks)
-                const aKeyRank = `${archId}_${rank || 'NULL'}_${c.name}`
-                const aKeyAll = `${archId}_NULL_${c.name}` // ALL ranks represented as event_rank=NULL
+                // ALL buckets
+                const aKeyAll = `${archId}_ALL_${c.name}`
+                const gKeyAll = `GLOBAL_ALL_${c.name}`
                 
-                const statARank = getOrCreateStat(archStatsMap, aKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, rank)
-                const statAAll = getOrCreateStat(archStatsMap, aKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, undefined)
+                const statAAll = getOrCreateStat(archStatsMap, aKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, 'ALL')
+                const statGAll = getOrCreateStat(globalStatsMap, gKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, 'ALL')
 
-                // Global Stats (Specific Rank & All Ranks)
-                const gKeyRank = `${rank || 'NULL'}_${c.name}`
-                const gKeyAll = `NULL_${c.name}`
-                
-                const statGRank = getOrCreateStat(globalStatsMap, gKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, rank)
-                const statGAll = getOrCreateStat(globalStatsMap, gKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, undefined)
-
-                // Add Quantities
-                statARank.total_qty += c.quantity
                 statAAll.total_qty += c.quantity
-                statGRank.total_qty += c.quantity
                 statGAll.total_qty += c.quantity
+
+                // Specific Rank buckets
+                let statARank = null
+                let statGRank = null
+                
+                if (rank) {
+                    const aKeyRank = `${archId}_RANK_${rank}_${c.name}`
+                    const gKeyRank = `GLOBAL_RANK_${rank}_${c.name}`
+                    
+                    statARank = getOrCreateStat(archStatsMap, aKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, rank)
+                    statGRank = getOrCreateStat(globalStatsMap, gKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, rank)
+                    
+                    statARank.total_qty += c.quantity
+                    statGRank.total_qty += c.quantity
+                }
 
                 // Add Adoption
                 if (!seenInThisDeck.has(c.name)) {
-                    statARank.adoption_count += 1
                     statAAll.adoption_count += 1
-                    statGRank.adoption_count += 1
                     statGAll.adoption_count += 1
+                    if (statARank) statARank.adoption_count += 1
+                    if (statGRank) statGRank.adoption_count += 1
                     seenInThisDeck.add(c.name)
                 }
             }
@@ -1932,17 +1945,21 @@ export async function calculateDeckStatisticsAction(userId: string) {
 
         // Prepare inserts mapping total_decks correctly
         const archInserts = Array.from(archStatsMap.values()).map(stat => {
-            const denomKey = `${stat.archetype_id}_${stat.event_rank || 'ALL'}`
+            const denomKey = `${stat.archetype_id}_${stat.event_rank}`
             stat.total_decks = archDeckCount.get(denomKey)?.size || 0
             if (stat.total_decks === 0) return null
             return stat
         }).filter(Boolean)
 
         const globalInserts = Array.from(globalStatsMap.values()).map(stat => {
-            const denomKey = `${stat.event_rank || 'ALL'}`
+            const denomKey = `${stat.event_rank}`
             stat.total_decks = globalDeckCount.get(denomKey)?.size || 0
-            if (stat.total_decks === 0) return null
-            return stat
+            
+            // Remove archetype_id from global stats to prevent schema cache errors
+            const { archetype_id, ...rest } = stat
+            
+            if (rest.total_decks === 0) return null
+            return rest
         }).filter(Boolean)
 
         // Upsert in batches of 1000
