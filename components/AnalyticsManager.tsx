@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 // PokemonIconSelector removed for archetypes (automated matching used instead)
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName, backfillEventRanksAction } from '@/app/actions'
 
 import Image from 'next/image'
 
@@ -77,6 +77,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     // Archetype Management State
     const [localArchetypes, setLocalArchetypes] = useState<Archetype[]>([])
     const [isManageMode, setIsManageMode] = useState(false) // Toggle for Archetype Manager
+    const [isBackfilling, setIsBackfilling] = useState(false)
+    const [backfillCount, setBackfillCount] = useState<number | null>(null)
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
     const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
@@ -473,6 +475,26 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         await refreshAnalytics(selectedArchetype)
     }
 
+    const handleBackfill = async () => {
+        if (!confirm('過去の全データのランクを一括判定しますか？\nデータ量によっては数分かかる場合があります。')) return
+        
+        setIsBackfilling(true)
+        setBackfillCount(null)
+        try {
+            const res = await backfillEventRanksAction(userId)
+            if (res.success) {
+                setBackfillCount(res.count || 0)
+                await refreshAnalytics(selectedArchetype)
+            } else {
+                setError(res.error || '不明なエラーが発生しました')
+            }
+        } catch (e) {
+            setError((e as Error).message)
+        } finally {
+            setIsBackfilling(false)
+        }
+    }
+
     // Categorize for display
     const categorizedCards = {
         pokemon: data?.analytics.filter(c => c.supertype === 'Pokémon') || [],
@@ -601,11 +623,35 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                             </button>
                         </div>
 
+                        {/* Backfill Utility */}
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                            <h4 className="text-sm font-bold text-orange-800 mb-2 flex items-center">
+                                <span className="mr-2">🛠️</span> メンテナンスツール
+                            </h4>
+                            <p className="text-xs text-orange-700 mb-4">
+                                過去に登録された全てのデッキ（参考デッキ・分析データ）の名前を再スキャンし、「優勝」「準優勝」などの戦績ランクを自動的に割り振ります。
+                                ※数分かかる場合があります。
+                            </p>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleBackfill}
+                                    disabled={isBackfilling}
+                                    className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50 shadow-sm"
+                                >
+                                    {isBackfilling ? '一括判定を実行中...' : '既存デッキのランクを一括判定'}
+                                </button>
+                                {backfillCount !== null && (
+                                    <span className="text-sm font-bold text-green-600 animate-bounce">
+                                        ✅ {backfillCount} 件のランクを更新しました！
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
                         {/* 1. Deck Type Creation & Cover Image */}
                         <div className="flex flex-col md:flex-row gap-6">
                             <div className="flex-1 space-y-4">
                                 <h4 className="font-bold text-gray-900 border-b pb-2">新規作成 & 画像設定</h4>
-                                {/* ... existing implementation ... */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         設定するデッキタイプ

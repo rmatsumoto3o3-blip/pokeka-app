@@ -625,6 +625,8 @@ export async function deleteArchetypeAction(archetypeId: string, userId: string)
     }
 }
 
+
+
 export async function getAllReferenceDecksAction() {
     try {
         let allDecks: any[] = []
@@ -635,7 +637,7 @@ export async function getAllReferenceDecksAction() {
         while (true) {
             const { data, error } = await supabasePublic
                 .from('reference_decks')
-                .select('id, deck_name, deck_code, deck_url, image_url, event_type, archetype_id, created_at')
+                .select('*')
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -665,7 +667,7 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         while (true) {
             const { data, error } = await getSupabasePublic()
                 .from('analyzed_decks')
-                .select('id, user_id, deck_code, archetype_id, cards_json, created_at')
+                .select('*')
                 .eq('archetype_id', archetypeId)
                 .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
@@ -1015,7 +1017,7 @@ export async function syncAnalyzedDecksToReferencesAction(userId: string) {
         // 2. Fetch all analyzed decks
         const { data: analyzedDecks, error: fetchError } = await getSupabaseAdmin()
             .from('analyzed_decks')
-            .select('id, user_id, deck_code, archetype_id, cards_json, created_at')
+            .select('*')
 
         if (fetchError) throw fetchError
         if (!analyzedDecks) return { success: true, count: 0 }
@@ -1063,6 +1065,73 @@ export async function syncAnalyzedDecksToReferencesAction(userId: string) {
 
     } catch (error) {
         console.error('Sync Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+/**
+ * Backfill event_rank for all existing decks based on their names
+ */
+export async function backfillEventRanksAction(userId: string) {
+    try {
+        const supabaseAdmin = getSupabaseAdmin()
+        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
+            return { success: false, error: '権限がありません' }
+        }
+
+        let updatedCount = 0
+
+        // 1. Update reference_decks
+        let from = 0
+        const step = 200
+        while (true) {
+            const { data: refDecks, error: fetchError } = await supabaseAdmin
+                .from('reference_decks')
+                .select('id, deck_name, deck_code')
+                .is('event_rank', null) // Only those without rank
+                .range(from, from + step - 1)
+
+            if (fetchError) throw fetchError
+            if (!refDecks || refDecks.length === 0) break
+
+            for (const deck of refDecks) {
+                const rank = await detectRankFromName(deck.deck_name)
+                if (rank) {
+                    await supabaseAdmin
+                        .from('reference_decks')
+                        .update({ event_rank: rank })
+                        .eq('id', deck.id)
+                    updatedCount++
+                }
+            }
+
+            if (refDecks.length < step) break
+            from += step
+        }
+
+        // 2. Update analyzed_decks directly (those not covered by reference_decks or without rank)
+        const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('id, deck_name')
+            .is('event_rank', null)
+
+        if (!analyzedError && analyzedDecks) {
+            for (const deck of analyzedDecks) {
+                const rank = await detectRankFromName(deck.deck_name || '')
+                if (rank) {
+                    await supabaseAdmin
+                        .from('analyzed_decks')
+                        .update({ event_rank: rank })
+                        .eq('id', deck.id)
+                    updatedCount++
+                }
+            }
+        }
+
+        return { success: true, count: updatedCount }
+    } catch (error) {
+        console.error('Backfill Error:', error)
         return { success: false, error: (error as Error).message }
     }
 }
