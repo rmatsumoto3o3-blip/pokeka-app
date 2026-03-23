@@ -795,25 +795,15 @@ export async function getGlobalDeckAnalyticsAction(
             endNum = m * 100 + d
         }
 
-        // 1. Fetch all analyzed decks with pagination (bypass 1000 row limit)
-        let decks: any[] = []
-        let from = 0
-        const step = 1000
-        while (true) {
-            const { data, error } = await getSupabaseAdmin()
-                .from('analyzed_decks')
-                .select('*')
-                .gte('created_at', ANALYTICS_START_DATE)
-                .range(from, from + step - 1)
-                .order('created_at', { ascending: false })
+        // 1. Fetch recent analyzed decks (limit to 1500 to save bandwidth)
+        const { data: decksData, error: dErr } = await getSupabaseAdmin()
+            .from('analyzed_decks')
+            .select('deck_code, cards_json, archetype_id, created_at')
+            .order('created_at', { ascending: false })
+            .limit(1500)
 
-            if (error) throw error
-            if (!data || data.length === 0) break
-
-            decks = decks.concat(data)
-            if (data.length < step) break
-            from += step
-        }
+        if (dErr) throw dErr
+        let decks = decksData || []
 
         if (decks.length === 0) return { success: true, analyticsByArchetype: {} }
 
