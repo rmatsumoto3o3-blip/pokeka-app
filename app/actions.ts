@@ -1115,19 +1115,28 @@ export async function backfillEventRanksAction(userId: string) {
             refFrom += step
         }
 
-        // 2. Update analyzed_decks directly
+        // 2. Update analyzed_decks directly (sync from reference_decks)
         let anaFrom = 0
         while (true) {
             const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
                 .from('analyzed_decks')
-                .select('id, deck_name, event_rank')
+                .select('id, deck_code, event_rank')
                 .range(anaFrom, anaFrom + step - 1)
 
             if (analyzedError) throw analyzedError
             if (!analyzedDecks || analyzedDecks.length === 0) break
 
+            const deckCodes = [...new Set(analyzedDecks.map((d: any) => d.deck_code))]
+            const { data: refs } = await supabaseAdmin
+                .from('reference_decks')
+                .select('deck_code, event_rank')
+                .in('deck_code', deckCodes)
+
+            const rankMap = new Map()
+            refs?.forEach(r => rankMap.set(r.deck_code, r.event_rank))
+
             for (const deck of analyzedDecks) {
-                const detected = await detectRankFromName(deck.deck_name || '')
+                const detected = rankMap.get(deck.deck_code)
                 if (detected && detected !== deck.event_rank) {
                     await supabaseAdmin
                         .from('analyzed_decks')
