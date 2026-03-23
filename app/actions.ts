@@ -635,7 +635,7 @@ export async function getAllReferenceDecksAction() {
         while (true) {
             const { data, error } = await supabasePublic
                 .from('reference_decks')
-                .select('*, event_rank')
+                .select('*')
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -663,9 +663,9 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         const supabaseAdmin = getSupabaseAdmin()
 
         while (true) {
-            const { data, error } = await supabaseAdmin
+            const { data, error } = await getSupabasePublic()
                 .from('analyzed_decks')
-                .select('*, event_rank')
+                .select('*')
                 .eq('archetype_id', archetypeId)
                 .gte('created_at', ANALYTICS_START_DATE)
                 .range(from, from + step - 1)
