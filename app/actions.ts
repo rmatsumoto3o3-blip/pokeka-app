@@ -52,8 +52,8 @@ function getSupabasePublic() {
 // --- Constants ---
 const ADMIN_EMAILS = ['r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local', 'player1@pokeka.local']
 
-// Filter for aggregate analysis (Phase 48 Request)
-const ANALYTICS_START_DATE = '2026-01-23T00:00:00Z'
+// Filter for aggregate analysis (Phase 48 Request) - Adjusted to include older data
+const ANALYTICS_START_DATE = '2024-01-01T00:00:00Z'
 
 export async function getOrCreateProfileAction(userId: string) {
     try {
