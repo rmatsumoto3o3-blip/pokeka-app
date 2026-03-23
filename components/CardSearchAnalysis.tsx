@@ -27,18 +27,20 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
     const [archetypeData, setArchetypeData] = useState<Record<string, CardStat[]>>({})
     const [startDate, setStartDate] = useState<string>('')
     const [endDate, setEndDate] = useState<string>('')
+    const [eventRank, setEventRank] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | undefined>(undefined)
 
     useEffect(() => {
         fetchData()
-    }, [])
+    }, [eventRank]) // Reload on rank change
 
-    const fetchData = async (overrideStart?: string, overrideEnd?: string) => {
+    const fetchData = async (overrideStart?: string, overrideEnd?: string, overrideRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null) => {
         try {
             setLoading(true)
             const sDate = overrideStart !== undefined ? overrideStart : (startDate || undefined)
             const eDate = overrideEnd !== undefined ? overrideEnd : (endDate || undefined)
+            const eRank = overrideRank !== undefined ? (overrideRank || undefined) : eventRank
 
-            const res = await getGlobalDeckAnalyticsAction(sDate, eDate)
+            const res = await getGlobalDeckAnalyticsAction(sDate, eDate, eRank)
             if (res.success) {
                 setGlobalData(res.globalAnalytics || [])
                 setArchetypeData(res.analyticsByArchetype || {})
@@ -89,47 +91,75 @@ export default function CardSearchAnalysis({ initialArchetypes }: CardSearchAnal
         <div className="h-full flex flex-col">
             <div className="space-y-3 mb-6">
                 {/* Filter Section */}
-                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3">
-                    <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase">
-                        <CalendarIcon className="w-4 h-4 mr-1 text-orange-400" />
-                        集計期間
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            placeholder="MM/DD"
-                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
-                            value={startDate}
-                            maxLength={5}
-                            onChange={(e) => setStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
-                        />
-                        <span className="text-gray-400 text-xs">〜</span>
-                        <input
-                            type="text"
-                            placeholder="MM/DD"
-                            className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
-                            value={endDate}
-                            maxLength={5}
-                            onChange={(e) => setEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
-                        />
+                <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase">
+                            <CalendarIcon className="w-4 h-4 mr-1 text-orange-400" />
+                            集計期間
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                placeholder="MM/DD"
+                                className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                                value={startDate}
+                                maxLength={5}
+                                onChange={(e) => setStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                            />
+                            <span className="text-gray-400 text-xs">〜</span>
+                            <input
+                                type="text"
+                                placeholder="MM/DD"
+                                className="w-16 px-2 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none placeholder:text-gray-300"
+                                value={endDate}
+                                maxLength={5}
+                                onChange={(e) => setEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 ml-auto">
+                            <button
+                                onClick={handleApplyFilter}
+                                className="px-3 py-1 bg-white border border-orange-200 hover:border-orange-500 text-orange-600 text-xs font-bold rounded shadow-sm transition-colors"
+                            >
+                                絞り込み
+                            </button>
+                            {(startDate || endDate) && (
+                                <button
+                                    onClick={handleClearDates}
+                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="期間をクリア"
+                                >
+                                    <XMarkIcon className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2 ml-auto">
-                        <button
-                            onClick={handleApplyFilter}
-                            className="px-3 py-1 bg-white border border-orange-200 hover:border-orange-500 text-orange-600 text-xs font-bold rounded shadow-sm transition-colors"
-                        >
-                            絞り込み
-                        </button>
-                        {(startDate || endDate) && (
+                    <div className="flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-2.5">
+                        <div className="flex items-center text-[10px] font-bold text-gray-400 uppercase mr-1">
+                            戦績
+                        </div>
+                        {[
+                            { label: 'すべて', value: undefined },
+                            { label: '優勝', value: '優勝' },
+                            { label: '準優勝', value: '準優勝' },
+                            { label: 'TOP4', value: 'TOP4' },
+                            { label: 'TOP8', value: 'TOP8' },
+                        ].map((tab) => (
                             <button
-                                onClick={handleClearDates}
-                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                title="期間をクリア"
+                                key={tab.label}
+                                onClick={() => setEventRank(tab.value as any)}
+                                className={`
+                                    px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border
+                                    ${eventRank === tab.value 
+                                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm' 
+                                        : 'bg-white text-gray-500 border-gray-200 hover:border-orange-300 hover:text-orange-500'}
+                                `}
                             >
-                                <XMarkIcon className="w-4 h-4" />
+                                {tab.label}
                             </button>
-                        )}
+                        ))}
                     </div>
                 </div>
 

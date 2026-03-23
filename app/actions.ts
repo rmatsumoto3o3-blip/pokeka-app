@@ -656,7 +656,7 @@ export async function getAllReferenceDecksAction() {
     }
 }
 
-export async function getDeckAnalyticsAction(archetypeId: string) {
+export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8') {
     try {
         // 1. Fetch all decks for this archetype with pagination
         let decks: any[] = []
@@ -665,11 +665,17 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
         const supabaseAdmin = getSupabaseAdmin()
 
         while (true) {
-            const { data, error } = await getSupabasePublic()
+            let query = getSupabasePublic()
                 .from('analyzed_decks')
                 .select('*')
                 .eq('archetype_id', archetypeId)
                 .gte('created_at', ANALYTICS_START_DATE)
+            
+            if (eventRank) {
+                query = query.eq('event_rank', eventRank)
+            }
+
+            const { data, error } = await query
                 .range(from, from + step - 1)
                 .order('created_at', { ascending: false })
 
@@ -751,10 +757,8 @@ export async function getDeckAnalyticsAction(archetypeId: string) {
             adoptionRate: (stat.adoptionCount / totalDecks) * 100,
             avgQuantity: (stat.totalQty / stat.adoptionCount) // Avg quantity WHEN adopted (common in TCG analysis) 
             // OR (stat.totalQty / totalDecks) for Avg per deck overall.
-            // Usually "Avg copies (when played)" is more useful for deck building, 
-            // but "Avg copies (overall)" is strictly statistical.
-            // Let's return both or stick to standard. 
-            // User likely wants "If I play this, how many do I put?". So Avg per Adoption is good.
+            // Usually "If I play this, how many do I put?" is more useful for deck building, 
+            // so Avg per Adoption is good.
             // Let's verify standard TCG sites. Limitless uses "Avg" (overall/adoption).
             // Let's provide "avgQuantity" as (totalQty / adoptionCount) to say "Adopting decks usually play X copies".
         })).sort((a, b) => b.adoptionRate - a.adoptionRate) // Sort by popularity
@@ -820,7 +824,8 @@ export interface GlobalAnalyticsResult {
 
 export async function getGlobalDeckAnalyticsAction(
     startDateStr?: string, // format: "MM/DD"
-    endDateStr?: string    // format: "MM/DD"
+    endDateStr?: string,   // format: "MM/DD"
+    eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
 ): Promise<GlobalAnalyticsResult> {
     try {
         // Parse dates into comparable numbers (e.g., "03/14" -> 314)
@@ -1221,7 +1226,8 @@ interface FeaturedCardStat {
 
 export async function getFeaturedCardsWithStatsAction(
     startDateStr?: string, // format: "MM/DD"
-    endDateStr?: string    // format: "MM/DD"
+    endDateStr?: string,   // format: "MM/DD"
+    eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
 ): Promise<{ success: boolean, data?: FeaturedCardStat[], error?: string }> {
     try {
         // Parse dates into comparable numbers (e.g., "03/14" -> 314)
@@ -1261,11 +1267,17 @@ export async function getFeaturedCardsWithStatsAction(
 
         // 3. Get Card Image and calculate base stats
         // Fetch last 1000 decks or so
-        const { data: recentDecksData } = await getSupabaseAdmin()
+        let query = getSupabaseAdmin()
             .from('analyzed_decks')
             .select('deck_code, cards_json, archetype_id')
             .order('created_at', { ascending: false })
             .limit(1000)
+        
+        if (eventRank) {
+            query = query.eq('event_rank', eventRank)
+        }
+
+        const { data: recentDecksData } = await query
 
         let recentDecks = recentDecksData || []
 
@@ -1530,7 +1542,7 @@ export async function updateDailySnapshotsAction(userId: string) {
     }
 }
 
-export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
+export async function getTopAdoptedCardsAction(eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
     try {
         // 1. Fetch All Decks with pagination
         let decks: any[] = []
@@ -1539,10 +1551,16 @@ export async function getTopAdoptedCardsAction(): Promise<{ success: boolean, da
         const supabaseAdmin = getSupabaseAdmin()
 
         while (true) {
-            const { data, error } = await supabaseAdmin
+            let query = supabaseAdmin
                 .from('analyzed_decks')
                 .select('cards_json')
                 .gte('created_at', ANALYTICS_START_DATE)
+            
+            if (eventRank) {
+                query = query.eq('event_rank', eventRank)
+            }
+
+            const { data, error } = await query
                 .range(from, from + step - 1)
 
             if (error) throw error

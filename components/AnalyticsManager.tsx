@@ -79,6 +79,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [isManageMode, setIsManageMode] = useState(false) // Toggle for Archetype Manager
     const [isBackfilling, setIsBackfilling] = useState(false)
     const [backfillCount, setBackfillCount] = useState<number | null>(null)
+    const [rankFilter, setRankFilter] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | undefined>(undefined)
     const [newArchetypeName, setNewArchetypeName] = useState('')
     const [manageArchetypeId, setManageArchetypeId] = useState('')
     const [archetypeImageFile, setArchetypeImageFile] = useState<File | null>(null)
@@ -132,15 +133,15 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     // Initial load
     useEffect(() => {
         if (selectedArchetype) {
-            refreshAnalytics(selectedArchetype)
+            refreshAnalytics(selectedArchetype, rankFilter)
         }
-    }, [selectedArchetype])
+    }, [selectedArchetype, rankFilter])
 
-    const refreshAnalytics = async (id: string) => {
+    const refreshAnalytics = async (id: string, rank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8') => {
         setLoading(true) // Changed from setIsLoading
         setError(null)
         try {
-            const res = await getDeckAnalyticsAction(id)
+            const res = await getDeckAnalyticsAction(id, rank)
             if (res.success && res.analytics) {
                 setData({
                     decks: (res.decks || []).sort((a: any, b: any) => {
@@ -155,7 +156,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                 setError(res.error || 'データの取得に失敗しました')
             }
         } catch (e) {
-            setError('エラーが発生しました')
+            setError((e as Error).message)
         } finally {
             setLoading(false) // Changed from setIsLoading
         }
@@ -1052,11 +1053,38 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                     </div>
                 ) : (
                     <div className="bg-white p-6 rounded-lg shadow">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-black border-l-4 border-indigo-500 pl-3">集計結果</h2>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
+                            <div>
+                                <h2 className="text-2xl font-bold text-black border-l-4 border-indigo-500 pl-3">集計結果</h2>
+                                <div className="flex items-center gap-1.5 mt-3">
+                                    {[
+                                        { label: 'すべて', value: undefined },
+                                        { label: '優勝', value: '優勝' },
+                                        { label: '準優勝', value: '準優勝' },
+                                        { label: 'TOP4', value: 'TOP4' },
+                                        { label: 'TOP8', value: 'TOP8' },
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.label}
+                                            onClick={() => setRankFilter(tab.value as any)}
+                                            className={`
+                                                px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border
+                                                ${rankFilter === tab.value 
+                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
+                                                    : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'}
+                                            `}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                             {data && (
-                                <div className="text-sm bg-gray-100 text-gray-800 px-3 py-1 rounded-full border border-gray-200">
-                                    母数: <span className="font-bold text-black">{data.totalDecks}</span> デッキ
+                                <div className="flex flex-col items-end">
+                                    <div className="text-sm bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100 shadow-sm">
+                                        <span className="text-xs text-indigo-400 font-bold uppercase block mb-0.5">集計母数</span>
+                                        <span className="font-black text-xl text-indigo-900">{data.totalDecks}</span> <span className="text-xs font-bold text-indigo-500">デッキ</span>
+                                    </div>
                                 </div>
                             )}
                         </div>

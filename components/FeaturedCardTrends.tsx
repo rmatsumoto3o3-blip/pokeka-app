@@ -23,13 +23,15 @@ export default function FeaturedCardTrends() {
     const [selectedArchName, setSelectedArchName] = useState<string | null>(null) // null means Global
     const [startDate, setStartDate] = useState<string>('')
     const [endDate, setEndDate] = useState<string>('')
+    const [eventRank, setEventRank] = useState<'優勝' | '準優勝' | 'TOP4' | 'TOP8' | undefined>(undefined)
 
-    const loadData = async (overrideStart?: string, overrideEnd?: string) => {
+    const loadData = async (overrideStart?: string, overrideEnd?: string, overrideRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null) => {
         setLoading(true)
         const sDate = overrideStart !== undefined ? overrideStart : (startDate || undefined)
         const eDate = overrideEnd !== undefined ? overrideEnd : (endDate || undefined)
+        const eRank = overrideRank !== undefined ? (overrideRank || undefined) : eventRank
 
-        const res = await getFeaturedCardsWithStatsAction(sDate, eDate)
+        const res = await getFeaturedCardsWithStatsAction(sDate, eDate, eRank)
         if (res.success && res.data && res.data.length > 0) {
             setCards(res.data)
             // Keep selected card if it still exists in the new data, otherwise select first
@@ -37,23 +39,28 @@ export default function FeaturedCardTrends() {
                 setSelectedCardId(res.data[0].id)
                 setSelectedArchName(null) // Reset to Global on card change if needed, or keep?
             }
+        } else if (res.success && res.data?.length === 0) {
+            setCards([])
         }
         setLoading(false)
     }
 
     useEffect(() => {
         loadData()
-    }, [])
+    }, [eventRank]) // Reload on rank change
 
     if (loading) return <div className="animate-pulse h-48 bg-gray-100 rounded-xl mb-6"></div>
-    if (cards.length === 0) return null
+    
+    // Check if we should show based on cards length
+    // If cards is 0 but it's because of filtering, we might still want to show the UI with 0 results
+    const isFiltered = !!(startDate || endDate || eventRank)
 
     const selectedCard = cards.find(c => c.id === selectedCardId) || cards[0]
 
     const handleClearDates = () => {
         setStartDate('')
         setEndDate('')
-        loadData('', '')
+        loadData('', '', undefined)
     }
 
     const handleApplyFilter = () => {
@@ -68,16 +75,47 @@ export default function FeaturedCardTrends() {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-2.5 mb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center">
-                    <Image
-                        src="/Eevee.png"
-                        alt="Trending"
-                        width={28}
-                        height={28}
-                        className="w-7 h-7 mr-2"
-                    />
-                    注目カード採用率{startDate || endDate ? `（${startDate || '*'} 〜 ${endDate || '*'}）` : '（全期間）'}
-                </h2>
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-lg font-bold text-gray-900 flex items-center">
+                        <Image
+                            src="/Eevee.png"
+                            alt="Trending"
+                            width={28}
+                            height={28}
+                            className="w-7 h-7 mr-2"
+                        />
+                        注目カード採用率
+                        <span className="ml-2 text-sm font-medium text-gray-500">
+                            {eventRank ? `（${eventRank}${isFiltered && (startDate || endDate) ? '・' : ''}` : '（'}
+                            {startDate || endDate ? `${startDate || '*'} 〜 ${endDate || '*'}` : (eventRank ? '' : '全期間')}
+                            ）
+                        </span>
+                    </h2>
+                    
+                    {/* Rank Filter Tabs */}
+                    <div className="flex items-center gap-1 mt-1">
+                        {[
+                            { label: 'すべて', value: undefined },
+                            { label: '優勝', value: '優勝' },
+                            { label: '準優勝', value: '準優勝' },
+                            { label: 'TOP4', value: 'TOP4' },
+                            { label: 'TOP8', value: 'TOP8' },
+                        ].map((tab) => (
+                            <button
+                                key={tab.label}
+                                onClick={() => setEventRank(tab.value as any)}
+                                className={`
+                                    px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border
+                                    ${eventRank === tab.value 
+                                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm' 
+                                        : 'bg-white text-gray-500 border-gray-200 hover:border-orange-300 hover:text-orange-500'}
+                                `}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
 
                 {/* Filter Section */}
                 <div className="flex flex-wrap items-center gap-2">
