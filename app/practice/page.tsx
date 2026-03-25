@@ -195,10 +195,16 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => {
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card', amount?: number) => {
         const targetRef = source === 'player1' ? player2Ref : player1Ref
 
-        // apply_damage logic removed
+        if (effect === 'special_red_card') {
+            const opponentPrizes = targetRef.current?.getPrizeCount() ?? 6
+            if (opponentPrizes > 3) {
+                alert(`スペシャルレッドカードを使用できません。（相手の残りサイドが ${opponentPrizes} 枚です。3枚以下の時にのみ使用可能です）`)
+                return
+            }
+        }
 
         if (effect === 'boss_orders') {
             targetRef.current?.startSelection({

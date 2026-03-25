@@ -28,7 +28,7 @@ interface DeckPracticeProps {
     compact?: boolean
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
-    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders', amount?: number) => void
+    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card', amount?: number) => void
     onAttackTrigger?: (damage: number, targetType: 'battle' | 'bench', targetIndex: number) => void
     idPrefix?: string
     mobile?: boolean
@@ -39,8 +39,9 @@ export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
     switchPokemon: (benchIndex: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
+    getPrizeCount: () => number
 }
 
 interface MenuState {
@@ -855,7 +856,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 onSelect: config.onSelect
             })
         },
-        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => {
             if (effect === 'boss_orders') {
                 return
             }
@@ -887,7 +888,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 return
             }
 
-            // Triggered by opponent usage
+            if (effect === 'special_red_card') {
+                // 手札を裏にして切り、山札の下に戻し、3枚引く
+                const shuffledHand = shuffle([...hand])
+                setRemaining(prev => [...prev, ...shuffledHand])
+                setHand([])
+
+                const drawCount = Math.min(3, remaining.length + shuffledHand.length)
+                const combined = [...remaining, ...shuffledHand]
+                setHand(combined.slice(0, drawCount))
+                setRemaining(combined.slice(drawCount))
+
+                alert(`相手がスペシャルレッドカードを使用しました。\n手札を山札の下に戻し、3枚引きました。`)
+                return
+            }
+
+            // Triggered by opponent usage (other hand destruction effects)
             const newDeck = [...remaining, ...hand].sort(() => Math.random() - 0.5)
             setRemaining(newDeck)
             setHand([])
@@ -903,6 +919,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             const effectName = effect === 'judge' ? 'ジャッジマン' : (effect === 'apollo' ? 'アポロ' : 'アンフェアスタンプ')
             alert(`相手が${effectName}を使用しました。\n手札をシャッフルし、${drawCount}枚引きました。`)
+        },
+        getPrizeCount: () => {
+            return prizeCards.length
         }
     }))
 
@@ -3693,6 +3712,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+            })
+        }
+
+        if (name === 'スペシャルレッドカード') {
+            actions.push({
+                label: '使用する',
+                action: () => {
+                    // Actual check happens in parent via onEffectTrigger
+                    onEffectTrigger?.('special_red_card')
+                    if (source === 'hand') moveToTrash(index)
+                    closeMenu()
+                },
+                color: 'bg-red-100 text-red-700 hover:bg-red-200'
             })
         }
 

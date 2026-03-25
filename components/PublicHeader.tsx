@@ -8,16 +8,19 @@ import { supabase } from '@/lib/supabase'
 
 export default function PublicHeader() {
     const router = useRouter()
+    const [user, setUser] = React.useState<any>(null)
     const [isLoggedIn, setIsLoggedIn] = React.useState(false)
 
     React.useEffect(() => {
         const checkUser = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            setIsLoggedIn(!!session)
+            const { data: { user } } = await supabase.auth.getUser()
+            setUser(user)
+            setIsLoggedIn(!!user)
         }
         checkUser()
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            setUser(session?.user || null)
             setIsLoggedIn(!!session)
         })
 
@@ -59,9 +62,25 @@ export default function PublicHeader() {
                         {isLoggedIn ? (
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs md:text-sm rounded-lg font-bold shadow-md hover:shadow-lg transition whitespace-nowrap"
+                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border-2 border-pink-200 rounded-full hover:border-pink-400 transition shadow-sm group"
                             >
-                                ダッシュボードへ
+                                {user?.user_metadata?.avatar_url ? (
+                                    <Image
+                                        src={user.user_metadata.avatar_url}
+                                        alt="User Avatar"
+                                        width={28}
+                                        height={28}
+                                        className="rounded-full"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <div className="w-7 h-7 bg-pink-100 rounded-full flex items-center justify-center text-pink-500 font-bold text-xs">
+                                        {user?.user_metadata?.nickname?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
+                                    </div>
+                                )}
+                                <span className="text-xs md:text-sm font-bold text-gray-700 max-w-[80px] md:max-w-[120px] truncate group-hover:text-pink-600 transition">
+                                    {user?.user_metadata?.nickname || user?.user_metadata?.full_name || 'マイページ'}
+                                </span>
                             </button>
                         ) : (
                             <>
