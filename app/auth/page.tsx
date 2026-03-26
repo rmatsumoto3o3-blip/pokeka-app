@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 function AuthContent() {
+    const supabase = createClient()
     const searchParams = useSearchParams()
     const [isLogin, setIsLogin] = useState(true)
 
