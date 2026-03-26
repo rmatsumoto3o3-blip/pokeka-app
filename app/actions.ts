@@ -743,6 +743,53 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '�
     }
 }
 
+export async function getArchetypeWinStatsAction() {
+    try {
+        const supabaseAdmin = getSupabaseAdmin()
+
+        // 1. Fetch total counts and win counts per archetype from analyzed_decks
+        // Filter by created_at >= ANALYTICS_START_DATE for consistency
+        const { data: rawStats, error: statsError } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('archetype_id, event_rank')
+            .gte('created_at', ANALYTICS_START_DATE)
+
+        if (statsError) throw statsError
+
+        // 2. Aggregate in memory (Supabase count filter is tricky for grouping sometimes)
+        const counts: Record<string, { total: number, wins: number }> = {}
+        rawStats.forEach(deck => {
+            const id = deck.archetype_id
+            if (!counts[id]) counts[id] = { total: 0, wins: 0 }
+            counts[id].total++
+            if (deck.event_rank === '優勝') counts[id].wins++
+        })
+
+        // 3. Fetch Archetype names
+        const { data: archetypes, error: archError } = await supabaseAdmin
+            .from('deck_archetypes')
+            .select('id, name')
+            .order('display_order', { ascending: true })
+
+        if (archError) throw archError
+
+        // 4. Combine
+        const result = archetypes.map(arch => ({
+            id: arch.id,
+            name: arch.name,
+            total: counts[arch.id]?.total || 0,
+            wins: counts[arch.id]?.wins || 0
+        })).filter(item => item.total > 0) // Only show archetypes with at least 1 deck analyzed
+        .sort((a, b) => b.wins - a.wins || b.total - a.total)
+
+        return { success: true, data: result }
+
+    } catch (error) {
+        console.error('Get Archetype Win Stats Error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
 export async function updateAnalyzedDeckAction(
     deckCode: string,
     archetypeId: string,

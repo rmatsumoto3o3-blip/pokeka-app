@@ -9,6 +9,7 @@ import ReferenceDeckList from '@/components/ReferenceDeckList'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
+import ArchetypeWinChart from '@/components/ArchetypeWinChart'
 import CardSearchAnalysis from '@/components/CardSearchAnalysis'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
@@ -257,6 +258,11 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                         format="auto"
                         className="mt-12 mb-4"
                     />
+
+                    {/* Archetype Win Chart */}
+                    <div className="mt-8">
+                        <ArchetypeWinChart />
+                    </div>
 
                     {/* Key Card Adoption Section */}
                     <div className="mt-8" id="key-card-adoption">

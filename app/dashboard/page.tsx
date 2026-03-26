@@ -18,6 +18,7 @@ import SideArticleList from '@/components/SideArticleList'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
 import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
+import ArchetypeWinChart from '@/components/ArchetypeWinChart'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import AdPlaceholder from '@/components/AdPlaceholder'
@@ -378,6 +379,8 @@ export default function Dashboard() {
                                     </h2>
                                     <KeyCardAdoptionList />
                                 </div>
+
+                                <ArchetypeWinChart />
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-purple-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
