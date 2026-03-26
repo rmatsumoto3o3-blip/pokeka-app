@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -24,6 +24,7 @@ import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import AdPlaceholder from '@/components/AdPlaceholder'
 
 export default function Dashboard() {
+    const supabase = createClient()
     const [userId, setUserId] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
     const [activeTab, setActiveTab] = useState('decks') // decks, analytics, reference, articles

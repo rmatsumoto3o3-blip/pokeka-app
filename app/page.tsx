@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/server'
 import LandingPage from '@/components/LandingPage'
 import { getAllReferenceDecksAction } from './actions'
 
@@ -7,6 +7,7 @@ import { getAllReferenceDecksAction } from './actions'
 export const revalidate = 60
 
 export default async function Home() {
+  const supabase = await createClient()
   // Fetch data concurrently for better performance
   const [
     { data: decks },
