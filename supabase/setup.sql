@@ -104,10 +104,19 @@ BEGIN
   INSERT INTO public.users (id, email, nickname)
   VALUES (
     NEW.id, 
-    NEW.email, 
-    COALESCE(NEW.raw_user_meta_data->>'nickname', split_part(NEW.email, '@', 1))
+    COALESCE(NEW.email, 'no-email@example.com'), 
+    COALESCE(
+      NEW.raw_user_meta_data->>'nickname', 
+      NEW.raw_user_meta_data->>'full_name', 
+      NEW.raw_user_meta_data->>'name', 
+      NEW.raw_user_meta_data->>'user_name',
+      split_part(NEW.email, '@', 1),
+      'User_' || substr(NEW.id::text, 1, 8)
+    )
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    nickname = EXCLUDED.nickname;
   RETURN NEW;
 END;
 $$;
