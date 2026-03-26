@@ -743,8 +743,17 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: 'å
     }
 }
 
+// Simple server-side cache for archetype win stats (10 minutes)
+let archetypeWinStatsCache: { data: any, timestamp: number } | null = null
+const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
+
 export async function getArchetypeWinStatsAction() {
     try {
+        const now = Date.now()
+        if (archetypeWinStatsCache && (now - archetypeWinStatsCache.timestamp < CACHE_DURATION)) {
+            return { success: true, data: archetypeWinStatsCache.data }
+        }
+
         const supabaseAdmin = getSupabaseAdmin()
         let allRawStats: { archetype_id: string, event_rank: string | null }[] = []
         let from = 0
@@ -792,6 +801,9 @@ export async function getArchetypeWinStatsAction() {
             wins: counts[arch.id]?.wins || 0
         })).filter(item => item.total > 0) // Only show archetypes with at least 1 deck analyzed
         .sort((a, b) => b.wins - a.wins || b.total - a.total)
+
+        // Store in cache
+        archetypeWinStatsCache = { data: result, timestamp: Date.now() }
 
         return { success: true, data: result }
 
