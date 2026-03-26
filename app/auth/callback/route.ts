@@ -18,19 +18,20 @@ export async function GET(request: Request) {
         const supabase = await createClient()
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         if (!exchangeError && data?.user) {
-            // プロフィールの同期 (新規・既存の両方に対応)
-            const { id, email, user_metadata } = data.user
-            await supabase
+            // Update public.users profile with Discord ID if available
+            const user = data.user
+            const nickname = user.user_metadata?.nickname || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
+            const discord_id = user.user_metadata?.provider_id || (user.app_metadata?.provider === 'discord' ? user.identities?.[0]?.id : null)
+            const avatar_url = user.user_metadata?.avatar_url || null
+
+            const { error: upsertError } = await supabase
                 .from('users')
                 .upsert({
-                    id: id,
-                    email: email || 'no-email@example.com',
-                    nickname: user_metadata.nickname || 
-                              user_metadata.full_name || 
-                              user_metadata.name || 
-                              user_metadata.user_name || 
-                              email?.split('@')[0] || 
-                              'User'
+                    id: user.id,
+                    email: user.email,
+                    nickname: nickname,
+                    discord_id: discord_id,
+                    discord_avatar: avatar_url
                 }, { onConflict: 'id' })
 
             const forwardedHost = request.headers.get('x-forwarded-host') // Hello, Vercel
