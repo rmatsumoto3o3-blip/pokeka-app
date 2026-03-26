@@ -7,10 +7,17 @@ export async function GET(request: Request) {
     // if "next" is in search params, use it as the redirection URL after successful login
     const next = searchParams.get('next') ?? '/dashboard'
 
+    const error = searchParams.get('error')
+    const errorDescription = searchParams.get('error_description')
+
+    if (error) {
+        return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(errorDescription || error)}`)
+    }
+
     if (code) {
         const supabase = await createClient()
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error && data?.user) {
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (!exchangeError && data?.user) {
             // プロフィールの同期 (新規・既存の両方に対応)
             const { id, email, user_metadata } = data.user
             await supabase
@@ -35,12 +42,12 @@ export async function GET(request: Request) {
             } else {
                 return NextResponse.redirect(`${origin}${next}`)
             }
-        } else if (error) {
-            console.error('Auth error during code exchange:', error)
-            return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(error.message)}`)
+        } else if (exchangeError) {
+            console.error('Auth error during code exchange:', exchangeError)
+            return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(exchangeError.message)}`)
         }
     }
 
     // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code`)
+    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code_and_no_error_params`)
 }
