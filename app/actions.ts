@@ -750,57 +750,59 @@ const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
 export async function getArchetypeWinStatsAction() {
     try {
         const now = Date.now()
-        // Cache is VERY important here since we are doing real-time scanning
         if (archetypeWinStatsCache && (now - archetypeWinStatsCache.timestamp < CACHE_DURATION)) {
             return { success: true, data: archetypeWinStatsCache.data }
         }
 
         const supabaseAdmin = getSupabaseAdmin()
-        let allRawStats: { archetype_id: string, event_rank: string | null }[] = []
+
+        // 1. Fetch Global Total Count (Header only, zero Egress)
+        const { count: globalTotal } = await supabaseAdmin
+            .from('analyzed_decks')
+            .select('*', { count: 'exact', head: true })
+
+        // 2. Fetch Winning Deck Archetype IDs (Filtered, very low Egress)
+        let winningArchetypeIds: string[] = []
         let from = 0
         const step = 1000
 
-        // 1. Fetch ALL archetypes and ranks in real-time with PAGINATION
-        // We only select 2 small columns to minimize Supabase Egress
         while (true) {
             const { data, error } = await supabaseAdmin
                 .from('analyzed_decks')
-                .select('archetype_id, event_rank')
+                .select('archetype_id')
+                .eq('event_rank', '優勝')
                 .range(from, from + step - 1)
 
             if (error) throw error
             if (!data || data.length === 0) break
 
-            allRawStats = allRawStats.concat(data)
+            winningArchetypeIds = winningArchetypeIds.concat(data.map(d => d.archetype_id))
             if (data.length < step) break
             from += step
         }
 
-        // 2. Aggregate counts in memory
-        const counts: Record<string, { total: number, wins: number }> = {}
-        allRawStats.forEach(deck => {
-            const id = deck.archetype_id
+        // 3. Aggregate wins in memory
+        const winCounts: Record<string, number> = {}
+        winningArchetypeIds.forEach(id => {
             if (!id) return
-            if (!counts[id]) counts[id] = { total: 0, wins: 0 }
-            counts[id].total++
-            if (deck.event_rank === '優勝') counts[id].wins++
+            winCounts[id] = (winCounts[id] || 0) + 1
         })
 
-        // 3. Fetch Archetype names
+        // 4. Fetch Archetype names
         const { data: archetypes, error: archError } = await supabaseAdmin
             .from('deck_archetypes')
             .select('id, name')
 
         if (archError) throw archError
 
-        // 4. Combine
+        // 5. Combine
         const result = archetypes.map(arch => ({
             id: arch.id,
             name: arch.name,
-            total: counts[arch.id]?.total || 0,
-            wins: counts[arch.id]?.wins || 0
-        })).filter(item => item.total > 0)
-        .sort((a, b) => b.wins - a.wins || b.total - a.total)
+            total: globalTotal || 0, // Global total used for context
+            wins: winCounts[arch.id] || 0
+        })).filter(item => item.wins > 0) // Only show archetypes with at least 1 win
+        .sort((a, b) => b.wins - a.wins)
 
         // Store in cache
         archetypeWinStatsCache = { data: result, timestamp: Date.now() }

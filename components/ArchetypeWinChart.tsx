@@ -58,7 +58,7 @@ export default function ArchetypeWinChart() {
                     </div>
                     <div>
                         <h2 className="text-lg md:text-xl font-bold text-gray-900">デッキ別 優勝数集計</h2>
-                        <p className="text-xs text-gray-500 font-medium">登録済みデッキ {stats.reduce((acc, s) => acc + s.total, 0)} 個の分析結果</p>
+                        <p className="text-xs text-gray-500 font-medium">分析済みデッキ全 {stats[0]?.total || 0} 件の統計結果</p>
                     </div>
                 </div>
                 
