@@ -189,9 +189,6 @@ function AuthContent() {
                         </svg>
                         GitHubでログイン
                     </button>
-                        </svg>
-                        Discordでログイン
-                    </button>
 
                 </form>
 
