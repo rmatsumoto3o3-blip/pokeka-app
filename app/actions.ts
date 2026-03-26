@@ -750,32 +750,40 @@ const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes
 export async function getArchetypeWinStatsAction() {
     try {
         const now = Date.now()
-        // Cache is still useful but less critical with pre-calculated stats
+        // Cache is VERY important here since we are doing real-time scanning
         if (archetypeWinStatsCache && (now - archetypeWinStatsCache.timestamp < CACHE_DURATION)) {
             return { success: true, data: archetypeWinStatsCache.data }
         }
 
         const supabaseAdmin = getSupabaseAdmin()
+        let allRawStats: { archetype_id: string, event_rank: string | null }[] = []
+        let from = 0
+        const step = 1000
 
-        // 1. Fetch pre-calculated totals from archetype_card_stats
-        // This is much more efficient than scanning analyzed_decks
-        const { data: statsData, error: statsError } = await supabaseAdmin
-            .from('archetype_card_stats')
-            .select('archetype_id, event_rank, total_decks')
-            .in('event_rank', ['ALL', '優勝'])
+        // 1. Fetch ALL archetypes and ranks in real-time with PAGINATION
+        // We only select 2 small columns to minimize Supabase Egress
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('archetype_id, event_rank')
+                .range(from, from + step - 1)
 
-        if (statsError) throw statsError
+            if (error) throw error
+            if (!data || data.length === 0) break
 
-        // 2. Process counts (one row per card, so we need unique by archetype_id + rank)
+            allRawStats = allRawStats.concat(data)
+            if (data.length < step) break
+            from += step
+        }
+
+        // 2. Aggregate counts in memory
         const counts: Record<string, { total: number, wins: number }> = {}
-        statsData?.forEach(stat => {
-            const id = stat.archetype_id
+        allRawStats.forEach(deck => {
+            const id = deck.archetype_id
+            if (!id) return
             if (!counts[id]) counts[id] = { total: 0, wins: 0 }
-            if (stat.event_rank === 'ALL') {
-                counts[id].total = Math.max(counts[id].total, stat.total_decks)
-            } else if (stat.event_rank === '優勝') {
-                counts[id].wins = Math.max(counts[id].wins, stat.total_decks)
-            }
+            counts[id].total++
+            if (deck.event_rank === '優勝') counts[id].wins++
         })
 
         // 3. Fetch Archetype names
