@@ -41,7 +41,7 @@ export default function ArchetypeWinChart() {
     if (stats.length === 0) return null
 
     // Sort by wins for the chart display (if needed, already sorted in action)
-    const chartData = stats.slice(0, 10) // Show top 10 for readability
+    const chartData = stats.slice(0, 20) // Show top 20 for better environmental overview
 
     return (
         <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-4 md:p-6 mb-8">

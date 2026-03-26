@@ -746,20 +746,31 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '�
 export async function getArchetypeWinStatsAction() {
     try {
         const supabaseAdmin = getSupabaseAdmin()
+        let allRawStats: { archetype_id: string, event_rank: string | null }[] = []
+        let from = 0
+        const step = 1000
 
-        // 1. Fetch total counts and win counts per archetype from analyzed_decks
-        // Filter by created_at >= ANALYTICS_START_DATE for consistency
-        const { data: rawStats, error: statsError } = await supabaseAdmin
-            .from('analyzed_decks')
-            .select('archetype_id, event_rank')
-            .gte('created_at', ANALYTICS_START_DATE)
+        // 1. Fetch total counts and win counts per archetype with PAGINATION
+        while (true) {
+            const { data, error } = await supabaseAdmin
+                .from('analyzed_decks')
+                .select('archetype_id, event_rank')
+                .gte('created_at', ANALYTICS_START_DATE)
+                .range(from, from + step - 1)
 
-        if (statsError) throw statsError
+            if (error) throw error
+            if (!data || data.length === 0) break
 
-        // 2. Aggregate in memory (Supabase count filter is tricky for grouping sometimes)
+            allRawStats = allRawStats.concat(data)
+            if (data.length < step) break
+            from += step
+        }
+
+        // 2. Aggregate counts in memory
         const counts: Record<string, { total: number, wins: number }> = {}
-        rawStats.forEach(deck => {
+        allRawStats.forEach(deck => {
             const id = deck.archetype_id
+            if (!id) return
             if (!counts[id]) counts[id] = { total: 0, wins: 0 }
             counts[id].total++
             if (deck.event_rank === '優勝') counts[id].wins++
