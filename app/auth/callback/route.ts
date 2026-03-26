@@ -49,5 +49,7 @@ export async function GET(request: Request) {
     }
 
     // return the user to an error page with instructions
-    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code_and_no_error_params`)
+    const allParams = Array.from(searchParams.entries()).map(([k, v]) => `${k}=${v}`).join('&')
+    console.error('Missing code and error params. Received params:', allParams)
+    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code_params_${allParams || 'none'}`)
 }
