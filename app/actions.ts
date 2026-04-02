@@ -1247,7 +1247,7 @@ export async function backfillEventRanksAction(userId: string) {
 
 // --- Phase 44: Deck Scraper Automation ---
 
-export async function scrapePokecabookAction(url: string) {
+export async function scrapePokecabookAction(url: string, startDate?: string, endDate?: string) {
     try {
         const response = await fetch(url, {
             headers: {
@@ -1259,19 +1259,17 @@ export async function scrapePokecabookAction(url: string) {
         }
         const html = await response.text()
 
-        // Regex to extract figcaption content and deck link
-        // Pattern logic:
-        // 1. Find <figcaption ...> ... </figcaption>
-        // 2. Extract text (Deck Name)
-        // 3. Extract href with deckID (Deck Code)
+        // Normalize dates for comparison (MM/DD -> MMDD number)
+        const parseDateNum = (dStr: string) => {
+            const m = dStr.match(/^(\d{1,2})\/(\d{1,2})/)
+            if (!m) return null
+            return parseInt(m[1], 10) * 100 + parseInt(m[2], 10)
+        }
+
+        const startNum = startDate ? parseDateNum(startDate) : null
+        const endNum = endDate ? parseDateNum(endDate) : null
 
         const deckList: { name: string, code: string }[] = []
-
-        // Simple regex to find blocks. Note: HTML parsing with Regex is fragile but efficient for specific structures.
-        // We look for the distinct structure provided by the user:
-        // <figcaption class="wp-element-caption">NAME <a ... href=".../deckID/CODE">...</a></figcaption>
-
-        // Split by figcaption to make it easier
         const parts = html.split('<figcaption class="wp-element-caption">')
 
         for (let i = 1; i < parts.length; i++) {
@@ -1287,18 +1285,31 @@ export async function scrapePokecabookAction(url: string) {
             const code = codeMatch[1]
 
             // Extract Name (Remove tags)
-            // Remove <a> tags to get pure text. 
-            // The structure is usually "Text <a...>Link</a>"
-            // We want "Text" + "Link Text" or just the raw text content.
-            // Let's strip all headers/tags.
-            let name = captionContent.replace(/<[^>]+>/g, '').replace(/【[月火水木金土日]】/g, '').trim()
+            let rawName = captionContent.replace(/<[^>]+>/g, '').replace(/【[月火水木金土日]】/g, '').trim()
+            
+            // Clean name for display but keep for date extraction
+            let name = rawName
 
-            // Filter out "Averaged" decks (Noise)
-            if (name.includes('平均化') || name.includes('平均レシピ') || name.includes('平均')) {
-                continue
+            // Date filtering
+            if (startNum !== null || endNum !== null) {
+                const dateMatch = rawName.match(/^(\d{1,2})\/(\d{1,2})/)
+                if (dateMatch) {
+                    const deckDateNum = parseInt(dateMatch[1], 10) * 100 + parseInt(dateMatch[2], 10)
+                    
+                    if (startNum !== null && deckDateNum < startNum) continue
+                    if (endNum !== null && deckDateNum > endNum) continue
+                } else if (startNum !== null || endNum !== null) {
+                    // If filtering is requested but no date found, skip it from bulk? 
+                    // Or keep? Let's skip to be safe if specific range is requested.
+                    continue
+                }
             }
 
-            // Allow duplicates within the page? Yes, let user decide.
+            // Clean name for final storage (remove the date prefix if we want it cleaner, but usually PokeLix keeps it for context)
+            // Let's keep it as is since user didn't ask to remove it.
+            name = name.replace(/平均化|平均レシピ|平均/g, '')
+            if (name === '') continue
+
             deckList.push({ name, code })
         }
 

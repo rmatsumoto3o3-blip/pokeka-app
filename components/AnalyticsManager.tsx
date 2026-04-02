@@ -67,6 +67,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     // Phase 44: Scraper State
     const [importMode, setImportMode] = useState<'manual' | 'url'>('manual')
     const [importUrl, setImportUrl] = useState('')
+    const [scrapeStartDate, setScrapeStartDate] = useState('')
+    const [scrapeEndDate, setScrapeEndDate] = useState('')
     const [scrapedDecks, setScrapedDecks] = useState<{ name: string, code: string, selected: boolean }[]>([])
     const [isScraping, setIsScraping] = useState(false)
 
@@ -361,7 +363,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         setIsScraping(true)
         setScrapedDecks([])
         try {
-            const res = await scrapePokecabookAction(importUrl)
+            const res = await scrapePokecabookAction(importUrl, scrapeStartDate || undefined, scrapeEndDate || undefined)
             if (res.success && res.decks) {
                 setScrapedDecks(res.decks.map(d => ({ ...d, selected: true }))) // Default select all
                 alert(`${res.decks.length}件のデッキが見つかりました`)
@@ -948,7 +950,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             記事URL (pokecabook_archives用)
                                         </label>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <input
                                                 type="text"
                                                 value={importUrl}
@@ -956,14 +958,36 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                 placeholder="https://pokecabook.com/archives/..."
                                                 className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 border bg-white text-gray-900"
                                             />
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={scrapeStartDate}
+                                                    onChange={(e) => setScrapeStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                                                    placeholder="M/D"
+                                                    maxLength={5}
+                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 text-sm p-2 border bg-white text-gray-900 text-center"
+                                                    title="開始日 (例: 1/24)"
+                                                />
+                                                <span className="text-gray-400">〜</span>
+                                                <input
+                                                    type="text"
+                                                    value={scrapeEndDate}
+                                                    onChange={(e) => setScrapeEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
+                                                    placeholder="M/D"
+                                                    maxLength={5}
+                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 text-sm p-2 border bg-white text-gray-900 text-center"
+                                                    title="終了日 (例: 1/25)"
+                                                />
+                                            </div>
                                             <button
                                                 onClick={handleScrape}
                                                 disabled={isScraping || !importUrl}
-                                                className="bg-pink-600 text-white px-4 py-2 rounded-md hover:bg-pink-700 disabled:opacity-50"
+                                                className="bg-pink-600 text-white px-4 py-2 rounded-md font-bold hover:bg-pink-700 disabled:opacity-50 shadow-sm whitespace-nowrap"
                                             >
-                                                {isScraping ? '取得中...' : '取得'}
+                                                {isScraping ? '取得中...' : 'デッキ一覧を取得'}
                                             </button>
                                         </div>
+                                        <p className="text-[10px] text-gray-400 mt-1">※日付を空にすると全件取得します。例: 1/24</p>
                                     </div>
 
                                     {/* Scraped Results */}
