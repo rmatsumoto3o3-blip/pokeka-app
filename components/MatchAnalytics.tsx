@@ -237,6 +237,11 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
         notes: ''
     })
     const [updating, setUpdating] = useState(false)
+    const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null)
+
+    const toggleExpand = (id: string) => {
+        setExpandedMatchId(prev => prev === id ? null : id)
+    }
 
     const startEditing = (match: MatchWithDeck) => {
         // Parse side safely
@@ -552,217 +557,241 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                         filteredMatches.map((match) => (
                             <div
                                 key={match.id}
-                                className="bg-white rounded-xl p-2.5 border border-gray-200 shadow-sm hover:shadow-md transition"
+                                onClick={() => toggleExpand(match.id)}
+                                className={`bg-white rounded-xl p-3 border shadow-sm hover:shadow-md transition cursor-pointer ${expandedMatchId === match.id ? 'border-pink-300 ring-1 ring-pink-100' : 'border-gray-200'}`}
                             >
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="flex items-center gap-4">
-                                        <span className={`px-2.5 py-1 rounded-lg border font-bold text-sm min-w-[60px] text-center ${match.result === 'win' ? 'bg-green-50 text-green-700 border-green-200' :
-                                            match.result === 'loss' ? 'bg-red-50 text-red-700 border-red-200' :
-                                                'bg-gray-50 text-gray-700 border-gray-200'
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        {/* Result Badge */}
+                                        <div className={`px-2 py-1 rounded-lg border font-black text-xs min-w-[54px] text-center shadow-sm ${match.result === 'win' ? 'bg-green-500 text-white border-green-600' :
+                                            match.result === 'loss' ? 'bg-red-500 text-white border-red-600' :
+                                                'bg-gray-400 text-white border-gray-500'
                                             }`}>
-                                            {match.result === 'win' ? '勝ち' : match.result === 'loss' ? '負け' : '引分'}
-                                        </span>
-                                        <div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="font-bold text-gray-900">{match.deck.deck_name}</div>
-                                                <div className="flex -space-x-2">
-                                                    {match.deck.icon_1 && (
-                                                        <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5">
-                                                            <Image src={`/pokemon-icons/${match.deck.icon_1}.png`} alt={match.deck.icon_1} width={20} height={20} className="object-contain" />
-                                                        </div>
-                                                    )}
-                                                    {match.deck.icon_2 && (
-                                                        <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5">
-                                                            <Image src={`/pokemon-icons/${match.deck.icon_2}.png`} alt={match.deck.icon_2} width={20} height={20} className="object-contain" />
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            {match.result === 'win' ? 'WIN' : match.result === 'loss' ? 'LOSE' : 'DRAW'}
+                                        </div>
+
+                                        {/* Side Count (Prominent) */}
+                                        {match.side && (
+                                            <div className="text-sm font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded flex items-center gap-1 shadow-inner">
+                                                <span className="text-[10px] text-gray-400">SIDE</span>
+                                                {match.side}
                                             </div>
-                                            <div className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
-                                                <span className="flex items-center gap-1">
-                                                    vs {match.opponent_name || '不明'}
-                                                    <div className="flex -space-x-1">
-                                                        {match.opponent_icon_1 && (
-                                                            <Image src={`/pokemon-icons/${match.opponent_icon_1}.png`} alt={match.opponent_icon_1} width={16} height={16} className="object-contain" />
-                                                        )}
-                                                        {match.opponent_icon_2 && (
-                                                            <Image src={`/pokemon-icons/${match.opponent_icon_2}.png`} alt={match.opponent_icon_2} width={16} height={16} className="object-contain" />
-                                                        )}
+                                        )}
+
+                                        {/* Opponent Info */}
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex -space-x-1.5">
+                                                {match.opponent_icon_1 && (
+                                                    <div className="w-7 h-7 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                                        <Image src={`/pokemon-icons/${match.opponent_icon_1}.png`} alt={match.opponent_icon_1} width={22} height={22} className="object-contain" />
                                                     </div>
-                                                </span>
-                                                | {new Date(match.date).toLocaleDateString()}
-                                                {match.side && <span className="ml-2 bg-gray-100 px-1 rounded">Side: {match.side}</span>}
-                                                {match.going_first && <span className="ml-2 bg-gray-100 px-1 rounded">{match.going_first}</span>}
+                                                )}
+                                                {match.opponent_icon_2 && (
+                                                    <div className="w-7 h-7 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                                        <Image src={`/pokemon-icons/${match.opponent_icon_2}.png`} alt={match.opponent_icon_2} width={22} height={22} className="object-contain" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="text-sm font-bold text-gray-900 truncate max-w-[120px] sm:max-w-none">
+                                                {match.opponent_name || '対戦相手'}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={() => startEditing(match)}
-                                            className="text-gray-400 hover:text-pink-500 p-1"
-                                            title="戦績を編集"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => deleteMatch(match.id)}
-                                            className="text-gray-400 hover:text-red-500 p-1"
-                                            title="戦績を削除"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                            </svg>
-                                        </button>
+                                    <div className="flex items-center gap-3">
+                                        <div className="hidden sm:flex flex-col items-end text-[10px] text-gray-400">
+                                            <div className="font-bold text-gray-500">{match.deck.deck_name}</div>
+                                            <div>{new Date(match.date).toLocaleDateString()}</div>
+                                        </div>
+                                        <div className={`text-gray-400 transition-transform duration-200 ${expandedMatchId === match.id ? 'rotate-180' : ''}`}>
+                                            ▼
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Note & Edit Section */}
-                                <div className="mt-3 pl-2 border-l-4 border-gray-100">
-                                    {editingMatchId === match.id ? (
-                                        <div className="space-y-4 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Edit Result */}
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 mb-1">結果</label>
-                                                    <div className="flex gap-1">
-                                                        {(['win', 'loss', 'draw'] as const).map((r) => (
-                                                            <button
-                                                                key={r}
-                                                                type="button"
-                                                                onClick={() => setEditForm({ ...editForm, result: r })}
-                                                                className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.result === r
-                                                                    ? (r === 'win' ? 'bg-green-700 text-white translate-y-[-1px] shadow-green-100 ring-2 ring-green-400' : r === 'loss' ? 'bg-red-700 text-white translate-y-[-1px] shadow-red-100 ring-2 ring-red-400' : 'bg-gray-700 text-white translate-y-[-1px] shadow-gray-100 ring-2 ring-gray-400')
-                                                                    : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-200'
-                                                                    }`}
-                                                            >
-                                                                {r === 'win' ? '勝ち' : r === 'loss' ? '負け' : '引分'}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                <div className="flex sm:hidden mt-1 text-[10px] text-gray-400 gap-2 font-medium">
+                                    <span>{match.deck.deck_name}</span>
+                                    <span>|</span>
+                                    <span>{new Date(match.date).toLocaleDateString()}</span>
+                                    {match.going_first && <span>| {match.going_first}</span>}
+                                </div>
 
-                                                {/* Edit Going First */}
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 mb-1">先攻/後攻</label>
-                                                    <div className="flex gap-1">
-                                                        {(['先攻', '後攻'] as const).map((g) => (
-                                                            <button
-                                                                key={g}
-                                                                type="button"
-                                                                onClick={() => setEditForm({ ...editForm, going_first: g })}
-                                                                className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
-                                                                    ? 'bg-purple-700 text-white translate-y-[-1px] shadow-purple-100 ring-2 ring-purple-400'
-                                                                    : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-purple-200'
-                                                                    }`}
-                                                            >
-                                                                {g}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                {/* Note & Edit Section (Conditional) */}
+                                {expandedMatchId === match.id && (
+                                    <div className="mt-3 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="flex justify-between items-center mb-2 px-1">
+                                            <div className="text-xs font-bold text-gray-400 flex items-center gap-2">
+                                                <span>📝 メモ・詳細</span>
+                                                {match.going_first && <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">{match.going_first}</span>}
                                             </div>
-
-                                            {/* Edit Side */}
-                                            <div className="space-y-3 p-2.5 bg-gray-50 rounded-xl border-2 border-gray-100">
-                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">サイド状況 (取った枚数)</label>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="space-y-1">
-                                                        <span className="text-[10px] font-bold text-gray-400 ml-1">自分</span>
-                                                        <select
-                                                            value={editForm.mySide ?? 0}
-                                                            onChange={(e) => setEditForm({ ...editForm, mySide: Number(e.target.value) })}
-                                                            className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
-                                                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
-                                                        >
-                                                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
-                                                                <option key={n} value={n}>{n}枚</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <span className="text-[10px] font-bold text-gray-400 ml-1">相手</span>
-                                                        <select
-                                                            value={editForm.opSide ?? 0}
-                                                            onChange={(e) => setEditForm({ ...editForm, opSide: Number(e.target.value) })}
-                                                            className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
-                                                            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
-                                                        >
-                                                            {[0, 1, 2, 3, 4, 5, 6].map(n => (
-                                                                <option key={n} value={n}>{n}枚</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Edit Opponent */}
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 mb-1">対戦相手</label>
-                                                    <input
-                                                        type="text"
-                                                        value={editForm.opponent_name}
-                                                        onChange={(e) => setEditForm({ ...editForm, opponent_name: e.target.value })}
-                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
-                                                        placeholder="相手のデッキ名など"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-gray-500 mb-1">日付</label>
-                                                    <input
-                                                        type="date"
-                                                        value={editForm.date}
-                                                        onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
-                                                        className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <PokemonIconSelector
-                                                    selectedIcons={[editForm.opponent_icon_1, editForm.opponent_icon_2]}
-                                                    onSelect={(icons) => setEditForm({ ...editForm, opponent_icon_1: icons[0], opponent_icon_2: icons[1] })}
-                                                    label="相手のデッキアイコン"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-xs font-bold text-gray-500 mb-1">メモ</label>
-                                                <textarea
-                                                    value={editForm.notes}
-                                                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                                                    className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
-                                                    rows={2}
-                                                    placeholder="試合のメモ..."
-                                                />
-                                            </div>
-
-                                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                 <button
-                                                    onClick={cancelEditing}
-                                                    className="px-2.5 py-2 text-sm text-gray-500 hover:bg-white rounded-md transition"
-                                                    disabled={updating}
+                                                    onClick={() => startEditing(match)}
+                                                    className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-pink-50 hover:text-pink-600 transition font-bold border border-gray-200 flex items-center gap-1"
                                                 >
-                                                    キャンセル
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                    </svg>
+                                                    編集
                                                 </button>
                                                 <button
-                                                    onClick={() => saveMatch(match.id)}
-                                                    className="px-2.5 py-2 text-sm font-bold bg-pink-500 text-white rounded-md hover:bg-pink-600 shadow-sm transition disabled:opacity-50"
-                                                    disabled={updating}
+                                                    onClick={() => deleteMatch(match.id)}
+                                                    className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 transition font-bold border border-red-100 flex items-center gap-1"
                                                 >
-                                                    {updating ? '保存中...' : '保存'}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                    削除
                                                 </button>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                            {match.notes || <span className="text-gray-400 italic">メモなし</span>}
-                                        </p>
-                                    )}
-                                </div>
+
+                                        <div className="pl-3 border-l-4 border-pink-100 pt-1 pb-2" onClick={(e) => e.stopPropagation()}>
+                                            {editingMatchId === match.id ? (
+                                                <div className="space-y-4 p-2 bg-gray-50 rounded-lg border border-gray-200 shadow-inner">
+                                                    {/* Existing editing form fields... */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {/* Edit Result */}
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 mb-1">結果</label>
+                                                            <div className="flex gap-1">
+                                                                {(['win', 'loss', 'draw'] as const).map((r) => (
+                                                                    <button
+                                                                        key={r}
+                                                                        type="button"
+                                                                        onClick={() => setEditForm({ ...editForm, result: r })}
+                                                                        className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.result === r
+                                                                            ? (r === 'win' ? 'bg-green-700 text-white translate-y-[-1px] shadow-green-100 ring-2 ring-green-400' : r === 'loss' ? 'bg-red-700 text-white translate-y-[-1px] shadow-red-100 ring-2 ring-red-400' : 'bg-gray-700 text-white translate-y-[-1px] shadow-gray-100 ring-2 ring-gray-400')
+                                                                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-gray-200'
+                                                                            }`}
+                                                                    >
+                                                                        {r === 'win' ? '勝ち' : r === 'loss' ? '負け' : '引分'}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Edit Going First */}
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 mb-1">先攻/後攻</label>
+                                                            <div className="flex gap-1">
+                                                                {(['先攻', '後攻'] as const).map((g) => (
+                                                                    <button
+                                                                        key={g}
+                                                                        type="button"
+                                                                        onClick={() => setEditForm({ ...editForm, going_first: g })}
+                                                                        className={`flex-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all shadow-sm ${editForm.going_first === g
+                                                                            ? 'bg-purple-700 text-white translate-y-[-1px] shadow-purple-100 ring-2 ring-purple-400'
+                                                                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:bg-gray-50 hover:border-purple-200'
+                                                                            }`}
+                                                                    >
+                                                                        {g}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Edit Side */}
+                                                    <div className="space-y-3 p-2.5 bg-gray-50 rounded-xl border-2 border-gray-100">
+                                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest">サイド状況 (取った枚数)</label>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] font-bold text-gray-400 ml-1">自分</span>
+                                                                <select
+                                                                    value={editForm.mySide ?? 0}
+                                                                    onChange={(e) => setEditForm({ ...editForm, mySide: Number(e.target.value) })}
+                                                                    className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-pink-400 transition cursor-pointer appearance-none"
+                                                                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
+                                                                >
+                                                                    {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                                                        <option key={n} value={n}>{n}枚</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <span className="text-[10px] font-bold text-gray-400 ml-1">相手</span>
+                                                                <select
+                                                                    value={editForm.opSide ?? 0}
+                                                                    onChange={(e) => setEditForm({ ...editForm, opSide: Number(e.target.value) })}
+                                                                    className="w-full px-2 py-2 bg-white border-2 border-gray-200 rounded-lg text-xs font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 transition cursor-pointer appearance-none"
+                                                                    style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
+                                                                >
+                                                                    {[0, 1, 2, 3, 4, 5, 6].map(n => (
+                                                                        <option key={n} value={n}>{n}枚</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {/* Edit Opponent */}
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 mb-1">対戦相手</label>
+                                                            <input
+                                                                type="text"
+                                                                value={editForm.opponent_name}
+                                                                onChange={(e) => setEditForm({ ...editForm, opponent_name: e.target.value })}
+                                                                className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                                placeholder="相手のデッキ名など"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 mb-1">日付</label>
+                                                            <input
+                                                                type="date"
+                                                                value={editForm.date}
+                                                                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                                                                className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <PokemonIconSelector
+                                                            selectedIcons={[editForm.opponent_icon_1, editForm.opponent_icon_2]}
+                                                            onSelect={(icons) => setEditForm({ ...editForm, opponent_icon_1: icons[0], opponent_icon_2: icons[1] })}
+                                                            label="相手のデッキアイコン"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 mb-1">メモ</label>
+                                                        <textarea
+                                                            value={editForm.notes}
+                                                            onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                                                            className="w-full p-2 bg-white border border-gray-300 rounded-md text-sm text-gray-900 focus:ring-2 focus:ring-pink-500 outline-none"
+                                                            rows={2}
+                                                            placeholder="試合のメモ..."
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                                                        <button
+                                                            onClick={cancelEditing}
+                                                            className="px-2.5 py-2 text-sm text-gray-500 hover:bg-white rounded-md transition"
+                                                            disabled={updating}
+                                                        >
+                                                            キャンセル
+                                                        </button>
+                                                        <button
+                                                            onClick={() => saveMatch(match.id)}
+                                                            className="px-2.5 py-2 text-sm font-bold bg-pink-500 text-white rounded-md hover:bg-pink-600 shadow-sm transition disabled:opacity-50"
+                                                            disabled={updating}
+                                                        >
+                                                            {updating ? '保存中...' : '保存'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                                    {match.notes || <span className="text-gray-400 italic">メモなし</span>}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))
                     ) : (
