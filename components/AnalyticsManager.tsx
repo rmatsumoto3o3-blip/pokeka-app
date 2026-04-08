@@ -148,6 +148,24 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             if (res.success && res.analytics) {
                 setData({
                     decks: (res.decks || []).sort((a: any, b: any) => {
+                        // Extract date from name like "1/24"
+                        const extractDate = (name: string) => {
+                            const match = name.match(/^(\d{1,2})\/(\d{1,2})/)
+                            if (match) return parseInt(match[1]) * 100 + parseInt(match[2])
+                            return null
+                        }
+
+                        const smartDateA = extractDate(a.deck_name || '')
+                        const smartDateB = extractDate(b.deck_name || '')
+
+                        if (smartDateA !== null && smartDateB !== null) {
+                            if (smartDateB !== smartDateA) return smartDateB - smartDateA
+                        } else if (smartDateA !== null) {
+                            return -1
+                        } else if (smartDateB !== null) {
+                            return 1
+                        }
+
                         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
                         const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
                         return dateB - dateA

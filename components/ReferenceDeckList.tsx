@@ -220,9 +220,33 @@ export default function ReferenceDeckList({
         groupedDecks[key].push(deck)
     })
 
-    // Sort decks within each archetype group by created_at (fallback for safety)
+    // Helper to extract date from name (matches "1/24", "01/24", "3/8" etc at start)
+    const extractDateFromName = (name: string) => {
+        const match = name.match(/^(\d{1,2})\/(\d{1,2})/)
+        if (match) {
+            const month = parseInt(match[1], 10)
+            const day = parseInt(match[2], 10)
+            // Use current year or 2025 as base for comparison
+            const date = new Date(2025, month - 1, day)
+            return date.getTime()
+        }
+        return null
+    }
+
+    // Sort decks within each archetype group by extracted date, then created_at
     Object.keys(groupedDecks).forEach(key => {
         groupedDecks[key].sort((a, b) => {
+            const smartDateA = extractDateFromName(a.deck_name)
+            const smartDateB = extractDateFromName(b.deck_name)
+
+            if (smartDateA !== null && smartDateB !== null) {
+                if (smartDateB !== smartDateA) return smartDateB - smartDateA
+            } else if (smartDateA !== null) {
+                return -1 // A has date, B doesn't -> A stays above (or below? usually dated decks are better)
+            } else if (smartDateB !== null) {
+                return 1
+            }
+
             const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
             const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
             return dateB - dateA
@@ -461,7 +485,11 @@ export default function ReferenceDeckList({
                                             )}
                                             {/* Mobile Date Badge */}
                                             <span className="md:hidden text-[10px] opacity-70">
-                                                {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                                {(() => {
+                                                    const match = deck.deck_name.match(/^(\d{1,2})\/(\d{1,2})/)
+                                                    if (match) return `${match[1]}/${match[2]}`
+                                                    return deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+                                                })()}
                                             </span>
                                             {/* Fallback indicator if image only */}
                                             {!deck.deck_code && deck.image_url && (
