@@ -156,3 +156,55 @@ textarea {
     background-color: #ffffff;
   }
 }
+
+/* 3D Coin Flip Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-x-180 {
+  transform: rotateX(180deg);
+}
+
+/* Premium Fanning Hand Layout */
+.hand-fanning-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important; /* Center vertically for flat look */
+  min-height: 140px !important;
+  padding-top: 0 !important;
+  padding-bottom: 20px !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  perspective: 1000px;
+}
+
+.hand-card-wrapper {
+  margin: 0 -15px !important; /* Looser overlap - was -35px */
+  transition: margin 0.3s ease, transform 0.3s ease;
+  will-change: transform;
+}
+
+@media (max-width: 640px) {
+  .hand-card-wrapper {
+    margin: 0 -10px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .hand-fanning-container {
+    min-height: 140px !important;
+  }
+  .hand-card-wrapper {
+    margin-left: -25px;
+  }
+}

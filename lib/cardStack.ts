@@ -5,6 +5,7 @@ export interface CardStack {
     energyCount: number
     toolCount: number
     damage: number
+    status?: 'none' | 'poison' | 'burn' | 'confused' | 'paralyzed' | 'asleep'
 }
 
 // Helper to create a stack from a single card
@@ -13,7 +14,8 @@ export function createStack(card: Card): CardStack {
         cards: [card],
         energyCount: card.supertype === 'Energy' ? 1 : 0,
         toolCount: card.subtypes?.includes('Pokémon Tool') ? 1 : 0,
-        damage: 0
+        damage: 0,
+        status: 'none'
     }
 }
 
