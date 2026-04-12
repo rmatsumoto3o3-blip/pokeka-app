@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { Match, Deck, GameEnvironment, DeckArchetype } from '@/lib/supabase'
 import {
     PieChart, Pie, Cell, ResponsiveContainer,
@@ -25,6 +25,7 @@ const COLORS = {
 }
 
 export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
+    const supabase = createClient()
     const [matches, setMatches] = useState<MatchWithDeck[]>([])
     const [decks, setDecks] = useState<Deck[]>([])
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])

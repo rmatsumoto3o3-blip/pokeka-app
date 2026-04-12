@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 
 export default function ContactForm() {
+    const supabase = createClient()
     const router = useRouter()
     const [isLoggedIn, setIsLoggedIn] = useState(false)
 

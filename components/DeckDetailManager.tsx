@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { Deck, DeckArchetype } from '@/lib/supabase'
 import { getDeckDataAction, saveDeckVersionAction } from '@/app/actions'
 import Image from 'next/image'
@@ -27,6 +27,7 @@ interface DeckDetailManagerProps {
 }
 
 export default function DeckDetailManager({
+    const supabase = createClient()
     onClose,
     archetypeId,
     initialDeckId,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import PokemonIconSelector from './PokemonIconSelector'
 
 interface AddMatchFormProps {
@@ -14,6 +14,7 @@ interface AddMatchFormProps {
 }
 
 export default function AddMatchForm({
+    const supabase = createClient()
     deckId,
     userId,
     onSuccess,

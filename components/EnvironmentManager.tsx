@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { GameEnvironment } from '@/lib/supabase'
 
 interface EnvironmentManagerProps {
@@ -10,6 +10,7 @@ interface EnvironmentManagerProps {
 
 // userEmail removed as unused per lint
 export default function EnvironmentManager({ }: EnvironmentManagerProps) {
+    const supabase = createClient()
     const [environments, setEnvironments] = useState<GameEnvironment[]>([])
     const [loading, setLoading] = useState(true)
     const [isAdding, setIsAdding] = useState(false)

@@ -4,9 +4,10 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 export default function PublicHeader() {
+    const supabase = createClient()
     const router = useRouter()
     const [user, setUser] = React.useState<any>(null)
     const [isLoggedIn, setIsLoggedIn] = React.useState(false)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
@@ -60,6 +60,7 @@ interface ReferenceDeckListProps {
 
 
 export default function ReferenceDeckList({
+    const supabase = createClient()
     // userId removed as unused per lint
     userEmail,
     initialDecks = [],

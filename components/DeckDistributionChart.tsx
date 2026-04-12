@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import { getAllReferenceDecksAction } from '@/app/actions'
 import { POKEMON_ICONS } from '@/lib/constants'
@@ -27,6 +27,7 @@ const COLORS = [
 ]
 
 export default function DeckDistributionChart({ decks: initialDecks, archetypes: initialArchetypes }: DeckDistributionChartProps) {
+    const supabase = createClient()
     const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks || [])
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes || [])
     const [loading, setLoading] = useState(!initialDecks || !initialArchetypes)
