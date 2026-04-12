@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { Deck, Match, DeckArchetype } from '@/lib/supabase'
 import { createFolderAction, createDeckVariantAction } from '@/app/actions' // [NEW]
 
@@ -34,6 +34,7 @@ export default function DeckManager({
     isMatchLimitReached = false,
     onMatchAdded
 }: DeckListProps) {
+    const supabase = createClient()
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])
     const [decks, setDecks] = useState<DeckWithStats[]>([])
     const [loading, setLoading] = useState(true)
