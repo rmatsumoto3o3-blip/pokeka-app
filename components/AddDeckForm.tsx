@@ -14,7 +14,6 @@ interface AddDeckFormProps {
 }
 
 export default function AddDeckForm({
-    const supabase = createClient()
     userId,
     onSuccess,
     onClose,
@@ -22,6 +21,7 @@ export default function AddDeckForm({
     deckCount = 0,
     maxDecks = 5
 }: AddDeckFormProps) {
+    const supabase = createClient()
     const [deckCode, setDeckCode] = useState('')
     const [deckName, setDeckName] = useState('')
     const [icons, setIcons] = useState<(string | null)[]>([null, null])

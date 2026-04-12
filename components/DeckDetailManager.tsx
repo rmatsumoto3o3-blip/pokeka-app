@@ -27,13 +27,13 @@ interface DeckDetailManagerProps {
 }
 
 export default function DeckDetailManager({
-    const supabase = createClient()
     onClose,
     archetypeId,
     initialDeckId,
     userId,
     onUpdate
 }: DeckDetailManagerProps) {
+    const supabase = createClient()
     // Data State
     const [archetype, setArchetype] = useState<DeckArchetype | null>(null)
     const [allArchetypes, setAllArchetypes] = useState<DeckArchetype[]>([]) // For moving

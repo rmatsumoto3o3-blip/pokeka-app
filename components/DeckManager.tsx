@@ -28,13 +28,13 @@ interface DeckWithStats extends Deck {
 }
 
 export default function DeckManager({
-    const supabase = createClient()
     userId,
     matchCount = 0,
     maxMatches = 100,
     isMatchLimitReached = false,
     onMatchAdded
 }: DeckListProps) {
+    const supabase = createClient()
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>([])
     const [decks, setDecks] = useState<DeckWithStats[]>([])
     const [loading, setLoading] = useState(true)

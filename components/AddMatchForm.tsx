@@ -14,7 +14,6 @@ interface AddMatchFormProps {
 }
 
 export default function AddMatchForm({
-    const supabase = createClient()
     deckId,
     userId,
     onSuccess,
@@ -22,6 +21,7 @@ export default function AddMatchForm({
     matchCount = 0,
     maxMatches = 100
 }: AddMatchFormProps) {
+    const supabase = createClient()
     const [result, setResult] = useState<'win' | 'loss' | 'draw'>('win')
     const [goingFirst, setGoingFirst] = useState<'先攻' | '後攻' | null>(null)
     const [mySide, setMySide] = useState<number>(0)
