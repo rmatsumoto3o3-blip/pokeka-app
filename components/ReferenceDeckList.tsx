@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
 import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
@@ -66,6 +66,7 @@ export default function ReferenceDeckList({
     initialArchetypes = [],
     gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
 }: ReferenceDeckListProps) {
+    const supabase = createClient()
     const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
     const [selectedEvent, setSelectedEvent] = useState('All')

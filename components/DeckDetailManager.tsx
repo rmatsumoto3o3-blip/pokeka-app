@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { Deck, DeckArchetype } from '@/lib/supabase'
 import { getDeckDataAction, saveDeckVersionAction } from '@/app/actions'
 import Image from 'next/image'
@@ -33,6 +33,7 @@ export default function DeckDetailManager({
     userId,
     onUpdate
 }: DeckDetailManagerProps) {
+    const supabase = createClient()
     // Data State
     const [archetype, setArchetype] = useState<DeckArchetype | null>(null)
     const [allArchetypes, setAllArchetypes] = useState<DeckArchetype[]>([]) // For moving

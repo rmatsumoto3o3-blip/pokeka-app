@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { fetchDeckData, buildDeck, shuffle, type Card } from '@/lib/deckParser'
 import { createStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from '../../components/DeckPractice'
+import CoinTossOverlay from '../../components/CoinTossOverlay'
 import {
     DndContext,
     DragOverlay,
@@ -33,6 +34,7 @@ function PracticeContent() {
     const [stadium1, setStadium1] = useState<Card | null>(null)
     const [stadium2, setStadium2] = useState<Card | null>(null)
     const [coinResult, setCoinResult] = useState<'heads' | 'tails' | null>(null)
+    const [isFlipping, setIsFlipping] = useState(false)
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
 
@@ -164,6 +166,7 @@ function PracticeContent() {
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
+    const [activePlayer, setActivePlayer] = useState<'player1' | 'player2'>('player1')
 
     // Stadium Menu
     const [showStadiumMenu, setShowStadiumMenu] = useState(false)
@@ -223,9 +226,29 @@ function PracticeContent() {
         targetRef.current?.receiveEffect(effect)
     }
 
+    const handleCoinFlip = () => {
+        if (isFlipping) return
+        setCoinResult(null) // Reset before new flip
+        setTimeout(() => {
+            setCoinResult(Math.random() < 0.5 ? 'heads' : 'tails')
+            setIsFlipping(true)
+        }, 10)
+    }
+
     return (
-        <div className="h-[100dvh] md:h-auto md:min-h-screen bg-slate-900 p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col">
-            <div className="max-w-[1800px] mx-auto w-full">
+        <div 
+          className="h-[100dvh] md:h-auto md:min-h-screen p-1 sm:p-4 pb-[env(safe-area-inset-bottom)] overflow-y-auto md:overflow-auto flex flex-col transition-colors duration-700"
+          style={{
+            backgroundColor: '#0a0a0c',
+            backgroundImage: `
+              radial-gradient(circle at 50% 50%, rgba(30, 30, 50, 0.4) 0%, rgba(10, 10, 12, 1) 100%),
+              linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
+            `,
+            backgroundSize: '100% 100%, 40px 40px, 40px 40px'
+          }}
+        >
+            <div className="max-w-[1800px] mx-auto w-full relative z-10">
                 {/* Header - Hidden on mobile for space */}
                 <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
                     <div>
@@ -308,11 +331,18 @@ function PracticeContent() {
                         onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
                     >
-                        <div className="w-full overflow-x-auto pb-4">
-                            <div className="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] gap-1 sm:gap-4 w-full h-full max-w-[1400px]">
+                        <div className="w-full overflow-x-auto pb-4 overflow-visible">
+                            <div className={`flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] gap-1 sm:gap-4 w-full h-full max-w-[1400px] transition-all duration-700 ease-in-out
+                                ${isMobile && activePlayer === 'player2' ? 'flex-col-reverse' : ''}
+                            `}
+                            style={{
+                                transformStyle: 'flat'
+                            }}>
                                 {/* Player 1 - Mobile Order 3 (Bottom) */}
                                 {deck1.length > 0 && (
-                                    <div className="order-3 md:order-none w-full">
+                                    <div key="p1-fixed-container" className={`order-3 md:order-none w-full transition-all duration-700 
+                                        ${isMobile && activePlayer === 'player2' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
+                                    `}>
                                         <DeckPractice
                                             ref={player1Ref}
                                             idPrefix="player1"
@@ -321,6 +351,7 @@ function PracticeContent() {
                                             playerName="自分"
                                             compact={true}
                                             mobile={isMobile}
+                                            isActive={activePlayer === 'player1'}
                                             stadium={stadium1}
                                             onStadiumChange={(card: Card | null) => {
                                                 setStadium1(card)
@@ -333,8 +364,7 @@ function PracticeContent() {
                                 )}
 
                                 {/* Center Column - Stadium & Tools */}
-                                <div className="order-2 md:order-none w-full md:w-40 flex-shrink-0 flex flex-col items-center z-10">
-                                    {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
+                                <div key="center-fixed-container" className={`order-2 md:order-none w-full md:w-40 flex-shrink-0 flex flex-col items-center z-10 transition-all duration-700`}>
                                     {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
                                     <div className="p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0">
 
@@ -399,12 +429,28 @@ function PracticeContent() {
 
                                             {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
                                             <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5">
+                                                {/* Player Toggle - Mobile Only */}
+                                                <div className="md:hidden flex flex-col gap-1 mb-1">
+                                                    <button 
+                                                        onClick={() => setActivePlayer('player1')}
+                                                        className={`px-3 py-1 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player1' ? 'bg-blue-600 text-white ring-2 ring-white scale-110' : 'bg-white text-blue-600 opacity-60'}`}
+                                                    >
+                                                        P1
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setActivePlayer('player2')}
+                                                        className={`px-3 py-1 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player2' ? 'bg-red-600 text-white ring-2 ring-white scale-110' : 'bg-white text-red-600 opacity-60'}`}
+                                                    >
+                                                        P2
+                                                    </button>
+                                                </div>
+
                                                 {/* Coin */}
                                                 <div className="bg-gray-50 rounded p-0.5 text-center w-[40px] md:w-full">
                                                     <h3 className="text-[6px] sm:text-[8px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight md:block hidden">Coin</h3>
                                                     <div className="flex justify-center mb-0.5">
                                                         <div
-                                                            onClick={() => setCoinResult(Math.random() < 0.5 ? 'heads' : 'tails')}
+                                                            onClick={handleCoinFlip}
                                                             className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 cursor-pointer transition-all duration-500 flex items-center justify-center text-[10px] font-bold ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600 text-white' : coinResult === 'tails' ? 'bg-white border-gray-400 text-black' : 'bg-gray-200 border-gray-300'}`}
                                                         >
                                                             {/* Tiny indicator */}
@@ -435,7 +481,9 @@ function PracticeContent() {
 
                                 {/* Player 2 - Mobile Order 1 (Top) */}
                                 {deck2.length > 0 && (
-                                    <div className="order-1 md:order-none w-full">
+                                    <div key="p2-fixed-container" className={`order-1 md:order-none w-full transition-all duration-700 
+                                        ${isMobile && activePlayer === 'player1' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
+                                    `}>
                                         <DeckPractice
                                             ref={player2Ref}
                                             idPrefix="player2"
@@ -444,6 +492,7 @@ function PracticeContent() {
                                             playerName="相手"
                                             compact={true}
                                             mobile={isMobile}
+                                            isActive={activePlayer === 'player2'}
                                             isOpponent={true}
                                             stadium={stadium2}
                                             onStadiumChange={(card: Card | null) => {
@@ -543,6 +592,14 @@ function PracticeContent() {
                         </div>
                     </div>
                 </div>
+
+                {/* Coin Toss 3D Animation Overlay */}
+                {isFlipping && (
+                    <CoinTossOverlay 
+                        result={coinResult} 
+                        onComplete={() => setIsFlipping(false)} 
+                    />
+                )}
             </div >
         </div >
     )

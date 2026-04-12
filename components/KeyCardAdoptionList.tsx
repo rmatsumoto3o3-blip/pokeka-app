@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { getGlobalDeckAnalyticsAction } from '@/app/actions'
 import { CalendarIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
@@ -27,6 +27,7 @@ interface KeyCardAdoptionListProps {
 }
 
 export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardAdoptionListProps) {
+    const supabase = createClient()
     const [archetypes, setArchetypes] = useState<Archetype[]>(initialArchetypes)
     const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>({})
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)

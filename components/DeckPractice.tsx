@@ -5,6 +5,8 @@ import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 're
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { type Card, shuffle } from '@/lib/deckParser'
+import DamagePicker from './DamagePicker'
+import NumericalSidePrize from './NumericalSidePrize'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
 import {
@@ -33,6 +35,7 @@ interface DeckPracticeProps {
     idPrefix?: string
     mobile?: boolean
     isOpponent?: boolean
+    isActive?: boolean
 }
 
 export interface DeckPracticeRef {
@@ -86,10 +89,18 @@ interface AttachmentTarget {
     index: number
 }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, onEffectTrigger, onAttackTrigger }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, isActive = true, onEffectTrigger, onAttackTrigger }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>(deck)
     const [trash, setTrash] = useState<Card[]>([])
+    const [isBackfilling, setIsBackfilling] = useState(false)
+    const [backfillCount, setBackfillCount] = useState<number | null>(null)
+    const [isCalculating, setIsCalculating] = useState(false)
+    const [retreatState, setRetreatState] = useState<{
+        isOpen: boolean;
+        targetBenchIndex: number | null;
+        selectedCardIndices: number[];
+    }>({ isOpen: false, targetBenchIndex: null, selectedCardIndices: [] });
     const [battleField, setBattleField] = useState<CardStack | null>(null)
     const [benchSize, setBenchSize] = useState(5)
 
@@ -110,6 +121,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const [bench, setBench] = useState<(CardStack | null)[]>(new Array(8).fill(null))
     const [prizeCards, setPrizeCards] = useState<Card[]>([])
     const [initialized, setInitialized] = useState(false)
+    const [showDeckTopModal, setShowDeckTopModal] = useState(false)
+    const [isPerspectiveRotated, setIsPerspectiveRotated] = useState(false)
+    const [damageTarget, setDamageTarget] = useState<{ type: 'battle' | 'bench', index: number } | null>(null)
 
     // Missing state variables for menu and drag state
     const [menu, setMenu] = useState<MenuState | null>(null)
@@ -922,15 +936,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         },
         getPrizeCount: () => {
             return prizeCards.length
+        },
+        takePrize: () => {
+            takePrizeCard()
         }
     }))
 
     // Auto-setup prize cards and draw initial hand when deck is first loaded
     useEffect(() => {
         if (!initialized && deck.length === 60) {
-            const prizes = remaining.slice(0, 6)
+            // Use the prop 'deck' directly instead of 'remaining' which might be stale
+            const prizes = deck.slice(0, 6)
             setPrizeCards(prizes)
-            const afterPrizes = remaining.slice(6)
+            const afterPrizes = deck.slice(6)
 
             // Auto-draw 7 cards
             const initialHand = afterPrizes.slice(0, 7)
@@ -993,8 +1011,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const lockScroll = () => {
         document.body.style.overflow = 'hidden'
     }
-    const unlockScroll = () => {
-        document.body.style.overflow = 'auto'
+    // Render Damage Picker overlay
+    const renderDamagePicker = () => {
+        if (!damageTarget) return null
+
+        const onApply = (delta: number) => {
+            updateDamage(damageTarget.type, damageTarget.index, delta)
+        }
+
+        const onReset = () => {
+            const targetStack = damageTarget.type === 'battle' ? battleField : bench[damageTarget.index]
+            if (targetStack) {
+                updateDamage(damageTarget.type, damageTarget.index, -targetStack.damage)
+            }
+        }
+
+        const onStatusChange = (status: any) => {
+            updateStatus(damageTarget.type, damageTarget.index, status)
+        }
+
+        return (
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center pointer-events-none">
+                <div className="pointer-events-auto relative">
+                    <DamagePicker 
+                        onApply={onApply} 
+                        onReset={onReset} 
+                        onStatusChange={onStatusChange}
+                        onClose={() => setDamageTarget(null)} 
+                    />
+                </div>
+            </div>
+        )
     }
 
     // Portal Target for Mobile
@@ -1203,6 +1250,91 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         closeMenu()
     }
 
+    // Swap Execution (Step 2)
+    const performSwap = (targetBenchIndex: number) => {
+        if (!swapMode) return
+
+        if (swapMode.sourceType === 'battle') {
+            const currentBattle = battleField
+            const targetBench = bench[targetBenchIndex]
+
+            // Check if retreat cost selection is needed (Battle field only for now)
+            const hasEnergy = currentBattle?.cards?.some(c => isEnergy(c))
+            if (hasEnergy) {
+                setRetreatState({
+                    isOpen: true,
+                    targetBenchIndex: targetBenchIndex,
+                    selectedCardIndices: []
+                })
+                setSwapMode(null)
+                return
+            }
+
+            // Standard swap (no energy)
+            setBattleField(targetBench)
+            setBench(prev => {
+                const next = [...prev]
+                next[targetBenchIndex] = currentBattle
+                return next
+            })
+        } else {
+            // Source is bench (target is battle)
+            const sourceBench = bench[swapMode.sourceIndex]
+            if (!sourceBench) return
+
+            const currentBattle = battleField
+            setBattleField(sourceBench)
+            setBench(prev => {
+                const next = [...prev]
+                next[swapMode.sourceIndex] = currentBattle
+                return next
+            })
+        }
+
+        setSwapMode(null)
+    }
+
+    const executeRetreat = () => {
+        if (!retreatState.targetBenchIndex === null || !battleField) return
+
+        const targetIndex = retreatState.targetBenchIndex!
+        const currentBattle = battleField
+        const targetBench = bench[targetIndex]
+
+        // 1. Identify cards to trash and cards to keep
+        const toTrash: Card[] = []
+        const toKeep: Card[] = []
+
+        currentBattle.cards.forEach((card, idx) => {
+            if (retreatState.selectedCardIndices.includes(idx)) {
+                toTrash.push(card)
+            } else {
+                toKeep.push(card)
+            }
+        })
+
+        // 2. Perform Movement
+        // Trash the selected energies
+        if (toTrash.length > 0) {
+            setTrash(prev => [...prev, ...toTrash])
+        }
+
+        // New stack for the bench (the one that retreated)
+        const retreatedStack = { ...currentBattle, cards: toKeep }
+
+        // Swap positions
+        setBattleField(targetBench)
+        setBench(prev => {
+            const next = [...prev]
+            next[targetIndex] = retreatedStack
+            return next
+        })
+
+        // 3. Reset State
+        setRetreatState({ isOpen: false, targetBenchIndex: null, selectedCardIndices: [] })
+        showToast(`エネルギー ${toTrash.length} 枚をトラッシュして逃げました`)
+    }
+
     const startSwapWithBench = () => {
         setSwapMode({ active: true, sourceType: 'battle', sourceIndex: 0 })
         closeMenu()
@@ -1250,30 +1382,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         closeMenu()
     }
 
-    // Swap Execution (Step 2)
-    const performSwap = (targetBenchIndex: number) => {
-        if (!swapMode) return
-
-        if (swapMode.sourceType === 'battle') {
-            // Swapping Battle with Bench[targetBenchIndex]
-            const currentBattle = battleField
-            const targetBench = bench[targetBenchIndex]
-
-            setBattleField(targetBench) // Can be null if empty slot selected
-            const newBench = [...bench]
-            newBench[targetBenchIndex] = currentBattle
-            setBench(newBench)
-        }
-
-        setSwapMode(null)
-    }
+    // performSwap logic consolidated into earlier definition
 
 
-    const takePrizeCard = (index: number) => {
+    const takePrizeCard = (index: number = 0) => {
         const prize = prizeCards[index]
         if (!prize) return
         setHand(prev => [...prev, prize])
         setPrizeCards(prev => prev.filter((_, i) => i !== index))
+        showToast('サイドを1枚取りました')
     }
 
     const shuffleDeck = () => {
@@ -3284,6 +3401,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         }
     }
 
+    const updateStatus = (source: 'battle' | 'bench', index: number, status: 'none' | 'poison' | 'burn' | 'confused' | 'asleep' | 'paralyzed') => {
+        if (source === 'battle') {
+            if (!battleField) return
+            setBattleField({ ...battleField, status })
+        } else {
+            const stack = bench[index]
+            if (!stack) return
+            const newBench = [...bench]
+            newBench[index] = { ...stack, status }
+            setBench(newBench)
+        }
+    }
+
     // Trash Menu Actions
     const moveFromTrashToHand = (index: number) => {
         const card = trash[index]
@@ -4604,7 +4734,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-purple-50 hover:text-purple-600 text-sm flex items-center gap-2 text-gray-900 font-bold"
                     >
-                        <span>🔍</span> 詳細を見る
+                        詳細を見る
                     </button>
 
                     {menu.source === 'hand' && (
@@ -4617,7 +4747,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     {menu.source === 'battle' && (
                         <>
                             <button onClick={battleToHand} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">手札に戻す</button>
-                            <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">ベンチと交代</button>
+                            <button onClick={startSwapWithBench} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold flex items-center gap-2">
+                                にげる
+                            </button>
                             <button onClick={battleToDeck} className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-900 font-bold">山札に戻す</button>
                             <button onClick={battleToTrash} className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm font-bold">きぜつ（トラッシュ）</button>
                         </>
@@ -4645,7 +4777,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setDamageSelector(null)}>
                 <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
                     <h3 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">
-                        <span className="text-red-600">⚔️</span> ダメージを選択
+                        ダメージを選択
                     </h3>
                     <div className="grid grid-cols-3 gap-2 mb-6">
                         {damageOptions.map(dmg => (
@@ -4693,12 +4825,102 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         )
     }
 
+    // Retreat Energy Selection Modal
+    const renderRetreatEnergyModal = () => {
+        if (!retreatState.isOpen || !battleField) return null
+
+        const energies = battleField.cards
+            .map((card, idx) => ({ card, idx }))
+            .filter(item => isEnergy(item.card))
+
+        return createPortal(
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setRetreatState(prev => ({ ...prev, isOpen: false, targetBenchIndex: null }))}>
+                <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                            にげるエネルギーを選択
+                        </h3>
+                        <button 
+                            onClick={() => setRetreatState(prev => ({ ...prev, isOpen: false, targetBenchIndex: null }))}
+                            className="text-gray-400 hover:text-gray-600 p-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+
+                    <p className="text-sm text-gray-500 mb-6 font-medium">
+                        トラッシュするエネルギーを選択してください。<br/>
+                        <span className="text-[10px] text-gray-400">※システムは必要エネルギー数を自動判定しません。手動で選択してください。</span>
+                    </p>
+
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-8 max-h-[40vh] overflow-y-auto p-2">
+                        {energies.length > 0 ? (
+                            energies.map(({ card, idx }) => {
+                                const isSelected = retreatState.selectedCardIndices.includes(idx)
+                                return (
+                                    <div 
+                                        key={idx}
+                                        onClick={() => {
+                                            setRetreatState(prev => {
+                                                const next = [...prev.selectedCardIndices]
+                                                if (next.includes(idx)) {
+                                                    return { ...prev, selectedCardIndices: next.filter(i => i !== idx) }
+                                                } else {
+                                                    return { ...prev, selectedCardIndices: [...next, idx] }
+                                                }
+                                            })
+                                        }}
+                                        className={`relative cursor-pointer transition-all duration-200 transform hover:scale-105 ${isSelected ? 'ring-4 ring-blue-500 rounded-lg shadow-lg -translate-y-1' : 'opacity-70 grayscale-[0.3]'}`}
+                                    >
+                                        <Image
+                                            src={card.imageUrl}
+                                            alt={card.name}
+                                            width={100}
+                                            height={140}
+                                            className="rounded-lg shadow-sm"
+                                            unoptimized
+                                        />
+                                        {isSelected && (
+                                            <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full p-1 shadow-md">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })
+                        ) : (
+                            <div className="col-span-full py-8 text-center text-gray-400 font-bold border-2 border-dashed border-gray-100 rounded-xl">
+                                エネルギーが付いていません
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setRetreatState(prev => ({ ...prev, isOpen: false, targetBenchIndex: null }))}
+                            className="flex-1 px-6 py-3 border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={executeRetreat}
+                            className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all transform active:scale-95"
+                        >
+                            にげる実行 ({retreatState.selectedCardIndices.length})
+                        </button>
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )
+    }
+
     // Unified Detail Modal
     const renderDetailModal = () => {
         // Fallback for Hand (Single Card) - Legacy showDetailModal
         if (showDetailModal && !detailModal) {
             return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
                     <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
                         <div className="relative w-full max-h-[85vh] aspect-[73/102]">
                             <Image
@@ -4733,7 +4955,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const mainCard = currentStack.cards[topPokemonIndex]
 
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setDetailModal(null)}>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setDetailModal(null)}>
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
 
                     {/* Left: Main Image */}
@@ -4959,6 +5181,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         width={sizes.battle.w}
                         height={sizes.battle.h}
                         onDamageChange={(delta) => updateDamage('battle', 0, delta)}
+                        onDamageClick={() => setDamageTarget({ type: 'battle', index: 0 })}
                     />
                 </DraggableCard>
             ) : (
@@ -4978,6 +5201,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {renderMenu()}
             {renderDetailModal()}
             {renderDamageSelector()}
+            {renderRetreatEnergyModal()}
+            {renderDamagePicker()}
 
             {/* Swap Prompt */}
             {swapMode && (
@@ -5041,10 +5266,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             </div>
 
-            {/* Hand - Top for Opponent */}
-            {/* Hand - Top for Opponent (Mobile Only) */}
-            {(mobile && isOpponent) && (
-                <div className={`${theme.bg} rounded-lg shadow p-0.5 sm:p-3 ${theme.border} border overflow-hidden mb-1`}>
+            {/* Hand - Top Slot (Desktop Only for Opponent) */}
+            {(!mobile && isOpponent) && (
+                <div className="bg-white rounded-lg shadow-sm p-0.5 sm:p-3 border border-gray-100 overflow-hidden mb-1">
                     <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
                     <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
                         {hand.map((card, i) => (
@@ -5071,12 +5295,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
             )}
 
-            {/* Main Battle Area: Dynamically ordered based on isOpponent */}
-            {/* 
-                   Normal (P1): Main Row (Battle/Prizes) -> Bench Row
-                   Opponent (P2): Bench Row -> Main Row (Battle/Prizes)
-                */}
-            <div className={`flex flex-col gap-0.5 sm:gap-2 ${(mobile && isOpponent) ? 'flex-col-reverse' : ''}`}>
+            {/* Main Battle Area: Dynamically ordered based on isOpponent or isActive on mobile */}
+            <div className={`flex flex-col gap-0.5 sm:gap-2 ${(mobile && !isActive) ? 'flex-col-reverse' : ''}`}>
 
                 {/* Main Row: Prizes, Battle */}
                 {/* Main Row: Prizes, Battle */}
@@ -5092,7 +5312,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <div className="text-[9px] text-gray-400 font-bold mb-2">MAX: 6</div>
                             {prizeCards.length > 0 && (
                                 <button
-                                    onClick={() => takePrizeCard(0)}
+                                    onClick={() => takePrizeCard()}
                                     className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] sm:text-xs font-bold px-3 py-1.5 rounded shadow-sm transition-transform active:scale-95"
                                 >
                                     1枚取る
@@ -5101,10 +5321,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     )}
 
-                    {/* Battle Field */}
-                    <div className="flex-1 flex justify-center">
-                        {mobile && portalTarget ? createPortal(BattleFieldContent, portalTarget) : BattleFieldContent}
-                    </div>
+                {/* Main Row: Prizes, Battle */}
+                <div className="flex-1 flex justify-center">
+                    {mobile && portalTarget ? createPortal(BattleFieldContent, portalTarget) : BattleFieldContent}
+                </div>
 
                     {/* Deck & Trash - Desktop Only (Restored PC Layout) */}
                     {!mobile && (
@@ -5133,32 +5353,29 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
 
                 {/* Bench Row: Includes Deck/Trash on the Right */}
-                <div className={`${theme.bg} rounded-lg shadow p-1 sm:p-3 w-full overflow-hidden ${theme.border} border order-none flex flex-row`}>
+                <div className="rounded-2xl shadow-2xl p-1 sm:p-3 w-full overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/10 order-none flex flex-row">
                     {/* Mobile Only: Side (Prizes) on Left of Bench */}
-                    {/* Mobile Only: Side (Prizes) on Left of Bench - True Absolute Stack */}
                     {mobile && (
-                        <div className="flex flex-col items-center justify-center pr-1 border-r border-gray-200 mr-1 min-w-[40px]">
-                            <h2 className="text-[8px] font-bold text-gray-400 text-center leading-none mb-1">SIDE</h2>
-                            <div className="text-xl font-black text-blue-600 leading-none mb-2">{prizeCards.length}</div>
-                            {prizeCards.length > 0 && (
-                                <button
-                                    onClick={() => takePrizeCard(0)}
-                                    className="bg-blue-500 text-white text-[10px] w-6 h-6 rounded flex items-center justify-center font-bold shadow"
-                                >
-                                    ↓
-                                </button>
-                            )}
+                        <div className="flex-shrink-0 mr-1 flex items-center">
+                            <NumericalSidePrize 
+                                count={prizeCards.length} 
+                                isPlayer1={idPrefix === 'player1'} 
+                                onClick={() => takePrizeCard()}
+                            />
                         </div>
                     )}
 
-                    {/* Left: Bench Cards (Scrollable) */}
+                    {/* Left: Bench Cards (4x2 Grid for Mobile) */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                             <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 uppercase">ベンチ</h2>
                             <button onClick={increaseBenchSize} disabled={benchSize >= 8} className="w-4 h-4 rounded-full bg-blue-500 text-white flex items-center justify-center text-[8px] shadow hover:bg-blue-600">+</button>
                             <span className="text-[8px] text-gray-500">Max: {benchSize}</span>
                         </div>
-                        <div className="flex gap-1 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-black items-end h-[100px] sm:h-auto">
+                        <div className={`
+                            ${mobile ? 'grid grid-cols-4 grid-rows-2 gap-x-1 gap-y-1.5' : 'flex gap-1 sm:gap-6 overflow-x-auto scrollbar-black items-end'} 
+                            py-1 px-1 sm:h-auto
+                        `}>
                             {bench.slice(0, benchSize).map((stack, i) => (
                                 <DroppableZone key={i} id={`${idPrefix}-bench-slot-${i}`} className={`flex-shrink-0 ${attachMode && stack ? 'ring-2 ring-green-400 rounded animate-pulse' : ''}`}>
                                     {stack ? (
@@ -5187,11 +5404,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 width={sizes.bench.w}
                                                 height={sizes.bench.h}
                                                 onDamageChange={(delta) => updateDamage('bench', i, delta)}
+                                                onDamageClick={() => setDamageTarget({ type: 'bench', index: i })}
                                             />
                                         </DraggableCard>
                                     ) : (
                                         <div
-                                            className="rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[8px] hover:border-blue-400 cursor-pointer"
+                                            className="rounded border border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-[8px] hover:border-blue-400 cursor-pointer"
                                             style={{ width: sizes.bench.w, height: sizes.bench.h }}
                                         >
                                             {i + 1}
@@ -5229,32 +5447,52 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
             </div>
 
-            {/* Hand - Keep at bottom or hide for opponent */}
-            {/* Hand - Keep at bottom for Self, or for Opponent on Desktop */}
-            {!(mobile && isOpponent) && (
-                <div className="bg-white rounded-lg shadow p-0.5 sm:p-3 border border-gray-100 overflow-hidden mt-1">
-                    <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
-                    <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
-                        {hand.map((card, i) => (
-                            <DraggableCard
-                                key={i}
-                                id={`${idPrefix}-hand-card-${i}`}
-                                data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
-                                onClick={(e) => handleCardClick(e, card, 'hand', i)}
-                                className="flex-shrink-0"
-                            >
-                                <div className="relative hover:scale-105 transition-transform cursor-pointer shadow-md rounded">
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={sizes.hand.w}
-                                        height={sizes.hand.h}
-                                        className="rounded"
-                                        unoptimized
-                                    />
-                                </div>
-                            </DraggableCard>
-                        ))}
+            {/* Hand - Bottom Slot (Show on Mobile if Active, or for Self on Desktop) */}
+            {((mobile && isActive) || (!mobile && !isOpponent)) && (
+                <div className="rounded-2xl shadow-2xl p-2 sm:p-5 bg-white/[0.05] backdrop-blur-md border border-white/10 mt-4 z-[50] overflow-visible">
+                    <h2 className="text-[10px] sm:text-xs font-black text-white/40 mb-4 uppercase tracking-[0.3em] text-center">Your Hand — {hand.length} cards</h2>
+                    
+                    <div className="hand-fanning-container hide-scrollbar px-10">
+                        {hand.map((card, i) => {
+                            return (
+                                <motion.div
+                                    key={`${idPrefix}-hand-item-${i}`}
+                                    className="hand-card-wrapper relative"
+                                    initial={false}
+                                    animate={{ 
+                                        rotate: 0,
+                                        y: 0,
+                                        zIndex: i
+                                    }}
+                                    whileHover={{ 
+                                        scale: 1.55, 
+                                        y: -130, 
+                                        rotate: 0, 
+                                        zIndex: 10000,
+                                        transition: { type: "spring", stiffness: 300, damping: 30 }
+                                    }}
+                                >
+                                    <DraggableCard
+                                        id={`${idPrefix}-hand-card-${i}`}
+                                        data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
+                                        onClick={(e) => handleCardClick(e, card, 'hand', i)}
+                                    >
+                                        <div className="relative cursor-pointer shadow-[0_8px_16px_rgba(0,0,0,0.5)] rounded-lg group overflow-hidden border border-white/5">
+                                            <Image
+                                                src={card.imageUrl}
+                                                alt={card.name}
+                                                width={sizes.hand.w * 1.1}
+                                                height={sizes.hand.h * 1.1}
+                                                className="rounded-lg transition-opacity group-hover:opacity-100 opacity-95"
+                                                unoptimized
+                                            />
+                                            {/* Subtle reflection/shine effect like PTCGL */}
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                        </div>
+                                    </DraggableCard>
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -7330,7 +7568,7 @@ function DraggableCard({ id, data, children, className = "", onClick }: { id: st
     const style = {
         transform: CSS.Translate.toString(transform),
         opacity: isDragging ? 0 : undefined,
-        zIndex: isDragging ? 100 : 1,
+        zIndex: isDragging ? 5000 : undefined, // Higher when dragging, but undefined normally to let parent decide
         scale: isDragging ? '1.05' : '1',
     }
 
@@ -7369,7 +7607,7 @@ function DroppableZone({ id, children, className = "", style = {}, onClick }: { 
 }
 
 // Cascading Stack Component (Helper)
-export function CascadingStack({ stack, width, height, onDamageChange }: { stack: CardStack, width: number, height: number, onDamageChange?: (delta: number) => void }) {
+export function CascadingStack({ stack, width, height, onDamageChange, onDamageClick }: { stack: CardStack, width: number, height: number, onDamageChange?: (delta: number) => void, onDamageClick?: () => void }) {
     const cardOffset = 15 // pixels to show of card below
     const maxVisible = 5
 
@@ -7383,15 +7621,20 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
     }
     if (topPokemonIndex === -1 && stack.cards.length > 0) topPokemonIndex = 0
 
-    // Calculate visible stack size (excluding Energy/Tools) for height
-    const visibleCardsCount = stack.cards.filter(c => !isEnergy(c) && !isTool(c)).length
+    // Status configurations with intensified glows
+    const statusConfig: Record<string, { label: string, color: string, glow: string }> = {
+        poison: { label: 'どく', color: 'bg-purple-500', glow: 'shadow-[0_0_20px_rgba(168,85,247,0.9),0_0_40px_rgba(168,85,247,0.4)]' },
+        burn: { label: 'やけど', color: 'bg-orange-500', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.9),0_0_40px_rgba(249,115,22,0.4)]' },
+        asleep: { label: 'ねむり', color: 'bg-blue-500', glow: 'shadow-[0_0_20px_rgba(59,130,246,0.9),0_0_40px_rgba(59,130,246,0.4)]' },
+        paralyzed: { label: 'マヒ', color: 'bg-yellow-400', glow: 'shadow-[0_0_20px_rgba(234,179,8,0.9),0_0_40px_rgba(234,179,8,0.4)]' },
+        confused: { label: 'こんらん', color: 'bg-pink-500', glow: 'shadow-[0_0_20px_rgba(236,72,153,0.9),0_0_40px_rgba(236,72,153,0.4)]' },
+    }
 
     return (
         <div
             className="relative"
             style={{
                 width: width,
-                // Fixed height since we are validating stacking
                 height: height
             }}
         >
@@ -7400,32 +7643,19 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                 const isToolCard = isTool(card)
                 const isTopPokemon = i === topPokemonIndex
 
-                // Hide attached Energy and Tools from the main stack
-                // But SHOW Pokemon (evolutions)
                 const hideFromStack = (isEnergyCard || isToolCard)
-
                 if (hideFromStack) return null
 
                 const zIndexValue = isTopPokemon ? (stack.cards.length + 10) : (stack.cards.length - i)
-
-                // Calculate visual position (how many Visible cards are below this one)
-                let visualPos = 0
-                for (let k = 0; k < i; k++) {
-                    const c = stack.cards[k]
-                    if (!isEnergy(c) && !isTool(c)) {
-                        visualPos++
-                    }
-                }
-
-                const marginBottomValue = 0 // No offset, stack directly
+                const currentStatus = stack.status && stack.status !== 'none' ? statusConfig[stack.status] : null
 
                 return (
                     <div
                         key={i}
-                        className="absolute left-0 transition-all"
+                        className="absolute left-0 transition-all duration-500"
                         style={{
                             bottom: 0,
-                            marginBottom: marginBottomValue,
+                            marginBottom: 0,
                             zIndex: zIndexValue
                         }}
                     >
@@ -7434,10 +7664,14 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                             alt={card.name}
                             width={width}
                             height={height}
-                            className="rounded shadow bg-white no-touch-menu no-select no-tap-highlight ring-1 ring-black/5"
+                            className={`rounded-lg shadow-2xl bg-[#0a0a0c] no-touch-menu no-select no-tap-highlight ring-1 ring-white/10 transition-shadow duration-500 ${isTopPokemon && currentStatus ? currentStatus.glow : 'shadow-black/50'}`}
                             draggable={false}
                             unoptimized
                         />
+                        {/* Dramatic Inner Shadow for Depth */}
+                        {isTopPokemon && (
+                            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/20 pointer-events-none"></div>
+                        )}
                     </div>
                 )
             })}
@@ -7446,32 +7680,9 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
             {stack.cards.filter(c => isEnergy(c)).map((card, i) => (
                 <div
                     key={`energy-${i}`}
-                    className="absolute z-[100] drop-shadow-md hover:scale-150 transition-transform origin-bottom-left"
+                    className="absolute z-[100] drop-shadow-[0_0_8px_rgba(0,0,0,0.8)] hover:scale-150 transition-transform origin-bottom-left"
                     style={{
-                        bottom: 4 + (i * 8), // Tighter stacking
-                        left: -4,
-                        width: width / 3.5, // Slightly smaller
-                        height: height / 3.5,
-                    }}
-                >
-                    <Image
-                        src={card.imageUrl}
-                        alt={card.name}
-                        width={width / 3.5}
-                        height={height / 3.5}
-                        className="rounded-sm border border-white bg-white"
-                        unoptimized
-                    />
-                </div>
-            ))}
-
-            {/* Attached Tool Icons Layer (Top Left) - Moved from Top Right/Bottom Right */}
-            {stack.cards.filter(c => isTool(c)).map((card, i) => (
-                <div
-                    key={`tool-${i}`}
-                    className="absolute z-[100] drop-shadow-md hover:scale-150 transition-transform origin-top-left"
-                    style={{
-                        top: 25 + (i * 8), // Start slightly down to avoid potential badge overlap if any
+                        bottom: 4 + (i * 8),
                         left: -4,
                         width: width / 3.5,
                         height: height / 3.5,
@@ -7482,22 +7693,63 @@ export function CascadingStack({ stack, width, height, onDamageChange }: { stack
                         alt={card.name}
                         width={width / 3.5}
                         height={height / 3.5}
-                        className="rounded-sm border border-white bg-white"
+                        className="rounded-full border-2 border-white/40 bg-black/50 backdrop-blur-sm"
                         unoptimized
                     />
                 </div>
             ))}
 
-            {/* Damage Counter Badge (Read Only) */}
-            {stack.damage > 0 && (
+            {/* Attached Tool Icons Layer (Top Left) */}
+            {stack.cards.filter(c => isTool(c)).map((card, i) => (
                 <div
-                    className="absolute bottom-1 right-1 z-[200] flex items-end justify-end pointer-events-none"
+                    key={`tool-${i}`}
+                    className="absolute z-[100] drop-shadow-[0_0_8px_rgba(0,0,0,0.8)] hover:scale-150 transition-transform origin-top-left"
+                    style={{
+                        top: 25 + (i * 8),
+                        left: -4,
+                        width: width / 3.5,
+                        height: height / 3.5,
+                    }}
                 >
-                    <div className="bg-black/60 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-md border border-white/20 backdrop-blur-sm">
-                        <span className="text-center">{stack.damage}</span>
-                    </div>
+                    <Image
+                        src={card.imageUrl}
+                        alt={card.name}
+                        width={width / 3.5}
+                        height={height / 3.5}
+                        className="rounded-lg border-2 border-white/40 bg-black/50 backdrop-blur-sm"
+                        unoptimized
+                    />
                 </div>
-            )}
+            ))}
+
+            {/* Status & Damage Badges Row */}
+            <div className="absolute bottom-1 right-1 z-[200] flex gap-1.5 items-end justify-end pointer-events-auto">
+                {/* Status Badge - Luxury Style */}
+                {stack.status && stack.status !== 'none' && (
+                    <div 
+                        className={`${statusConfig[stack.status]?.color || 'bg-gray-600'} text-white px-2 py-0.5 rounded-md text-[9px] font-black shadow-[0_0_15px_rgba(255,255,255,0.3)] border border-white/50 backdrop-blur-md animate-pulse cursor-pointer transition-transform active:scale-90`}
+                        onClick={(e) => { e.stopPropagation(); onDamageClick?.(); }}
+                        style={{ boxShadow: `0 0 10px ${statusConfig[stack.status]?.color.replace('bg-', '')}` }}
+                    >
+                        {statusConfig[stack.status]?.label}
+                    </div>
+                )}
+                
+                {/* Damage Counter Badge - Professional Neumorphic/Neon */}
+                {stack.damage > 0 && (
+                    <div
+                        className="bg-red-600 text-white px-2.5 py-1 rounded-xl text-[11px] font-black shadow-[0_0_15px_rgba(220,38,38,0.6)] border border-white/60 backdrop-blur-md animate-pulse-subtle cursor-pointer transition-all active:scale-90 flex items-center justify-center min-w-[28px]"
+                        onClick={(e) => {
+                            if (onDamageClick) {
+                                e.stopPropagation();
+                                onDamageClick();
+                            }
+                        }}
+                    >
+                        <span className="text-center drop-shadow-sm">{stack.damage}</span>
+                    </div>
+                )}
+            </div>
         </div>
     )
 }

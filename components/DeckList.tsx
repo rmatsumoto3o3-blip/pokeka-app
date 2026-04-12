@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import type { Deck, Match } from '@/lib/supabase'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -32,6 +32,7 @@ export default function DeckList({
     isMatchLimitReached = false,
     onMatchAdded
 }: DeckListProps) {
+    const supabase = createClient()
     const [decks, setDecks] = useState<DeckWithStats[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedDeck, setSelectedDeck] = useState<string | null>(null)

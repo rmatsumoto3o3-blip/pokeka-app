@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import PokemonIconSelector from './PokemonIconSelector'
 
 interface AddDeckFormProps {
@@ -21,6 +21,7 @@ export default function AddDeckForm({
     deckCount = 0,
     maxDecks = 5
 }: AddDeckFormProps) {
+    const supabase = createClient()
     const [deckCode, setDeckCode] = useState('')
     const [deckName, setDeckName] = useState('')
     const [icons, setIcons] = useState<(string | null)[]>([null, null])
