@@ -5452,25 +5452,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 <div className="rounded-2xl shadow-2xl p-2 sm:p-5 bg-white/[0.05] backdrop-blur-md border border-white/10 mt-4 z-[50] overflow-visible">
                     <h2 className="text-[10px] sm:text-xs font-black text-white/40 mb-4 uppercase tracking-[0.3em] text-center">Your Hand — {hand.length} cards</h2>
                     
-                    <div className="hand-fanning-container hide-scrollbar px-10">
+                    <div className={mobile ? "hand-fanning-container-mobile hide-scrollbar w-full px-1" : "hand-fanning-container-pc hide-scrollbar px-10"}>
                         {hand.map((card, i) => {
                             return (
-                                <motion.div
+                                <div
                                     key={`${idPrefix}-hand-item-${i}`}
-                                    className="hand-card-wrapper relative"
-                                    initial={false}
-                                    animate={{ 
-                                        rotate: 0,
-                                        y: 0,
-                                        zIndex: i
-                                    }}
-                                    whileHover={{ 
-                                        scale: 1.55, 
-                                        y: -130, 
-                                        rotate: 0, 
-                                        zIndex: 10000,
-                                        transition: { type: "spring", stiffness: 300, damping: 30 }
-                                    }}
+                                    className={`relative ${mobile ? 'hand-card-wrapper-mobile' : 'hand-card-wrapper-pc'}`}
                                 >
                                     <DraggableCard
                                         id={`${idPrefix}-hand-card-${i}`}
@@ -5490,7 +5477,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                         </div>
                                     </DraggableCard>
-                                </motion.div>
+                                </div>
                             );
                         })}
                     </div>

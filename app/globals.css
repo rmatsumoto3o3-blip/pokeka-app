@@ -175,36 +175,26 @@ textarea {
   transform: rotateX(180deg);
 }
 
-/* Premium Fanning Hand Layout */
-.hand-fanning-container {
+/* Hand Layout (Global Flat without animations) */
+.hand-fanning-container-mobile,
+.hand-fanning-container-pc {
   display: flex !important;
   justify-content: center !important;
-  align-items: center !important; /* Center vertically for flat look */
+  align-items: center !important;
   min-height: 140px !important;
   padding-top: 0 !important;
   padding-bottom: 20px !important;
-  overflow-x: visible !important;
-  overflow-y: visible !important;
-  perspective: 1000px;
+  overflow: visible !important;
 }
 
-.hand-card-wrapper {
-  margin: 0 -15px !important; /* Looser overlap - was -35px */
-  transition: margin 0.3s ease, transform 0.3s ease;
-  will-change: transform;
+.hand-card-wrapper-mobile,
+.hand-card-wrapper-pc {
+  margin: 0 -15px !important;
 }
 
 @media (max-width: 640px) {
-  .hand-card-wrapper {
+  .hand-card-wrapper-mobile,
+  .hand-card-wrapper-pc {
     margin: 0 -10px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .hand-fanning-container {
-    min-height: 140px !important;
-  }
-  .hand-card-wrapper {
-    margin-left: -25px;
   }
 }
