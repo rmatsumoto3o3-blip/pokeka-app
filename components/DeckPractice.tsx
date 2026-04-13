@@ -30,7 +30,7 @@ interface DeckPracticeProps {
     compact?: boolean
     stadium?: Card | null
     onStadiumChange?: (stadium: Card | null) => void
-    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card', amount?: number) => void
+    onEffectTrigger?: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card' | 'xerosic', amount?: number) => void
     onAttackTrigger?: (damage: number, targetType: 'battle' | 'bench', targetIndex: number) => void
     idPrefix?: string
     mobile?: boolean
