@@ -42,7 +42,7 @@ export interface DeckPracticeRef {
     handleExternalDragEnd: (event: any) => void
     playStadium: (index: number) => void
     switchPokemon: (benchIndex: number) => void
-    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
+    receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card' | 'xerosic', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
     getPrizeCount: () => number
 }
@@ -870,7 +870,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 onSelect: config.onSelect
             })
         },
-        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => {
+        receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card' | 'xerosic', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => {
             if (effect === 'boss_orders') {
                 return
             }
@@ -914,6 +914,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 setRemaining(combined.slice(drawCount))
 
                 alert(`相手がスペシャルレッドカードを使用しました。\n手札を山札の下に戻し、3枚引きました。`)
+                return
+            }
+
+            if (effect === 'xerosic') {
+                if (hand.length > 3) {
+                    alert(`相手が「クセロシキのたくらみ」を使用しました。\n手札が3枚になるようにトラッシュしてください。`)
+                } else {
+                    alert(`相手が「クセロシキのたくらみ」を使用しましたが、あなたの手札はすでに3枚以下です。`)
+                }
                 return
             }
 
@@ -3639,6 +3648,25 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
 
     // Rocket Gang Actions
+    const useCarmine = (playedIndex?: number) => {
+        let cardsToTrash = [...hand];
+        if (playedIndex !== undefined) {
+            cardsToTrash.splice(playedIndex, 1);
+            setTrash(prev => [...prev, hand[playedIndex], ...cardsToTrash]);
+        } else {
+            setTrash(prev => [...prev, ...cardsToTrash]);
+        }
+        
+        setHand([]);
+        
+        const drawCount = Math.min(5, remaining.length);
+        const drew = remaining.slice(0, drawCount);
+        setRemaining(prev => prev.slice(drawCount));
+        setHand(drew);
+        
+        showToast("ゼイユ: 手札をすべてトラッシュし、5枚引きました");
+    }
+
     const useJudge = (playedIndex?: number) => {
         let handToReturn = [...hand]
         if (playedIndex !== undefined) {
@@ -3878,6 +3906,29 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     closeMenu()
                 },
                 color: 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+            })
+        }
+
+        if (name === 'ゼイユ') {
+            actions.push({
+                label: 'ゼイユを使用',
+                action: () => {
+                    useCarmine(source === 'hand' ? index : undefined)
+                    closeMenu()
+                },
+                color: 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+            })
+        }
+
+        if (name === 'クセロシキのたくらみ') {
+            actions.push({
+                label: '使用する',
+                action: () => {
+                    onEffectTrigger?.('xerosic')
+                    if (source === 'hand') moveToTrash(index)
+                    closeMenu()
+                },
+                color: 'bg-red-100 text-red-700 hover:bg-red-200'
             })
         }
 
@@ -5266,34 +5317,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             </div>
 
-            {/* Hand - Top Slot (Desktop Only for Opponent) */}
-            {(!mobile && isOpponent) && (
-                <div className="bg-white rounded-lg shadow-sm p-0.5 sm:p-3 border border-gray-100 overflow-hidden mb-1">
-                    <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 mb-0.5 uppercase">手札 ({hand.length}枚)</h2>
-                    <div className="flex overflow-x-auto gap-1 sm:gap-3 py-1 sm:py-4 px-1 sm:px-4 scrollbar-black">
-                        {hand.map((card, i) => (
-                            <DraggableCard
-                                key={i}
-                                id={`${idPrefix}-hand-card-${i}`}
-                                data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
-                                onClick={(e) => handleCardClick(e, card, 'hand', i)}
-                                className="flex-shrink-0"
-                            >
-                                <div className="relative hover:scale-105 transition-transform cursor-pointer shadow-md rounded">
-                                    <Image
-                                        src={card.imageUrl}
-                                        alt={card.name}
-                                        width={sizes.hand.w}
-                                        height={sizes.hand.h}
-                                        className="rounded"
-                                        unoptimized
-                                    />
-                                </div>
-                            </DraggableCard>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Top Slot Hand feature removed: Always rendering Hand at Bottom for both P1 and P2 on PC */}
 
             {/* Main Battle Area: Dynamically ordered based on isOpponent or isActive on mobile */}
             <div className={`flex flex-col gap-0.5 sm:gap-2 ${(mobile && !isActive) ? 'flex-col-reverse' : ''}`}>
@@ -5447,10 +5471,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 </div>
             </div>
 
-            {/* Hand - Bottom Slot (Show on Mobile if Active, or for Self on Desktop) */}
-            {((mobile && isActive) || (!mobile && !isOpponent)) && (
+            {/* Hand - Bottom Slot (Show on Mobile if Active, or Always on Desktop) */}
+            {((mobile && isActive) || (!mobile)) && (
                 <div className="rounded-2xl shadow-2xl p-2 sm:p-5 bg-white/[0.05] backdrop-blur-md border border-white/10 mt-4 z-[50] overflow-visible">
-                    <h2 className="text-[10px] sm:text-xs font-black text-white/40 mb-4 uppercase tracking-[0.3em] text-center">Your Hand — {hand.length} cards</h2>
+                    <h2 className="text-[10px] sm:text-xs font-black text-white/40 mb-4 uppercase tracking-[0.3em] text-center">{playerName}の手札 — {hand.length}枚</h2>
                     
                     <div className={mobile ? "hand-fanning-container-mobile hide-scrollbar w-full px-1" : "hand-fanning-container-pc hide-scrollbar px-10"}>
                         {hand.map((card, i) => {
@@ -5536,9 +5560,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Deck Card Menu */}
             {
-                deckCardMenu && (
+                deckCardMenu && typeof document !== 'undefined' ? createPortal(
                     <div
-                        className="fixed inset-0 z-[100]"
+                        className="fixed inset-0 z-[10000]"
                         onClick={() => setDeckCardMenu(null)}
                     >
                         <div
@@ -5570,8 +5594,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                 className="px-4 py-3 hover:bg-red-50 text-red-600 text-left text-sm font-black"
                             >トラッシュへ</button>
                         </div>
-                    </div>
-                )
+                    </div>,
+                    document.body
+                ) : null
             }
 
             {/* Akamatsu (Crispin) Modal */}

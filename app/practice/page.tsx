@@ -198,7 +198,7 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
-    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card', amount?: number) => {
+    const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card' | 'xerosic', amount?: number) => {
         const targetRef = source === 'player1' ? player2Ref : player1Ref
 
         if (effect === 'special_red_card') {
