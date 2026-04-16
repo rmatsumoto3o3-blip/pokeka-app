@@ -263,7 +263,7 @@ export default function FeaturedCardTrends() {
 
                     <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={selectedCard.trend_history} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
+                            <LineChart data={selectedCard.trend_history.slice(-7)} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis
                                     dataKey="dateLabel"
