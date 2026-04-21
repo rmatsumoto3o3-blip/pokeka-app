@@ -668,14 +668,6 @@ export default function ReferenceDeckList({
                             }
                         }
 
-                        // Fallback cover image: use first reference_deck image if available
-                        if (!coverImage && refDecks.length > 0) {
-                            const deckWithImage = refDecks.find((d: any) => d.image_url)
-                            if (deckWithImage) {
-                                coverImage = (deckWithImage as any).image_url
-                            }
-                        }
-
                         return (
                             <button
                                 key={archetypeId}

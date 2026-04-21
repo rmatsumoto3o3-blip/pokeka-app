@@ -14,17 +14,28 @@ import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyti
 import Image from 'next/image'
 
 // Sortable Item Component
-function SortableArchetypeItem({ id, name, displayOrder }: { id: string, name: string, displayOrder: number }) {
+function SortableArchetypeItem({ id, name, displayOrder, hasCoverImage, isStorageImage }: { id: string, name: string, displayOrder: number, hasCoverImage?: boolean, isStorageImage?: boolean }) {
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: id })
     const style = { transform: CSS.Transform.toString(transform), transition }
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded text-sm mb-1 cursor-move hover:shadow-sm">
-            <div className="flex items-center">
-                <span className="text-gray-400 mr-2">☰</span>
+            <div className="flex items-center gap-2">
+                <span className="text-gray-400">☰</span>
                 <span className="font-medium text-gray-700">{name}</span>
             </div>
-            <span className="text-xs text-gray-400">#{displayOrder}</span>
+            <div className="flex items-center gap-2">
+                {hasCoverImage === false && (
+                    <span className="text-[10px] text-amber-500 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">画像なし</span>
+                )}
+                {hasCoverImage && !isStorageImage && (
+                    <span className="text-[10px] text-orange-500 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded">外部URL</span>
+                )}
+                {hasCoverImage && isStorageImage && (
+                    <span className="text-[10px] text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded">✓ Storage</span>
+                )}
+                <span className="text-xs text-gray-400">#{displayOrder}</span>
+            </div>
         </div>
     )
 }
@@ -32,6 +43,8 @@ function SortableArchetypeItem({ id, name, displayOrder }: { id: string, name: s
 type Archetype = {
     id: string
     name: string
+    cover_image_url?: string | null
+    display_order?: number | null
 }
 
 type AnalyticsResult = {
@@ -750,6 +763,26 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     </div>
                                 </div>
                                 <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                                    {/* Current Image Preview */}
+                                    {manageArchetypeId && (() => {
+                                        const arch = localArchetypes.find(a => a.id === manageArchetypeId)
+                                        return arch?.cover_image_url ? (
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">現在の表紙画像</label>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                                                        <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
+                                                    </div>
+                                                    <p className="text-xs text-gray-400 break-all">{arch.cover_image_url.includes('supabase') ? '✅ Storage済み' : '⚠️ 外部URL（要更新）'}</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                                <span>⚠️</span>
+                                                <span>表紙画像が未設定です</span>
+                                            </div>
+                                        )
+                                    })()}
                                     <div className="pt-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             表紙画像を変更
@@ -799,6 +832,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                     id={archetype.id}
                                                     name={archetype.name}
                                                     displayOrder={index}
+                                                    hasCoverImage={!!archetype.cover_image_url}
+                                                    isStorageImage={!!archetype.cover_image_url?.includes('supabase')}
                                                 />
                                             ))}
                                         </SortableContext>
