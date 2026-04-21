@@ -296,10 +296,10 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             if (archetypeImageFile) {
                 const fileExt = archetypeImageFile.name.split('.').pop()
                 const fileName = `archetype-covers/${Date.now()}.${fileExt}`
-                const { error: uploadError } = await supabase.storage.from('deck-images').upload(fileName, archetypeImageFile)
+                const { error: uploadError } = await supabase.storage.from('archetype-images').upload(fileName, archetypeImageFile)
                 if (uploadError) throw uploadError
 
-                const { data } = supabase.storage.from('deck-images').getPublicUrl(fileName)
+                const { data } = supabase.storage.from('archetype-images').getPublicUrl(fileName)
                 coverImageUrl = data.publicUrl
             }
 
