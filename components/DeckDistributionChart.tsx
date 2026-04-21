@@ -3,12 +3,12 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
 import { createClient } from '@/utils/supabase/client'
-import type { ReferenceDeck, DeckArchetype } from '@/lib/supabase'
-import { getAllReferenceDecksAction } from '@/app/actions'
+import type { DeckArchetype } from '@/lib/supabase'
+import { getArchetypeDistributionStatsAction } from '@/app/actions'
 import { POKEMON_ICONS } from '@/lib/constants'
 
 interface DeckDistributionChartProps {
-    decks?: ReferenceDeck[]
+    decks?: any[]
     archetypes?: DeckArchetype[]
 }
 
@@ -28,9 +28,10 @@ const COLORS = [
 
 export default function DeckDistributionChart({ decks: initialDecks, archetypes: initialArchetypes }: DeckDistributionChartProps) {
     const supabase = createClient()
-    const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks || [])
+    const [deckCounts, setDeckCounts] = useState<Record<string, number>>({})
+    const [globalTotal, setGlobalTotal] = useState(0)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes || [])
-    const [loading, setLoading] = useState(!initialDecks || !initialArchetypes)
+    const [loading, setLoading] = useState(true)
     const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
@@ -44,14 +45,14 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
 
     const fetchData = async () => {
         try {
-            const [
-                res,
-                { data: archetypesData }
-            ] = await Promise.all([
-                getAllReferenceDecksAction(),
+            const [res, { data: archetypesData }] = await Promise.all([
+                getArchetypeDistributionStatsAction(),
                 supabase.from('deck_archetypes').select('*')
             ])
-            if (res.success && res.data) setDecks(res.data)
+            if (res.success) {
+                setDeckCounts(res.deckCounts)
+                setGlobalTotal(res.globalTotal)
+            }
             if (archetypesData) setArchetypes(archetypesData)
         } catch (e) {
             console.error('Error fetching chart data:', e)
@@ -61,18 +62,11 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
     }
 
     useEffect(() => {
-        if (!initialDecks || !initialArchetypes) {
-            fetchData()
-        }
+        fetchData()
 
-        // Real-time subscription for automatic updates
+        // Real-time subscription for automatic updates (deck_archetypes の変更時だけ再取得)
         const channel = supabase
             .channel('deck-distribution-updates')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'reference_decks' },
-                () => fetchData()
-            )
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'deck_archetypes' },
@@ -83,51 +77,36 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [initialDecks, initialArchetypes])
+    }, [])
 
     const data = useMemo(() => {
-        // 1. Create a map of Archetype ID -> Info (Name, Icons)
-        const archetypeInfoMap = new Map<string, { name: string, icon_1: string | null }>()
-        archetypes.forEach(a => archetypeInfoMap.set(a.id, { name: a.name, icon_1: a.icon_1 || null }))
+        if (Object.keys(deckCounts).length === 0 || archetypes.length === 0) return []
 
-        // 2. Aggregate counts
-        const counts: Record<string, { value: number, icon: string | null }> = {}
-        let total = 0
-
-        decks.forEach(deck => {
-            let name = 'その他'
-            let icon = null
-            if (deck.archetype_id && archetypeInfoMap.has(deck.archetype_id)) {
-                const info = archetypeInfoMap.get(deck.archetype_id)!
-                name = info.name
-                icon = info.icon_1
-            } else if (deck.deck_name) {
-                name = 'その他 (未分類)'
-            }
-
-            // Automatic Icon Matching: if no manual icon, check if name contains a pokemon name
-            if (!icon && name !== 'その他' && name !== 'その他 (未分類)') {
-                const matchedIcon = POKEMON_ICONS.find(p => name.includes(p))
-                if (matchedIcon) icon = matchedIcon
-            }
-
-            if (!counts[name]) counts[name] = { value: 0, icon }
-            counts[name].value++
-            total++
-        })
-
+        const total = globalTotal || Object.values(deckCounts).reduce((a, b) => a + b, 0)
         if (total === 0) return []
 
-        // 3. Convert to array, sort
-        return Object.entries(counts)
-            .map(([name, info]) => ({
-                name,
-                value: info.value,
-                icon: info.icon,
-                percentage: ((info.value / total) * 100).toFixed(1)
-            }))
+        return archetypes
+            .filter(arch => deckCounts[arch.id] && deckCounts[arch.id] > 0)
+            .map(arch => {
+                const count = deckCounts[arch.id]
+                const name = arch.name
+                let icon = arch.icon_1 || null
+
+                // Automatic Icon Matching
+                if (!icon) {
+                    const matchedIcon = POKEMON_ICONS.find(p => name.includes(p))
+                    if (matchedIcon) icon = matchedIcon
+                }
+
+                return {
+                    name,
+                    value: count,
+                    icon,
+                    percentage: ((count / total) * 100).toFixed(1)
+                }
+            })
             .sort((a, b) => b.value - a.value)
-    }, [decks, archetypes])
+    }, [deckCounts, globalTotal, archetypes])
 
     // Custom Label Render with Line and Icon
     const renderCustomizedLabel = (props: any) => {
@@ -211,7 +190,7 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
                         {/* Center Label for Total Count */}
                         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-gray-900">
                             <tspan x="50%" dy="-0.5em" className="text-xs font-bold fill-gray-500">Total</tspan>
-                            <tspan x="50%" dy="1.2em" className="text-2xl font-black fill-gray-900">{data.reduce((acc, curr) => acc + curr.value, 0)}</tspan>
+                            <tspan x="50%" dy="1.2em" className="text-2xl font-black fill-gray-900">{globalTotal || data.reduce((acc, curr) => acc + curr.value, 0)}</tspan>
                             <tspan x="50%" dy="1.2em" className="text-[10px] font-medium fill-gray-400">decks</tspan>
                         </text>
                     </PieChart>

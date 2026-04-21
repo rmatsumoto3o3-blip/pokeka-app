@@ -7,7 +7,7 @@ import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
 import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
-import { getAllReferenceDecksAction } from '@/app/actions'
+import { getAllReferenceDecksAction, getArchetypeDistributionStatsAction, getDeckRecordsByArchetypeAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -73,6 +73,12 @@ export default function ReferenceDeckList({
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
     const [selectedRank, setSelectedRank] = useState<string>('All')
     const [loading, setLoading] = useState(initialDecks.length === 0)
+    // GAS 集計データ（archetype_card_stats から取得）
+    const [gasDeckCounts, setGasDeckCounts] = useState<Record<string, number>>({})
+    const [gasRankCounts, setGasRankCounts] = useState<Record<string, Record<string, number>>>({})
+    // deck_records（スプレッドシート由来の個別デッキ一覧）
+    const [deckRecords, setDeckRecords] = useState<any[]>([])
+    const [deckRecordsLoading, setDeckRecordsLoading] = useState(false)
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1)
@@ -99,6 +105,14 @@ export default function ReferenceDeckList({
         userEmail === 'admin@pokeka.local'
 
     useEffect(() => {
+        // GAS 集計データは常に取得
+        getArchetypeDistributionStatsAction().then(res => {
+            if (res.success) {
+                setGasDeckCounts(res.deckCounts)
+                setGasRankCounts(res.rankCounts)
+            }
+        })
+
         if (initialDecks.length > 0) return
 
         const loadData = async () => {
@@ -341,17 +355,18 @@ export default function ReferenceDeckList({
     }
 
     if (selectedArchetypeId) {
-        const archetypeDecks = groupedDecks[selectedArchetypeId] || []
         const currentArchetype = selectedArchetypeId === 'others'
             ? { name: 'その他' }
             : archetypes.find(a => a.id === selectedArchetypeId)
 
         const displayName = currentArchetype?.name || 'その他'
+        const totalDeckCount = gasDeckCounts[selectedArchetypeId] || deckRecords.length
 
-        const filteredByRank = selectedRank === 'All' 
-            ? archetypeDecks 
-            : archetypeDecks.filter(d => d.event_rank === selectedRank)
-                            
+        // ランクフィルタ
+        const filteredByRank = selectedRank === 'All'
+            ? deckRecords
+            : deckRecords.filter(d => d.event_rank === selectedRank)
+
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
         const paginatedDecks = filteredByRank.slice(startIndex, startIndex + ITEMS_PER_PAGE)
         const totalPages = Math.ceil(filteredByRank.length / ITEMS_PER_PAGE)
@@ -390,7 +405,7 @@ export default function ReferenceDeckList({
                         <span className="bg-gradient-to-r from-pink-500 to-purple-500 w-1 h-6 rounded-full mr-3"></span>
                         {displayName}
                         <span className="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                            {archetypeDecks.length}
+                            {totalDeckCount}
                         </span>
                         {/* Adoption Rate Button [MOVED] */}
                         {selectedArchetypeId !== 'others' && (
@@ -422,7 +437,7 @@ export default function ReferenceDeckList({
                             {rank === 'All' ? 'すべて' : rank}
                             {rank !== 'All' && (
                                 <span className="ml-1.5 text-[10px] opacity-70">
-                                    {archetypeDecks.filter(d => d.event_rank === rank).length}
+                                    {gasRankCounts[selectedArchetypeId!]?.[rank] ?? 0}
                                 </span>
                             )}
                         </button>
@@ -433,37 +448,68 @@ export default function ReferenceDeckList({
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     {/* Header Row */}
                     <div className="bg-gray-50 px-2.5 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
-                        <div className="flex-1">デッキ名</div>
+                        <div className="flex-1">デッキ</div>
                         <div className="w-24 hidden md:block text-center">日付</div>
                         <div className="w-24 hidden md:block text-center">CODE</div>
-                        {isAdmin && <div className="w-20 text-right">管理</div>}
                     </div>
 
+                    {deckRecordsLoading ? (
+                        <div className="p-10 flex items-center justify-center gap-3 text-gray-400">
+                            <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span className="text-sm font-medium">読み込み中...</span>
+                        </div>
+                    ) : (
                     <div className="divide-y divide-gray-100">
-                        {paginatedDecks.map((deck) => (
+                        {paginatedDecks.map((deck) => {
+                            const displayName = deck.event_date && deck.event_location
+                                ? `${deck.event_date} ${deck.event_location}`
+                                : deck.event_date || deck.event_location || deck.deck_code
+                            const dateLabel = deck.event_date || (deck.created_at
+                                ? new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+                                : '')
+                            const isExpanded = expandedDeckIds.includes(deck.id)
+                            return (
                             <div key={deck.id} className="group transition overflow-hidden">
                                 <div
-                                    onClick={() => handleDeckClick(deck)}
-                                    className={`px-2.5 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${expandedDeckIds.includes(deck.id) ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                                    onClick={() => {
+                                        if (deck.deck_code) {
+                                            setExpandedDeckIds(prev =>
+                                                prev.includes(deck.id)
+                                                    ? prev.filter(id => id !== deck.id)
+                                                    : [...prev, deck.id]
+                                            )
+                                        }
+                                    }}
+                                    className={`px-2.5 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${isExpanded ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
                                 >
                                     {/* Expand Toggle Icon */}
                                     <div className="flex-shrink-0 text-gray-400">
                                         {deck.deck_code ? (
                                             <button
-                                                onClick={(e) => handleToggleExpand(e, deck.id)}
-                                                className={`p-1 rounded-full hover:bg-black/5 transition ${expandedDeckIds.includes(deck.id) ? 'text-purple-600 rotate-90 transform' : ''}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setExpandedDeckIds(prev =>
+                                                        prev.includes(deck.id)
+                                                            ? prev.filter(id => id !== deck.id)
+                                                            : [...prev, deck.id]
+                                                    )
+                                                }}
+                                                className={`p-1 rounded-full hover:bg-black/5 transition ${isExpanded ? 'text-purple-600 rotate-90 transform' : ''}`}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                                             </button>
                                         ) : (
-                                            <div className="w-6 h-6"></div> // Spacer
+                                            <div className="w-6 h-6"></div>
                                         )}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             {deck.event_rank && (
-                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-tighter ${
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-tighter flex-shrink-0 ${
                                                     deck.event_rank === '優勝' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                                                     deck.event_rank === '準優勝' ? 'bg-gray-100 text-gray-700 border border-gray-200' :
                                                     'bg-blue-50 text-blue-600 border border-blue-100'
@@ -472,41 +518,30 @@ export default function ReferenceDeckList({
                                                     {deck.event_rank}
                                                 </span>
                                             )}
-                                            <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
-                                                <AutoFitText text={deck.deck_name} />
+                                            <div className="font-bold text-gray-900 text-sm truncate">
+                                                {displayName}
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-
                                             {deck.deck_code && (
                                                 <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
                                                     <span className="text-[10px] mr-1 opacity-50">CODE:</span>
                                                     {deck.deck_code}
                                                 </span>
                                             )}
-                                            {/* Mobile Date Badge */}
-                                            <span className="md:hidden text-[10px] opacity-70">
-                                                {(() => {
-                                                    const match = deck.deck_name.match(/^(\d{1,2})\/(\d{1,2})/)
-                                                    if (match) return `${match[1]}/${match[2]}`
-                                                    return deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-                                                })()}
-                                            </span>
-                                            {/* Fallback indicator if image only */}
-                                            {!deck.deck_code && deck.image_url && (
-                                                <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
-                                                    画像あり
-                                                </span>
+                                            {/* Mobile Date */}
+                                            {dateLabel && (
+                                                <span className="md:hidden text-[10px] opacity-70">{dateLabel}</span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Desktop Date Display */}
+                                    {/* Desktop Date */}
                                     <div className="w-24 hidden md:flex items-center justify-center text-[10px] text-gray-500 font-medium">
                                         {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
                                     </div>
 
-                                    {/* Desktop Code Copy Button (Quick Action) */}
+                                    {/* Desktop Code Copy */}
                                     <div className="w-24 hidden md:flex items-center justify-center">
                                         {deck.deck_code && (
                                             <button
@@ -523,48 +558,29 @@ export default function ReferenceDeckList({
                                         )}
                                     </div>
 
-                                    {isAdmin && (
-                                        <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
-                                            <button
-                                                onClick={(e) => handleEdit(deck, e)}
-                                                className="text-blue-500 hover:bg-blue-50 p-1.5 rounded"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleDelete(deck.id, e)}
-                                                className="text-red-500 hover:bg-red-50 p-1.5 rounded"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {/* Mobile Chevron (Replaced with expansion indicator if code exists) */}
+                                    {/* Mobile Chevron */}
                                     <div className="md:hidden text-gray-300">
                                         {deck.deck_code && (
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                                                className={`transition-transform duration-200 ${expandedDeckIds.includes(deck.id) ? 'rotate-90 text-purple-500' : ''}`}
+                                                className={`transition-transform duration-200 ${isExpanded ? 'rotate-90 text-purple-500' : ''}`}
                                             >
                                                 <polyline points="9 18 15 12 9 6"></polyline>
                                             </svg>
                                         )}
-                                        {!deck.deck_code && deck.image_url && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Expanded Content */}
-                                {expandedDeckIds.includes(deck.id) && deck.deck_code && (
+                                {/* Expanded Deck Preview */}
+                                {isExpanded && deck.deck_code && (
                                     <div className="border-t border-gray-100 bg-gray-50/50 p-2 md:p-2.5">
                                         <DeckPreview deckCode={deck.deck_code} />
                                     </div>
                                 )}
                             </div>
-                        ))}
+                            )
+                        })}
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
@@ -594,7 +610,8 @@ export default function ReferenceDeckList({
                             </div>
                         )}
                     </div>
-                    {filteredByRank.length === 0 && (
+                    )}
+                    {!deckRecordsLoading && filteredByRank.length === 0 && (
                         <div className="p-8 text-center text-gray-400">
                             該当するデッキはありません
                         </div>
@@ -603,6 +620,15 @@ export default function ReferenceDeckList({
             </div>
         )
     }
+
+    // GAS データと reference_decks の両方からアーキタイプIDを収集して表示
+    const gridArchetypeIds = sortedArchetypeIds.length > 0
+        // reference_decks の並び順を基準に、GAS のみのアーキタイプを末尾に追加
+        ? [
+            ...sortedArchetypeIds,
+            ...Object.keys(gasDeckCounts).filter(id => !sortedArchetypeIds.includes(id))
+          ]
+        : Object.keys(gasDeckCounts)
 
     // VIEW: Top Level (Folders) - Remains mostly Grid for Archetypes
     return (
@@ -618,14 +644,16 @@ export default function ReferenceDeckList({
 
 
             {/* Archetype Grid */}
-            {(filteredDecks.length === 0) ? (
+            {(gridArchetypeIds.length === 0 && filteredDecks.length === 0) ? (
                 <div className="text-center py-10 bg-white/50 rounded-xl border border-dashed border-gray-300">
                     <p className="text-gray-500">該当する参考デッキはありません</p>
                 </div>
             ) : (
                 <div className={gridClassName}>
-                    {sortedArchetypeIds.map(archetypeId => {
-                        const decks = groupedDecks[archetypeId]
+                    {gridArchetypeIds.map(archetypeId => {
+                        const refDecks = groupedDecks[archetypeId] || []
+                        // GAS データのデッキ数を優先、なければ reference_decks の件数
+                        const deckCount = gasDeckCounts[archetypeId] ?? refDecks.length
 
                         let displayName = 'その他'
                         let coverImage = null
@@ -640,12 +668,11 @@ export default function ReferenceDeckList({
                             }
                         }
 
-                        // Fallback cover image logic: if no archetype cover, use first deck's image if available (Legacy support)
-                        if (!coverImage && decks.length > 0) {
-                            // Try to find a deck with an image
-                            const deckWithImage = decks.find(d => d.image_url)
+                        // Fallback cover image: use first reference_deck image if available
+                        if (!coverImage && refDecks.length > 0) {
+                            const deckWithImage = refDecks.find((d: any) => d.image_url)
                             if (deckWithImage) {
-                                coverImage = deckWithImage.image_url
+                                coverImage = (deckWithImage as any).image_url
                             }
                         }
 
@@ -655,6 +682,13 @@ export default function ReferenceDeckList({
                                 onClick={() => {
                                     setSelectedArchetypeId(archetypeId)
                                     setCurrentPage(1)
+                                    setSelectedRank('All')
+                                    setDeckRecords([])
+                                    setDeckRecordsLoading(true)
+                                    getDeckRecordsByArchetypeAction(archetypeId).then(res => {
+                                        if (res.success) setDeckRecords(res.data)
+                                        setDeckRecordsLoading(false)
+                                    })
                                 }}
                                 className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"
                             >
@@ -679,7 +713,7 @@ export default function ReferenceDeckList({
                                     <div className="absolute bottom-0 left-0 right-0 p-2.5 md:p-2.5 text-white">
                                         <h3 className="text-lg md:text-xl font-bold truncate leading-tight mb-1">{displayName}</h3>
                                         <p className="text-xs md:text-sm text-gray-200 font-medium flex items-center">
-                                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs mr-2">{decks.length} Decks</span>
+                                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs mr-2">{deckCount} Decks</span>
                                         </p>
                                     </div>
                                 </div>
