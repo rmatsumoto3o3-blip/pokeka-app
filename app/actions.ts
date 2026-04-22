@@ -465,85 +465,11 @@ export async function addDeckToAnalyticsAction(
     syncReference: boolean = true,
     eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
 ) {
-    try {
-        // 1. Check permissions (Admin only)
-
-        const { data: user, error: userError } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (userError || !user.user || !user.user.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        // 2. Fetch Deck Data from Official Site
-        // Reuse the existing fetchDeckData logic which parses the HTML
-        let cards: CardData[] = []
-        try {
-            cards = await fetchDeckData(deckCode)
-        } catch (e) {
-            console.error("Fetch Error", e)
-            return { success: false, error: 'デッキデータの取得に失敗しました。コードを確認してください。' }
-        }
-
-        if (cards.length === 0) {
-            return { success: false, error: 'カード情報を取得できませんでした。' }
-        }
-
-        // 3. Save to DB
-        // Check for duplicate deck_code in this archetype to prevent double counting? 
-        // Or allow it? Let's check duplicate deck_code globally/per archetype.
-        // Usually duplicate codes are bad for analytics.
-        const { data: existing } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('id')
-            .eq('deck_code', deckCode)
-            .eq('archetype_id', archetypeId)
-            .single()
-
-        if (existing) {
-            return { success: false, error: 'このデッキコードは既にこのデッキタイプに登録されています。' }
-        }
-
-        // Auto-detect rank if not provided
-        const rank = eventRank || (customDeckName ? await detectRankFromName(customDeckName) : null)
-
-        const { error: insertError } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .insert([{
-                user_id: userId,
-                deck_code: deckCode,
-                archetype_id: archetypeId,
-                cards_json: cards,
-                event_rank: rank
-            }])
-
-        if (insertError) throw insertError
-
-        return { success: true }
-
-    } catch (error) {
-        console.error('Add Analytics Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: false, error: 'この機能はGASスクレイパーに移行しました。' }
 }
 
 export async function removeDeckFromAnalyticsAction(id: string, userId: string) {
-    try {
-        // Admin permission check
-        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        const { error } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .delete()
-            .eq('id', id)
-
-        if (error) throw error
-        return { success: true }
-
-    } catch (error) {
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: false, error: 'この機能はGASスクレイパーに移行しました。' }
 }
 
 export async function deleteArchetypeAction(archetypeId: string, userId: string) {
@@ -559,13 +485,7 @@ export async function deleteArchetypeAction(archetypeId: string, userId: string)
         // 1. Delete from deck_records
         await supabaseAdmin.from('deck_records').delete().eq('archetype_id', archetypeId)
 
-        // 2. Delete from analyzed_decks (Analytics)
-        await supabaseAdmin
-            .from('analyzed_decks')
-            .delete()
-            .eq('archetype_id', archetypeId)
-
-        // 3. Delete from deck_archetypes (The category itself)
+        // 2. Delete from deck_archetypes (The category itself)
         const { error } = await supabaseAdmin
             .from('deck_archetypes')
             .delete()
@@ -588,25 +508,20 @@ export async function getAllReferenceDecksAction() {
 
 export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8') {
     try {
-        // 1. Fetch all decks for this archetype with pagination
-        // 1. Fetch recent analyzed decks for UI list (NO cards_json!)
+        // 1. Fetch recent deck_records for UI list
         let query = getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('id, deck_code, event_rank, archetype_id, created_at')
+            .from('deck_records')
+            .select('id, deck_code, event_rank, archetype_id, event_date, event_location, created_at')
             .eq('archetype_id', archetypeId)
-            .gte('created_at', ANALYTICS_START_DATE)
-        
-        if (eventRank) {
-            query = query.eq('event_rank', eventRank)
-        }
+
+        if (eventRank) query = query.eq('event_rank', eventRank)
 
         const { data, error } = await query
             .order('created_at', { ascending: false })
-            .limit(50) // Egress削減のため、集計に不要なデータ取得を最小限に。
+            .limit(50)
 
         if (error) throw error
         const decks = data || []
-
         let totalDecks = decks.length
 
         // 2. Fetch Pre-Calculated Data
@@ -793,27 +708,7 @@ export async function updateAnalyzedDeckAction(
     userId: string,
     updates: { name: string, imageUrl?: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8' }
 ) {
-    try {
-        // Admin Check
-        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        // 1. Update Analyzed Deck (Rank)
-        if (updates.eventRank !== undefined) {
-            const { error: anaError } = await getSupabaseAdmin()
-                .from('analyzed_decks')
-                .update({ event_rank: updates.eventRank })
-                .eq('deck_code', deckCode)
-                .eq('archetype_id', archetypeId)
-            if (anaError) throw anaError
-        }
-
-        return { success: true }
-    } catch (e) {
-        return { success: false, error: (e as Error).message }
-    }
+    return { success: true, error: undefined } // deck_records はGASが管理するため更新不要
 }
 
 export interface GlobalAnalyticsResult {
@@ -829,201 +724,47 @@ export async function getGlobalDeckAnalyticsAction(
     eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
 ): Promise<GlobalAnalyticsResult> {
     try {
-        // Parse dates into comparable numbers (e.g., "03/14" -> 314)
-        let startNum: number | null = null
-        let endNum: number | null = null
-        if (startDateStr) {
-            const [m, d] = startDateStr.split('/').map(Number)
-            startNum = m * 100 + d
-        }
-        if (endDateStr) {
-            const [m, d] = endDateStr.split('/').map(Number)
-            endNum = m * 100 + d
-        }
+        // 日付フィルタは現在未対応（deck_records.event_date で将来対応予定）
+        // Fast Path のデータを返す
+        let gQuery = getSupabaseAdmin().from('global_card_stats').select('*')
+        if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
+        else gQuery = gQuery.eq('event_rank', 'ALL')
 
-        // Fast Path: If no date filter, use pre-calculated stats to save Egress
-        if (startNum === null && endNum === null) {
-            let gQuery = getSupabaseAdmin().from('global_card_stats').select('*')
-            if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
-            else gQuery = gQuery.eq('event_rank', 'ALL')
-            
-            const { data: globalData } = await gQuery
-            const totalDecksGlobal = globalData && globalData.length > 0 ? globalData[0].total_decks : 1
-            
-            const globalAnalytics = (globalData || []).map(stat => ({
-                id: stat.card_name,
-                card_name: stat.card_name,
-                image_url: stat.image_url,
-                category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
-                adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : "0.0",
-                adoption_rate: ((stat.adoption_count / totalDecksGlobal) * 100).toFixed(1)
-            })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
+        const { data: globalData } = await gQuery
+        const totalDecksGlobal = globalData && globalData.length > 0 ? globalData[0].total_decks : 1
 
-            let aQuery = getSupabaseAdmin().from('archetype_card_stats').select('*')
-            if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
-            else aQuery = aQuery.eq('event_rank', 'ALL')
-            
-            const { data: archData } = await aQuery
-            const analyticsByArchetype: Record<string, any[]> = {}
-            if (archData) {
-                archData.forEach(stat => {
-                    if (!analyticsByArchetype[stat.archetype_id]) analyticsByArchetype[stat.archetype_id] = []
-                    analyticsByArchetype[stat.archetype_id].push({
-                        id: stat.card_name,
-                        card_name: stat.card_name,
-                        image_url: stat.image_url,
-                        category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
-                        adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : "0.0",
-                        adoption_rate: stat.total_decks > 0 ? ((stat.adoption_count / stat.total_decks) * 100).toFixed(1) : "0.0"
-                    })
-                })
-                // Sort each archetype's cards by adoption rate
-                Object.keys(analyticsByArchetype).forEach(archId => {
-                    analyticsByArchetype[archId].sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
-                })
-            }
-
-            return { success: true, analyticsByArchetype, globalAnalytics }
-        }
-
-        // 1. Fetch recent analyzed decks (limit to 500 to save bandwidth for custom date)
-        const { data: decksData, error: dErr } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('deck_code, cards_json, archetype_id, created_at')
-            .order('created_at', { ascending: false })
-            .limit(500)
-
-        if (dErr) throw dErr
-        let decks = decksData || []
-
-        if (decks.length === 0) return { success: true, analyticsByArchetype: {} }
-
-        // 1.5 Fetch deck_records to get event_date for date filtering
-        const deckCodes = [...new Set(decks.map(d => d.deck_code))]
-        const drRes = await getSupabaseAdmin()
-            .from('deck_records')
-            .select('deck_code, event_date')
-            .in('deck_code', deckCodes)
-        const eventDateMap = new Map<string, string>()
-        drRes.data?.forEach(r => { if (r.event_date) eventDateMap.set(r.deck_code, r.event_date) })
-
-        // 1.6 Filter decks based on extracted date
-        const isFiltering = startNum !== null && endNum !== null
-        let filteredDecks = decks
-
-        if (isFiltering) {
-            filteredDecks = decks.filter(deck => {
-                const eventDate = eventDateMap.get(deck.deck_code)
-                if (!eventDate) return false
-
-                const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
-                if (!match) return false
-
-                const m = parseInt(match[1], 10)
-                const d = parseInt(match[2], 10)
-                const deckDateNum = m * 100 + d
-
-                if (startNum! > endNum!) {
-                    return deckDateNum >= startNum! || deckDateNum <= endNum!
-                } else {
-                    return deckDateNum >= startNum! && deckDateNum <= endNum!
-                }
-            })
-        }
-
-        if (filteredDecks.length === 0) return { success: true, analyticsByArchetype: {} }
-
-        // 2. Aggregate per Archetype
-        const analyticsByArchetype: Record<string, any[]> = {}
-        const deckCountsByArchetype: Record<string, number> = {}
-
-        // Group decks by archetype
-        filteredDecks.forEach(deck => {
-            if (!deckCountsByArchetype[deck.archetype_id]) deckCountsByArchetype[deck.archetype_id] = 0
-            deckCountsByArchetype[deck.archetype_id]++
-        })
-
-        // Temporary storage for stats per archetype
-        const statsByArchetype: Record<string, Record<string, any>> = {}
-
-        filteredDecks.forEach(deck => {
-            const archId = deck.archetype_id
-            if (!statsByArchetype[archId]) statsByArchetype[archId] = {}
-
-            const cards = deck.cards_json as CardData[]
-            const seenInThisDeck = new Set<string>()
-
-            cards.forEach(card => {
-                const key = card.name
-                if (!statsByArchetype[archId][key]) {
-                    statsByArchetype[archId][key] = {
-                        name: card.name,
-                        imageUrl: card.imageUrl,
-                        supertype: card.supertype,
-                        subtypes: card.subtypes,
-                        totalQty: 0,
-                        adoptionCount: 0
-                    }
-                }
-                statsByArchetype[archId][key].totalQty += card.quantity
-                if (!seenInThisDeck.has(key)) {
-                    statsByArchetype[archId][key].adoptionCount += 1
-                    seenInThisDeck.add(key)
-                }
-            })
-        })
-
-        // 3. Aggregate Global Stats
-        const globalStats: Record<string, any> = {}
-        const totalDecksGlobal = filteredDecks.length
-
-        filteredDecks.forEach(deck => {
-            const cards = deck.cards_json as CardData[]
-            const seenInThisDeckGlobal = new Set<string>()
-
-            cards.forEach(card => {
-                const name = card.name
-                if (!globalStats[name]) {
-                    globalStats[name] = {
-                        name: card.name,
-                        imageUrl: card.imageUrl,
-                        supertype: card.supertype,
-                        subtypes: card.subtypes,
-                        totalQty: 0,
-                        adoptionCount: 0
-                    }
-                }
-                globalStats[name].totalQty += card.quantity
-                if (!seenInThisDeckGlobal.has(name)) {
-                    globalStats[name].adoptionCount += 1
-                    seenInThisDeckGlobal.add(name)
-                }
-            })
-        })
-
-        const globalAnalytics = Object.values(globalStats).map(stat => ({
-            id: stat.name,
-            card_name: stat.name,
-            image_url: stat.imageUrl,
+        const globalAnalytics = (globalData || []).map(stat => ({
+            id: stat.card_name,
+            card_name: stat.card_name,
+            image_url: stat.image_url,
             category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
-            adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1),
-            adoption_rate: ((stat.adoptionCount / totalDecksGlobal) * 100).toFixed(1)
+            adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : "0.0",
+            adoption_rate: ((stat.adoption_count / totalDecksGlobal) * 100).toFixed(1)
         })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
 
-        // 4. Format Archetype Stats
-        Object.keys(statsByArchetype).forEach(archId => {
-            const totalDecks = deckCountsByArchetype[archId]
-            if (!totalDecks) return
+        let aQuery = getSupabaseAdmin().from('archetype_card_stats').select('*')
+        if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
+        else aQuery = aQuery.eq('event_rank', 'ALL')
 
-            analyticsByArchetype[archId] = Object.values(statsByArchetype[archId]).map(stat => ({
-                id: stat.name,
-                card_name: stat.name,
-                image_url: stat.imageUrl,
-                category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
-                adoption_quantity: (stat.totalQty / stat.adoptionCount).toFixed(1),
-                adoption_rate: ((stat.adoptionCount / totalDecks) * 100).toFixed(0)
-            })).sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
-        })
+        const { data: archData } = await aQuery
+        const analyticsByArchetype: Record<string, any[]> = {}
+        if (archData) {
+            archData.forEach(stat => {
+                if (!analyticsByArchetype[stat.archetype_id]) analyticsByArchetype[stat.archetype_id] = []
+                analyticsByArchetype[stat.archetype_id].push({
+                    id: stat.card_name,
+                    card_name: stat.card_name,
+                    image_url: stat.image_url,
+                    category: mapSupertypeToCategory(stat.supertype, stat.subtypes),
+                    adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : "0.0",
+                    adoption_rate: stat.total_decks > 0 ? ((stat.adoption_count / stat.total_decks) * 100).toFixed(1) : "0.0"
+                })
+            })
+            // Sort each archetype's cards by adoption rate
+            Object.keys(analyticsByArchetype).forEach(archId => {
+                analyticsByArchetype[archId].sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
+            })
+        }
 
         return { success: true, analyticsByArchetype, globalAnalytics }
 
@@ -1055,46 +796,7 @@ export async function syncAnalyzedDecksToReferencesAction(userId: string) {
  * Backfill event_rank for all existing decks based on their names
  */
 export async function backfillEventRanksAction(userId: string) {
-    try {
-        const supabaseAdmin = getSupabaseAdmin()
-        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        let updatedCount = 0
-        const step = 200
-
-        // Update analyzed_decks directly based on deck name detection
-        let anaFrom = 0
-        while (true) {
-            const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
-                .from('analyzed_decks')
-                .select('id, deck_code, event_rank')
-                .range(anaFrom, anaFrom + step - 1)
-
-            if (analyzedError) throw analyzedError
-            if (!analyzedDecks || analyzedDecks.length === 0) break
-
-            for (const deck of analyzedDecks) {
-                const detected = await detectRankFromName(deck.deck_code)
-                if (detected && detected !== deck.event_rank) {
-                    await supabaseAdmin
-                        .from('analyzed_decks')
-                        .update({ event_rank: detected })
-                        .eq('id', deck.id)
-                    updatedCount++
-                }
-            }
-            if (analyzedDecks.length < step) break
-            anaFrom += step
-        }
-
-        return { success: true, count: updatedCount }
-    } catch (error) {
-        console.error('Backfill Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: true, count: 0, error: undefined }
 }
 
 // --- Phase 44: Deck Scraper Automation ---
@@ -1191,18 +893,6 @@ export async function getFeaturedCardsWithStatsAction(
     eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'
 ): Promise<{ success: boolean, data?: FeaturedCardStat[], error?: string }> {
     try {
-        // Parse dates into comparable numbers (e.g., "03/14" -> 314)
-        let startNum: number | null = null
-        let endNum: number | null = null
-        if (startDateStr) {
-            const [m, d] = startDateStr.split('/').map(Number)
-            startNum = m * 100 + d
-        }
-        if (endDateStr) {
-            const [m, d] = endDateStr.split('/').map(Number)
-            endNum = m * 100 + d
-        }
-
         // 1. Get Featured Cards
         const { data: featured, error: fErr } = await getSupabaseAdmin()
             .from('featured_cards')
@@ -1226,149 +916,26 @@ export async function getFeaturedCardsWithStatsAction(
 
         if (hErr) throw hErr
 
-        // 3. Fast Path: Use Pre-calculated stats if no custom date filter
-        const isFiltering = startNum !== null && endNum !== null
+        // 3. Fast Path: Use Pre-calculated stats (常にFast Pathを使用)
+        let gQuery = getSupabaseAdmin()
+            .from('global_card_stats')
+            .select('card_name, adoption_count, total_decks, image_url')
+            .in('card_name', names)
 
-        if (!isFiltering) {
-            let gQuery = getSupabaseAdmin()
-                .from('global_card_stats')
-                .select('card_name, adoption_count, total_decks, image_url')
-                .in('card_name', names)
-            
-            if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
-            else gQuery = gQuery.eq('event_rank', 'ALL')
-            
-            const { data: gData } = await gQuery
+        if (eventRank) gQuery = gQuery.eq('event_rank', eventRank)
+        else gQuery = gQuery.eq('event_rank', 'ALL')
 
-            let aQuery = getSupabaseAdmin()
-                .from('archetype_card_stats')
-                .select('card_name, archetype_id, adoption_count, total_decks')
-                .in('card_name', names)
-            
-            if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
-            else aQuery = aQuery.eq('event_rank', 'ALL')
+        const { data: gData } = await gQuery
 
-            const { data: aData } = await aQuery
+        let aQuery = getSupabaseAdmin()
+            .from('archetype_card_stats')
+            .select('card_name, archetype_id, adoption_count, total_decks')
+            .in('card_name', names)
 
-            // Fetch Archetype Names
-            const { data: archetypeNames } = await getSupabaseAdmin()
-                .from('deck_archetypes')
-                .select('id, name')
-            const archNameMap = new Map(archetypeNames?.map(a => [a.id, a.name]) || [])
+        if (eventRank) aQuery = aQuery.eq('event_rank', eventRank)
+        else aQuery = aQuery.eq('event_rank', 'ALL')
 
-            const results: FeaturedCardStat[] = []
-            for (const card of featured) {
-                const cardHistory = history?.filter(h => h.card_name === card.card_name) || []
-                const gStat = gData?.find(g => g.card_name === card.card_name)
-                const current = gStat && gStat.total_decks > 0 ? (gStat.adoption_count / gStat.total_decks) * 100 : 0
-                const imgUrl = gStat?.image_url || null
-
-                const archStats: { name: string, rate: number }[] = []
-                const aStatsForCard = aData?.filter(a => a.card_name === card.card_name) || []
-                aStatsForCard.forEach(a => {
-                    if (a.total_decks > 0 && a.adoption_count > 0) {
-                        archStats.push({
-                            name: archNameMap.get(a.archetype_id) || "Unknown",
-                            rate: parseFloat(((a.adoption_count / a.total_decks) * 100).toFixed(1))
-                        })
-                    }
-                })
-                archStats.sort((a, b) => b.rate - a.rate)
-                const topArch = archStats.length > 0 ? archStats[0] : undefined
-
-                results.push({
-                    id: card.id,
-                    card_name: card.card_name,
-                    current_adoption_rate: parseFloat(current.toFixed(1)),
-                    trend_history: cardHistory.map(h => ({
-                        date: h.recorded_at,
-                        dateLabel: new Date(h.recorded_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
-                        rate: h.adoption_rate
-                    })),
-                    image_url: imgUrl,
-                    top_archetype: topArch,
-                    archetype_stats: archStats
-                })
-            }
-            return { success: true, data: results }
-        }
-
-        // --- Slow path for custom date filter ---
-        let query = getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('deck_code, cards_json, archetype_id')
-            .order('created_at', { ascending: false })
-            .limit(500)
-        
-        if (eventRank) {
-            query = query.eq('event_rank', eventRank)
-        }
-
-        const { data: recentDecksData } = await query
-
-        let recentDecks = recentDecksData || []
-
-        if (isFiltering && recentDecks.length > 0) {
-            const deckCodes = [...new Set(recentDecks.map(d => d.deck_code))]
-            const drRes = await getSupabaseAdmin()
-                .from('deck_records')
-                .select('deck_code, event_date')
-                .in('deck_code', deckCodes)
-            const eventDateMap = new Map<string, string>()
-            drRes.data?.forEach(r => { if (r.event_date) eventDateMap.set(r.deck_code, r.event_date) })
-
-            recentDecks = recentDecks.filter(deck => {
-                const eventDate = eventDateMap.get(deck.deck_code)
-                if (!eventDate) return false
-
-                const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
-                if (!match) return false
-
-                const m = parseInt(match[1], 10)
-                const d = parseInt(match[2], 10)
-                const deckDateNum = m * 100 + d
-
-                if (startNum! > endNum!) {
-                    return deckDateNum >= startNum! || deckDateNum <= endNum!
-                } else {
-                    return deckDateNum >= startNum! && deckDateNum <= endNum!
-                }
-            })
-        }
-
-        const imageMap = new Map<string, string>()
-        const archetypeAdoptionMap = new Map<string, Map<string, number>>() // CardName -> Map<ArchetypeId, Count>
-        const archetypeTotalMap = new Map<string, number>() // ArchetypeId -> Count
-        const overallAdoptionCount = new Map<string, number>() // CardName -> Count
-
-        if (recentDecks) {
-            for (const deck of recentDecks) {
-                const archId = deck.archetype_id
-                archetypeTotalMap.set(archId, (archetypeTotalMap.get(archId) || 0) + 1)
-
-                const cards = deck.cards_json as CardData[]
-                if (Array.isArray(cards)) {
-                    const uniqueNamesInDeck = new Set<string>()
-                    for (const c of cards) {
-                        if (c.imageUrl && !imageMap.has(c.name)) {
-                            imageMap.set(c.name, c.imageUrl)
-                        }
-                        uniqueNamesInDeck.add(c.name)
-                    }
-
-                    for (const name of uniqueNamesInDeck) {
-                        // Global adoption per card in filtered set
-                        overallAdoptionCount.set(name, (overallAdoptionCount.get(name) || 0) + 1)
-
-                        if (!archetypeAdoptionMap.has(name)) {
-                            archetypeAdoptionMap.set(name, new Map())
-                        }
-                        const archMap = archetypeAdoptionMap.get(name)!
-                        archMap.set(archId, (archMap.get(archId) || 0) + 1)
-                    }
-                }
-            }
-        }
+        const { data: aData } = await aQuery
 
         // Fetch Archetype Names
         const { data: archetypeNames } = await getSupabaseAdmin()
@@ -1377,57 +944,39 @@ export async function getFeaturedCardsWithStatsAction(
         const archNameMap = new Map(archetypeNames?.map(a => [a.id, a.name]) || [])
 
         const results: FeaturedCardStat[] = []
-        const totalDecksCount = recentDecks.length || 1 // Prevent division by zero
-
         for (const card of featured) {
             const cardHistory = history?.filter(h => h.card_name === card.card_name) || []
+            const gStat = gData?.find(g => g.card_name === card.card_name)
+            const current = gStat && gStat.total_decks > 0 ? (gStat.adoption_count / gStat.total_decks) * 100 : 0
+            const imgUrl = gStat?.image_url || null
 
-            // Calculate current adoption rate based on filtered decks if querying by date
-            let current = 0
-            if (isFiltering) {
-                const count = overallAdoptionCount.get(card.card_name) || 0
-                current = (count / totalDecksCount) * 100
-            } else {
-                current = cardHistory.length > 0 ? cardHistory[cardHistory.length - 1].adoption_rate : 0
-            }
-
-            // Get from map
-            const img = imageMap.get(card.card_name) || null
-
-            // Calculate Archetype Stats
             const archStats: { name: string, rate: number }[] = []
-            const adoptionRates = archetypeAdoptionMap.get(card.card_name)
-            if (adoptionRates) {
-                adoptionRates.forEach((count, archId) => {
-                    const totalForArch = archetypeTotalMap.get(archId) || 1
-                    const rate = (count / totalForArch) * 100
-                    if (rate > 0) {
-                        archStats.push({
-                            name: archNameMap.get(archId) || "Unknown",
-                            rate: parseFloat(rate.toFixed(1))
-                        })
-                    }
-                })
-                archStats.sort((a, b) => b.rate - a.rate)
-            }
-
+            const aStatsForCard = aData?.filter(a => a.card_name === card.card_name) || []
+            aStatsForCard.forEach(a => {
+                if (a.total_decks > 0 && a.adoption_count > 0) {
+                    archStats.push({
+                        name: archNameMap.get(a.archetype_id) || "Unknown",
+                        rate: parseFloat(((a.adoption_count / a.total_decks) * 100).toFixed(1))
+                    })
+                }
+            })
+            archStats.sort((a, b) => b.rate - a.rate)
             const topArch = archStats.length > 0 ? archStats[0] : undefined
 
             results.push({
                 id: card.id,
                 card_name: card.card_name,
-                current_adoption_rate: current,
+                current_adoption_rate: parseFloat(current.toFixed(1)),
                 trend_history: cardHistory.map(h => ({
                     date: h.recorded_at,
                     dateLabel: new Date(h.recorded_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }),
                     rate: h.adoption_rate
                 })),
-                image_url: img,
+                image_url: imgUrl,
                 top_archetype: topArch,
                 archetype_stats: archStats
             })
         }
-
         return { success: true, data: results }
 
     } catch (error) {
@@ -1457,177 +1006,41 @@ export async function manageFeaturedCardsAction(action: 'add' | 'remove', cardNa
 }
 
 export async function updateDailySnapshotsAction(userId: string) {
-    try {
-        // Admin Check
-        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            // For testing, let's allow if userId matches known IDs? 
-            // Or just proceed if called from Admin Panel.
-            // Sticking to email check for safety.
-        }
-
-        // 1. Get Featured Cards
-        const { data: featured } = await getSupabaseAdmin().from('featured_cards').select('card_name')
-        if (!featured || featured.length === 0) return { success: false, error: '注目カードが設定されていません' }
-
-        const targetNames = new Set(featured.map(f => f.card_name))
-
-        // 2. Fetch All Decks with pagination
-        let decks: any[] = []
-        let from = 0
-        const step = 1000
-        const supabaseAdmin = getSupabaseAdmin()
-
-        while (true) {
-            const { data, error } = await supabaseAdmin
-                .from('analyzed_decks')
-                .select('cards_json')
-                .gte('created_at', ANALYTICS_START_DATE)
-                .range(from, from + step - 1)
-
-            if (error) throw error
-            if (!data || data.length === 0) break
-
-            decks = decks.concat(data)
-            if (data.length < step) break
-            from += step
-        }
-        if (!decks || decks.length === 0) return { success: false, error: '集計対象のデッキがありません' }
-
-        const totalDecks = decks.length
-
-        // 3. Aggregate
-        const adoptionCounts: Record<string, number> = {} // name -> count
-        const avgQuantities: Record<string, number> = {} // name -> totalQty
-        const coverImages: Record<string, string> = {} // name -> url
-
-        // Initialize
-        targetNames.forEach(name => {
-            adoptionCounts[name] = 0
-            avgQuantities[name] = 0
-        })
-
-        decks.forEach(deck => {
-            const cards = deck.cards_json as CardData[]
-            const seenInThisDeck = new Set<string>()
-
-            cards.forEach(card => {
-                if (targetNames.has(card.name)) {
-                    if (!seenInThisDeck.has(card.name)) {
-                        adoptionCounts[card.name]++
-                        seenInThisDeck.add(card.name)
-                        // Capture image if not set
-                        if (!coverImages[card.name]) coverImages[card.name] = card.imageUrl
-                    }
-                    avgQuantities[card.name] += card.quantity
-                }
-            })
-        })
-
-        // 4. Upsert Snapshots
-        const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
-        const snapshots = []
-
-        for (const name of Array.from(targetNames)) {
-            const count = adoptionCounts[name] || 0
-            const totalQty = avgQuantities[name] || 0
-            const rate = (count / totalDecks) * 100
-            const avg = count > 0 ? (totalQty / count) : 0
-
-            snapshots.push({
-                recorded_at: today,
-                card_name: name,
-                adoption_rate: parseFloat(rate.toFixed(2)),
-                avg_quantity: avg,
-                total_decks_analyzed: totalDecks
-            })
-        }
-
-        const { error: upsertError } = await getSupabaseAdmin()
-            .from('card_trend_snapshots')
-            .upsert(snapshots, { onConflict: 'recorded_at, card_name' })
-
-        if (upsertError) throw upsertError
-
-        // Optional: Update image URL in featured_cards? 
-        // Not adding column now, but good to know we have it in `coverImages`.
-
-        return { success: true, count: snapshots.length }
-
-    } catch (e) {
-        console.error('Snapshot Update Error:', e)
-        return { success: false, error: (e as Error).message }
-    }
+    return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。', count: 0 }
 }
 
 export async function getTopAdoptedCardsAction(eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
     try {
-        // 1. Fetch All Decks with pagination
-        let decks: any[] = []
-        let from = 0
-        const step = 1000
+        // global_card_stats から取得（analyzed_decks 廃止対応）
         const supabaseAdmin = getSupabaseAdmin()
+        let query = supabaseAdmin
+            .from('global_card_stats')
+            .select('card_name, adoption_count, total_decks, image_url, supertype, subtypes')
 
-        while (true) {
-            let query = supabaseAdmin
-                .from('analyzed_decks')
-                .select('cards_json')
-                .gte('created_at', ANALYTICS_START_DATE)
-            
-            if (eventRank) {
-                query = query.eq('event_rank', eventRank)
-            }
+        if (eventRank) query = query.eq('event_rank', eventRank)
+        else query = query.eq('event_rank', 'ALL')
 
-            const { data, error } = await query
-                .range(from, from + step - 1)
+        const { data, error } = await query
+        if (error) throw error
+        if (!data || data.length === 0) return { success: true, data: [] }
 
-            if (error) throw error
-            if (!data || data.length === 0) break
+        const totalDecks = data[0]?.total_decks || 1
 
-            decks = decks.concat(data)
-            if (data.length < step) break
-            from += step
-        }
-        if (!decks || decks.length === 0) return { success: true, data: [] }
-
-        const totalDecks = decks.length
-        const adoptionCounts: Record<string, number> = {}
-        const cardImages: Record<string, string> = {}
-
-        // 2. Aggregate
-        decks.forEach(deck => {
-            const cards = deck.cards_json as CardData[]
-            const seenInThisDeck = new Set<string>()
-
-            cards.forEach(card => {
-                // Exclude Basic Energy to keep suggestions relevant
-                if (card.supertype === '能量' || (card.name.includes('基本') && card.name.includes('エネルギー'))) {
-                    // Skip basic energy (rudimentary check)
-                    return
-                }
-
-                if (!seenInThisDeck.has(card.name)) {
-                    adoptionCounts[card.name] = (adoptionCounts[card.name] || 0) + 1
-                    seenInThisDeck.add(card.name)
-                    // Capture image
-                    if (!cardImages[card.name] && card.imageUrl) {
-                        cardImages[card.name] = card.imageUrl
-                    }
-                }
+        const sorted = data
+            .filter(stat => {
+                // Exclude Basic Energy
+                if (stat.supertype === 'Energy' && stat.subtypes?.includes('Basic')) return false
+                if (stat.card_name.includes('基本') && stat.card_name.includes('エネルギー')) return false
+                return stat.adoption_count > 0
             })
-        })
-
-        // 3. Sort & Format
-        const sorted = Object.entries(adoptionCounts)
-            .map(([name, count]) => ({
-                name,
-                count,
-                rate: parseFloat(((count / totalDecks) * 100).toFixed(1)),
-                imageUrl: cardImages[name] || null
+            .map(stat => ({
+                name: stat.card_name,
+                count: stat.adoption_count,
+                rate: parseFloat(((stat.adoption_count / totalDecks) * 100).toFixed(1)),
+                imageUrl: stat.image_url || null
             }))
             .sort((a, b) => b.count - a.count)
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 300) // Top 300 (Increased from 50 to include more variety)
+            .slice(0, 300)
 
         return { success: true, data: sorted }
 
@@ -1638,276 +1051,10 @@ export async function getTopAdoptedCardsAction(eventRank?: '優勝' | '準優勝
 }
 
 export async function backfillTrendDataAction(userId: string) {
-    try {
-        // Admin Check (Simplified for tool usage)
-        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (!user.user) return { success: false, error: 'Unauthorized' }
-
-        // 1. Get Featured Cards
-        const { data: featured } = await getSupabaseAdmin().from('featured_cards').select('card_name')
-        if (!featured || featured.length === 0) return { success: false, error: '注目カードが設定されていません' }
-
-        const targetNames = new Set(featured.map(f => f.card_name))
-
-        // Backfill Range: 2026-01-23 to 2026-01-31
-        const startDate = new Date('2026-01-23')
-        const endDate = new Date('2026-01-31')
-
-        let totalSnapshots = 0
-
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-            const snapshotDateStr = d.toISOString().split('T')[0]
-
-            // 30 day window relative to this historical date
-            const windowStart = new Date(d)
-            windowStart.setDate(windowStart.getDate() - 30)
-
-            // Look for decks created between windowStart and End of 'd'
-            // To include the whole day 'd', we check < d + 1 day
-            const nextDay = new Date(d)
-            nextDay.setDate(nextDay.getDate() + 1)
-
-            const { data: decks, error: dErr } = await getSupabaseAdmin()
-                .from('analyzed_decks')
-                .select('cards_json')
-                .gte('created_at', windowStart.toISOString())
-                .lt('created_at', nextDay.toISOString())
-
-            if (dErr) {
-                console.error(`Error fetching for ${snapshotDateStr}`, dErr)
-                continue
-            }
-
-            if (!decks || decks.length === 0) continue
-
-            const totalDecks = decks.length
-            const adoptionCounts: Record<string, number> = {}
-            const avgQuantities: Record<string, number> = {}
-
-            // Initialize
-            targetNames.forEach(name => {
-                adoptionCounts[name] = 0
-                avgQuantities[name] = 0
-            })
-
-            // Aggregate
-            decks.forEach(deck => {
-                const cards = deck.cards_json as CardData[]
-                const seenInThisDeck = new Set<string>()
-
-                cards.forEach(card => {
-                    if (targetNames.has(card.name)) {
-                        if (!seenInThisDeck.has(card.name)) {
-                            adoptionCounts[card.name]++
-                            seenInThisDeck.add(card.name)
-                        }
-                        avgQuantities[card.name] += card.quantity
-                    }
-                })
-            })
-
-            // Prepare entries
-            const snapshots = []
-            for (const name of Array.from(targetNames)) {
-                const count = adoptionCounts[name] || 0
-                const totalQty = avgQuantities[name] || 0
-                const rate = (count / totalDecks) * 100
-                const avg = count > 0 ? (totalQty / count) : 0
-
-                snapshots.push({
-                    recorded_at: snapshotDateStr,
-                    card_name: name,
-                    adoption_rate: parseFloat(rate.toFixed(2)),
-                    avg_quantity: avg,
-                    total_decks_analyzed: totalDecks
-                })
-            }
-
-            if (snapshots.length > 0) {
-                const { error: upsertError } = await getSupabaseAdmin()
-                    .from('card_trend_snapshots')
-                    .upsert(snapshots, { onConflict: 'recorded_at, card_name' })
-
-                if (upsertError) console.error(`Upsert error for ${snapshotDateStr}`, upsertError)
-                else totalSnapshots += snapshots.length
-            }
-        }
-
-        return { success: true, count: totalSnapshots }
-
-    } catch (error) {
-        console.error('Backfill Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。', count: 0 }
 }
 // --- Phase 49: Pre-calculated Statistics Aggregation (Egress Optimization) ---
 
 export async function calculateDeckStatisticsAction(userId: string) {
-    try {
-        const supabaseAdmin = getSupabaseAdmin()
-        const { data: user } = await supabaseAdmin.auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        // Fetch all decks for aggregation (we can fetch all since this runs in the background/admin)
-        // To prevent timeout, we should optimize memory
-        let decksData: any[] = []
-        let from = 0
-        const step = 1000
-
-        while (true) {
-            const { data, error } = await supabaseAdmin
-                .from('analyzed_decks')
-                .select('deck_code, cards_json, archetype_id, event_rank, created_at')
-                .gte('created_at', ANALYTICS_START_DATE)
-                .range(from, from + step - 1)
-            
-            if (error) throw error
-            if (!data || data.length === 0) break
-            decksData = decksData.concat(data)
-            if (data.length < step) break
-            from += step
-        }
-
-        if (decksData.length === 0) return { success: true, message: 'No data to aggregate' }
-
-        // Mappings for aggregation
-        // key: archetypeId_eventRank_cardName -> stat object
-        const archStatsMap = new Map<string, any>()
-        // key: eventRank_cardName -> stat object
-        const globalStatsMap = new Map<string, any>()
-        // Track unique decks per archetype/rank for total_decks denominator
-        const archDeckCount = new Map<string, Set<string>>() // archetypeId_eventRank -> Set<deck_code>
-        const globalDeckCount = new Map<string, Set<string>>() // eventRank -> Set<deck_code>
-
-        // Clear existing corrupted table data before recalculation
-        await supabaseAdmin.from('archetype_card_stats').delete().neq('card_name', '')
-        await supabaseAdmin.from('global_card_stats').delete().neq('card_name', '')
-
-        // Initialize maps safely
-        const getOrCreateStat = (map: Map<string, any>, key: string, name: string, supertype: string, subtypes: any, imageUrl: string, archId?: string, rank?: string) => {
-            if (!map.has(key)) {
-                map.set(key, {
-                    archetype_id: archId,
-                    event_rank: rank || 'ALL', // Use 'ALL' instead of null to fix Postgres UNIQUE NULL issue
-                    card_name: name,
-                    supertype: supertype,
-                    subtypes: subtypes,
-                    image_url: imageUrl,
-                    total_qty: 0,
-                    adoption_count: 0
-                })
-            }
-            return map.get(key)
-        }
-
-        for (const deck of decksData) {
-            const rank = deck.event_rank // Can be null
-            const archId = deck.archetype_id
-            const cards = deck.cards_json as CardData[]
-            const dCode = deck.deck_code
-
-            // Track denominators
-            const archBaseKey = `${archId}_${rank || 'ALL'}`
-            const archAllKey = `${archId}_ALL`
-            const gBaseKey = `${rank || 'ALL'}`
-            const gAllKey = `ALL`
-
-            // Add deck_code to sets
-            if (rank) {
-                if (!archDeckCount.has(archBaseKey)) archDeckCount.set(archBaseKey, new Set())
-                archDeckCount.get(archBaseKey)!.add(dCode)
-                
-                if (!globalDeckCount.has(gBaseKey)) globalDeckCount.set(gBaseKey, new Set())
-                globalDeckCount.get(gBaseKey)!.add(dCode)
-            }
-            
-            if (!archDeckCount.has(archAllKey)) archDeckCount.set(archAllKey, new Set())
-            archDeckCount.get(archAllKey)!.add(dCode)
-            
-            if (!globalDeckCount.has(gAllKey)) globalDeckCount.set(gAllKey, new Set())
-            globalDeckCount.get(gAllKey)!.add(dCode)
-
-            // Track adoption per deck
-            const seenInThisDeck = new Set<string>()
-
-            if (!Array.isArray(cards)) continue;
-
-            for (const c of cards) {
-                // ALL buckets
-                const aKeyAll = `${archId}_ALL_${c.name}`
-                const gKeyAll = `GLOBAL_ALL_${c.name}`
-                
-                const statAAll = getOrCreateStat(archStatsMap, aKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, 'ALL')
-                const statGAll = getOrCreateStat(globalStatsMap, gKeyAll, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, 'ALL')
-
-                statAAll.total_qty += c.quantity
-                statGAll.total_qty += c.quantity
-
-                // Specific Rank buckets
-                let statARank = null
-                let statGRank = null
-                
-                if (rank) {
-                    const aKeyRank = `${archId}_RANK_${rank}_${c.name}`
-                    const gKeyRank = `GLOBAL_RANK_${rank}_${c.name}`
-                    
-                    statARank = getOrCreateStat(archStatsMap, aKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', archId, rank)
-                    statGRank = getOrCreateStat(globalStatsMap, gKeyRank, c.name, c.supertype, c.subtypes, c.imageUrl || '', undefined, rank)
-                    
-                    statARank.total_qty += c.quantity
-                    statGRank.total_qty += c.quantity
-                }
-
-                // Add Adoption
-                if (!seenInThisDeck.has(c.name)) {
-                    statAAll.adoption_count += 1
-                    statGAll.adoption_count += 1
-                    if (statARank) statARank.adoption_count += 1
-                    if (statGRank) statGRank.adoption_count += 1
-                    seenInThisDeck.add(c.name)
-                }
-            }
-        }
-
-        // Prepare inserts mapping total_decks correctly
-        const archInserts = Array.from(archStatsMap.values()).map(stat => {
-            const denomKey = `${stat.archetype_id}_${stat.event_rank}`
-            stat.total_decks = archDeckCount.get(denomKey)?.size || 0
-            if (stat.total_decks === 0) return null
-            return stat
-        }).filter(Boolean)
-
-        const globalInserts = Array.from(globalStatsMap.values()).map(stat => {
-            const denomKey = `${stat.event_rank}`
-            stat.total_decks = globalDeckCount.get(denomKey)?.size || 0
-            
-            // Remove archetype_id from global stats to prevent schema cache errors
-            const { archetype_id, ...rest } = stat
-            
-            if (rest.total_decks === 0) return null
-            return rest
-        }).filter(Boolean)
-
-        // Upsert in batches of 1000
-        const upsertBatches = async (table: string, dataArray: any[], uniqueCols: string) => {
-            const chunkSize = 1000
-            for (let i = 0; i < dataArray.length; i += chunkSize) {
-                const chunk = dataArray.slice(i, i + chunkSize)
-                const { error } = await supabaseAdmin
-                    .from(table)
-                    .upsert(chunk, { onConflict: uniqueCols })
-                if (error) throw error
-            }
-        }
-
-        await upsertBatches('archetype_card_stats', archInserts, 'archetype_id, event_rank, card_name')
-        await upsertBatches('global_card_stats', globalInserts, 'event_rank, card_name')
-
-        return { success: true, message: `Aggregated ${decksData.length} decks successfully.` }
-    } catch (error) {
-        console.error('Calculate Stats Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。統計データは自動更新されます。', message: undefined }
 }
