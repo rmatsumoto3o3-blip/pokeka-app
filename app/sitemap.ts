@@ -33,11 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
     }))
 
-    // Dynamic Routes: Public Decks (Reference Decks)
+    // Dynamic Routes: Public Decks (deck_records)
     const { data: decks } = await supabase
-        .from('reference_decks')
+        .from('deck_records')
         .select('id, created_at')
-        .limit(100) // Limit for now
+        .order('created_at', { ascending: false })
+        .limit(200)
 
     const deckRoutes = (decks || []).map((deck) => ({
         url: `${baseUrl}/decks/${deck.id}`,
@@ -46,5 +47,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
     }))
 
-    return [...routes, ...articleRoutes]
+    return [...routes, ...articleRoutes, ...deckRoutes]
 }
