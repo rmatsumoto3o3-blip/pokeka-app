@@ -201,7 +201,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
 
     const handleEdit = (deck: any) => {
         setEditingDeck(deck)
-        setEditName(deck.reference_decks?.[0]?.deck_name || deck.deck_name || '')
+        setEditName(deck.deck_name || '')
         setEditEventRank(deck.event_rank || '')
     }
 

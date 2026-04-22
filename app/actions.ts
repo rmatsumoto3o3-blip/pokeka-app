@@ -517,37 +517,6 @@ export async function addDeckToAnalyticsAction(
 
         if (insertError) throw insertError
 
-        // 4. [Sync] Add to reference_decks for Top Page Display (CONDITIONAL)
-        if (syncReference) {
-            // Fetch archetype name for deck_name
-            const { data: archetypeData } = await getSupabaseAdmin()
-                .from('deck_archetypes')
-                .select('name')
-                .eq('id', archetypeId)
-                .single()
-
-            const deckName = customDeckName || archetypeData?.name || 'New Deck'
-
-            // Use custom image if provided, otherwise fallback to first card
-            const imageUrl = customImageUrl || (cards.length > 0 ? cards[0].imageUrl : null)
-
-            const { error: refError } = await getSupabaseAdmin()
-                .from('reference_decks')
-                .insert([{
-                    deck_name: deckName,
-                    deck_code: deckCode,
-                    deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`,
-                    image_url: imageUrl,
-                    archetype_id: archetypeId,
-                    event_rank: rank
-                }])
-
-            if (refError) {
-                console.warn('Reference Deck Sync Failed:', refError)
-                // Do not fail the whole action, just log it. The analytics part succeeded.
-            }
-        }
-
         return { success: true }
 
     } catch (error) {
@@ -562,21 +531,6 @@ export async function removeDeckFromAnalyticsAction(id: string, userId: string) 
         const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
         if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
             return { success: false, error: '権限がありません' }
-        }
-
-        const { data: targetDeck } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('deck_code, archetype_id')
-            .eq('id', id)
-            .single()
-
-        if (targetDeck) {
-            // Delete from Reference Decks first (or parallel)
-            await getSupabaseAdmin()
-                .from('reference_decks')
-                .delete()
-                .eq('deck_code', targetDeck.deck_code)
-                .eq('archetype_id', targetDeck.archetype_id)
         }
 
         const { error } = await getSupabaseAdmin()
@@ -602,11 +556,8 @@ export async function deleteArchetypeAction(archetypeId: string, userId: string)
 
         const supabaseAdmin = getSupabaseAdmin()
 
-        // 1. Delete from reference_decks (Top page)
-        await supabaseAdmin
-            .from('reference_decks')
-            .delete()
-            .eq('archetype_id', archetypeId)
+        // 1. Delete from deck_records
+        await supabaseAdmin.from('deck_records').delete().eq('archetype_id', archetypeId)
 
         // 2. Delete from analyzed_decks (Analytics)
         await supabaseAdmin
@@ -632,32 +583,7 @@ export async function deleteArchetypeAction(archetypeId: string, userId: string)
 
 
 export async function getAllReferenceDecksAction() {
-    try {
-        let allDecks: any[] = []
-        let from = 0
-        const step = 1000
-        const supabasePublic = getSupabasePublic()
-
-        while (true) {
-            const { data, error } = await supabasePublic
-                .from('reference_decks')
-                .select('*')
-                .range(from, from + step - 1)
-                .order('created_at', { ascending: false })
-
-            if (error) throw error
-            if (!data || data.length === 0) break
-
-            allDecks = allDecks.concat(data)
-            if (data.length < step) break
-            from += step
-        }
-
-        return { success: true, data: allDecks }
-    } catch (error) {
-        console.error('Fetch Reference Decks Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    return { success: true, data: [] as any[] }
 }
 
 export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8') {
@@ -682,28 +608,6 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '�
         const decks = data || []
 
         let totalDecks = decks.length
-
-        // 1.5 Fetch Reference Metadata
-        let enrichedDecks: any[] = []
-        if (decks.length > 0) {
-            const deckCodes = decks.map(d => d.deck_code)
-            const { data: refDecks } = await getSupabaseAdmin()
-                .from('reference_decks')
-                .select('deck_code, deck_name, event_type, image_url, id')
-                .in('deck_code', deckCodes)
-                .eq('archetype_id', archetypeId)
-
-            enrichedDecks = decks.map(deck => {
-                const ref = refDecks?.find(r => r.deck_code === deck.deck_code)
-                return {
-                    ...deck,
-                    deck_name: ref?.deck_name || '名称未設定',
-                    event_type: ref?.event_type || 'Unknown',
-                    image_url: ref?.image_url || null,
-                    reference_id: ref?.id
-                }
-            })
-        }
 
         // 2. Fetch Pre-Calculated Data
         let statsQuery = getSupabaseAdmin()
@@ -735,7 +639,7 @@ export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '�
             avgQuantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count) : 0
         })).sort((a, b) => b.adoptionRate - a.adoptionRate)
 
-        return { success: true, decks: enrichedDecks, analytics, totalDecks }
+        return { success: true, decks: decks, analytics, totalDecks }
 
     } catch (error) {
         console.error('Get Analytics Error:', error)
@@ -896,22 +800,7 @@ export async function updateAnalyzedDeckAction(
             return { success: false, error: '権限がありません' }
         }
 
-        // 1. Update Reference Deck (Name, Rank, Image)
-        const refUpdates: any = {
-            deck_name: updates.name,
-            image_url: updates.imageUrl,
-            event_rank: updates.eventRank
-        }
-        
-        const { error: refError } = await getSupabaseAdmin()
-            .from('reference_decks')
-            .update(refUpdates)
-            .eq('deck_code', deckCode)
-            .eq('archetype_id', archetypeId)
-
-        if (refError) throw refError
-
-        // 2. Update Analyzed Deck (Rank)
+        // 1. Update Analyzed Deck (Rank)
         if (updates.eventRank !== undefined) {
             const { error: anaError } = await getSupabaseAdmin()
                 .from('analyzed_decks')
@@ -1009,22 +898,14 @@ export async function getGlobalDeckAnalyticsAction(
 
         if (decks.length === 0) return { success: true, analyticsByArchetype: {} }
 
-        // 1.5 Fetch Reference Decks to get deck names (for date extraction)
+        // 1.5 Fetch deck_records to get event_date for date filtering
         const deckCodes = [...new Set(decks.map(d => d.deck_code))]
-        let refDecks: any[] = []
-        // Fetch reference decks in chunks to avoid URL size limits if too many
-        for (let i = 0; i < deckCodes.length; i += 500) {
-            const chunk = deckCodes.slice(i, i + 500)
-            const { data: refData } = await getSupabaseAdmin()
-                .from('reference_decks')
-                .select('deck_code, deck_name')
-                .in('deck_code', chunk)
-            if (refData) refDecks = refDecks.concat(refData)
-        }
-
-        // Map deck_code to deck_name
-        const deckNameMap = new Map<string, string>()
-        refDecks.forEach(ref => deckNameMap.set(ref.deck_code, ref.deck_name))
+        const drRes = await getSupabaseAdmin()
+            .from('deck_records')
+            .select('deck_code, event_date')
+            .in('deck_code', deckCodes)
+        const eventDateMap = new Map<string, string>()
+        drRes.data?.forEach(r => { if (r.event_date) eventDateMap.set(r.deck_code, r.event_date) })
 
         // 1.6 Filter decks based on extracted date
         const isFiltering = startNum !== null && endNum !== null
@@ -1032,19 +913,16 @@ export async function getGlobalDeckAnalyticsAction(
 
         if (isFiltering) {
             filteredDecks = decks.filter(deck => {
-                const deckName = deckNameMap.get(deck.deck_code)
-                if (!deckName) return false // No name, ignore when filtering
+                const eventDate = eventDateMap.get(deck.deck_code)
+                if (!eventDate) return false
 
-                // Regex to match "M/D" or "MM/DD" at the beginning of the string
-                const match = deckName.match(/^(\d{1,2})\/(\d{1,2})/)
-                if (!match) return false // No date found
+                const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
+                if (!match) return false
 
                 const m = parseInt(match[1], 10)
                 const d = parseInt(match[2], 10)
                 const deckDateNum = m * 100 + d
 
-                // Handle year wrap-around logic (e.g., standard comparison within same year assumption)
-                // If startNum > endNum (e.g., 12/01 to 01/15), handle it as OR condition
                 if (startNum! > endNum!) {
                     return deckDateNum >= startNum! || deckDateNum <= endNum!
                 } else {
@@ -1169,66 +1047,8 @@ function mapSupertypeToCategory(supertype: string, subtypes?: string[]): string 
 }
 
 export async function syncAnalyzedDecksToReferencesAction(userId: string) {
-    try {
-        // 1. Admin Check
-        const { data: user } = await getSupabaseAdmin().auth.admin.getUserById(userId)
-        if (!user.user?.email || !ADMIN_EMAILS.includes(user.user.email)) {
-            return { success: false, error: '権限がありません' }
-        }
-
-        // 2. Fetch all analyzed decks
-        const { data: analyzedDecks, error: fetchError } = await getSupabaseAdmin()
-            .from('analyzed_decks')
-            .select('*')
-
-        if (fetchError) throw fetchError
-        if (!analyzedDecks) return { success: true, count: 0 }
-
-        // 3. Sync Loop
-        let addedCount = 0
-        for (const deck of analyzedDecks) {
-            // Check existence
-            const { data: existing } = await getSupabaseAdmin()
-                .from('reference_decks')
-                .select('id')
-                .eq('deck_code', deck.deck_code)
-                .single()
-
-            if (!existing) {
-                // Fetch archetype name
-                const { data: arch } = await getSupabaseAdmin()
-                    .from('deck_archetypes')
-                    .select('name')
-                    .eq('id', deck.archetype_id)
-                    .single()
-
-                const deckName = arch?.name || 'Analyzed Deck'
-
-                // Parse cards to get image
-                const cards = deck.cards_json as CardData[] // Cast safely
-                const imageUrl = (cards && cards.length > 0) ? cards[0].imageUrl : null
-
-                // Insert
-                await getSupabaseAdmin()
-                    .from('reference_decks')
-                    .insert([{
-                        deck_name: deckName,
-                        deck_code: deck.deck_code,
-                        deck_url: `https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`,
-                        image_url: imageUrl,
-                        event_type: 'Gym Battle',
-                        archetype_id: deck.archetype_id
-                    }])
-                addedCount++
-            }
-        }
-
-        return { success: true, count: addedCount }
-
-    } catch (error) {
-        console.error('Sync Error:', error)
-        return { success: false, error: (error as Error).message }
-    }
+    // reference_decks テーブルへの依存を除去したため、この関数は何もしない
+    return { success: true, count: 0 }
 }
 
 /**
@@ -1243,36 +1063,9 @@ export async function backfillEventRanksAction(userId: string) {
         }
 
         let updatedCount = 0
-
-        // 1. Update reference_decks
-        let refFrom = 0
         const step = 200
-        while (true) {
-            const { data: refDecks, error: fetchError } = await supabaseAdmin
-                .from('reference_decks')
-                .select('id, deck_name, event_rank')
-                .range(refFrom, refFrom + step - 1)
 
-            if (fetchError) throw fetchError
-            if (!refDecks || refDecks.length === 0) break
-
-            for (const deck of refDecks) {
-                const detected = await detectRankFromName(deck.deck_name)
-                // Update if: 1. No rank yet, OR 2. Detected rank is different from current rank
-                if (detected && detected !== deck.event_rank) {
-                    await supabaseAdmin
-                        .from('reference_decks')
-                        .update({ event_rank: detected })
-                        .eq('id', deck.id)
-                    updatedCount++
-                }
-            }
-
-            if (refDecks.length < step) break
-            refFrom += step
-        }
-
-        // 2. Update analyzed_decks directly (sync from reference_decks)
+        // Update analyzed_decks directly based on deck name detection
         let anaFrom = 0
         while (true) {
             const { data: analyzedDecks, error: analyzedError } = await supabaseAdmin
@@ -1283,17 +1076,8 @@ export async function backfillEventRanksAction(userId: string) {
             if (analyzedError) throw analyzedError
             if (!analyzedDecks || analyzedDecks.length === 0) break
 
-            const deckCodes = [...new Set(analyzedDecks.map((d: any) => d.deck_code))]
-            const { data: refs } = await supabaseAdmin
-                .from('reference_decks')
-                .select('deck_code, event_rank')
-                .in('deck_code', deckCodes)
-
-            const rankMap = new Map()
-            refs?.forEach(r => rankMap.set(r.deck_code, r.event_rank))
-
             for (const deck of analyzedDecks) {
-                const detected = rankMap.get(deck.deck_code)
+                const detected = await detectRankFromName(deck.deck_code)
                 if (detected && detected !== deck.event_rank) {
                     await supabaseAdmin
                         .from('analyzed_decks')
@@ -1526,25 +1310,18 @@ export async function getFeaturedCardsWithStatsAction(
 
         if (isFiltering && recentDecks.length > 0) {
             const deckCodes = [...new Set(recentDecks.map(d => d.deck_code))]
-            let refDecks: any[] = []
-            // Fetch reference decks in chunks
-            for (let i = 0; i < deckCodes.length; i += 500) {
-                const chunk = deckCodes.slice(i, i + 500)
-                const { data: refData } = await getSupabaseAdmin()
-                    .from('reference_decks')
-                    .select('deck_code, deck_name')
-                    .in('deck_code', chunk)
-                if (refData) refDecks = refDecks.concat(refData)
-            }
-
-            const deckNameMap = new Map<string, string>()
-            refDecks.forEach(ref => deckNameMap.set(ref.deck_code, ref.deck_name))
+            const drRes = await getSupabaseAdmin()
+                .from('deck_records')
+                .select('deck_code, event_date')
+                .in('deck_code', deckCodes)
+            const eventDateMap = new Map<string, string>()
+            drRes.data?.forEach(r => { if (r.event_date) eventDateMap.set(r.deck_code, r.event_date) })
 
             recentDecks = recentDecks.filter(deck => {
-                const deckName = deckNameMap.get(deck.deck_code)
-                if (!deckName) return false
+                const eventDate = eventDateMap.get(deck.deck_code)
+                if (!eventDate) return false
 
-                const match = deckName.match(/^(\d{1,2})\/(\d{1,2})/)
+                const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
                 if (!match) return false
 
                 const m = parseInt(match[1], 10)

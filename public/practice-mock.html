@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一人回し - PTCGL Style Mock</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0f1923;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top HUD ── */
+  .hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: linear-gradient(180deg, #1a2535 0%, #111b28 100%);
+    border-bottom: 1px solid #2a3f5a;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+  .hud-left { display: flex; align-items: center; gap: 12px; }
+  .hud-center { display: flex; align-items: center; gap: 8px; }
+  .hud-right { display: flex; align-items: center; gap: 10px; }
+
+  .turn-badge {
+    background: linear-gradient(135deg, #e94560, #c0392b);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 0 10px rgba(233,69,96,0.5);
+  }
+  .phase-badge {
+    background: #1e3a5f;
+    border: 1px solid #2e5c8a;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #7eb8f7;
+  }
+  .action-limit {
+    display: flex;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .limit-item {
+    background: #1a2d42;
+    border: 1px solid #2a4060;
+    border-radius: 8px;
+    padding: 2px 8px;
+    color: #8aa8c8;
+  }
+  .limit-item.used {
+    border-color: #e94560;
+    color: #e94560;
+    text-decoration: line-through;
+  }
+  .end-turn-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(243,156,18,0.4);
+    transition: all 0.2s;
+  }
+  .end-turn-btn:hover { transform: scale(1.05); }
+
+  /* ── Main Board ── */
+  .board {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    grid-template-rows: 1fr auto 1fr;
+    gap: 0;
+    min-height: 0;
+    padding: 6px;
+    gap: 4px;
+  }
+
+  /* ── Side Columns (prizes / deck / trash) ── */
+  .side-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    gap: 6px;
+  }
+  .zone-label {
+    font-size: 9px;
+    color: #4a6b8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .prize-display {
+    background: linear-gradient(135deg, #1a3a5c, #0f2640);
+    border: 2px solid #2a5a8a;
+    border-radius: 10px;
+    width: 52px;
+    height: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .prize-display:hover { border-color: #4a9ae0; }
+  .prize-num {
+    font-size: 28px;
+    font-weight: 900;
+    color: #7eb8f7;
+    line-height: 1;
+  }
+  .prize-sub { font-size: 9px; color: #4a6b8a; }
+
+  .deck-zone, .trash-zone {
+    background: #111b28;
+    border: 1px solid #1e3a5a;
+    border-radius: 8px;
+    width: 52px;
+    height: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .deck-zone { border-color: #2a4a70; }
+  .deck-zone:hover { border-color: #4a8ae0; }
+  .deck-zone::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 5px;
+    background: repeating-linear-gradient(
+      45deg,
+      #1a2d42,
+      #1a2d42 3px,
+      #152338 3px,
+      #152338 6px
+    );
+  }
+  .deck-count {
+    position: relative;
+    z-index: 1;
+    font-size: 18px;
+    font-weight: 900;
+    color: #7eb8f7;
+  }
+  .trash-zone { border-color: #3a2a20; }
+  .trash-zone:hover { border-color: #c0703a; }
+  .trash-icon { font-size: 22px; opacity: 0.7; }
+  .trash-count { font-size: 11px; color: #8a6a50; }
+
+  /* ── Center Field ── */
+  .center-field {
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
+    gap: 4px;
+    min-height: 0;
+  }
+
+  /* Opponent / Player areas */
+  .player-area {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 0;
+  }
+  .player-area.opponent { flex-direction: column-reverse; }
+
+  /* Bench row */
+  .bench-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .bench-slot {
+    width: 58px;
+    height: 80px;
+    border: 1.5px dashed #2a3f5a;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1820;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
+  }
+  .bench-slot:hover { border-color: #4a8ae0; background: #111f2e; }
+  .bench-slot.has-card { border-style: solid; border-color: #2a5a8a; background: #0d1e30; }
+  .bench-slot.has-card:hover { border-color: #5aace0; box-shadow: 0 0 8px rgba(90,172,224,0.3); }
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+  .damage-badge {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: linear-gradient(135deg, #e94560, #c0392b);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+    padding: 2px 5px;
+    border-radius: 8px;
+    border: 1px solid #ff6b8a;
+    z-index: 10;
+  }
+  .energy-row {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    display: flex;
+    gap: 1px;
+  }
+  .energy-pip {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .e-fire { background: #e74c3c; }
+  .e-water { background: #3498db; }
+  .e-lightning { background: #f1c40f; }
+  .e-grass { background: #27ae60; }
+  .e-colorless { background: #95a5a6; }
+
+  /* Battle field */
+  .battle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .battle-slot {
+    width: 80px;
+    height: 112px;
+    border: 2px solid #3a6a9a;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0d1e30, #0a1825);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 0 10px rgba(58,106,154,0.3), inset 0 0 20px rgba(58,106,154,0.1);
+    overflow: visible;
+  }
+  .battle-slot:hover {
+    border-color: #5aace0;
+    box-shadow: 0 0 20px rgba(90,172,224,0.5);
+  }
+  .battle-slot.empty {
+    border-style: dashed;
+    border-color: #1e3a5a;
+  }
+  .battle-slot .card-img { border-radius: 8px; }
+  .battle-damage {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #e94560, #c0392b);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid #ff6b8a;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .vs-indicator {
+    font-size: 11px;
+    color: #2a4a6a;
+    font-weight: 900;
+  }
+
+  /* Stadium zone (center divider) */
+  .stadium-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+  }
+  .stadium-slot {
+    width: 70px;
+    height: 40px;
+    border: 1.5px dashed #2a4a2a;
+    border-radius: 8px;
+    background: #0a180a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #3a6a3a;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .stadium-slot.has-card {
+    border-style: solid;
+    border-color: #3a7a3a;
+    background: #0f220f;
+  }
+  .stadium-slot:hover { border-color: #5aaa5a; }
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #1e3a5a 20%, #1e3a5a 80%, transparent);
+  }
+
+  /* ── Hand area ── */
+  .hand-area {
+    flex-shrink: 0;
+    height: 90px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+    position: relative;
+  }
+  .hand-card {
+    width: 54px;
+    height: 76px;
+    border-radius: 7px;
+    border: 1.5px solid #2a4a7a;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #0d1e30;
+  }
+  .hand-card img { width: 100%; height: 100%; object-fit: cover; }
+  .hand-card:hover {
+    transform: translateY(-20px) scale(1.08);
+    box-shadow: 0 8px 24px rgba(90,172,224,0.6);
+    border-color: #5aace0;
+    z-index: 100;
+  }
+  .hand-wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: -12px;
+  }
+  .hand-card { margin: 0 -10px; }
+
+  /* Opponent hand (face down) */
+  .opp-hand-area {
+    flex-shrink: 0;
+    height: 60px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: -8px;
+  }
+  .opp-hand-card {
+    width: 40px;
+    height: 56px;
+    border-radius: 5px;
+    border: 1px solid #1e3a5a;
+    background: repeating-linear-gradient(
+      45deg,
+      #1a2d42,
+      #1a2d42 3px,
+      #152338 3px,
+      #152338 6px
+    );
+    margin: 0 -6px;
+    flex-shrink: 0;
+  }
+
+  /* Player info bars */
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .player-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .player-avatar.opp { background: linear-gradient(135deg, #e94560, #c0392b); }
+  .player-name { font-size: 11px; color: #8aa8c8; font-weight: 600; }
+  .hand-count {
+    font-size: 10px;
+    background: #1a2d42;
+    border: 1px solid #2a4060;
+    border-radius: 8px;
+    padding: 1px 7px;
+    color: #5a8ac0;
+  }
+
+  /* Coin flip button */
+  .coin-btn {
+    background: #1e3a5a;
+    border: 1px solid #2a5a8a;
+    border-radius: 10px;
+    color: #7eb8f7;
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .coin-btn:hover { background: #2a4a7a; border-color: #4a8ae0; }
+
+  /* Status indicators */
+  .status-burn { position: absolute; top: 2px; right: 2px; font-size: 12px; }
+  .status-poison { position: absolute; top: 2px; left: 2px; font-size: 12px; }
+
+  /* Glow on active player side */
+  .player-area.active .battle-slot {
+    box-shadow: 0 0 15px rgba(90,172,224,0.4), inset 0 0 20px rgba(58,106,154,0.15);
+  }
+
+  /* Card placeholder text */
+  .slot-hint { font-size: 9px; color: #2a4a6a; text-align: center; }
+
+  /* Tool badge */
+  .tool-badge {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: #8e44ad;
+    border-radius: 4px;
+    width: 8px;
+    height: 8px;
+    border: 1px solid #be6adf;
+  }
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="hud-left">
+    <div class="turn-badge">あなたのターン</div>
+    <div class="phase-badge">メインフェーズ</div>
+  </div>
+  <div class="hud-center">
+    <div class="action-limit">
+      <div class="limit-item used">サポート 1/1</div>
+      <div class="limit-item">エネ手張り 0/1</div>
+      <div class="limit-item">にげる 0/1</div>
+    </div>
+  </div>
+  <div class="hud-right">
+    <button class="coin-btn">🪙 コイン</button>
+    <button class="end-turn-btn">番を終わる →</button>
+  </div>
+</div>
+
+<!-- Main Board -->
+<div class="board">
+
+  <!-- Left column: Opponent prizes / deck / trash -->
+  <div class="side-col">
+    <div>
+      <div class="zone-label">サイド</div>
+      <div class="prize-display" style="border-color:#3a2a2a; background:linear-gradient(135deg,#2a1a1a,#1a0f0f)">
+        <div class="prize-num" style="color:#e98080">6</div>
+        <div class="prize-sub">PRIZES</div>
+      </div>
+    </div>
+    <div>
+      <div class="zone-label">山札</div>
+      <div class="deck-zone">
+        <div class="deck-count">52</div>
+      </div>
+    </div>
+    <div>
+      <div class="zone-label">トラッシュ</div>
+      <div class="trash-zone">
+        <div class="trash-icon">🗑</div>
+        <div class="trash-count">3</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center field -->
+  <div class="center-field">
+
+    <!-- OPPONENT AREA -->
+    <div class="player-area opponent">
+
+      <!-- Opponent hand (face down, top) -->
+      <div class="opp-hand-area">
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+        <div class="opp-hand-card"></div>
+      </div>
+
+      <!-- Opponent info -->
+      <div class="player-info" style="justify-content:flex-end;">
+        <div class="hand-count">手札 7</div>
+        <div class="player-name">相手</div>
+        <div class="player-avatar opp">相</div>
+      </div>
+
+      <!-- Opponent bench -->
+      <div class="bench-row">
+        <!-- bench card with pokemon -->
+        <div class="bench-slot has-card">
+          <img class="card-img" src="https://images.pokemontcg.io/sv8/45_hires.png" alt="">
+          <div class="energy-row">
+            <div class="energy-pip e-lightning"></div>
+            <div class="energy-pip e-lightning"></div>
+          </div>
+          <div class="damage-badge">60</div>
+        </div>
+        <div class="bench-slot has-card">
+          <img class="card-img" src="https://images.pokemontcg.io/sv4/54_hires.png" alt="">
+          <div class="tool-badge"></div>
+          <div class="energy-row">
+            <div class="energy-pip e-water"></div>
+          </div>
+        </div>
+        <div class="bench-slot"><span class="slot-hint">ベンチ</span></div>
+        <div class="bench-slot"><span class="slot-hint">ベンチ</span></div>
+        <div class="bench-slot"><span class="slot-hint">ベンチ</span></div>
+      </div>
+
+      <!-- Opponent battle -->
+      <div class="battle-row">
+        <div class="battle-slot">
+          <img class="card-img" src="https://images.pokemontcg.io/sv3pt5/59_hires.png" alt="">
+          <div class="energy-row" style="bottom:4px;left:4px;">
+            <div class="energy-pip e-fire"></div>
+            <div class="energy-pip e-fire"></div>
+            <div class="energy-pip e-colorless"></div>
+          </div>
+          <div class="battle-damage">80 ダメージ</div>
+          <div class="status-burn">🔥</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STADIUM / DIVIDER -->
+    <div class="stadium-row">
+      <div class="divider-line"></div>
+      <div class="stadium-slot has-card">
+        <img src="https://images.pokemontcg.io/sv5/168_hires.png" style="width:100%;height:100%;object-fit:cover;border-radius:6px;" alt="">
+      </div>
+      <div class="divider-line"></div>
+    </div>
+
+    <!-- MY AREA -->
+    <div class="player-area active">
+
+      <!-- My battle -->
+      <div class="battle-row">
+        <div class="battle-slot">
+          <img class="card-img" src="https://images.pokemontcg.io/sv3pt5/57_hires.png" alt="">
+          <div class="energy-row" style="bottom:4px;left:4px;">
+            <div class="energy-pip e-lightning"></div>
+            <div class="energy-pip e-lightning"></div>
+            <div class="energy-pip e-lightning"></div>
+          </div>
+          <div class="tool-badge"></div>
+        </div>
+      </div>
+
+      <!-- My bench -->
+      <div class="bench-row">
+        <div class="bench-slot has-card">
+          <img class="card-img" src="https://images.pokemontcg.io/sv8/90_hires.png" alt="">
+          <div class="energy-row">
+            <div class="energy-pip e-lightning"></div>
+          </div>
+        </div>
+        <div class="bench-slot has-card">
+          <img class="card-img" src="https://images.pokemontcg.io/sv5/54_hires.png" alt="">
+        </div>
+        <div class="bench-slot has-card">
+          <img class="card-img" src="https://images.pokemontcg.io/sv4/65_hires.png" alt="">
+          <div class="energy-row">
+            <div class="energy-pip e-lightning"></div>
+            <div class="energy-pip e-lightning"></div>
+          </div>
+        </div>
+        <div class="bench-slot"><span class="slot-hint">ベンチ</span></div>
+        <div class="bench-slot"><span class="slot-hint">ベンチ</span></div>
+      </div>
+
+      <!-- My info -->
+      <div class="player-info">
+        <div class="player-avatar">自</div>
+        <div class="player-name">あなた</div>
+        <div class="hand-count">手札 6</div>
+      </div>
+
+      <!-- My hand -->
+      <div class="hand-area">
+        <div class="hand-wrapper">
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv3pt5/57_hires.png" alt=""></div>
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv5/198_hires.png" alt=""></div>
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv4/198_hires.png" alt=""></div>
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv3pt5/156_hires.png" alt=""></div>
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv5/193_hires.png" alt=""></div>
+          <div class="hand-card"><img src="https://images.pokemontcg.io/sv8/173_hires.png" alt=""></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right column: My prizes / deck / trash -->
+  <div class="side-col">
+    <div>
+      <div class="zone-label">サイド</div>
+      <div class="prize-display">
+        <div class="prize-num">4</div>
+        <div class="prize-sub">PRIZES</div>
+      </div>
+    </div>
+    <div>
+      <div class="zone-label">山札</div>
+      <div class="deck-zone">
+        <div class="deck-count">38</div>
+      </div>
+    </div>
+    <div>
+      <div class="zone-label">トラッシュ</div>
+      <div class="trash-zone">
+        <div class="trash-icon">🗑</div>
+        <div class="trash-count">8</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

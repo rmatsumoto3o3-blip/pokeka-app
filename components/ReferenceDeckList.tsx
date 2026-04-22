@@ -7,7 +7,7 @@ import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
 import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
-import { getAllReferenceDecksAction, getArchetypeDistributionStatsAction, getDeckRecordsByArchetypeAction } from '@/app/actions'
+import { getArchetypeDistributionStatsAction, getDeckRecordsByArchetypeAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -67,12 +67,11 @@ export default function ReferenceDeckList({
     gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
 }: ReferenceDeckListProps) {
     const supabase = createClient()
-    const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
     const [selectedEvent, setSelectedEvent] = useState('All')
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
     const [selectedRank, setSelectedRank] = useState<string>('All')
-    const [loading, setLoading] = useState(initialDecks.length === 0)
+    const [loading, setLoading] = useState(true)
     // GAS 集計データ（archetype_card_stats から取得）
     const [gasDeckCounts, setGasDeckCounts] = useState<Record<string, number>>({})
     const [gasRankCounts, setGasRankCounts] = useState<Record<string, Record<string, number>>>({})
@@ -89,11 +88,6 @@ export default function ReferenceDeckList({
     const [viewerDeckName, setViewerDeckName] = useState<string>('')
     const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Legacy Image Modal
     const [expandedDeckIds, setExpandedDeckIds] = useState<string[]>([])
-
-    // Edit State
-    const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
-    const [editName, setEditName] = useState('')
-    const [isSaving, setIsSaving] = useState(false)
 
     // Key Card Drawer State [NEW]
     const [adoptionDrawerData, setAdoptionDrawerData] = useState<{ id: string, name: string } | null>(null)
@@ -113,21 +107,12 @@ export default function ReferenceDeckList({
             }
         })
 
-        if (initialDecks.length > 0) return
-
         const loadData = async () => {
-            await Promise.all([fetchDecks(), fetchArchetypes()])
+            await fetchArchetypes()
             setLoading(false)
         }
         loadData()
-    }, [initialDecks.length])
-
-    const fetchDecks = async () => {
-        const res = await getAllReferenceDecksAction()
-        if (res.success && res.data) {
-            setDecks(res.data)
-        }
-    }
+    }, [])
 
     const fetchArchetypes = async () => {
         const { data, error } = await supabase
@@ -141,151 +126,6 @@ export default function ReferenceDeckList({
         }
     }
 
-    const handleEdit = (deck: ReferenceDeck, e: React.MouseEvent) => {
-        e.stopPropagation()
-        setEditingDeck(deck)
-        setEditName(deck.deck_name)
-    }
-
-    const handleSaveEdit = async () => {
-        if (!editingDeck) return
-        setIsSaving(true)
-
-        try {
-            const { error } = await supabase
-                .from('reference_decks')
-                .update({
-                    deck_name: editName
-                })
-                .eq('id', editingDeck.id)
-
-            if (error) throw error
-
-            // Update local state
-            setDecks(decks.map(d =>
-                d.id === editingDeck.id
-                    ? { ...d, deck_name: editName }
-                    : d
-            ))
-            setEditingDeck(null)
-            alert('変更を保存しました')
-        } catch (e) {
-            console.error(e)
-            alert('保存に失敗しました')
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation()
-        if (!confirm('本当に削除しますか？')) return
-
-        const { error } = await supabase
-            .from('reference_decks')
-            .delete()
-            .eq('id', id)
-
-        if (!error) {
-            setDecks(decks.filter(d => d.id !== id))
-        }
-    }
-
-    const handleDeckClick = (deck: ReferenceDeck) => {
-        if (deck.deck_code) {
-            // Toggle expand if clicking the row
-            setExpandedDeckIds(prev =>
-                prev.includes(deck.id)
-                    ? prev.filter(id => id !== deck.id)
-                    : [...prev, deck.id]
-            )
-        } else if (deck.image_url) {
-            // Fallback to image modal if no code
-            setSelectedDeckImage(deck.image_url)
-        }
-    }
-
-    const handleToggleExpand = (e: React.MouseEvent, deckId: string) => {
-        e.stopPropagation()
-        setExpandedDeckIds(prev =>
-            prev.includes(deckId)
-                ? prev.filter(id => id !== deckId)
-                : [...prev, deckId]
-        )
-    }
-
-    // Filter Logic
-    const filteredDecks = decks
-
-    // Helper to get archetype for a deck
-    const getArchetypeForDeck = (archetypeId: string | null) => {
-        if (!archetypeId) return null
-        return archetypes.find(a => a.id === archetypeId)
-    }
-
-    // Grouping Logic
-    const groupedDecks: { [key: string]: ReferenceDeck[] } = {}
-
-    filteredDecks.forEach(deck => {
-        const archetype = getArchetypeForDeck(deck.archetype_id)
-        const key = archetype ? archetype.id : 'others'
-        if (!groupedDecks[key]) {
-            groupedDecks[key] = []
-        }
-        groupedDecks[key].push(deck)
-    })
-
-    // Helper to extract date from name (matches "1/24", "01/24", "3/8" etc at start)
-    const extractDateFromName = (name: string) => {
-        const match = name.match(/^(\d{1,2})\/(\d{1,2})/)
-        if (match) {
-            const month = parseInt(match[1], 10)
-            const day = parseInt(match[2], 10)
-            // Use current year or 2025 as base for comparison
-            const date = new Date(2025, month - 1, day)
-            return date.getTime()
-        }
-        return null
-    }
-
-    // Sort decks within each archetype group by extracted date, then created_at
-    Object.keys(groupedDecks).forEach(key => {
-        groupedDecks[key].sort((a, b) => {
-            const smartDateA = extractDateFromName(a.deck_name)
-            const smartDateB = extractDateFromName(b.deck_name)
-
-            if (smartDateA !== null && smartDateB !== null) {
-                if (smartDateB !== smartDateA) return smartDateB - smartDateA
-            } else if (smartDateA !== null) {
-                return -1 // A has date, B doesn't -> A stays above (or below? usually dated decks are better)
-            } else if (smartDateB !== null) {
-                return 1
-            }
-
-            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
-            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-            return dateB - dateA
-        })
-    })
-
-    // Sort Archetype IDs for display
-    const sortedArchetypeIds = Object.keys(groupedDecks).sort((aId, bId) => {
-        if (aId === 'others') return 1
-        if (bId === 'others') return -1
-
-        const aArch = archetypes.find(a => a.id === aId)
-        const bArch = archetypes.find(a => a.id === bId)
-
-        const aOrder = aArch?.display_order ?? 9999
-        const bOrder = bArch?.display_order ?? 9999
-
-        if (aOrder !== bOrder) {
-            return aOrder - bOrder
-        }
-        const aName = aArch?.name || ''
-        const bName = bArch?.name || ''
-        return aName.localeCompare(bName)
-    })
 
     if (loading) return <div className="text-gray-500 text-center py-8">読み込み中...</div>
 
@@ -310,44 +150,6 @@ export default function ReferenceDeckList({
                             onClick={(e) => e.stopPropagation()}
                             unoptimized
                         />
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    // Render Edit Modal
-    const renderEditModal = () => {
-        if (!editingDeck) return null
-        return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2.5" onClick={() => setEditingDeck(null)}>
-                <div className="bg-white rounded-xl shadow-xl p-2.5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">デッキ名</label>
-                            <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                        <button
-                            onClick={() => setEditingDeck(null)}
-                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            onClick={handleSaveEdit}
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            {isSaving ? '保存中...' : '保存する'}
-                        </button>
                     </div>
                 </div>
             </div>
@@ -380,7 +182,6 @@ export default function ReferenceDeckList({
                     deckName={viewerDeckName}
                 />
                 {renderLegacyModal()}
-                {renderEditModal()}
 
                 {/* Key Card Adoption Drawer [MOVED HERE] */}
                 <KeyCardAdoptionDrawer
@@ -621,14 +422,15 @@ export default function ReferenceDeckList({
         )
     }
 
-    // GAS データと reference_decks の両方からアーキタイプIDを収集して表示
-    const gridArchetypeIds = sortedArchetypeIds.length > 0
-        // reference_decks の並び順を基準に、GAS のみのアーキタイプを末尾に追加
-        ? [
-            ...sortedArchetypeIds,
-            ...Object.keys(gasDeckCounts).filter(id => !sortedArchetypeIds.includes(id))
-          ]
-        : Object.keys(gasDeckCounts)
+    // gasDeckCounts のキーを deck_archetypes の display_order でソートして使う
+    const gridArchetypeIds = Object.keys(gasDeckCounts).sort((aId, bId) => {
+        const aArch = archetypes.find(a => a.id === aId)
+        const bArch = archetypes.find(a => a.id === bId)
+        const aOrder = aArch?.display_order ?? 9999
+        const bOrder = bArch?.display_order ?? 9999
+        if (aOrder !== bOrder) return aOrder - bOrder
+        return (aArch?.name || '').localeCompare(bArch?.name || '')
+    })
 
     // VIEW: Top Level (Folders) - Remains mostly Grid for Archetypes
     return (
@@ -640,20 +442,16 @@ export default function ReferenceDeckList({
                 deckName={viewerDeckName}
             />
             {renderLegacyModal()}
-            {renderEditModal()}
-
 
             {/* Archetype Grid */}
-            {(gridArchetypeIds.length === 0 && filteredDecks.length === 0) ? (
+            {gridArchetypeIds.length === 0 ? (
                 <div className="text-center py-10 bg-white/50 rounded-xl border border-dashed border-gray-300">
                     <p className="text-gray-500">該当する参考デッキはありません</p>
                 </div>
             ) : (
                 <div className={gridClassName}>
                     {gridArchetypeIds.map(archetypeId => {
-                        const refDecks = groupedDecks[archetypeId] || []
-                        // GAS データのデッキ数を優先、なければ reference_decks の件数
-                        const deckCount = gasDeckCounts[archetypeId] ?? refDecks.length
+                        const deckCount = gasDeckCounts[archetypeId] ?? 0
 
                         let displayName = 'その他'
                         let coverImage = null
