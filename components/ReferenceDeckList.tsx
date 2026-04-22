@@ -238,7 +238,7 @@ export default function ReferenceDeckList({
                             {rank === 'All' ? 'すべて' : rank}
                             {rank !== 'All' && (
                                 <span className="ml-1.5 text-[10px] opacity-70">
-                                    {gasRankCounts[selectedArchetypeId!]?.[rank] ?? 0}
+                                    {deckRecords.filter(d => d.event_rank === rank).length}
                                 </span>
                             )}
                         </button>
@@ -265,9 +265,11 @@ export default function ReferenceDeckList({
                     ) : (
                     <div className="divide-y divide-gray-100">
                         {paginatedDecks.map((deck) => {
-                            const displayName = deck.event_date && deck.event_location
-                                ? `${deck.event_date} ${deck.event_location}`
-                                : deck.event_date || deck.event_location || deck.deck_code
+                            // event_locationから日付プレフィックスを除去（念のため）
+                            const cleanLocation = (deck.event_location || '').replace(/^\d{1,2}\/\d{1,2}\s*/, '').trim()
+                            const displayName = deck.event_date && cleanLocation
+                                ? `${deck.event_date} ${cleanLocation}`
+                                : deck.event_date || cleanLocation || deck.deck_code
                             const dateLabel = deck.event_date || (deck.created_at
                                 ? new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
                                 : '')
