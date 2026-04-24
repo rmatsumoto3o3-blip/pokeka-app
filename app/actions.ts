@@ -652,6 +652,7 @@ export async function getArchetypeDistributionStatsAction() {
             .from('archetype_card_stats')
             .select('archetype_id, event_rank, total_decks')
             .in('event_rank', ['ALL', '優勝', '準優勝', 'TOP4', 'TOP8'])
+            .limit(50000)
 
         // archetype_id ごとに重複排除しつつ event_rank 別に集計
         const deckCounts: Record<string, number> = {}          // event_rank='ALL' の件数
