@@ -647,23 +647,21 @@ export async function getArchetypeDistributionStatsAction() {
             .limit(1)
         const globalTotal = globalData?.[0]?.total_decks || 0
 
-        // deck_records から直接集計（archetype_card_stats の行数制限を回避）
-        const { data: recordsData } = await supabaseAdmin
-            .from('deck_records')
-            .select('archetype_id, event_rank')
-            .limit(20000)
+        // RPC で集計済みデータを取得（行数制限を回避）
+        const { data: countData } = await supabaseAdmin
+            .rpc('get_archetype_deck_counts')
 
         const deckCounts: Record<string, number> = {}
         const rankCounts: Record<string, Record<string, number>> = {}
 
-        recordsData?.forEach(record => {
-            const aid = record.archetype_id
-            const rank = record.event_rank || 'ALL'
+        countData?.forEach((row: { archetype_id: string, event_rank: string, deck_count: number }) => {
+            const aid = row.archetype_id
+            const rank = row.event_rank || 'ALL'
             if (!deckCounts[aid]) deckCounts[aid] = 0
-            deckCounts[aid]++
+            deckCounts[aid] += Number(row.deck_count)
             if (!rankCounts[aid]) rankCounts[aid] = {}
             if (!rankCounts[aid][rank]) rankCounts[aid][rank] = 0
-            rankCounts[aid][rank]++
+            rankCounts[aid][rank] += Number(row.deck_count)
         })
 
         return { success: true, deckCounts, rankCounts, globalTotal }
