@@ -647,26 +647,23 @@ export async function getArchetypeDistributionStatsAction() {
             .limit(1)
         const globalTotal = globalData?.[0]?.total_decks || 0
 
-        // アーキタイプ別 total_decks を全 event_rank 分まとめて取得
-        const { data: archData } = await supabaseAdmin
-            .from('archetype_card_stats')
-            .select('archetype_id, event_rank, total_decks')
-            .in('event_rank', ['ALL', '優勝', '準優勝', 'TOP4', 'TOP8'])
-            .limit(50000)
+        // deck_records から直接集計（archetype_card_stats の行数制限を回避）
+        const { data: recordsData } = await supabaseAdmin
+            .from('deck_records')
+            .select('archetype_id, event_rank')
+            .limit(20000)
 
-        // archetype_id ごとに重複排除しつつ event_rank 別に集計
-        const deckCounts: Record<string, number> = {}          // event_rank='ALL' の件数
-        const rankCounts: Record<string, Record<string, number>> = {}  // event_rank 別件数
+        const deckCounts: Record<string, number> = {}
+        const rankCounts: Record<string, Record<string, number>> = {}
 
-        archData?.forEach(stat => {
-            if (!rankCounts[stat.archetype_id]) rankCounts[stat.archetype_id] = {}
-            // 同じ (archetype_id, event_rank) は全カードで同値なので最初の値だけ使う
-            if (rankCounts[stat.archetype_id][stat.event_rank] === undefined) {
-                rankCounts[stat.archetype_id][stat.event_rank] = stat.total_decks
-            }
-            if (stat.event_rank === 'ALL' && deckCounts[stat.archetype_id] === undefined) {
-                deckCounts[stat.archetype_id] = stat.total_decks
-            }
+        recordsData?.forEach(record => {
+            const aid = record.archetype_id
+            const rank = record.event_rank || 'ALL'
+            if (!deckCounts[aid]) deckCounts[aid] = 0
+            deckCounts[aid]++
+            if (!rankCounts[aid]) rankCounts[aid] = {}
+            if (!rankCounts[aid][rank]) rankCounts[aid][rank] = 0
+            rankCounts[aid][rank]++
         })
 
         return { success: true, deckCounts, rankCounts, globalTotal }
