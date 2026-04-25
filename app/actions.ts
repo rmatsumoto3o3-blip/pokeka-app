@@ -1002,7 +1002,46 @@ export async function manageFeaturedCardsAction(action: 'add' | 'remove', cardNa
 }
 
 export async function updateDailySnapshotsAction(userId: string) {
-    return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。', count: 0 }
+    try {
+        const supabaseAdmin = getSupabaseAdmin()
+
+        // 注目カード一覧を取得
+        const { data: featured, error: fErr } = await supabaseAdmin
+            .from('featured_cards')
+            .select('card_name')
+        if (fErr) throw fErr
+        if (!featured || featured.length === 0) return { success: false, error: '注目カードが登録されていません', count: 0 }
+
+        const names = featured.map(f => f.card_name)
+
+        // global_card_stats から採用率を取得
+        const { data: stats, error: sErr } = await supabaseAdmin
+            .from('global_card_stats')
+            .select('card_name, adoption_count, total_decks')
+            .in('card_name', names)
+            .eq('event_rank', 'ALL')
+        if (sErr) throw sErr
+
+        const today = new Date().toISOString()
+        const snapshots = (stats || [])
+            .filter(s => s.total_decks > 0)
+            .map(s => ({
+                card_name: s.card_name,
+                adoption_rate: parseFloat(((s.adoption_count / s.total_decks) * 100).toFixed(1)),
+                recorded_at: today,
+            }))
+
+        if (snapshots.length === 0) return { success: false, error: '集計データがありません', count: 0 }
+
+        const { error: iErr } = await supabaseAdmin
+            .from('card_trend_snapshots')
+            .insert(snapshots)
+        if (iErr) throw iErr
+
+        return { success: true, count: snapshots.length }
+    } catch (error) {
+        return { success: false, error: (error as Error).message, count: 0 }
+    }
 }
 
 export async function getTopAdoptedCardsAction(eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8'): Promise<{ success: boolean, data?: { name: string, count: number, rate: number, imageUrl: string | null }[], error?: string }> {
