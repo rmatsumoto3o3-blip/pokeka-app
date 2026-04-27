@@ -1093,3 +1093,132 @@ export async function backfillTrendDataAction(userId: string) {
 export async function calculateDeckStatisticsAction(userId: string) {
     return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。統計データは自動更新されます。', message: undefined }
 }
+
+// --- 週間レポート ---
+
+export type WeeklyArchetypeStat = {
+    archetype_id: string
+    name: string
+    thisWeek: number
+    lastWeek: number
+    growth: number // 増加数
+    growthRate: number | null // 伸び率(%) null = 先週0件
+}
+
+export type WeeklyFeaturedCard = {
+    card_name: string
+    thisWeekAvg: number
+    lastWeekAvg: number
+    diff: number
+}
+
+export type WeeklyReportData = {
+    thisWeekRange: { from: string; to: string }
+    lastWeekRange: { from: string; to: string }
+    archetypes: WeeklyArchetypeStat[]
+    featuredCards: WeeklyFeaturedCard[]
+}
+
+export async function getWeeklyReportAction(): Promise<{ success: boolean; data?: WeeklyReportData; error?: string }> {
+    try {
+        const supabaseAdmin = getSupabaseAdmin()
+        const now = new Date()
+
+        const thisWeekFrom = new Date(now); thisWeekFrom.setDate(now.getDate() - 7)
+        const lastWeekFrom = new Date(now); lastWeekFrom.setDate(now.getDate() - 14)
+
+        const fmt = (d: Date) => d.toISOString()
+
+        // deck_records: 優勝/準優勝 の過去2週分を取得
+        const { data: records, error: rErr } = await supabaseAdmin
+            .from('deck_records')
+            .select('archetype_id, event_rank, created_at')
+            .in('event_rank', ['優勝', '準優勝'])
+            .gte('created_at', fmt(lastWeekFrom))
+
+        if (rErr) throw rErr
+
+        // アーキタイプ名を取得
+        const { data: archetypes } = await supabaseAdmin
+            .from('deck_archetypes')
+            .select('id, name')
+
+        const nameMap = new Map(archetypes?.map(a => [a.id, a.name]) || [])
+
+        // 今週/先週でカウント
+        const thisWeekCounts: Record<string, number> = {}
+        const lastWeekCounts: Record<string, number> = {}
+
+        for (const r of records || []) {
+            const createdAt = new Date(r.created_at)
+            const isThisWeek = createdAt >= thisWeekFrom
+            const map = isThisWeek ? thisWeekCounts : lastWeekCounts
+            map[r.archetype_id] = (map[r.archetype_id] || 0) + 1
+        }
+
+        // 今週に1件以上あるアーキタイプを対象に伸び率計算
+        const archetypeStats: WeeklyArchetypeStat[] = Object.entries(thisWeekCounts)
+            .map(([id, thisWeek]) => {
+                const lastWeek = lastWeekCounts[id] || 0
+                const growth = thisWeek - lastWeek
+                const growthRate = lastWeek > 0 ? parseFloat(((growth / lastWeek) * 100).toFixed(1)) : null
+                return {
+                    archetype_id: id,
+                    name: nameMap.get(id) || id,
+                    thisWeek,
+                    lastWeek,
+                    growth,
+                    growthRate,
+                }
+            })
+            .filter(s => s.growth > 0)
+            .sort((a, b) => b.thisWeek - a.thisWeek)
+
+        // card_trend_snapshots: 注目カードの先週・先々週平均
+        const { data: snapshots, error: sErr } = await supabaseAdmin
+            .from('card_trend_snapshots')
+            .select('card_name, adoption_rate, recorded_at')
+            .gte('recorded_at', fmt(lastWeekFrom))
+
+        if (sErr) throw sErr
+
+        const thisWeekRates: Record<string, number[]> = {}
+        const lastWeekRates: Record<string, number[]> = {}
+
+        for (const s of snapshots || []) {
+            const recordedAt = new Date(s.recorded_at)
+            const isThisWeek = recordedAt >= thisWeekFrom
+            const map = isThisWeek ? thisWeekRates : lastWeekRates
+            if (!map[s.card_name]) map[s.card_name] = []
+            map[s.card_name].push(s.adoption_rate)
+        }
+
+        const avg = (arr: number[]) => arr.length > 0 ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1)) : 0
+
+        const allCardNames = new Set([...Object.keys(thisWeekRates), ...Object.keys(lastWeekRates)])
+        const featuredCards: WeeklyFeaturedCard[] = Array.from(allCardNames).map(name => {
+            const thisWeekAvg = avg(thisWeekRates[name] || [])
+            const lastWeekAvg = avg(lastWeekRates[name] || [])
+            return {
+                card_name: name,
+                thisWeekAvg,
+                lastWeekAvg,
+                diff: parseFloat((thisWeekAvg - lastWeekAvg).toFixed(1)),
+            }
+        }).sort((a, b) => b.thisWeekAvg - a.thisWeekAvg)
+
+        const fmtDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
+
+        return {
+            success: true,
+            data: {
+                thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(now) },
+                lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
+                archetypes: archetypeStats,
+                featuredCards,
+            }
+        }
+    } catch (error) {
+        return { success: false, error: (error as Error).message }
+    }
+}
