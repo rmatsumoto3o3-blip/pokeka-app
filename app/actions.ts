@@ -32,15 +32,28 @@ import { createClient } from '@supabase/supabase-js'
 // Service Role Client for Admin Operations (Bypass RLS)
 function getSupabaseAdmin() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    let key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!key) {
-        console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to ANON key. Private writes will fail.')
-        key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    }
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) {
-        throw new Error('Supabase URL or Key is missing. Please check your environment variables.')
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations.')
     }
     return createClient(url, key)
+}
+
+// セッションを検証してユーザーIDを返す共通ヘルパー
+async function verifySession(): Promise<{ userId: string; email: string } | null> {
+    const { createClient: createServerClient } = await import('@/utils/supabase/server')
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !user.email) return null
+    return { userId: user.id, email: user.email }
+}
+
+// 管理者セッションを検証するヘルパー
+async function verifyAdminSession(): Promise<{ userId: string; email: string } | null> {
+    const session = await verifySession()
+    if (!session) return null
+    if (!ADMIN_EMAILS.includes(session.email)) return null
+    return session
 }
 
 // Public Client for Read Operations (Standard RLS)
@@ -61,6 +74,12 @@ const ANALYTICS_START_DATE = '2024-01-01T00:00:00Z'
 
 export async function getOrCreateProfileAction(userId: string) {
     try {
+        // セッション検証: 呼び出し元が本人であることを確認
+        const session = await verifySession()
+        if (!session || session.userId !== userId) {
+            return { success: false, error: '認証エラーです' }
+        }
+
         // 1. Try to fetch existing profile (using admin to be safe, though public read is allowed for self)
         const { data: profile, error } = await getSupabaseAdmin()
             .from('user_profiles')
@@ -167,6 +186,12 @@ export async function getOrCreateProfileAction(userId: string) {
 
 export async function redeemInviteCodeAction(userId: string, code: string) {
     try {
+        // セッション検証
+        const session = await verifySession()
+        if (!session || session.userId !== userId) {
+            return { success: false, error: '認証エラーです' }
+        }
+
         // 1. Check code validity
         const { data: invite, error: inviteError } = await getSupabaseAdmin()
             .from('invitation_codes')
@@ -216,6 +241,12 @@ export async function redeemInviteCodeAction(userId: string, code: string) {
 
 export async function createFolderAction(userId: string, folderName: string) {
     try {
+        // セッション検証
+        const session = await verifySession()
+        if (!session || session.userId !== userId) {
+            return { success: false, error: '認証エラーです' }
+        }
+
         // 1. Get User Profile & Plan
         const { data: profile } = await getSupabaseAdmin()
             .from('user_profiles')
@@ -274,6 +305,12 @@ export async function createDeckVariantAction(
     deckName: string
 ) {
     try {
+        // セッション検証
+        const session = await verifySession()
+        if (!session || session.userId !== userId) {
+            return { success: false, error: '認証エラーです' }
+        }
+
         // 1. Get User Profile & Plan
         const { data: profile } = await getSupabaseAdmin()
             .from('user_profiles')
@@ -335,6 +372,12 @@ export async function saveDeckVersionAction(
     originalDeckId?: string // If cloning/versioning
 ) {
     try {
+        // セッション検証
+        const session = await verifySession()
+        if (!session || session.userId !== userId) {
+            return { success: false, error: '認証エラーです' }
+        }
+
         // 1. Get User Profile & Plan Limits
         const { data: profile } = await getSupabaseAdmin()
             .from('user_profiles')
@@ -400,7 +443,8 @@ export async function saveDeckVersionAction(
         let baseData: any = {}
         if (originalDeckId) {
             const { data: original } = await getSupabaseAdmin().from('decks').select('*').eq('id', originalDeckId).single()
-            if (original) {
+            // オーナーチェック: 自分のデッキのみコピー可能
+            if (original && original.user_id === userId) {
                 baseData = {
                     deck_code: original.deck_code,
                     deck_name: original.deck_name,
@@ -799,6 +843,23 @@ export async function backfillEventRanksAction(userId: string) {
 
 export async function scrapePokecabookAction(url: string, startDate?: string, endDate?: string) {
     try {
+        // 管理者認証チェック
+        const admin = await verifyAdminSession()
+        if (!admin) {
+            return { success: false, error: '権限がありません', data: [] }
+        }
+
+        // SSRF対策: 許可ドメインのみ
+        const ALLOWED_HOSTS = ['pokecabook.com', 'www.pokecabook.com']
+        try {
+            const parsed = new URL(url)
+            if (!ALLOWED_HOSTS.includes(parsed.hostname)) {
+                return { success: false, error: '許可されていないURLです', data: [] }
+            }
+        } catch {
+            return { success: false, error: '無効なURLです', data: [] }
+        }
+
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -983,6 +1044,9 @@ export async function getFeaturedCardsWithStatsAction(
 
 export async function manageFeaturedCardsAction(action: 'add' | 'remove', cardName?: string, id?: string) {
     try {
+        const admin = await verifyAdminSession()
+        if (!admin) return { success: false, error: '権限がありません' }
+
         if (action === 'add' && cardName) {
             const { error } = await getSupabaseAdmin()
                 .from('featured_cards')
@@ -1003,6 +1067,9 @@ export async function manageFeaturedCardsAction(action: 'add' | 'remove', cardNa
 
 export async function updateDailySnapshotsAction(userId: string) {
     try {
+        const admin = await verifyAdminSession()
+        if (!admin) return { success: false, error: '権限がありません', count: 0 }
+
         const supabaseAdmin = getSupabaseAdmin()
 
         // 注目カード一覧を取得
@@ -1086,6 +1153,8 @@ export async function getTopAdoptedCardsAction(eventRank?: '優勝' | '準優勝
 }
 
 export async function backfillTrendDataAction(userId: string) {
+    const admin = await verifyAdminSession()
+    if (!admin) return { success: false, error: '権限がありません', count: 0 }
     return { success: false, error: 'この機能はPythonスクレイパーに移行予定です。', count: 0 }
 }
 // --- Phase 49: Pre-calculated Statistics Aggregation (Egress Optimization) ---

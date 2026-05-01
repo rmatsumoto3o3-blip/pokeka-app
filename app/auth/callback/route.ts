@@ -5,13 +5,16 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url)
     const code = searchParams.get('code')
     // if "next" is in search params, use it as the redirection URL after successful login
-    const next = searchParams.get('next') ?? '/dashboard'
+    // next パラメータは相対パスのみ許可（オープンリダイレクト対策）
+    const rawNext = searchParams.get('next') ?? '/dashboard'
+    const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/dashboard'
 
     const error = searchParams.get('error')
     const errorDescription = searchParams.get('error_description')
 
     if (error) {
-        return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(errorDescription || error)}`)
+        console.error('Auth error from provider:', error, errorDescription)
+        return NextResponse.redirect(`${origin}/auth/auth-error?error=auth_failed`)
     }
 
     if (code) {
@@ -45,12 +48,11 @@ export async function GET(request: Request) {
             }
         } else if (exchangeError) {
             console.error('Auth error during code exchange:', exchangeError)
-            return NextResponse.redirect(`${origin}/auth/auth-error?error=${encodeURIComponent(exchangeError.message)}`)
+            return NextResponse.redirect(`${origin}/auth/auth-error?error=exchange_failed`)
         }
     }
 
     // return the user to an error page with instructions
-    const allParams = Array.from(searchParams.entries()).map(([k, v]) => `${k}=${v}`).join('&')
-    console.error('Missing code and error params. Received params:', allParams)
-    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code_params_${allParams || 'none'}`)
+    console.error('Missing code param in auth callback')
+    return NextResponse.redirect(`${origin}/auth/auth-error?error=missing_code`)
 }

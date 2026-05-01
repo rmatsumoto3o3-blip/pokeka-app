@@ -7,7 +7,7 @@ export default async function AdminLayout({
     children: React.ReactNode
 }) {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const ADMIN_EMAILS = [
         'player1@pokeka.local',
@@ -16,7 +16,7 @@ export default async function AdminLayout({
         'admin@pokeka.local'
     ]
 
-    if (!session || !session.user || !session.user.email || !ADMIN_EMAILS.includes(session.user.email)) {
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
         redirect('/')
     }
 
