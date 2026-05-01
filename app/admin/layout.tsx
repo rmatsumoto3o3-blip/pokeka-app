@@ -9,12 +9,7 @@ export default async function AdminLayout({
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    const ADMIN_EMAILS = [
-        'player1@pokeka.local',
-        'r.matsumoto.3o3@gmail.com',
-        'nexpure.event@gmail.com',
-        'admin@pokeka.local'
-    ]
+    const ADMIN_EMAILS = ['player1@pokeka.local']
 
     if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
         redirect('/')

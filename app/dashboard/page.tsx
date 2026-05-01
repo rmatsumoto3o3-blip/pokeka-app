@@ -54,7 +54,7 @@ export default function Dashboard() {
                     setUserEmail(email)
 
                     // Admin Check
-                    if (['player1@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
+                    if (email === 'player1@pokeka.local') {
                         setIsAdmin(true)
                     }
 

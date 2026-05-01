@@ -3,11 +3,7 @@
 -- Supabase SQL Editor で実行してください
 -- ============================================
 
--- 管理者メールリスト（アプリコードの ADMIN_EMAILS と一致させること）
--- r.matsumoto.3o3@gmail.com
--- nexpure.event@gmail.com
--- admin@pokeka.local
--- player1@pokeka.local
+-- 管理者アカウント: player1@pokeka.local のみ
 
 -- ============================================
 -- 1. deck_archetypes テーブルのRLS修正
@@ -24,34 +20,19 @@ DROP POLICY IF EXISTS "Only admin can delete deck_archetypes" ON public.deck_arc
 -- 管理者のみINSERT可能
 CREATE POLICY "Only admin can insert deck_archetypes" ON public.deck_archetypes
   FOR INSERT WITH CHECK (
-    (auth.jwt() ->> 'email') IN (
-      'r.matsumoto.3o3@gmail.com',
-      'nexpure.event@gmail.com',
-      'admin@pokeka.local',
-      'player1@pokeka.local'
-    )
+    (auth.jwt() ->> 'email') = 'player1@pokeka.local'
   );
 
 -- 管理者のみUPDATE可能
 CREATE POLICY "Only admin can update deck_archetypes" ON public.deck_archetypes
   FOR UPDATE USING (
-    (auth.jwt() ->> 'email') IN (
-      'r.matsumoto.3o3@gmail.com',
-      'nexpure.event@gmail.com',
-      'admin@pokeka.local',
-      'player1@pokeka.local'
-    )
+    (auth.jwt() ->> 'email') = 'player1@pokeka.local'
   );
 
 -- 管理者のみDELETE可能
 CREATE POLICY "Only admin can delete deck_archetypes" ON public.deck_archetypes
   FOR DELETE USING (
-    (auth.jwt() ->> 'email') IN (
-      'r.matsumoto.3o3@gmail.com',
-      'nexpure.event@gmail.com',
-      'admin@pokeka.local',
-      'player1@pokeka.local'
-    )
+    (auth.jwt() ->> 'email') = 'player1@pokeka.local'
   );
 
 -- 読み取りは引き続き全員OK（サイトの表示に必要）
@@ -59,7 +40,6 @@ CREATE POLICY "Only admin can delete deck_archetypes" ON public.deck_archetypes
 
 -- ============================================
 -- 2. users テーブルのRLS確認・強化
---    （現状: SELECT が自分のみ → 正しいが念のため確認）
 -- ============================================
 
 -- 既存の全員参照ポリシーが存在する場合は削除
@@ -82,12 +62,7 @@ END $$;
 DROP POLICY IF EXISTS "Admin can view all users" ON public.users;
 CREATE POLICY "Admin can view all users" ON public.users
   FOR SELECT USING (
-    (auth.jwt() ->> 'email') IN (
-      'r.matsumoto.3o3@gmail.com',
-      'nexpure.event@gmail.com',
-      'admin@pokeka.local',
-      'player1@pokeka.local'
-    )
+    (auth.jwt() ->> 'email') = 'player1@pokeka.local'
   );
 
 -- ============================================
