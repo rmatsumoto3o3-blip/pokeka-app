@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand, calculateMulliganProbability, calculateDrawByTurnProbability } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -20,6 +20,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
     const [simResult, setSimResult] = useState<{ and: string, or: string } | null>(null)
     const [randomHand, setRandomHand] = useState<CardData[]>([])
+    const [drawByTurnCard, setDrawByTurnCard] = useState<string>('')
+    const [drawByTurnN, setDrawByTurnN] = useState<number>(3)
 
     const isGlobal = initialCards.length > 0
 
@@ -471,6 +473,36 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                 </div>
             )}
 
+            {/* Mulligan Probability */}
+            {cards.length > 0 && (() => {
+                const basics = cards.filter(c => c.supertype === 'Pokémon' && c.subtypes?.includes('Basic'))
+                const totalBasics = basics.reduce((acc, c) => acc + c.quantity, 0)
+                const mulliganRate = calculateMulliganProbability(totalBasics)
+                const mulliganNum = parseFloat(mulliganRate)
+                const color = mulliganNum <= 5 ? 'green' : mulliganNum <= 15 ? 'yellow' : 'red'
+                const colorMap = {
+                    green: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', num: 'text-green-600' },
+                    yellow: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', num: 'text-yellow-600' },
+                    red: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', num: 'text-red-600' },
+                }
+                const c = colorMap[color]
+                return (
+                    <div className={`${c.bg} border ${c.border} rounded-xl p-5 flex items-center justify-between animate-in fade-in duration-500`}>
+                        <div>
+                            <div className={`font-bold text-sm ${c.text} mb-1`}>
+                                🔄 {lang === 'ja' ? 'マリガン確率' : 'Mulligan Rate'}
+                            </div>
+                            <div className={`text-xs ${c.text} opacity-70`}>
+                                {lang === 'ja'
+                                    ? `たねポケモン ${totalBasics}枚 / 初手7枚に1枚もない確率`
+                                    : `${totalBasics} Basic Pokémon — chance of no Basic in opening 7`}
+                            </div>
+                        </div>
+                        <div className={`text-4xl font-black ${c.num}`}>{mulliganRate}%</div>
+                    </div>
+                )
+            })()}
+
             {/* Custom Hand Simulation Section */}
             {cards.length > 0 && (
                 <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 rounded-xl shadow-sm border-2 border-violet-100 mb-10">
@@ -585,6 +617,75 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                 </div>
             )}
 
+
+            {/* Draw by Turn Calculator */}
+            {cards.length > 0 && (() => {
+                const selectedCard = cards.find(c => c.name === drawByTurnCard)
+                const prob = selectedCard ? calculateDrawByTurnProbability(selectedCard.quantity, drawByTurnN) : null
+                return (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl shadow-sm border-2 border-blue-100">
+                        <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <span className="text-2xl">📅</span>
+                            {lang === 'ja' ? 'ターン別引ける確率' : 'Draw by Turn Calculator'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-5">
+                            {lang === 'ja'
+                                ? '指定したターンまでに、そのカードを1枚以上引いている確率を計算します（初手7枚 + 毎ターン1ドロー）'
+                                : 'Probability of drawing at least 1 copy of a card by turn N (7-card opening hand + 1 draw per turn)'}
+                        </p>
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">{lang === 'ja' ? 'カード' : 'Card'}</label>
+                                <select
+                                    value={drawByTurnCard}
+                                    onChange={e => setDrawByTurnCard(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                >
+                                    <option value="">{lang === 'ja' ? 'カードを選択...' : 'Select a card...'}</option>
+                                    {cards.map((c, i) => (
+                                        <option key={i} value={c.name}>{c.name} ×{c.quantity}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-full md:w-40">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">{lang === 'ja' ? 'ターン数' : 'By Turn'}</label>
+                                <select
+                                    value={drawByTurnN}
+                                    onChange={e => setDrawByTurnN(parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                >
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 10].map(n => (
+                                        <option key={n} value={n}>{lang === 'ja' ? `${n}ターン目まで` : `Turn ${n}`}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        {prob !== null && (
+                            <div className="mt-4 bg-white rounded-xl p-4 border border-blue-100 flex items-center justify-between animate-in fade-in duration-300">
+                                <div className="text-sm text-gray-600 font-medium">
+                                    {lang === 'ja'
+                                        ? `${drawByTurnCard} を${drawByTurnN}ターン目までに引ける確率`
+                                        : `Probability of drawing ${drawByTurnCard} by Turn ${drawByTurnN}`}
+                                </div>
+                                <div className="text-4xl font-black text-blue-600">{prob}%</div>
+                            </div>
+                        )}
+                        {prob !== null && selectedCard && (
+                            <div className="mt-3 grid grid-cols-4 md:grid-cols-8 gap-2">
+                                {[1,2,3,4,5,6,7,8].map(n => {
+                                    const p = parseFloat(calculateDrawByTurnProbability(selectedCard.quantity, n))
+                                    return (
+                                        <div key={n} className={`text-center p-2 rounded-lg border text-xs font-bold ${n === drawByTurnN ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                                            <div className="opacity-60">{lang === 'ja' ? `T${n}` : `T${n}`}</div>
+                                            <div>{p}%</div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )
+            })()}
 
             {/* Results */}
             {

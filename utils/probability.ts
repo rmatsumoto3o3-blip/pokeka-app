@@ -179,6 +179,34 @@ export function calculateRemainingDistribution(totalCopies: number): RemainingDi
     return { probabilities, expectedValue }
 }
 
+/**
+ * Calculate Mulligan Probability.
+ * P(no Basic Pokémon in opening 7) = C(60-totalBasics, 7) / C(60, 7)
+ */
+export function calculateMulliganProbability(totalBasics: number): string {
+    if (totalBasics <= 0) return '100.0'
+    const N = 60
+    const n = 7
+    if (totalBasics >= N) return '0.0'
+    const probNoBasic = combinations(N - totalBasics, n) / combinations(N, n)
+    return (probNoBasic * 100).toFixed(1)
+}
+
+/**
+ * Calculate probability of drawing at least 1 copy of a card by turn N.
+ * Assumes 1 draw per turn after the opening hand of 7.
+ * By turn N: total cards seen = 7 + N
+ * P(at least 1 in seen) = 1 - C(60-k, seen) / C(60, seen)
+ */
+export function calculateDrawByTurnProbability(copies: number, turn: number): string {
+    if (copies <= 0) return '0.0'
+    const N = 60
+    const seen = Math.min(7 + turn, N)
+    if (seen >= N) return '100.0'
+    const probNone = combinations(N - copies, seen) / combinations(N, seen)
+    return ((1 - probNone) * 100).toFixed(1)
+}
+
 // --- Multi-Card Simulation ---
 
 export interface CustomHandTarget {
