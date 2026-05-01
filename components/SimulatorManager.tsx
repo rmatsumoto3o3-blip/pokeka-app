@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand, calculateMulliganProbability, calculateDrawByTurnProbability } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand, calculateDrawByTurnProbability } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -472,36 +472,6 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                     </div>
                 </div>
             )}
-
-            {/* Mulligan Probability */}
-            {cards.length > 0 && (() => {
-                const basics = cards.filter(c => c.supertype === 'Pokémon' && c.subtypes?.includes('Basic'))
-                const totalBasics = basics.reduce((acc, c) => acc + c.quantity, 0)
-                const mulliganRate = calculateMulliganProbability(totalBasics)
-                const mulliganNum = parseFloat(mulliganRate)
-                const color = mulliganNum <= 5 ? 'green' : mulliganNum <= 15 ? 'yellow' : 'red'
-                const colorMap = {
-                    green: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', num: 'text-green-600' },
-                    yellow: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700', num: 'text-yellow-600' },
-                    red: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', num: 'text-red-600' },
-                }
-                const c = colorMap[color]
-                return (
-                    <div className={`${c.bg} border ${c.border} rounded-xl p-5 flex items-center justify-between animate-in fade-in duration-500`}>
-                        <div>
-                            <div className={`font-bold text-sm ${c.text} mb-1`}>
-                                🔄 {lang === 'ja' ? 'マリガン確率' : 'Mulligan Rate'}
-                            </div>
-                            <div className={`text-xs ${c.text} opacity-70`}>
-                                {lang === 'ja'
-                                    ? `たねポケモン ${totalBasics}枚 / 初手7枚に1枚もない確率`
-                                    : `${totalBasics} Basic Pokémon — chance of no Basic in opening 7`}
-                            </div>
-                        </div>
-                        <div className={`text-4xl font-black ${c.num}`}>{mulliganRate}%</div>
-                    </div>
-                )
-            })()}
 
             {/* Custom Hand Simulation Section */}
             {cards.length > 0 && (
