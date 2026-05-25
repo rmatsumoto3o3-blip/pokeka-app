@@ -1181,11 +1181,21 @@ export type WeeklyFeaturedCard = {
     diff: number
 }
 
+export type WeeklyTopArchetype = {
+    archetype_id: string
+    name: string
+    wins: number      // 優勝数
+    runnerUps: number // 準優勝数
+    total: number     // 合計
+}
+
 export type WeeklyReportData = {
     thisWeekRange: { from: string; to: string }
     lastWeekRange: { from: string; to: string }
     archetypes: WeeklyArchetypeStat[]
+    topArchetypes: WeeklyTopArchetype[] // 今週の優勝ランキング
     featuredCards: WeeklyFeaturedCard[]
+    totalDecksThisWeek: number
 }
 
 export async function getWeeklyReportAction(): Promise<{ success: boolean; data?: WeeklyReportData; error?: string }> {
@@ -1224,6 +1234,27 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
             const map = isThisWeek ? thisWeekCounts : lastWeekCounts
             map[r.archetype_id] = (map[r.archetype_id] || 0) + 1
         }
+
+        // 今週の優勝・準優勝ランキング（全アーキタイプ）
+        const thisWeekWins: Record<string, number> = {}
+        const thisWeekRunnerUps: Record<string, number> = {}
+        for (const r of records || []) {
+            const createdAt = new Date(r.created_at)
+            if (createdAt >= thisWeekFrom) {
+                if (r.event_rank === '優勝') thisWeekWins[r.archetype_id] = (thisWeekWins[r.archetype_id] || 0) + 1
+                if (r.event_rank === '準優勝') thisWeekRunnerUps[r.archetype_id] = (thisWeekRunnerUps[r.archetype_id] || 0) + 1
+            }
+        }
+        const allThisWeekIds = new Set([...Object.keys(thisWeekWins), ...Object.keys(thisWeekRunnerUps)])
+        const topArchetypes: WeeklyTopArchetype[] = Array.from(allThisWeekIds).map(id => ({
+            archetype_id: id,
+            name: nameMap.get(id) || id,
+            wins: thisWeekWins[id] || 0,
+            runnerUps: thisWeekRunnerUps[id] || 0,
+            total: (thisWeekWins[id] || 0) + (thisWeekRunnerUps[id] || 0),
+        })).sort((a, b) => b.wins !== a.wins ? b.wins - a.wins : b.runnerUps - a.runnerUps)
+
+        const totalDecksThisWeek = Object.values(thisWeekCounts).reduce((s, v) => s + v, 0)
 
         // 今週に1件以上あるアーキタイプを対象に伸び率計算
         const archetypeStats: WeeklyArchetypeStat[] = Object.entries(thisWeekCounts)
@@ -1284,7 +1315,9 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
                 thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(now) },
                 lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
                 archetypes: archetypeStats,
+                topArchetypes,
                 featuredCards,
+                totalDecksThisWeek,
             }
         }
     } catch (error) {
