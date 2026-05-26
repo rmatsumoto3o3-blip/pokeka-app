@@ -72,12 +72,21 @@ export default function WeeklyReport() {
         setImageLoading(true)
         try {
             const html2canvas = (await import('html2canvas')).default
-            const canvas = await html2canvas(reportCardRef.current, {
+            const el = reportCardRef.current
+            const canvas = await html2canvas(el, {
                 backgroundColor: '#0f172a',
                 scale: 2,
                 useCORS: true,
                 allowTaint: true,
                 logging: false,
+                width: el.offsetWidth,
+                height: el.scrollHeight,
+                windowWidth: el.offsetWidth,
+                windowHeight: el.scrollHeight,
+                onclone: (_doc, clonedEl) => {
+                    clonedEl.style.overflow = 'visible'
+                    clonedEl.style.borderRadius = '0'
+                },
             })
 
             // toBlob を Promise 化
@@ -364,7 +373,7 @@ export default function WeeklyReport() {
                                 )}
 
                                 {/* Footer */}
-                                <div style={{ padding: '12px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ padding: '12px 28px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <span style={{ fontSize: '10px', color: '#334155' }}>pokelix.com</span>
                                     <span style={{ fontSize: '10px', color: '#334155' }}>#ポケカ #環境分析</span>
                                 </div>
