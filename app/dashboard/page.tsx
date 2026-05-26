@@ -260,7 +260,7 @@ export default function Dashboard() {
                                             : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                                             }`}
                                     >
-                                        週間レポート
+                                        環境レポート
                                     </button>
                                 )}
                             </div>
@@ -438,7 +438,7 @@ export default function Dashboard() {
 
                         {activeTab === 'weekly-report' && isAdmin && (
                             <div className="space-y-4">
-                                <h2 className="text-xl font-bold text-gray-900">週間レポート</h2>
+                                <h2 className="text-xl font-bold text-gray-900">環境レポート</h2>
                                 <WeeklyReport />
                             </div>
                         )}
