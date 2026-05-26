@@ -11,10 +11,7 @@ function generateSNSText(data: WeeklyReportData): string {
     if (data.topArchetypes.length > 0) {
         lines.push('今週の優勝・準優勝')
         data.topArchetypes.slice(0, 5).forEach((a, i) => {
-            const detail = a.wins > 0 && a.runnerUps > 0
-                ? `優勝${a.wins} 準優勝${a.runnerUps}`
-                : a.wins > 0 ? `優勝${a.wins}回` : `準優勝${a.runnerUps}回`
-            lines.push(`${i + 1}. ${a.name}（${detail}）`)
+            lines.push(`${i + 1}. ${a.name}　優勝${a.wins} / 準優勝${a.runnerUps}`)
         })
         lines.push('')
     }
@@ -65,171 +62,180 @@ export default function WeeklyReportPage() {
     }
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center text-gray-400 text-sm">
+        <div className="min-h-screen flex items-center justify-center text-gray-400">
             集計中...
         </div>
     )
     if (error) return (
-        <div className="min-h-screen flex items-center justify-center text-red-500 text-sm">
+        <div className="min-h-screen flex items-center justify-center text-red-500">
             {error}
         </div>
     )
     if (!data) return null
 
     return (
-        <div className="min-h-screen bg-white text-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 py-10 px-4">
+            <div className="max-w-3xl mx-auto space-y-8">
 
-            {/* ヘッダー */}
-            <div className="border-b border-gray-200 px-8 py-6">
-                <div className="max-w-3xl mx-auto flex items-end justify-between">
-                    <div>
-                        <p className="text-xs font-medium text-gray-400 tracking-widest uppercase mb-1">Weekly Report</p>
-                        <h1 className="text-2xl font-bold tracking-tight">週間環境レポート</h1>
-                    </div>
-                    <p className="text-sm text-gray-400">
-                        {data.thisWeekRange.from} — {data.thisWeekRange.to}
-                        <span className="ml-3 text-gray-300">|</span>
-                        <span className="ml-3">優勝・準優勝 {data.totalDecksThisWeek}件</span>
+                {/* ヘッダー */}
+                <div className="text-center space-y-2">
+                    <p className="text-sm font-bold text-indigo-500 tracking-widest uppercase">Weekly Report</p>
+                    <h1 className="text-3xl font-extrabold text-gray-900">週間環境レポート</h1>
+                    <p className="text-gray-500 text-sm">
+                        {data.thisWeekRange.from}〜{data.thisWeekRange.to}
+                        <span className="mx-2 text-gray-300">|</span>
+                        優勝・準優勝 計{data.totalDecksThisWeek}件
                     </p>
                 </div>
-            </div>
-
-            <div className="max-w-3xl mx-auto px-8 py-10 space-y-12">
 
                 {/* 今週の優勝ランキング */}
-                <section>
-                    <h2 className="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-4">
-                        今週の優勝・準優勝
-                    </h2>
+                <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100">
+                        <h2 className="font-bold text-gray-800">今週の優勝・準優勝ランキング</h2>
+                    </div>
                     {data.topArchetypes.length === 0 ? (
-                        <p className="text-sm text-gray-300">今週のデータがまだありません</p>
+                        <p className="px-6 py-8 text-gray-400 text-sm text-center">今週のデータがまだありません</p>
                     ) : (
-                        <div className="divide-y divide-gray-100">
-                            {data.topArchetypes.map((a, i) => (
-                                <div key={a.archetype_id} className="flex items-center gap-5 py-3">
-                                    <span className="text-sm font-mono text-gray-300 w-5 text-right">{i + 1}</span>
-                                    <span className="flex-1 font-semibold text-gray-900">{a.name}</span>
-                                    <div className="flex gap-2 text-xs">
-                                        {a.wins > 0 && (
-                                            <span className="border border-gray-900 text-gray-900 px-2 py-0.5 font-medium">
-                                                優勝 {a.wins}
-                                            </span>
-                                        )}
-                                        {a.runnerUps > 0 && (
-                                            <span className="border border-gray-300 text-gray-500 px-2 py-0.5 font-medium">
-                                                準優勝 {a.runnerUps}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 text-gray-400 text-xs">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left font-medium w-8">#</th>
+                                        <th className="px-2 py-3 text-left font-medium">アーキタイプ</th>
+                                        <th className="px-6 py-3 text-center font-medium">優勝</th>
+                                        <th className="px-6 py-3 text-center font-medium">準優勝</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {data.topArchetypes.map((a, i) => (
+                                        <tr key={a.archetype_id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-3 text-gray-300 font-mono text-xs">{i + 1}</td>
+                                            <td className="px-2 py-3 font-bold text-gray-800">{a.name}</td>
+                                            <td className="px-6 py-3 text-center">
+                                                <span className={`font-bold ${a.wins > 0 ? 'text-yellow-600' : 'text-gray-200'}`}>
+                                                    {a.wins}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-3 text-center">
+                                                <span className={`font-bold ${a.runnerUps > 0 ? 'text-gray-600' : 'text-gray-200'}`}>
+                                                    {a.runnerUps}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </section>
 
                 {/* 先週比 */}
-                <section>
-                    <h2 className="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-4">
-                        先週比の伸び
-                        <span className="ml-3 normal-case font-normal text-gray-300">
-                            {data.lastWeekRange.from} — {data.lastWeekRange.to} 比較
-                        </span>
-                    </h2>
+                <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 className="font-bold text-gray-800">先週比の伸び</h2>
+                        <span className="text-xs text-gray-400">先週 {data.lastWeekRange.from}〜{data.lastWeekRange.to}</span>
+                    </div>
                     {data.archetypes.length === 0 ? (
-                        <p className="text-sm text-gray-300">先週比データがありません</p>
+                        <p className="px-6 py-8 text-gray-400 text-sm text-center">先週比データがありません</p>
                     ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="text-xs text-gray-400 border-b border-gray-100">
-                                    <th className="text-left py-2 font-medium">アーキタイプ</th>
-                                    <th className="text-right py-2 font-medium">今週</th>
-                                    <th className="text-right py-2 font-medium">先週</th>
-                                    <th className="text-right py-2 font-medium">増加</th>
-                                    <th className="text-right py-2 font-medium">伸び率</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {data.archetypes.map(a => (
-                                    <tr key={a.archetype_id}>
-                                        <td className="py-3 font-medium">{a.name}</td>
-                                        <td className="py-3 text-right font-bold">{a.thisWeek}</td>
-                                        <td className="py-3 text-right text-gray-400">{a.lastWeek}</td>
-                                        <td className="py-3 text-right text-gray-900">+{a.growth}</td>
-                                        <td className="py-3 text-right">
-                                            {a.growthRate !== null ? (
-                                                <span className="text-xs font-medium text-gray-500">+{a.growthRate}%</span>
-                                            ) : (
-                                                <span className="text-xs font-medium text-gray-400">NEW</span>
-                                            )}
-                                        </td>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 text-gray-400 text-xs">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left font-medium">アーキタイプ</th>
+                                        <th className="px-6 py-3 text-center font-medium">今週</th>
+                                        <th className="px-6 py-3 text-center font-medium">先週</th>
+                                        <th className="px-6 py-3 text-center font-medium">増加</th>
+                                        <th className="px-6 py-3 text-center font-medium">伸び率</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {data.archetypes.map(a => (
+                                        <tr key={a.archetype_id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-3 font-bold text-gray-800">{a.name}</td>
+                                            <td className="px-6 py-3 text-center font-bold text-indigo-600">{a.thisWeek}</td>
+                                            <td className="px-6 py-3 text-center text-gray-400">{a.lastWeek}</td>
+                                            <td className="px-6 py-3 text-center font-bold text-gray-800">+{a.growth}</td>
+                                            <td className="px-6 py-3 text-center">
+                                                {a.growthRate !== null ? (
+                                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
+                                                        +{a.growthRate}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                                                        NEW
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </section>
 
                 {/* 注目カード */}
                 {data.featuredCards.length > 0 && (
-                    <section>
-                        <h2 className="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-4">
-                            注目カード採用率
-                            <span className="ml-3 normal-case font-normal text-gray-300">今週平均 vs 先週平均</span>
-                        </h2>
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="text-xs text-gray-400 border-b border-gray-100">
-                                    <th className="text-left py-2 font-medium">カード名</th>
-                                    <th className="text-right py-2 font-medium">今週</th>
-                                    <th className="text-right py-2 font-medium">先週</th>
-                                    <th className="text-right py-2 font-medium">変化</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {data.featuredCards.map(c => (
-                                    <tr key={c.card_name}>
-                                        <td className="py-3 font-medium">{c.card_name}</td>
-                                        <td className="py-3 text-right font-bold">{c.thisWeekAvg}%</td>
-                                        <td className="py-3 text-right text-gray-400">{c.lastWeekAvg}%</td>
-                                        <td className="py-3 text-right text-sm font-medium">
-                                            {c.diff > 0 ? (
-                                                <span className="text-gray-900">+{c.diff}pt</span>
-                                            ) : c.diff < 0 ? (
-                                                <span className="text-gray-400">{c.diff}pt</span>
-                                            ) : (
-                                                <span className="text-gray-300">±0</span>
-                                            )}
-                                        </td>
+                    <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h2 className="font-bold text-gray-800">注目カード採用率</h2>
+                            <span className="text-xs text-gray-400">今週平均 vs 先週平均</span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead className="bg-gray-50 text-gray-400 text-xs">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left font-medium">カード名</th>
+                                        <th className="px-6 py-3 text-center font-medium">今週</th>
+                                        <th className="px-6 py-3 text-center font-medium">先週</th>
+                                        <th className="px-6 py-3 text-center font-medium">変化</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {data.featuredCards.map(c => (
+                                        <tr key={c.card_name} className="hover:bg-gray-50">
+                                            <td className="px-6 py-3 font-bold text-gray-800">{c.card_name}</td>
+                                            <td className="px-6 py-3 text-center font-bold text-indigo-600">{c.thisWeekAvg}%</td>
+                                            <td className="px-6 py-3 text-center text-gray-400">{c.lastWeekAvg}%</td>
+                                            <td className="px-6 py-3 text-center font-medium">
+                                                {c.diff > 0 ? (
+                                                    <span className="text-green-600">+{c.diff}pt</span>
+                                                ) : c.diff < 0 ? (
+                                                    <span className="text-red-400">{c.diff}pt</span>
+                                                ) : (
+                                                    <span className="text-gray-300">±0</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </section>
                 )}
 
                 {/* SNS投稿文 */}
-                <section>
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xs font-semibold text-gray-400 tracking-widest uppercase">
-                            投稿テキスト
-                        </h2>
+                <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <h2 className="font-bold text-gray-800">投稿テキスト</h2>
                         <button
                             onClick={handleCopy}
-                            className={`text-xs font-medium px-3 py-1.5 border transition-colors ${
+                            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                                 copied
-                                    ? 'border-gray-900 bg-gray-900 text-white'
-                                    : 'border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
                             }`}
                         >
                             {copied ? 'コピーしました' : 'テキストをコピー'}
                         </button>
                     </div>
-                    <pre className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed bg-gray-50 p-5 border border-gray-100 font-sans">
+                    <pre className="px-6 py-5 whitespace-pre-wrap text-sm text-gray-700 leading-relaxed font-sans bg-gray-50">
                         {generateSNSText(data)}
                     </pre>
                 </section>
 
-                <p className="text-xs text-gray-300 text-center pb-4">
+                <p className="text-center text-xs text-gray-300 pb-4">
                     PokeLix · データ更新: 毎朝自動集計
                 </p>
             </div>
