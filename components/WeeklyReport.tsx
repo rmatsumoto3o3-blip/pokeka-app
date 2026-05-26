@@ -23,11 +23,10 @@ function generateSNSText(data: WeeklyReportData): string {
         })
         lines.push('')
     }
-    const notable = data.featuredCards.filter(c => c.diff !== 0).slice(0, 3)
-    if (notable.length > 0) {
+    if (data.featuredCards.length > 0) {
         lines.push('注目カード採用率')
-        notable.forEach(c => {
-            const sign = c.diff > 0 ? `+${c.diff}` : `${c.diff}`
+        data.featuredCards.forEach(c => {
+            const sign = c.diff > 0 ? `+${c.diff}` : c.diff < 0 ? `${c.diff}` : `±0`
             lines.push(`${c.card_name} ${c.thisWeekAvg}%（${sign}pt）`)
         })
         lines.push('')
