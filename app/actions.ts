@@ -1198,22 +1198,28 @@ export type WeeklyReportData = {
     totalDecksThisWeek: number
 }
 
-export async function getWeeklyReportAction(): Promise<{ success: boolean; data?: WeeklyReportData; error?: string }> {
+export async function getWeeklyReportAction(
+    thisWeekFromStr?: string, // "YYYY-MM-DD" 今週開始日
+    thisWeekToStr?: string    // "YYYY-MM-DD" 今週終了日
+): Promise<{ success: boolean; data?: WeeklyReportData; error?: string }> {
     try {
         const supabaseAdmin = getSupabaseAdmin()
         const now = new Date()
 
-        const thisWeekFrom = new Date(now); thisWeekFrom.setDate(now.getDate() - 7)
-        const lastWeekFrom = new Date(now); lastWeekFrom.setDate(now.getDate() - 14)
+        // 期間指定があればそれを使う、なければ直近7日
+        const thisWeekTo   = thisWeekToStr   ? new Date(thisWeekToStr + 'T23:59:59Z') : now
+        const thisWeekFrom = thisWeekFromStr ? new Date(thisWeekFromStr + 'T00:00:00Z') : new Date(new Date(thisWeekTo).setDate(thisWeekTo.getDate() - 7))
+        const lastWeekFrom = new Date(thisWeekFrom); lastWeekFrom.setDate(thisWeekFrom.getDate() - 7)
 
         const fmt = (d: Date) => d.toISOString()
 
-        // deck_records: 優勝/準優勝 の過去2週分を取得
+        // deck_records: 優勝/準優勝 の対象2週分を取得
         const { data: records, error: rErr } = await supabaseAdmin
             .from('deck_records')
             .select('archetype_id, event_rank, created_at')
             .in('event_rank', ['優勝', '準優勝'])
             .gte('created_at', fmt(lastWeekFrom))
+            .lte('created_at', fmt(thisWeekTo))
 
         if (rErr) throw rErr
 
@@ -1230,7 +1236,7 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
 
         for (const r of records || []) {
             const createdAt = new Date(r.created_at)
-            const isThisWeek = createdAt >= thisWeekFrom
+            const isThisWeek = createdAt >= thisWeekFrom && createdAt <= thisWeekTo
             const map = isThisWeek ? thisWeekCounts : lastWeekCounts
             map[r.archetype_id] = (map[r.archetype_id] || 0) + 1
         }
@@ -1240,7 +1246,7 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
         const thisWeekRunnerUps: Record<string, number> = {}
         for (const r of records || []) {
             const createdAt = new Date(r.created_at)
-            if (createdAt >= thisWeekFrom) {
+            if (createdAt >= thisWeekFrom && createdAt <= thisWeekTo) {
                 if (r.event_rank === '優勝') thisWeekWins[r.archetype_id] = (thisWeekWins[r.archetype_id] || 0) + 1
                 if (r.event_rank === '準優勝') thisWeekRunnerUps[r.archetype_id] = (thisWeekRunnerUps[r.archetype_id] || 0) + 1
             }
@@ -1274,11 +1280,12 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
             .filter(s => s.growth > 0)
             .sort((a, b) => b.thisWeek - a.thisWeek)
 
-        // card_trend_snapshots: 注目カードの先週・先々週平均
+        // card_trend_snapshots: 注目カードの対象2週分
         const { data: snapshots, error: sErr } = await supabaseAdmin
             .from('card_trend_snapshots')
             .select('card_name, adoption_rate, recorded_at')
             .gte('recorded_at', fmt(lastWeekFrom))
+            .lte('recorded_at', fmt(thisWeekTo))
 
         if (sErr) throw sErr
 
@@ -1287,7 +1294,7 @@ export async function getWeeklyReportAction(): Promise<{ success: boolean; data?
 
         for (const s of snapshots || []) {
             const recordedAt = new Date(s.recorded_at)
-            const isThisWeek = recordedAt >= thisWeekFrom
+            const isThisWeek = recordedAt >= thisWeekFrom && recordedAt <= thisWeekTo
             const map = isThisWeek ? thisWeekRates : lastWeekRates
             if (!map[s.card_name]) map[s.card_name] = []
             map[s.card_name].push(s.adoption_rate)
