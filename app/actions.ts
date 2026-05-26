@@ -1322,7 +1322,7 @@ export async function getWeeklyReportAction(
         return {
             success: true,
             data: {
-                thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(now) },
+                thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(thisWeekTo) },
                 lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
                 archetypes: archetypeStats,
                 topArchetypes,
