@@ -15,6 +15,7 @@ import AnalyticsManager from '@/components/AnalyticsManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
 import UserList from '@/components/UserList'
+import WeeklyReport from '@/components/WeeklyReport'
 import SideArticleList from '@/components/SideArticleList'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
@@ -251,6 +252,17 @@ export default function Dashboard() {
                                         ユーザー一覧
                                     </button>
                                 )}
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => setActiveTab('weekly-report')}
+                                        className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'weekly-report'
+                                            ? 'border-green-500 text-green-900 bg-green-50 md:bg-transparent rounded-md md:rounded-none'
+                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        週間レポート
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center ml-2 md:ml-4 flex-shrink-0">
@@ -421,6 +433,13 @@ export default function Dashboard() {
                             <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-indigo-200 shadow-sm">
                                 <h2 className="text-xl font-bold mb-4">ユーザー管理</h2>
                                 <UserList />
+                            </div>
+                        )}
+
+                        {activeTab === 'weekly-report' && isAdmin && (
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-bold text-gray-900">週間レポート</h2>
+                                <WeeklyReport />
                             </div>
                         )}
 
