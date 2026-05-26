@@ -323,11 +323,11 @@ export default function WeeklyReport() {
                                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>優勝・準優勝ランキング</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             {data.topArchetypes.slice(0, 5).map((a, i) => (
-                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{ fontSize: '11px', color: '#475569', width: '16px', fontFamily: 'monospace' }}>{i + 1}</span>
-                                                    <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{a.name}</span>
-                                                    <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>優勝 {a.wins}</span>
-                                                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>準優勝 {a.runnerUps}</span>
+                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '22px' }}>
+                                                    <span style={{ fontSize: '11px', lineHeight: '22px', color: '#475569', width: '16px', fontFamily: 'monospace', display: 'block' }}>{i + 1}</span>
+                                                    <span style={{ flex: 1, fontSize: '13px', lineHeight: '22px', fontWeight: 700, color: '#f1f5f9', display: 'block' }}>{a.name}</span>
+                                                    <span style={{ fontSize: '11px', lineHeight: '22px', color: '#fbbf24', fontWeight: 700, display: 'block' }}>優勝 {a.wins}</span>
+                                                    <span style={{ fontSize: '11px', lineHeight: '22px', color: '#94a3b8', fontWeight: 700, display: 'block' }}>準優勝 {a.runnerUps}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -340,10 +340,10 @@ export default function WeeklyReport() {
                                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>集計期間の伸び</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             {data.archetypes.filter(a => a.growth > 0).slice(0, 5).map(a => (
-                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{a.name}</span>
-                                                    <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>{a.thisWeek}件</span>
-                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#34d399' }}>
+                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '22px' }}>
+                                                    <span style={{ flex: 1, fontSize: '13px', lineHeight: '22px', fontWeight: 700, color: '#f1f5f9', display: 'block' }}>{a.name}</span>
+                                                    <span style={{ fontSize: '11px', lineHeight: '22px', color: '#818cf8', fontWeight: 700, display: 'block' }}>{a.thisWeek}件</span>
+                                                    <span style={{ fontSize: '11px', lineHeight: '22px', fontWeight: 700, color: '#34d399', display: 'block' }}>
                                                         +{a.growth} {a.growthRate !== null ? `(+${a.growthRate}%)` : '(NEW)'}
                                                     </span>
                                                 </div>
@@ -356,13 +356,13 @@ export default function WeeklyReport() {
                                 {data.featuredCards.length > 0 && (
                                     <div style={{ padding: '16px 28px', borderBottom: '1px solid #1e293b' }}>
                                         <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>注目カード採用率</div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '24px', rowGap: '7px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '24px', rowGap: '2px' }}>
                                             {data.featuredCards.slice(0, 10).map(c => (
-                                                <div key={c.card_name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                                    <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{c.card_name}</span>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                                                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc' }}>{c.thisWeekAvg}%</span>
-                                                        <span style={{ fontSize: '10px', fontWeight: 700, color: c.diff > 0 ? '#34d399' : c.diff < 0 ? '#f87171' : '#475569' }}>
+                                                <div key={c.card_name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '24px', boxSizing: 'border-box' }}>
+                                                    <span style={{ fontSize: '12px', lineHeight: '24px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, display: 'block' }}>{c.card_name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, height: '24px' }}>
+                                                        <span style={{ fontSize: '12px', lineHeight: '24px', fontWeight: 700, color: '#a5b4fc', display: 'block' }}>{c.thisWeekAvg}%</span>
+                                                        <span style={{ fontSize: '10px', lineHeight: '24px', fontWeight: 700, color: c.diff > 0 ? '#34d399' : c.diff < 0 ? '#f87171' : '#475569', display: 'block' }}>
                                                             {c.diff > 0 ? `+${c.diff}` : c.diff < 0 ? `${c.diff}` : '±0'}
                                                         </span>
                                                     </div>
