@@ -1209,7 +1209,10 @@ export async function getWeeklyReportAction(
         // 期間指定があればそれを使う、なければ直近7日
         const thisWeekTo   = thisWeekToStr   ? new Date(thisWeekToStr + 'T23:59:59Z') : now
         const thisWeekFrom = thisWeekFromStr ? new Date(thisWeekFromStr + 'T00:00:00Z') : new Date(new Date(thisWeekTo).setDate(thisWeekTo.getDate() - 7))
-        const lastWeekFrom = new Date(thisWeekFrom); lastWeekFrom.setDate(thisWeekFrom.getDate() - 7)
+
+        // 比較期間は選択期間と同じ日数分だけ遡る
+        const periodDays = Math.round((thisWeekTo.getTime() - thisWeekFrom.getTime()) / (1000 * 60 * 60 * 24))
+        const lastWeekFrom = new Date(thisWeekFrom); lastWeekFrom.setDate(thisWeekFrom.getDate() - periodDays)
 
         const fmt = (d: Date) => d.toISOString()
 
