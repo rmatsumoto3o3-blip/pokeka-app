@@ -289,46 +289,53 @@ export default function WeeklyReport() {
                         <div className="p-4 bg-gray-50 overflow-auto">
                             <div
                                 ref={reportCardRef}
-                                className="w-[540px] mx-auto bg-slate-900 text-white rounded-2xl overflow-hidden"
-                                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                                style={{
+                                    width: '680px',
+                                    backgroundColor: '#0f172a',
+                                    color: '#fff',
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                                    margin: '0 auto',
+                                }}
                             >
                                 {/* Header */}
-                                <div className="px-6 pt-6 pb-4 border-b border-slate-700">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[11px] font-bold text-indigo-400 tracking-widest uppercase">PokeLix · 環境レポート</span>
-                                        <span className="text-[11px] text-slate-400">{data.thisWeekRange.from}〜{data.thisWeekRange.to}</span>
+                                <div style={{ padding: '24px 28px 16px', borderBottom: '1px solid #1e293b' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#818cf8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>PokeLix · 環境レポート</span>
+                                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{data.thisWeekRange.from}〜{data.thisWeekRange.to}</span>
                                     </div>
-                                    <div className="text-[11px] text-slate-500">優勝・準優勝 計{data.totalDecksThisWeek}件集計</div>
+                                    <div style={{ fontSize: '11px', color: '#475569' }}>優勝・準優勝 計{data.totalDecksThisWeek}件集計</div>
                                 </div>
 
                                 {/* Rankings */}
                                 {data.topArchetypes.length > 0 && (
-                                    <div className="px-6 py-4 border-b border-slate-700">
-                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">優勝・準優勝ランキング</div>
-                                        <div className="space-y-1.5">
+                                    <div style={{ padding: '16px 28px', borderBottom: '1px solid #1e293b' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>優勝・準優勝ランキング</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             {data.topArchetypes.slice(0, 5).map((a, i) => (
-                                                <div key={a.archetype_id} className="flex items-center gap-3">
-                                                    <span className="text-[11px] text-slate-500 w-4 font-mono">{i + 1}</span>
-                                                    <span className="flex-1 text-[13px] font-bold text-white">{a.name}</span>
-                                                    <span className="text-[11px] text-yellow-400 font-bold">優勝 {a.wins}</span>
-                                                    <span className="text-[11px] text-slate-400 font-bold">準優勝 {a.runnerUps}</span>
+                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ fontSize: '11px', color: '#475569', width: '16px', fontFamily: 'monospace' }}>{i + 1}</span>
+                                                    <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{a.name}</span>
+                                                    <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 700 }}>優勝 {a.wins}</span>
+                                                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 700 }}>準優勝 {a.runnerUps}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Growth */}
+                                {/* Growth — 集計期間の伸び */}
                                 {data.archetypes.filter(a => a.growth > 0).length > 0 && (
-                                    <div className="px-6 py-4 border-b border-slate-700">
-                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">先週比の伸び</div>
-                                        <div className="space-y-1.5">
-                                            {data.archetypes.filter(a => a.growth > 0).slice(0, 4).map(a => (
-                                                <div key={a.archetype_id} className="flex items-center gap-3">
-                                                    <span className="flex-1 text-[13px] font-bold text-white">{a.name}</span>
-                                                    <span className="text-[11px] text-indigo-400 font-bold">今週 {a.thisWeek}</span>
-                                                    <span className="text-[11px] font-bold text-emerald-400">
-                                                        {a.growthRate !== null ? `+${a.growthRate}%` : 'NEW'}
+                                    <div style={{ padding: '16px 28px', borderBottom: '1px solid #1e293b' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>集計期間の伸び</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {data.archetypes.filter(a => a.growth > 0).slice(0, 5).map(a => (
+                                                <div key={a.archetype_id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#f1f5f9' }}>{a.name}</span>
+                                                    <span style={{ fontSize: '11px', color: '#818cf8', fontWeight: 700 }}>{a.thisWeek}件</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#34d399' }}>
+                                                        +{a.growth} {a.growthRate !== null ? `(+${a.growthRate}%)` : '(NEW)'}
                                                     </span>
                                                 </div>
                                             ))}
@@ -336,17 +343,17 @@ export default function WeeklyReport() {
                                     </div>
                                 )}
 
-                                {/* Featured Cards */}
+                                {/* Featured Cards — 2列グリッド、見切れなし */}
                                 {data.featuredCards.length > 0 && (
-                                    <div className="px-6 py-4 border-b border-slate-700">
-                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">注目カード採用率</div>
-                                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                                    <div style={{ padding: '16px 28px', borderBottom: '1px solid #1e293b' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>注目カード採用率</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '24px', rowGap: '7px' }}>
                                             {data.featuredCards.slice(0, 10).map(c => (
-                                                <div key={c.card_name} className="flex items-center justify-between">
-                                                    <span className="text-[12px] text-white font-medium truncate max-w-[130px]">{c.card_name}</span>
-                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                        <span className="text-[12px] font-bold text-indigo-300">{c.thisWeekAvg}%</span>
-                                                        <span className={`text-[10px] font-bold ${c.diff > 0 ? 'text-emerald-400' : c.diff < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                                                <div key={c.card_name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                    <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{c.card_name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#a5b4fc' }}>{c.thisWeekAvg}%</span>
+                                                        <span style={{ fontSize: '10px', fontWeight: 700, color: c.diff > 0 ? '#34d399' : c.diff < 0 ? '#f87171' : '#475569' }}>
                                                             {c.diff > 0 ? `+${c.diff}` : c.diff < 0 ? `${c.diff}` : '±0'}
                                                         </span>
                                                     </div>
@@ -357,9 +364,9 @@ export default function WeeklyReport() {
                                 )}
 
                                 {/* Footer */}
-                                <div className="px-6 py-3 flex items-center justify-between">
-                                    <span className="text-[10px] text-slate-600">pokelix.com</span>
-                                    <span className="text-[10px] text-slate-600">#ポケカ #環境分析</span>
+                                <div style={{ padding: '12px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '10px', color: '#334155' }}>pokelix.com</span>
+                                    <span style={{ fontSize: '10px', color: '#334155' }}>#ポケカ #環境分析</span>
                                 </div>
                             </div>
                         </div>
