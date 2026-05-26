@@ -76,21 +76,41 @@ export default function WeeklyReport() {
                 backgroundColor: '#0f172a',
                 scale: 2,
                 useCORS: true,
+                allowTaint: true,
                 logging: false,
             })
-            canvas.toBlob(async (blob) => {
-                if (!blob) return
+
+            // toBlob を Promise 化
+            const blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob((b) => {
+                    if (b) resolve(b)
+                    else reject(new Error('toBlob failed'))
+                }, 'image/png')
+            })
+
+            // クリップボードへのコピーを試みる
+            if (navigator.clipboard && 'write' in navigator.clipboard) {
                 await navigator.clipboard.write([
                     new ClipboardItem({ 'image/png': blob })
                 ])
                 setImageCopied(true)
                 setTimeout(() => setImageCopied(false), 2000)
-                setImageLoading(false)
-            }, 'image/png')
-        } catch (e) {
-            console.error(e)
+            } else {
+                // 非対応ブラウザはダウンロードにフォールバック
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `pokelix-report-${data.thisWeekRange.from}-${data.thisWeekRange.to}.png`
+                a.click()
+                URL.revokeObjectURL(url)
+                setImageCopied(true)
+                setTimeout(() => setImageCopied(false), 2000)
+            }
+        } catch (e: any) {
+            console.error('画像コピーエラー:', e)
+            alert(`画像のコピーに失敗しました\n${e?.message || e}`)
+        } finally {
             setImageLoading(false)
-            alert('画像のコピーに失敗しました')
         }
     }
 
