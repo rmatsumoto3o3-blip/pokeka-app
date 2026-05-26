@@ -1089,7 +1089,7 @@ export async function updateDailySnapshotsAction(userId: string) {
             .eq('event_rank', 'ALL')
         if (sErr) throw sErr
 
-        const today = new Date().toISOString()
+        const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
         const snapshots = (stats || [])
             .filter(s => s.total_decks > 0)
             .map(s => ({
@@ -1102,7 +1102,7 @@ export async function updateDailySnapshotsAction(userId: string) {
 
         const { error: iErr } = await supabaseAdmin
             .from('card_trend_snapshots')
-            .insert(snapshots)
+            .upsert(snapshots, { onConflict: 'recorded_at,card_name' })
         if (iErr) throw iErr
 
         return { success: true, count: snapshots.length }
