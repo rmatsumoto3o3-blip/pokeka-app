@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { getWeeklyReportAction, type WeeklyReportData } from '@/app/actions'
 
 function generateSNSText(data: WeeklyReportData): string {
@@ -40,6 +40,9 @@ export default function WeeklyReport() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)
+    const [imageCopied, setImageCopied] = useState(false)
+    const [imageLoading, setImageLoading] = useState(false)
+    const reportCardRef = useRef<HTMLDivElement>(null)
 
     // 期間指定（デフォルト: 直近7日）
     const today = new Date().toISOString().split('T')[0]
@@ -62,6 +65,33 @@ export default function WeeklyReport() {
         navigator.clipboard.writeText(generateSNSText(data))
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+    }
+
+    const handleCopyImage = async () => {
+        if (!reportCardRef.current || !data) return
+        setImageLoading(true)
+        try {
+            const html2canvas = (await import('html2canvas')).default
+            const canvas = await html2canvas(reportCardRef.current, {
+                backgroundColor: '#0f172a',
+                scale: 2,
+                useCORS: true,
+                logging: false,
+            })
+            canvas.toBlob(async (blob) => {
+                if (!blob) return
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ])
+                setImageCopied(true)
+                setTimeout(() => setImageCopied(false), 2000)
+                setImageLoading(false)
+            }, 'image/png')
+        } catch (e) {
+            console.error(e)
+            setImageLoading(false)
+            alert('画像のコピーに失敗しました')
+        }
     }
 
     return (
@@ -220,6 +250,100 @@ export default function WeeklyReport() {
                             </table>
                         </div>
                     )}
+
+                    {/* 画像カード */}
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="font-bold text-gray-800">投稿画像</h3>
+                            <button
+                                onClick={handleCopyImage}
+                                disabled={imageLoading}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
+                                    imageCopied ? 'bg-green-100 text-green-700' : 'bg-slate-800 text-white hover:bg-slate-900'
+                                }`}
+                            >
+                                {imageLoading ? '生成中...' : imageCopied ? 'コピーしました' : '画像をコピー'}
+                            </button>
+                        </div>
+                        {/* Report Card (rendered for screenshot) */}
+                        <div className="p-4 bg-gray-50 overflow-auto">
+                            <div
+                                ref={reportCardRef}
+                                className="w-[540px] mx-auto bg-slate-900 text-white rounded-2xl overflow-hidden"
+                                style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                            >
+                                {/* Header */}
+                                <div className="px-6 pt-6 pb-4 border-b border-slate-700">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[11px] font-bold text-indigo-400 tracking-widest uppercase">PokeLix · 環境レポート</span>
+                                        <span className="text-[11px] text-slate-400">{data.thisWeekRange.from}〜{data.thisWeekRange.to}</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500">優勝・準優勝 計{data.totalDecksThisWeek}件集計</div>
+                                </div>
+
+                                {/* Rankings */}
+                                {data.topArchetypes.length > 0 && (
+                                    <div className="px-6 py-4 border-b border-slate-700">
+                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">優勝・準優勝ランキング</div>
+                                        <div className="space-y-1.5">
+                                            {data.topArchetypes.slice(0, 5).map((a, i) => (
+                                                <div key={a.archetype_id} className="flex items-center gap-3">
+                                                    <span className="text-[11px] text-slate-500 w-4 font-mono">{i + 1}</span>
+                                                    <span className="flex-1 text-[13px] font-bold text-white">{a.name}</span>
+                                                    <span className="text-[11px] text-yellow-400 font-bold">優勝 {a.wins}</span>
+                                                    <span className="text-[11px] text-slate-400 font-bold">準優勝 {a.runnerUps}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Growth */}
+                                {data.archetypes.filter(a => a.growth > 0).length > 0 && (
+                                    <div className="px-6 py-4 border-b border-slate-700">
+                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">先週比の伸び</div>
+                                        <div className="space-y-1.5">
+                                            {data.archetypes.filter(a => a.growth > 0).slice(0, 4).map(a => (
+                                                <div key={a.archetype_id} className="flex items-center gap-3">
+                                                    <span className="flex-1 text-[13px] font-bold text-white">{a.name}</span>
+                                                    <span className="text-[11px] text-indigo-400 font-bold">今週 {a.thisWeek}</span>
+                                                    <span className="text-[11px] font-bold text-emerald-400">
+                                                        {a.growthRate !== null ? `+${a.growthRate}%` : 'NEW'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Featured Cards */}
+                                {data.featuredCards.length > 0 && (
+                                    <div className="px-6 py-4 border-b border-slate-700">
+                                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">注目カード採用率</div>
+                                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+                                            {data.featuredCards.slice(0, 10).map(c => (
+                                                <div key={c.card_name} className="flex items-center justify-between">
+                                                    <span className="text-[12px] text-white font-medium truncate max-w-[130px]">{c.card_name}</span>
+                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                        <span className="text-[12px] font-bold text-indigo-300">{c.thisWeekAvg}%</span>
+                                                        <span className={`text-[10px] font-bold ${c.diff > 0 ? 'text-emerald-400' : c.diff < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                                                            {c.diff > 0 ? `+${c.diff}` : c.diff < 0 ? `${c.diff}` : '±0'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Footer */}
+                                <div className="px-6 py-3 flex items-center justify-between">
+                                    <span className="text-[10px] text-slate-600">pokelix.com</span>
+                                    <span className="text-[10px] text-slate-600">#ポケカ #環境分析</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* 投稿テキスト */}
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
