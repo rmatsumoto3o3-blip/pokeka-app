@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { getGlobalDeckAnalyticsAction } from '@/app/actions'
+import { getDeckAnalyticsAction } from '@/app/actions'
 
 interface KeyCardAdoption {
-    id: string
     card_name: string
     image_url: string | null
     adoption_quantity: string
@@ -22,9 +21,23 @@ interface KeyCardAdoptionDrawerProps {
 
 const CATEGORIES = ['Pokemon', 'Goods', 'Tool', 'Supporter', 'Stadium', 'Energy'] as const
 
+function mapCategory(supertype: string, subtypes?: string[]): string {
+    if (supertype === 'Pokémon') return 'Pokemon'
+    if (supertype === 'Energy') return 'Energy'
+    if (supertype === 'Trainer') {
+        if (subtypes?.includes('Item')) return 'Goods'
+        if (subtypes?.includes('Pokémon Tool')) return 'Tool'
+        if (subtypes?.includes('Supporter')) return 'Supporter'
+        if (subtypes?.includes('Stadium')) return 'Stadium'
+        return 'Goods'
+    }
+    return 'Goods'
+}
+
 export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, archetypeName }: KeyCardAdoptionDrawerProps) {
     const [loading, setLoading] = useState(true)
     const [adoptionData, setAdoptionData] = useState<KeyCardAdoption[]>([])
+    const [totalDecks, setTotalDecks] = useState(0)
 
     useEffect(() => {
         if (isOpen && archetypeId) {
@@ -35,10 +48,17 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
     const fetchData = async () => {
         try {
             setLoading(true)
-            const result = await getGlobalDeckAnalyticsAction()
-            if (result.success && result.analyticsByArchetype) {
-                const data = result.analyticsByArchetype[archetypeId] || []
-                setAdoptionData(data)
+            const result = await getDeckAnalyticsAction(archetypeId)
+            if (result.success && result.analytics) {
+                setTotalDecks(result.totalDecks || 0)
+                const mapped: KeyCardAdoption[] = result.analytics.map((stat: any) => ({
+                    card_name: stat.name,
+                    image_url: stat.imageUrl || null,
+                    adoption_rate: stat.adoptionRate.toFixed(1),
+                    adoption_quantity: stat.avgQuantity.toFixed(1),
+                    category: mapCategory(stat.supertype, stat.subtypes),
+                }))
+                setAdoptionData(mapped)
             }
         } catch (err) {
             console.error(err)
@@ -51,19 +71,18 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
 
     return (
         <div className="fixed inset-0 z-[150] flex justify-end pointer-events-none">
-            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 pointer-events-auto backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-
-            {/* Drawer */}
             <div className="relative w-full max-w-md h-full bg-white shadow-2xl pointer-events-auto transform transition-transform duration-300 ease-out flex flex-col">
-                {/* Header */}
                 <div className="px-4 py-3 border-b flex justify-between items-center bg-gray-50">
                     <div>
                         <div className="text-xs font-bold text-gray-500">キーカード採用率</div>
                         <h2 className="text-lg font-bold text-gray-900">{archetypeName}</h2>
+                        {totalDecks > 0 && (
+                            <div className="text-xs text-gray-400">{totalDecks}デッキ集計</div>
+                        )}
                     </div>
                     <button
                         onClick={onClose}
@@ -73,7 +92,6 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-white custom-scrollbar">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-10">
@@ -109,8 +127,6 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
                                                     ) : (
                                                         <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">Img</div>
                                                     )}
-
-                                                    {/* Badges */}
                                                     <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-[1px] text-white text-[10px] font-bold py-0.5 text-center">
                                                         平均 {card.adoption_quantity}枚
                                                     </div>
