@@ -4,6 +4,8 @@ export interface CardData {
     quantity: number
     supertype: string
     subtypes?: string[]
+    setCode?: string
+    collectorNumber?: string
 }
 
 export interface Card {
@@ -170,10 +172,12 @@ export function parsePTCGLFormat(text: string): CardData[] {
 
             cards.push({
                 name,
-                imageUrl: '', // Placeholder for now
+                imageUrl: '',
                 quantity,
                 supertype,
-                subtypes: subtype ? [subtype] : undefined
+                subtypes: subtype ? [subtype] : undefined,
+                setCode,
+                collectorNumber,
             })
         }
     })
