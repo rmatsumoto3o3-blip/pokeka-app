@@ -41,7 +41,9 @@ const SET_MAP: Record<string, { setId: string; series: string; pad: boolean }> =
 function buildImageUrl(setCode: string, collectorNumber: string): string | null {
     const mapping = SET_MAP[setCode.toUpperCase()]
     if (!mapping) return null
-    const num = mapping.pad
+    // Only pad purely numeric numbers (e.g. "79" → "079"); leave TG01, GG01 etc. as-is
+    const isNumeric = /^\d+$/.test(collectorNumber)
+    const num = (mapping.pad && isNumeric)
         ? collectorNumber.padStart(3, '0')
         : collectorNumber
     return `https://assets.tcgdex.net/en/${mapping.series}/${mapping.setId}/${num}/high.webp`
