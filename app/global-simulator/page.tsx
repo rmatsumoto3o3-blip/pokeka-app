@@ -5,6 +5,7 @@ import { getPTCGLDeckDataAction } from '@/app/actions'
 import SimulatorManager from '@/components/SimulatorManager'
 import type { CardData } from '@/lib/deckParser'
 import { enrichCardsWithImages } from '@/lib/tcgdex'
+// enrichCardsWithImages is synchronous — URLs are constructed directly from set mapping
 
 export default function GlobalSimulatorPage() {
     const [inputText, setInputText] = useState('')
@@ -22,11 +23,9 @@ export default function GlobalSimulatorPage() {
         try {
             const res = await getPTCGLDeckDataAction(inputText)
             if (res.success && res.data) {
-                // Show cards immediately, then enrich with images in background
-                setCards(res.data)
-                setLoading(false)
-                const enriched = await enrichCardsWithImages(res.data)
+                const enriched = enrichCardsWithImages(res.data)
                 setCards(enriched)
+                setLoading(false)
             } else {
                 setError(res.error || 'Failed to parse deck list. Please ensure it follows the PTCGL export format.')
                 setLoading(false)

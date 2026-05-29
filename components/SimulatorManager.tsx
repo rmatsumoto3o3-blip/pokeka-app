@@ -170,10 +170,10 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                             </td>
                                             <td className="px-2 md:px-4 py-2">
                                                 <div className="relative w-8 h-11 md:w-10 md:h-14 bg-gray-200 rounded overflow-hidden shadow-sm flex items-center justify-center">
-                                                    {card.imageUrl ? (
-                                                        <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
-                                                    ) : (
-                                                        <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase">{t.noImage}</span>
+                                                    <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase">{t.noImage}</span>
+                                                    {card.imageUrl && (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={card.imageUrl} alt={card.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
                                                     )}
                                                 </div>
                                             </td>
@@ -365,7 +365,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                     </div>
                                                     {c.imageUrl && (
                                                         <div className="relative w-8 h-11 shrink-0">
-                                                            <Image src={c.imageUrl} alt="" fill className="object-cover rounded shadow-sm opacity-80" unoptimized />
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img src={c.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded shadow-sm opacity-80" onError={(e) => e.currentTarget.remove()} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -454,18 +455,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                         {randomHand.map((c, i) => (
                             <div key={i} className="relative aspect-[63/88] rounded-lg overflow-hidden bg-gray-100 shadow-md group border border-gray-50">
-                                {c.imageUrl ? (
-                                    <Image
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
+                                    {c.name}
+                                </div>
+                                {c.imageUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
                                         src={c.imageUrl}
                                         alt={c.name}
-                                        fill
-                                        className="object-cover transition-transform group-hover:scale-110"
-                                        unoptimized
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        onError={(e) => e.currentTarget.remove()}
                                     />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
-                                        {c.name}
-                                    </div>
                                 )}
                             </div>
                         ))}

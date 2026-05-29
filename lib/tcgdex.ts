@@ -38,9 +38,6 @@ const SET_MAP: Record<string, { setId: string; series: string; pad: boolean }> =
     CRZ:  { setId: 'swsh12.5',series: 'swsh', pad: true },
 }
 
-const CACHE_PREFIX = 'tcgdex:'
-const NOT_FOUND = '__nf__'
-
 function buildImageUrl(setCode: string, collectorNumber: string): string | null {
     const mapping = SET_MAP[setCode.toUpperCase()]
     if (!mapping) return null
@@ -50,45 +47,11 @@ function buildImageUrl(setCode: string, collectorNumber: string): string | null 
     return `https://assets.tcgdex.net/en/${mapping.series}/${mapping.setId}/${num}/high.webp`
 }
 
-function readCache(key: string): string | null {
-    try { return localStorage.getItem(`${CACHE_PREFIX}${key}`) } catch { return null }
-}
-
-function writeCache(key: string, value: string) {
-    try { localStorage.setItem(`${CACHE_PREFIX}${key}`, value) } catch { /* ignore */ }
-}
-
-async function resolveImage(setCode: string, collectorNumber: string): Promise<string> {
-    const cacheKey = `${setCode}:${collectorNumber}`
-    const cached = readCache(cacheKey)
-    if (cached !== null) return cached === NOT_FOUND ? '' : cached
-
-    const url = buildImageUrl(setCode, collectorNumber)
-    if (!url) {
-        writeCache(cacheKey, NOT_FOUND)
-        return ''
-    }
-
-    // Verify the image exists (lightweight HEAD request)
-    try {
-        const res = await fetch(url, { method: 'HEAD' })
-        if (res.ok) {
-            writeCache(cacheKey, url)
-            return url
-        }
-    } catch { /* ignore */ }
-
-    writeCache(cacheKey, NOT_FOUND)
-    return ''
-}
-
-export async function enrichCardsWithImages(cards: CardData[]): Promise<CardData[]> {
-    return Promise.all(
-        cards.map(async (card) => {
-            if (!card.setCode || !card.collectorNumber) return card
-            if (card.imageUrl) return card
-            const imageUrl = await resolveImage(card.setCode, card.collectorNumber)
-            return { ...card, imageUrl }
-        })
-    )
+export function enrichCardsWithImages(cards: CardData[]): CardData[] {
+    return cards.map((card) => {
+        if (!card.setCode || !card.collectorNumber) return card
+        if (card.imageUrl) return card
+        const imageUrl = buildImageUrl(card.setCode, card.collectorNumber) ?? ''
+        return { ...card, imageUrl }
+    })
 }
