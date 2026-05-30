@@ -29,9 +29,40 @@ const dotGothic16 = DotGothic16({
 import AdSenseScript from "@/components/AdSenseScript";
 
 export const metadata: Metadata = {
-  title: "PokéLix（ポケリス）| ポケカ環境分析・初手確率シミュレーター",
-  description: "ポケモンカードの環境考察、デッキ分析、初手確率シミュレーター（PTCGL対応）。データに基づいたポケカ戦略をサポートする次世代の分析プラットフォームです。",
   metadataBase: new URL('https://pokelix.jp'),
+  title: {
+    default: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
+    template: '%s | PokéLix（ポケリス）',
+  },
+  description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。デッキコードを入力するだけで初手7枚の確率とサイド落ちリスクを即計算。',
+  keywords: ['ポケカ', 'ポケモンカード', '確率シミュレーター', '初手確率', 'サイド落ち', '一人回し', 'デッキ分析', '環境デッキ', 'ポケカ 確率', 'ポケカ シミュレーター'],
+  authors: [{ name: 'PokéLix' }],
+  creator: 'PokéLix',
+  openGraph: {
+    type: 'website',
+    locale: 'ja_JP',
+    url: 'https://pokelix.jp',
+    siteName: 'PokéLix（ポケリス）',
+    title: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
+    description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: '@pokelix_jp',
+    title: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
+    description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
