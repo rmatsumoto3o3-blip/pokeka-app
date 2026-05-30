@@ -41,16 +41,25 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
-    url: 'https://pokelix.jp',
+    url: 'https://www.pokelix.jp',
     siteName: 'PokéLix（ポケリス）',
     title: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
     description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
+    images: [
+      {
+        url: '/api/og',
+        width: 1200,
+        height: 630,
+        alt: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     site: '@pokelix_jp',
     title: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
     description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
+    images: ['/api/og'],
   },
   verification: {
     google: 'mp3mL3f3HiJ52h62eZFS1zU4PGNVyJPDpcE_gYU16rM',

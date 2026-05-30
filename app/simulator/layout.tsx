@@ -7,15 +7,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: '初手確率シミュレーター | PokéLix（ポケリス）',
     description: 'デッキコードを入力するだけで初手7枚の確率・サイド落ちリスクを即計算。モンテカルロ法で10万回シミュレーション。',
-    url: 'https://pokelix.jp/simulator',
+    url: 'https://www.pokelix.jp/simulator',
     siteName: 'PokéLix（ポケリス）',
     locale: 'ja_JP',
     type: 'website',
+    images: [{ url: '/api/og?title=初手確率シミュレーター&desc=デッキコードを入力するだけで初手確率・サイド落ちリスクを即計算', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: '初手確率シミュレーター | PokéLix（ポケリス）',
     description: 'デッキコードを入力するだけで初手7枚の確率・サイド落ちリスクを即計算。',
+    images: ['/api/og?title=初手確率シミュレーター&desc=デッキコードを入力するだけで初手確率・サイド落ちリスクを即計算'],
   },
   alternates: {
     canonical: 'https://pokelix.jp/simulator',

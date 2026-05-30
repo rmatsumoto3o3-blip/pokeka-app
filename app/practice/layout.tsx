@@ -7,15 +7,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ポケカ一人回し練習 | PokéLix（ポケリス）',
     description: 'ポケモンカードの一人回し・デッキ練習が無料でできるシミュレーター。初手事故率や展開の安定性を実戦形式で確認。',
-    url: 'https://pokelix.jp/practice',
+    url: 'https://www.pokelix.jp/practice',
     siteName: 'PokéLix（ポケリス）',
     locale: 'ja_JP',
     type: 'website',
+    images: [{ url: '/api/og?title=ポケカ一人回し練習&desc=デッキコードを入力して実戦形式で練習できる無料シミュレーター', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ポケカ一人回し練習 | PokéLix（ポケリス）',
     description: 'ポケモンカードの一人回し・デッキ練習が無料でできるシミュレーター。',
+    images: ['/api/og?title=ポケカ一人回し練習&desc=デッキコードを入力して実戦形式で練習できる無料シミュレーター'],
   },
   alternates: {
     canonical: 'https://pokelix.jp/practice',
