@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     title: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
     description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
   },
+  verification: {
+    google: 'mp3mL3f3HiJ52h62eZFS1zU4PGNVyJPDpcE_gYU16rM',
+  },
   robots: {
     index: true,
     follow: true,
