@@ -75,6 +75,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <head>
+        <meta name="google-site-verification" content="mp3mL3f3HiJ52h62eZFS1zU4PGNVyJPDpcE_gYU16rM" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pressStart2P.variable} ${dotGothic16.variable} antialiased`}
       >
