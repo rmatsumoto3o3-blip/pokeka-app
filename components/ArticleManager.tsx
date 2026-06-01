@@ -108,6 +108,7 @@ export default function ArticleManager() {
                 finalThumbnailUrl = data.publicUrl
             }
 
+            const now = new Date().toISOString()
             const articleData = {
                 title,
                 slug,
@@ -115,7 +116,8 @@ export default function ArticleManager() {
                 excerpt,
                 thumbnail_url: finalThumbnailUrl,
                 is_published: isPublished,
-                updated_at: new Date().toISOString(),
+                published_at: now,
+                updated_at: now,
             }
 
             if (editingArticle?.id) {
