@@ -1334,3 +1334,71 @@ export async function getWeeklyReportAction(
         return { success: false, error: (error as Error).message }
     }
 }
+
+// ============================================================
+// 記事管理アクション（サービスロールキーで RLS をバイパス）
+// ============================================================
+
+export async function saveArticleAction(articleData: {
+    id?: string
+    title: string
+    slug: string
+    content: string
+    excerpt: string
+    thumbnail_url?: string
+    is_published: boolean
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        const supabase = getSupabaseAdmin()
+        const now = new Date().toISOString()
+
+        if (articleData.id) {
+            // 更新
+            const { error } = await supabase
+                .from('articles')
+                .update({
+                    title: articleData.title,
+                    slug: articleData.slug,
+                    content: articleData.content,
+                    excerpt: articleData.excerpt,
+                    thumbnail_url: articleData.thumbnail_url ?? null,
+                    is_published: articleData.is_published,
+                    updated_at: now,
+                })
+                .eq('id', articleData.id)
+            if (error) throw error
+        } else {
+            // 新規作成
+            const { error } = await supabase
+                .from('articles')
+                .insert([{
+                    title: articleData.title,
+                    slug: articleData.slug,
+                    content: articleData.content,
+                    excerpt: articleData.excerpt,
+                    thumbnail_url: articleData.thumbnail_url ?? null,
+                    is_published: articleData.is_published,
+                    published_at: now,
+                    updated_at: now,
+                }])
+            if (error) throw error
+        }
+
+        return { success: true }
+    } catch (error) {
+        console.error('saveArticleAction error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+export async function deleteArticleAction(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const supabase = getSupabaseAdmin()
+        const { error } = await supabase.from('articles').delete().eq('id', id)
+        if (error) throw error
+        return { success: true }
+    } catch (error) {
+        console.error('deleteArticleAction error:', error)
+        return { success: false, error: (error as Error).message }
+    }
+}
