@@ -36,7 +36,7 @@ export default async function Home() {
     { data: articles }
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
-    supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false }).limit(5)
+    supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5)
   ])
   const decks: any[] = []
 

@@ -30,6 +30,20 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
         <div className="min-h-screen bg-white text-gray-900">
             <PublicHeader />
 
+            {/* 最新記事バナー */}
+            {articles && articles.length > 0 && (
+                <a
+                    href={`/articles/${articles[0].slug}`}
+                    className="block w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 transition-all"
+                >
+                    <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
+                        <span className="text-white text-xs font-bold bg-white/20 rounded-full px-2 py-0.5 shrink-0">🔥 NEW</span>
+                        <span className="text-white text-xs sm:text-sm font-medium truncate">{articles[0].title}</span>
+                        <span className="text-white/80 text-xs shrink-0">→</span>
+                    </div>
+                </a>
+            )}
+
             {/* Hero Section */}
             <section className="relative pt-2.5 pb-2.5 md:pt-2.5 md:pb-2.5 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-pink-100/50 via-purple-100/50 to-blue-100/50 z-0" />
@@ -161,37 +175,6 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                                 className="my-2"
                             />
                         </div>
-
-                        {/* 最新記事 */}
-                        {articles && articles.length > 0 && (() => {
-                            const latest = articles[0]
-                            return (
-                                <div className="flex flex-col items-center w-full max-w-sm">
-                                    <span className="text-xs text-gray-400 mb-1">🔥 最新記事</span>
-                                    <a
-                                        href={`/articles/${latest.slug}`}
-                                        className="block w-full rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        {latest.thumbnail_url ? (
-                                            <Image
-                                                src={latest.thumbnail_url}
-                                                alt={latest.title}
-                                                width={400}
-                                                height={225}
-                                                className="w-full h-auto object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full aspect-video bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
-                                                <span className="text-3xl">📰</span>
-                                            </div>
-                                        )}
-                                        <div className="px-3 py-2 bg-white">
-                                            <p className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{latest.title}</p>
-                                        </div>
-                                    </a>
-                                </div>
-                            )
-                        })()}
 
                         {/* Dot Picture Promotion */}
                         <div className="flex flex-col items-center w-full max-w-sm">
