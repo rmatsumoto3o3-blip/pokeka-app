@@ -153,6 +153,15 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             </a>
                         </div>
 
+                        {/* AdSense Unit */}
+                        <div className="w-full max-sm:px-2 max-w-sm">
+                            <AdPlaceholder
+                                slot="1093986865"
+                                format="rectangle"
+                                className="my-2"
+                            />
+                        </div>
+
                         {/* 最新記事 */}
                         {articles && articles.length > 0 && (() => {
                             const latest = articles[0]
