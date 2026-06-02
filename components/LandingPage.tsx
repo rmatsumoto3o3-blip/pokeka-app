@@ -153,14 +153,36 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             </a>
                         </div>
 
-                        {/* AdSense Unit */}
-                        <div className="w-full max-sm:px-2 max-w-sm">
-                            <AdPlaceholder
-                                slot="1093986865"
-                                format="rectangle"
-                                className="my-2"
-                            />
-                        </div>
+                        {/* 最新記事 */}
+                        {articles && articles.length > 0 && (() => {
+                            const latest = articles[0]
+                            return (
+                                <div className="flex flex-col items-center w-full max-w-sm">
+                                    <span className="text-xs text-gray-400 mb-1">🔥 最新記事</span>
+                                    <a
+                                        href={`/articles/${latest.slug}`}
+                                        className="block w-full rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        {latest.thumbnail_url ? (
+                                            <Image
+                                                src={latest.thumbnail_url}
+                                                alt={latest.title}
+                                                width={400}
+                                                height={225}
+                                                className="w-full h-auto object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full aspect-video bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+                                                <span className="text-3xl">📰</span>
+                                            </div>
+                                        )}
+                                        <div className="px-3 py-2 bg-white">
+                                            <p className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{latest.title}</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            )
+                        })()}
 
                         {/* Dot Picture Promotion */}
                         <div className="flex flex-col items-center w-full max-w-sm">
