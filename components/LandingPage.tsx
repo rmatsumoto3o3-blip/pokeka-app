@@ -139,6 +139,14 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             >
                                 ポケカで算数
                             </Link>
+                            <a
+                                href="https://otcg.pokelix.jp/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
+                            >
+                                🃏 O-TCG Pocket
+                            </a>
                         </div>
                     </div>
                 </div>
