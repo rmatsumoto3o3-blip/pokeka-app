@@ -719,6 +719,58 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                 </div>
             </section>
 
+            {/* FAQ Section */}
+            <section className="py-16 bg-gray-50">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">よくある質問</h2>
+                        <p className="text-gray-500 text-sm">FAQ — Frequently Asked Questions</p>
+                    </div>
+                    <div className="space-y-4">
+                        {[
+                            {
+                                q: 'このサイトはどのようなサービスですか？',
+                                a: 'スマホやPCのブラウザから、無料でポケモンカードのデッキ構築や検証ができる「ポケカ デッキシミュレーター」ツールです。※よく「ポケカ シュミレーター」とも検索されますが、正しくはシミュレーター（シミュレーション）です。'
+                            },
+                            {
+                                q: 'スマホでも使えますか？',
+                                a: 'はい、スマートフォン・タブレット・PCすべてのブラウザに対応しています。アプリのインストールは不要で、ブラウザから即座にご利用いただけます。'
+                            },
+                            {
+                                q: 'ログイン（アカウント登録）をしないと使えませんか？',
+                                a: 'いいえ、ログインなしでも基本的なシミュレーター機能はどなたでも自由にご利用いただけます。まずは気軽にお試しください。'
+                            },
+                            {
+                                q: 'アカウント登録（ログイン）をすると何ができますか？',
+                                a: 'ログインしていただくことで、自分だけの専用ダッシュボードが使えるようになり、作成したデッキの保存やお気に入り登録、より詳細な分析機能などが解放されます。'
+                            },
+                            {
+                                q: '作成したデッキを使って一人で練習することはできますか？',
+                                a: 'はい、当サイトには強力な「ひとり回し」機能を搭載しています。対戦相手がいないときでも、作成したデッキの動かし方や初手の確率、コンボのつながりなどをじっくり検証・練習していただけます。'
+                            },
+                            {
+                                q: '収録されているカードのデータや採用率は確認できますか？',
+                                a: 'はい、最新のカードデータに対応しており、各デッキにおけるポケカのカード採用率などもチェックしながらデッキビルドを進めることが可能です。'
+                            },
+                            {
+                                q: '確率計算はどのくらい正確ですか？',
+                                a: 'モンテカルロ法による10万回シミュレーションを採用しており、±0.1%以内の高精度で計算しています。単純な計算式では難しい「複数カードの組み合わせ」や「マリガン」も正確にシミュレーション可能です。'
+                            },
+                        ].map((item, i) => (
+                            <details key={i} className="group bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none font-bold text-gray-800 hover:bg-gray-50 transition-colors">
+                                    <span className="text-sm sm:text-base">{item.q}</span>
+                                    <span className="text-pink-500 text-lg shrink-0 group-open:rotate-45 transition-transform duration-200">＋</span>
+                                </summary>
+                                <div className="px-6 pb-5 pt-1 text-gray-600 text-sm leading-relaxed border-t border-gray-100">
+                                    {item.a}
+                                </div>
+                            </details>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             <Footer />
         </div>
     )

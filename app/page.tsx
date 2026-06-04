@@ -40,11 +40,28 @@ export default async function Home() {
   ])
   const decks: any[] = []
 
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      { '@type': 'Question', name: 'このサイトはどのようなサービスですか？', acceptedAnswer: { '@type': 'Answer', text: 'スマホやPCのブラウザから、無料でポケモンカードのデッキ構築や検証ができる「ポケカ デッキシミュレーター」ツールです。' } },
+      { '@type': 'Question', name: 'スマホでも使えますか？', acceptedAnswer: { '@type': 'Answer', text: 'はい、スマートフォン・タブレット・PCすべてのブラウザに対応しています。アプリのインストールは不要です。' } },
+      { '@type': 'Question', name: 'ログイン（アカウント登録）をしないと使えませんか？', acceptedAnswer: { '@type': 'Answer', text: 'いいえ、ログインなしでも基本的なシミュレーター機能はどなたでも自由にご利用いただけます。' } },
+      { '@type': 'Question', name: 'アカウント登録（ログイン）をすると何ができますか？', acceptedAnswer: { '@type': 'Answer', text: 'ログインしていただくことで、自分だけの専用ダッシュボードが使えるようになり、作成したデッキの保存やお気に入り登録、より詳細な分析機能などが解放されます。' } },
+      { '@type': 'Question', name: '作成したデッキを使って一人で練習することはできますか？', acceptedAnswer: { '@type': 'Answer', text: 'はい、当サイトには「ひとり回し」機能を搭載しています。対戦相手がいないときでも、デッキの動かし方や初手の確率、コンボのつながりなどを検証・練習していただけます。' } },
+      { '@type': 'Question', name: '収録されているカードのデータや採用率は確認できますか？', acceptedAnswer: { '@type': 'Answer', text: 'はい、最新のカードデータに対応しており、各デッキにおけるカード採用率などもチェックしながらデッキビルドを進めることが可能です。' } },
+      { '@type': 'Question', name: '確率計算はどのくらい正確ですか？', acceptedAnswer: { '@type': 'Answer', text: 'モンテカルロ法による10万回シミュレーションを採用しており、±0.1%以内の高精度で計算しています。' } },
+    ]
+  }
+
   return (
-    <LandingPage
-      decks={decks || []}
-      archetypes={archetypes || []}
-      articles={articles || []}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <LandingPage
+        decks={decks || []}
+        archetypes={archetypes || []}
+        articles={articles || []}
+      />
+    </>
   )
 }
