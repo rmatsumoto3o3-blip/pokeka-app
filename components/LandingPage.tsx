@@ -309,6 +309,61 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                 </div>
             </section>
 
+            {/* 運営者note Section */}
+            <section className="py-10 bg-white">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
+                    <div className="mb-6 text-center">
+                        <span className="text-emerald-600 font-bold tracking-wider uppercase text-sm">Creator&apos;s Note</span>
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mt-2">運営者ブログ</h2>
+                        <p className="mt-2 text-gray-500 text-sm">PokéLixを作っている人のポケカ考察・制作秘話はこちら</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                        {/* プロフィール */}
+                        <a
+                            href="https://note.com/rii_pokeka"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-100 p-5 hover:shadow-lg hover:border-emerald-300 transition-all flex flex-col"
+                        >
+                            <div className="text-3xl mb-3">👤</div>
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1">Profile</span>
+                            <h3 className="font-bold text-gray-900 text-base mb-1">運営者プロフィール</h3>
+                            <p className="text-gray-500 text-xs leading-relaxed flex-grow">ポケカ歴やPokéLixを作った経緯について。</p>
+                            <span className="mt-3 text-emerald-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-block">noteで読む →</span>
+                        </a>
+
+                        {/* マガジン */}
+                        <a
+                            href="https://note.com/rii_pokeka/magazines"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border-2 border-purple-100 p-5 hover:shadow-lg hover:border-purple-300 transition-all flex flex-col"
+                        >
+                            <div className="text-3xl mb-3">📚</div>
+                            <span className="text-xs font-bold text-purple-600 uppercase tracking-wide mb-1">Magazine</span>
+                            <h3 className="font-bold text-gray-900 text-base mb-1">ゲンガー研究期</h3>
+                            <p className="text-gray-500 text-xs leading-relaxed flex-grow">ポケカ考察をまとめた連載マガジン。</p>
+                            <span className="mt-3 text-purple-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-block">マガジンを見る →</span>
+                        </a>
+
+                        {/* ピックアップ記事 */}
+                        <a
+                            href="https://note.com/rii_pokeka/n/n277322251035"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border-2 border-pink-100 p-5 hover:shadow-lg hover:border-pink-300 transition-all flex flex-col"
+                        >
+                            <div className="text-3xl mb-3">📝</div>
+                            <span className="text-xs font-bold text-pink-600 uppercase tracking-wide mb-1">Pickup</span>
+                            <h3 className="font-bold text-gray-900 text-base mb-1">シティリーグ【TOP8】で使った激ムズデッキ</h3>
+                            <p className="text-gray-500 text-xs leading-relaxed flex-grow">尖った構築で結果を残した実戦レポート。</p>
+                            <span className="mt-3 text-pink-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-block">記事を読む →</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
             {/* Usage Guide Section */}
             <section className="py-2.5 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100">
                 <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
