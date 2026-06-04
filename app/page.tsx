@@ -1,6 +1,53 @@
 import type { Metadata } from 'next'
+import { unstable_cache } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
+
+// アーキタイプ別カード採用率を24時間キャッシュ（GASが毎日8時に更新するだけなので十分）
+const getCachedAnalytics = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data } = await supabase
+      .from('archetype_card_stats')
+      .select('*')
+      .eq('event_rank', 'ALL')
+
+    const byArchetype: Record<string, any[]> = {}
+    if (data) {
+      data.forEach(stat => {
+        if (!byArchetype[stat.archetype_id]) byArchetype[stat.archetype_id] = []
+        byArchetype[stat.archetype_id].push({
+          id: stat.card_name,
+          card_name: stat.card_name,
+          image_url: stat.image_url,
+          category: mapCategory(stat.supertype, stat.subtypes),
+          adoption_quantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count).toFixed(1) : '0.0',
+          adoption_rate: stat.total_decks > 0 ? ((stat.adoption_count / stat.total_decks) * 100).toFixed(1) : '0.0',
+        })
+      })
+      Object.keys(byArchetype).forEach(id => {
+        byArchetype[id].sort((a, b) => Number(b.adoption_rate) - Number(a.adoption_rate))
+      })
+    }
+    return byArchetype
+  },
+  ['archetype-analytics'],
+  { revalidate: 86400 } // 24時間キャッシュ
+)
+
+function mapCategory(supertype: string, subtypes?: string[]): string {
+  if (supertype === 'Pokémon') return 'Pokemon'
+  if (supertype === 'Energy') return 'Energy'
+  const sub = subtypes?.[0] || ''
+  if (sub === 'Supporter') return 'Supporter'
+  if (sub === 'Stadium') return 'Stadium'
+  if (sub === 'Pokémon Tool') return 'Tool'
+  return 'Goods'
+}
 
 export const metadata: Metadata = {
   title: 'PokéLix（ポケリス）| ポケカ環境分析・初手確率シミュレーター',
@@ -30,13 +77,15 @@ export const revalidate = 60
 
 export default async function Home() {
   const supabase = await createClient()
-  // Fetch data concurrently for better performance
+  // 記事・アーキタイプは60秒ISR、採用率データは24時間キャッシュで並列取得
   const [
     { data: archetypes },
-    { data: articles }
+    { data: articles },
+    analyticsData,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
-    supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5)
+    supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
+    getCachedAnalytics(),
   ])
   const decks: any[] = []
 
@@ -61,6 +110,7 @@ export default async function Home() {
         decks={decks || []}
         archetypes={archetypes || []}
         articles={articles || []}
+        analyticsData={analyticsData}
       />
     </>
   )

@@ -24,18 +24,21 @@ const CATEGORIES = ['Pokemon', 'Goods', 'Tool', 'Supporter', 'Stadium', 'Energy'
 
 interface KeyCardAdoptionListProps {
     initialArchetypes?: Archetype[]
+    initialAnalyticsData?: Record<string, any[]>
 }
 
-export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardAdoptionListProps) {
+export default function KeyCardAdoptionList({ initialArchetypes = [], initialAnalyticsData }: KeyCardAdoptionListProps) {
     const supabase = createClient()
     const [archetypes, setArchetypes] = useState<Archetype[]>(initialArchetypes)
-    const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>({})
+    const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>(initialAnalyticsData || {})
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!initialAnalyticsData) // サーバーデータがあれば初回ロード不要
     const [startDate, setStartDate] = useState<string>('')
     const [endDate, setEndDate] = useState<string>('')
 
     useEffect(() => {
+        // サーバーから初期データが渡されている場合はスキップ
+        if (initialAnalyticsData) return
         fetchKeyCards()
     }, [])
 

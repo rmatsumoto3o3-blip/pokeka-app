@@ -20,9 +20,10 @@ interface LandingPageProps {
     decks: ReferenceDeck[]
     archetypes: DeckArchetype[]
     articles: Article[]
+    analyticsData?: Record<string, any[]>
 }
 
-export default function LandingPage({ decks, archetypes, articles }: LandingPageProps) {
+export default function LandingPage({ decks, archetypes, articles, analyticsData }: LandingPageProps) {
     const router = useRouter()
 
     // Color Change Only: White base, Pop borders
@@ -302,7 +303,7 @@ export default function LandingPage({ decks, archetypes, articles }: LandingPage
                             <p className="text-gray-600 mt-1">環境デッキで採用されているカードの採用枚数を確認</p>
                         </div>
                         <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-2.5 md:p-2.5">
-                            <KeyCardAdoptionList initialArchetypes={archetypes} />
+                            <KeyCardAdoptionList initialArchetypes={archetypes} initialAnalyticsData={analyticsData} />
                         </div>
                     </div>
                 </div>
