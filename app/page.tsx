@@ -49,6 +49,29 @@ function mapCategory(supertype: string, subtypes?: string[]): string {
   return 'Goods'
 }
 
+// 直近7日間のアーキタイプ別デッキ数を集計（1時間キャッシュ）
+const getCachedWeeklyRanking = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const { data } = await supabase
+      .from('deck_records')
+      .select('archetype_id')
+      .gte('created_at', since)
+
+    const counts: Record<string, number> = {}
+    ;(data || []).forEach(r => {
+      if (r.archetype_id) counts[r.archetype_id] = (counts[r.archetype_id] || 0) + 1
+    })
+    return counts
+  },
+  ['weekly-ranking'],
+  { revalidate: 3600 } // 1時間キャッシュ
+)
+
 export const metadata: Metadata = {
   title: 'PokéLix（ポケリス）| ポケカ環境分析・初手確率シミュレーター',
   description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。デッキコードを入力するだけで初手7枚の確率、サイド落ちリスクをモンテカルロ法で即計算。',
@@ -82,11 +105,19 @@ export default async function Home() {
     { data: archetypes },
     { data: articles },
     analyticsData,
+    weeklyRanking,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
     getCachedAnalytics(),
+    getCachedWeeklyRanking(),
   ])
+
+  // 直近7日間のデッキ数が多い順にアーキタイプをソート
+  const sortedArchetypes = [...(archetypes || [])].sort(
+    (a, b) => (weeklyRanking[b.id] || 0) - (weeklyRanking[a.id] || 0)
+  )
+
   const decks: any[] = []
 
   const faqJsonLd = {
@@ -108,7 +139,7 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <LandingPage
         decks={decks || []}
-        archetypes={archetypes || []}
+        archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}
       />
