@@ -313,3 +313,101 @@ export function drawRandomHand(cards: CardData[]): CardData[] {
     // 3. Return top 7
     return fullDeck.slice(0, 7)
 }
+
+/**
+ * 山札をシャッフルし、初手7枚とサイド6枚を引く。
+ * 1回のシャッフルで初手・サイド・残り山札を確定させる。
+ */
+export function drawHandAndPrizes(cards: CardData[]): { hand: CardData[]; prizes: CardData[] } {
+    const fullDeck: CardData[] = []
+    cards.forEach(c => {
+        for (let i = 0; i < c.quantity; i++) fullDeck.push({ ...c })
+    })
+
+    if (fullDeck.length <= 13) return { hand: fullDeck.slice(0, 7), prizes: fullDeck.slice(7, 13) }
+
+    for (let i = fullDeck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]]
+    }
+
+    return { hand: fullDeck.slice(0, 7), prizes: fullDeck.slice(7, 13) }
+}
+
+/**
+ * 次に引く1枚の予測
+ * 山札の上からサイド6枚を伏せた後、残った山札の一番上のカードが何になるかを
+ * 確率の高い順に返す。
+ *
+ * サイド6枚は「見えない情報」なので確率には影響しない（残り山札は一様分布）。
+ * よって残りデッキの各カードの「枚数 / 残り総数」が、次に引く1枚がそのカードである確率になる。
+ * モンテカルロではなく閉形式で厳密に計算する。
+ *
+ * 初手連動モードでは、表示中の初手7枚を excludedNames に渡すことで
+ * 「この初手を引いた前提で、次に引く1枚」を計算できる。
+ *
+ * @param cards デッキ（quantity込み）
+ * @param excludedNames 初手・トラッシュ等で山札から除外されているカード名
+ */
+export interface NextDrawResult {
+    name: string
+    imageUrl: string
+    probability: number // 0〜100
+}
+
+/**
+ * 残り山札から、あと draws 枚引くうちに対象カードを1枚以上引ける確率。
+ * 超幾何分布: P(>=1) = 1 - C(D-k, N) / C(D, N)
+ *
+ * @param targetRemaining 残り山札中の対象カード枚数 k
+ * @param deckRemaining   残り山札の総枚数 D
+ * @param draws           これから引く枚数 N
+ * @returns 0〜100 の確率
+ */
+export function drawTargetWithinDraws(
+    targetRemaining: number,
+    deckRemaining: number,
+    draws: number
+): number {
+    if (targetRemaining <= 0 || deckRemaining <= 0 || draws <= 0) return 0
+    if (draws >= deckRemaining) return 100
+    // 1枚も引かない確率を積で計算（オーバーフロー回避）
+    let pMiss = 1
+    for (let i = 0; i < draws; i++) {
+        const remainNonTarget = deckRemaining - targetRemaining - i
+        if (remainNonTarget <= 0) return 100 // 非対象が尽きる→必ず引く
+        pMiss *= remainNonTarget / (deckRemaining - i)
+    }
+    return (1 - pMiss) * 100
+}
+
+export function simulateNextDrawProbability(
+    cards: CardData[],
+    excludedNames: string[] = []
+): NextDrawResult[] {
+    // 除外カードの枚数を集計
+    const excludeCount = new Map<string, number>()
+    excludedNames.forEach(n => excludeCount.set(n, (excludeCount.get(n) || 0) + 1))
+
+    // 残りデッキの各カード枚数を算出
+    const remaining: { name: string; imageUrl: string; qty: number }[] = []
+    let total = 0
+    cards.forEach(c => {
+        const ex = excludeCount.get(c.name) || 0
+        const qty = Math.max(0, c.quantity - ex)
+        if (qty > 0) {
+            remaining.push({ name: c.name, imageUrl: c.imageUrl || '', qty })
+            total += qty
+        }
+    })
+
+    if (total <= 0) return []
+
+    return remaining
+        .map(r => ({
+            name: r.name,
+            imageUrl: r.imageUrl,
+            probability: (r.qty / total) * 100,
+        }))
+        .sort((a, b) => b.probability - a.probability)
+}

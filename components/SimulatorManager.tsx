@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand, calculateDrawByTurnProbability } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawHandAndPrizes, calculateDrawByTurnProbability, simulateNextDrawProbability, drawTargetWithinDraws, type NextDrawResult } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -20,8 +20,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
     const [simResult, setSimResult] = useState<{ and: string, or: string } | null>(null)
     const [randomHand, setRandomHand] = useState<CardData[]>([])
+    const [prizeCards, setPrizeCards] = useState<CardData[]>([])
     const [drawByTurnCard, setDrawByTurnCard] = useState<string>('')
     const [drawByTurnN, setDrawByTurnN] = useState<number>(3)
+    const [nextDraw, setNextDraw] = useState<NextDrawResult[]>([])
+    const [trashedNames, setTrashedNames] = useState<string[]>([])
+    const [nextDrawOpen, setNextDrawOpen] = useState<boolean>(false)
+    // 盤面カスタム確率
+    const [boardExclude, setBoardExclude] = useState<Record<string, number>>({})
+    const [targetCard, setTargetCard] = useState<string>('')
+    const [drawCount, setDrawCount] = useState<number>(3)
+    const [boardOpen, setBoardOpen] = useState<boolean>(false)
 
     const isGlobal = initialCards.length > 0
 
@@ -120,13 +129,58 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         }
     }, [initialCards])
 
-    // Auto-draw when cards are loaded
+    // デッキ読み込み時に初手7枚＋サイド6枚を引く（トラッシュ・盤面指定もリセット）
     useEffect(() => {
-        if (cards.length > 0 && randomHand.length === 0) {
-            const hand = drawRandomHand(cards)
+        setTrashedNames([])
+        setBoardExclude({})
+        setTargetCard('')
+        if (cards.length > 0) {
+            const { hand, prizes } = drawHandAndPrizes(cards)
             setRandomHand(hand)
+            setPrizeCards(prizes)
+        } else {
+            setRandomHand([])
+            setPrizeCards([])
         }
-    }, [cards, randomHand.length])
+    }, [cards])
+
+    // 次の1枚予測を計算（初手7枚・サイド6枚・トラッシュを山札から抜いて再計算）
+    useEffect(() => {
+        if (cards.length === 0 || randomHand.length === 0) { setNextDraw([]); return }
+        const handNames = randomHand.map(c => c.name)
+        const prizeNames = prizeCards.map(c => c.name)
+        setNextDraw(simulateNextDrawProbability(cards, [...handNames, ...prizeNames, ...trashedNames]))
+    }, [cards, randomHand, prizeCards, trashedNames])
+
+    // クリックで1枚ずつトラッシュへ。デッキ採用枚数に達したら0に戻す
+    const cycleTrash = (name: string, maxQty: number) => {
+        setTrashedNames(prev => {
+            const current = prev.filter(n => n === name).length
+            const others = prev.filter(n => n !== name)
+            if (current >= maxQty) return others // リセット
+            return [...others, ...Array(current + 1).fill(name)]
+        })
+    }
+
+    // 盤面カスタム: 山札にない枚数を増減（0〜採用枚数）
+    const adjustBoard = (name: string, delta: number, maxQty: number) => {
+        setBoardExclude(prev => {
+            const next = Math.max(0, Math.min(maxQty, (prev[name] || 0) + delta))
+            return { ...prev, [name]: next }
+        })
+    }
+
+    // 盤面カスタムの残り山札・確率を計算
+    const deckTotalCount = cards.reduce((s, c) => s + c.quantity, 0)
+    const boardExcludedTotal = Object.values(boardExclude).reduce((s, v) => s + v, 0)
+    const remainingDeckCount = deckTotalCount - boardExcludedTotal
+    const targetCardData = cards.find(c => c.name === targetCard)
+    const targetRemaining = targetCardData
+        ? targetCardData.quantity - (boardExclude[targetCard] || 0)
+        : 0
+    const boardProbability = targetCardData
+        ? drawTargetWithinDraws(targetRemaining, remainingDeckCount, drawCount)
+        : null
 
     // Categorize
     const categorizedCards = {
@@ -304,14 +358,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         })))
         setSimResult(result)
 
-        // Draw random hand
-        const hand = drawRandomHand(cards)
+        // 初手7枚＋サイド6枚を引く
+        const { hand, prizes } = drawHandAndPrizes(cards)
         setRandomHand(hand)
+        setPrizeCards(prizes)
     }
 
     const handleDrawAgain = () => {
-        const hand = drawRandomHand(cards)
+        const { hand, prizes } = drawHandAndPrizes(cards)
         setRandomHand(hand)
+        setPrizeCards(prizes)
+        setTrashedNames([])
     }
 
     // Modal Component for Selection (Render Function to prevent remounting)
@@ -442,14 +499,14 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             {cards.length > 0 && randomHand.length > 0 && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-violet-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span className="text-2xl">🃏</span> {t.sampleHand}
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {t.sampleHand}
                         </h4>
                         <button
                             onClick={handleDrawAgain}
-                            className="text-sm font-bold text-violet-600 hover:text-violet-800 bg-violet-50 px-4 py-2 rounded-full border border-violet-100 shadow-sm transition active:scale-95 flex items-center gap-2"
+                            className="text-sm font-bold text-violet-600 hover:text-violet-800 bg-violet-50 px-4 py-2 rounded-full border border-violet-100 shadow-sm transition active:scale-95"
                         >
-                            <span className="text-base">🔄</span> {t.drawAgain}
+                            {t.drawAgain}
                         </button>
                     </div>
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
@@ -470,6 +527,264 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* Prize Cards Display */}
+            {cards.length > 0 && prizeCards.length > 0 && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-sky-100">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4">
+                        {lang === 'ja' ? 'サイド（6枚）' : 'Prize Cards (6)'}
+                    </h4>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {prizeCards.map((c, i) => (
+                            <div key={i} className="relative aspect-[63/88] rounded-lg overflow-hidden bg-gray-100 shadow-md group border border-gray-50">
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
+                                    {c.name}
+                                </div>
+                                {c.imageUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={c.imageUrl}
+                                        alt={c.name}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(e) => e.currentTarget.remove()}
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Next Draw Prediction Section */}
+            {cards.length > 0 && nextDraw.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl shadow-sm border-2 border-amber-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {lang === 'ja' ? '次に引く1枚 予測' : 'Next Card Prediction'}
+                        </h4>
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+                            {lang === 'ja' ? '残り山札から厳密計算' : 'Exact (remaining deck)'}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-5">
+                        {lang === 'ja'
+                            ? '初手7枚とサイド6枚を引いた残りの山札47枚から、次に引く1枚を予測します。引き直すと再計算されます。'
+                            : 'Predicts the next card from the 47 cards left after the opening hand and 6 prizes. Recalculates when you redraw.'}
+                    </p>
+
+                    {/* Top prediction */}
+                    {(() => {
+                        const top = nextDraw[0]
+                        return (
+                            <div className="flex items-center gap-4 bg-white rounded-xl p-4 border border-amber-200 shadow-sm mb-4">
+                                <div className="relative w-16 h-22 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '63/88', height: '5.5rem' }}>
+                                    <span className="absolute text-[9px] text-gray-400 font-bold p-1 text-center">{top.name}</span>
+                                    {top.imageUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={top.imageUrl} alt={top.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-0.5">{lang === 'ja' ? '最有力' : 'Most Likely'}</div>
+                                    <div className="font-bold text-gray-900 text-lg truncate">{top.name}</div>
+                                    <div className="text-3xl font-extrabold text-orange-600">{top.probability.toFixed(1)}<span className="text-base">%</span></div>
+                                </div>
+                            </div>
+                        )
+                    })()}
+
+                    {/* Ranking list (2nd〜10th) */}
+                    <div className="space-y-1.5">
+                        {nextDraw.slice(1, 10).map((r, i) => (
+                            <div key={r.name} className="flex items-center gap-3 bg-white/70 rounded-lg px-3 py-2 border border-amber-100">
+                                <span className="text-xs font-bold text-gray-400 w-5 text-center">{i + 2}</span>
+                                <div className="relative w-6 h-8 shrink-0 rounded overflow-hidden bg-gray-100">
+                                    {r.imageUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
+                                    )}
+                                </div>
+                                <span className="flex-1 text-sm font-medium text-gray-700 truncate">{r.name}</span>
+                                <span className="text-sm font-bold text-orange-600">{r.probability.toFixed(1)}%</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Trash control */}
+                    <div className="mt-5 pt-4 border-t border-amber-200">
+                        <button
+                            onClick={() => setNextDrawOpen(v => !v)}
+                            className="text-sm font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1"
+                        >
+                            {lang === 'ja' ? 'トラッシュにあるカードを指定' : 'Set cards in the trash'}
+                            <span className="text-xs">{nextDrawOpen ? '▲' : '▼'}</span>
+                            {trashedNames.length > 0 && (
+                                <span className="ml-1 text-xs bg-amber-200 text-amber-800 rounded-full px-2 py-0.5">{trashedNames.length}</span>
+                            )}
+                        </button>
+
+                        {nextDrawOpen && (
+                            <div className="mt-3">
+                                <p className="text-xs text-gray-500 mb-2">
+                                    {lang === 'ja'
+                                        ? 'トラッシュにあるカードをタップで指定すると、残り山札から再計算します。サイドに行ったカード（青）は自動で反映済みです。'
+                                        : 'Tap a card to mark it as trashed and recalculate. Prized cards (blue) are already applied.'}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {cards.map(c => {
+                                        const prizeCount = prizeCards.filter(p => p.name === c.name).length
+                                        const trashedCount = trashedNames.filter(n => n === c.name).length
+                                        const maxTrash = c.quantity - prizeCount
+                                        const isPrized = prizeCount > 0
+                                        const isTrashed = trashedCount > 0
+                                        return (
+                                            <button
+                                                key={c.name}
+                                                onClick={() => maxTrash > 0 && cycleTrash(c.name, maxTrash)}
+                                                disabled={maxTrash <= 0}
+                                                className={`text-xs px-2.5 py-1 rounded-full border transition-all ${isTrashed
+                                                    ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                                    : isPrized
+                                                        ? 'bg-sky-100 text-sky-700 border-sky-300'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'
+                                                } ${maxTrash <= 0 ? 'cursor-default' : ''}`}
+                                            >
+                                                {c.name}
+                                                {isPrized && <span className="ml-1 font-bold">{lang === 'ja' ? 'サイド' : 'P'}{prizeCount}</span>}
+                                                {isTrashed && <span className="ml-1 font-bold">{lang === 'ja' ? 'トラッシュ' : 'T'}{trashedCount}</span>}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                                {trashedNames.length > 0 && (
+                                    <button
+                                        onClick={() => setTrashedNames([])}
+                                        className="mt-3 text-xs text-gray-400 hover:text-red-500 underline"
+                                    >
+                                        {lang === 'ja' ? 'トラッシュ指定をクリア' : 'Clear trash'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Board Custom Probability Section */}
+            {cards.length > 0 && (
+                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl shadow-sm border-2 border-emerald-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {lang === 'ja' ? '盤面から引ける確率' : 'Draw Probability from Board State'}
+                        </h4>
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+                            {lang === 'ja' ? '超幾何分布で厳密計算' : 'Hypergeometric (exact)'}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-5">
+                        {lang === 'ja'
+                            ? '手札・場・トラッシュ・サイドにあるカードの枚数を指定し、残った山札から目当てのカードを引ける確率を計算します。'
+                            : 'Set how many copies are already in hand, play, trash or prizes, then calculate the odds of drawing your target from the remaining deck.'}
+                    </p>
+
+                    {/* Target + draw count + result */}
+                    <div className="bg-white rounded-xl p-4 border border-emerald-200 shadow-sm mb-4">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">
+                                    {lang === 'ja' ? '引きたいカード' : 'Target card'}
+                                </label>
+                                <select
+                                    value={targetCard}
+                                    onChange={(e) => setTargetCard(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-400"
+                                >
+                                    <option value="">{lang === 'ja' ? '選択してください' : 'Select a card'}</option>
+                                    {cards.map(c => (
+                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-full sm:w-40">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">
+                                    {lang === 'ja' ? `あと何回ドロー: ${drawCount}` : `Draws: ${drawCount}`}
+                                </label>
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={15}
+                                    value={drawCount}
+                                    onChange={(e) => setDrawCount(Number(e.target.value))}
+                                    className="w-full accent-emerald-500"
+                                />
+                            </div>
+                        </div>
+
+                        {boardProbability !== null && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-end justify-between">
+                                <div className="text-xs text-gray-500">
+                                    {lang === 'ja'
+                                        ? `残り山札 ${remainingDeckCount}枚 ／ 対象 ${targetRemaining}枚`
+                                        : `Deck left ${remainingDeckCount} / target ${targetRemaining}`}
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-emerald-600 uppercase tracking-wide">
+                                        {lang === 'ja' ? `${drawCount}ドロー以内に引ける確率` : `Within ${drawCount} draws`}
+                                    </div>
+                                    <div className="text-4xl font-extrabold text-teal-600">{boardProbability.toFixed(1)}<span className="text-lg">%</span></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Board state editor */}
+                    <button
+                        onClick={() => setBoardOpen(v => !v)}
+                        className="text-sm font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1"
+                    >
+                        {lang === 'ja' ? '盤面を指定（山札にないカード）' : 'Set board state (cards outside the deck)'}
+                        <span className="text-xs">{boardOpen ? '▲' : '▼'}</span>
+                        {boardExcludedTotal > 0 && (
+                            <span className="ml-1 text-xs bg-emerald-200 text-emerald-800 rounded-full px-2 py-0.5">{boardExcludedTotal}</span>
+                        )}
+                    </button>
+
+                    {boardOpen && (
+                        <div className="mt-3 space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                            {cards.map(c => {
+                                const ex = boardExclude[c.name] || 0
+                                return (
+                                    <div key={c.name} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                                        <span className="flex-1 text-sm text-gray-700 truncate">{c.name}</span>
+                                        <span className="text-xs text-gray-400">{c.quantity - ex}{lang === 'ja' ? '枚 山札' : ' deck'}</span>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => adjustBoard(c.name, -1, c.quantity)}
+                                                disabled={ex <= 0}
+                                                className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 font-bold disabled:opacity-30 hover:bg-gray-50"
+                                            >−</button>
+                                            <span className="w-6 text-center text-sm font-bold text-emerald-700">{ex}</span>
+                                            <button
+                                                onClick={() => adjustBoard(c.name, 1, c.quantity)}
+                                                disabled={ex >= c.quantity}
+                                                className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 font-bold disabled:opacity-30 hover:bg-gray-50"
+                                            >＋</button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {boardExcludedTotal > 0 && (
+                                <button
+                                    onClick={() => setBoardExclude({})}
+                                    className="mt-2 text-xs text-gray-400 hover:text-red-500 underline"
+                                >
+                                    {lang === 'ja' ? '盤面指定をクリア' : 'Clear board'}
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 
