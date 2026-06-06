@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: '初手確率シミュレーター',
-  description: 'ポケカの初手確率を無料でシミュレーション。デッキコードを入力するだけで、初手7枚に欲しいカードが来る確率・サイド落ちリスクをモンテカルロ法（10万回試行）で即計算。',
-  keywords: ['ポケカ 確率シミュレーター', '初手確率', 'ポケモンカード 確率', 'サイド落ち 確率', 'デッキコード 確率', 'ポケカ シミュレーター', 'ポケカ 初動'],
+  title: 'ポケカ デッキシミュレーター｜初手確率・サイド落ち計算',
+  description: 'ポケカの初手確率を無料でシミュレーション。デッキコードを入力するだけで、初手7枚に欲しいカードが来る確率・サイド落ちリスクをモンテカルロ法（10万回試行）で即計算できるデッキシミュレーターです（「ポケカ シュミレーター」とも呼ばれます）。',
+  keywords: ['ポケカ シミュレーター', 'ポケカ シュミレーター', 'ポケカ デッキシミュレーター', 'ポケカ 確率シミュレーター', '初手確率', 'ポケカ サイド落ち 確率', 'ポケカ 初手 確率', 'ポケモンカード シミュレーター', 'デッキコード 確率', 'ポケカ 初動'],
   openGraph: {
-    title: '初手確率シミュレーター | PokéLix（ポケリス）',
+    title: 'ポケカ デッキシミュレーター | PokéLix（ポケリス）',
     description: 'デッキコードを入力するだけで初手7枚の確率・サイド落ちリスクを即計算。モンテカルロ法で10万回シミュレーション。',
     url: 'https://www.pokelix.jp/simulator',
     siteName: 'PokéLix（ポケリス）',
@@ -27,9 +27,9 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
-  name: 'ポケカ初手確率シミュレーター | PokéLix',
+  name: 'ポケカ デッキシミュレーター | PokéLix',
   url: 'https://pokelix.jp/simulator',
-  description: 'ポケモンカードの初手確率・サイド落ちリスクをモンテカルロ法で計算する無料シミュレーター。デッキコードを入力するだけで即計算。',
+  description: 'ポケモンカードの初手確率・サイド落ちリスクをモンテカルロ法で計算する無料デッキシミュレーター。デッキコードを入力するだけで即計算。',
   applicationCategory: 'GameApplication',
   operatingSystem: 'Web',
   offers: {
@@ -38,7 +38,7 @@ const jsonLd = {
     priceCurrency: 'JPY',
   },
   inLanguage: 'ja',
-  keywords: 'ポケカ,確率シミュレーター,初手確率,サイド落ち,ポケモンカード',
+  keywords: 'ポケカ シミュレーター,ポケカ シュミレーター,ポケカ デッキシミュレーター,初手確率,サイド落ち,ポケモンカード',
 }
 
 export default function SimulatorLayout({ children }: { children: React.ReactNode }) {
