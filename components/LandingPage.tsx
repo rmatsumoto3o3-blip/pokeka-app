@@ -153,6 +153,54 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                 </div>
             </section>
 
+            {/* Simulator CTA Section */}
+            <section className="py-10 bg-white">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 p-8 md:p-12 shadow-xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-56 h-56 bg-pink-300/20 rounded-full -ml-28 -mb-28 blur-3xl"></div>
+
+                        <div className="relative z-10 text-white">
+                            <div className="inline-block mb-4 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-xs font-bold tracking-wider backdrop-blur-sm">
+                                ポケカ デッキシミュレーター
+                            </div>
+                            <h2 className="text-2xl md:text-4xl font-extrabold mb-4 leading-tight">
+                                デッキコードを入れるだけで<br className="hidden md:inline" />
+                                確率がぜんぶ分かる
+                            </h2>
+                            <p className="text-white/90 text-sm md:text-base mb-8 max-w-2xl leading-relaxed">
+                                初手7枚に欲しいカードが来る確率、サイド落ちのリスク、そして「残り山札からあと何回のドローで目当てのカードを引けるか」まで。実戦の盤面を再現して、データで確かめられます。
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15">
+                                    <div className="font-bold text-sm mb-1">初手確率の計算</div>
+                                    <div className="text-white/70 text-xs leading-relaxed">10万回シミュレーションで欲しいカードを引ける確率を算出</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15">
+                                    <div className="font-bold text-sm mb-1">サイド落ちリスク</div>
+                                    <div className="text-white/70 text-xs leading-relaxed">キーカードがサイドに落ちる確率を事前にチェック</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15">
+                                    <div className="font-bold text-sm mb-1">盤面から引ける確率</div>
+                                    <div className="text-white/70 text-xs leading-relaxed">手札・トラッシュ・サイドを再現して残り山札を計算</div>
+                                </div>
+                            </div>
+
+                            <Link
+                                href="/simulator"
+                                className="inline-flex items-center justify-center gap-2 bg-white text-purple-700 font-bold text-base md:text-lg px-8 py-3.5 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                            >
+                                シミュレーターを使う（無料）
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Ad Section (TOYGER, etc) */}
             <section className="py-2.5 bg-white">
                 <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
