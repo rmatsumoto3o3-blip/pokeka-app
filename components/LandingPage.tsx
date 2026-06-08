@@ -68,7 +68,7 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                         </div>
                     </h1>
                     <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200 px-2">
-                        <span className="block sm:inline">環境考察、優勝デッキ情報。</span>
+                        <span className="block">環境考察、優勝デッキ情報。</span>
                         <span className="block sm:inline">あなたのポケカライフを充実させる機能がここに。</span>
                         <span className="font-bold text-pink-600 block mt-1">シミュレーションでデッキを分析</span>
                     </p>
