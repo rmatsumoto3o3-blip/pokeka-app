@@ -265,8 +265,8 @@ export default function ReferenceDeckList({
                     ) : (
                     <div className="divide-y divide-gray-100">
                         {paginatedDecks.map((deck) => {
-                            // event_locationから日付プレフィックスを除去（念のため）
-                            const cleanLocation = (deck.event_location || '').replace(/^\d{1,2}\/\d{1,2}\s*/, '').trim()
+                            // event_locationから日付プレフィックスを除去（半角・全角どちらも対応）
+                            const cleanLocation = (deck.event_location || '').replace(/^[\d０-９]{1,2}[/／][\d０-９]{1,2}\s*/, '').trim()
                             const displayName = deck.event_date && cleanLocation
                                 ? `${deck.event_date} ${cleanLocation}`
                                 : deck.event_date || cleanLocation || deck.deck_code

@@ -49,8 +49,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (!deck) return { title: 'Deck Not Found' }
 
     const archetype = (deck.deck_archetypes as any)?.name || 'ポケモンカード'
-    const title = deck.event_date && deck.event_location
-        ? `${deck.event_date} ${deck.event_location} ${deck.event_rank || ''}`
+    const cleanLoc = (deck.event_location || '').replace(/^[\d０-９]{1,2}[/／][\d０-９]{1,2}\s*/, '').trim()
+    const title = deck.event_date
+        ? `${deck.event_date} ${cleanLoc} ${deck.event_rank || ''}`.replace(/\s+/g, ' ').trim()
         : deck.deck_code
 
     return {
@@ -68,8 +69,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const archetype = (deck.deck_archetypes as any)?.name || 'Unknown'
     const cards = deck.cards
 
-    const displayName = deck.event_date && deck.event_location
-        ? `${deck.event_date} ${deck.event_location}`
+    const cleanLocation = (deck.event_location || '').replace(/^[\d０-９]{1,2}[/／][\d０-９]{1,2}\s*/, '').trim()
+    const displayName = deck.event_date
+        ? `${deck.event_date} ${cleanLocation}`.trim()
         : deck.deck_code
 
     const jsonLd = {
