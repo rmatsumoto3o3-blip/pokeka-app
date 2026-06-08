@@ -51,5 +51,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
     }))
 
-    return [...routes, ...articleRoutes, ...deckRoutes]
+    // Dynamic Routes: Archetype pages (採用カード一覧)
+    const { data: archetypes } = await supabase
+        .from('deck_archetypes')
+        .select('name')
+
+    const archetypeRoutes = (archetypes || []).map((a) => ({
+        url: `${baseUrl}/archetypes/${encodeURIComponent(a.name)}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily' as const,
+        priority: 0.8,
+    }))
+
+    return [...routes, ...articleRoutes, ...deckRoutes, ...archetypeRoutes]
 }
