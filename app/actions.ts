@@ -550,8 +550,27 @@ export async function getAllReferenceDecksAction() {
     return { success: true, data: [] as any[] }
 }
 
-export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8') {
+export async function getDeckAnalyticsAction(archetypeId: string, eventRank?: '優勝' | '準優勝' | 'TOP4' | 'TOP8', period: 'all' | 'recent' = 'all') {
     try {
+        // 直近2ヶ月モード: archetype_cards_recent から取得
+        if (period === 'recent') {
+            const { data: recentData, error: recentErr } = await getSupabaseAdmin()
+                .from('archetype_cards_recent')
+                .select('card_name, supertype, subtypes, image_url, adoption_count, total_qty, total_decks')
+                .eq('archetype_id', archetypeId)
+            if (recentErr) throw recentErr
+            const totalDecks = recentData && recentData.length > 0 ? recentData[0].total_decks : 0
+            const analytics = (recentData || []).map(stat => ({
+                name: stat.card_name,
+                imageUrl: stat.image_url,
+                supertype: stat.supertype,
+                subtypes: stat.subtypes,
+                adoptionRate: stat.total_decks > 0 ? (stat.adoption_count / stat.total_decks) * 100 : 0,
+                avgQuantity: stat.adoption_count > 0 ? (stat.total_qty / stat.adoption_count) : 0
+            })).sort((a, b) => b.adoptionRate - a.adoptionRate)
+            return { success: true, decks: [], analytics, totalDecks }
+        }
+
         // 1. Fetch recent deck_records for UI list
         let query = getSupabaseAdmin()
             .from('deck_records')

@@ -38,17 +38,19 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
     const [loading, setLoading] = useState(true)
     const [adoptionData, setAdoptionData] = useState<KeyCardAdoption[]>([])
     const [totalDecks, setTotalDecks] = useState(0)
+    const [period, setPeriod] = useState<'all' | 'recent'>('all')
 
     useEffect(() => {
         if (isOpen && archetypeId) {
             fetchData()
         }
-    }, [isOpen, archetypeId])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, archetypeId, period])
 
     const fetchData = async () => {
         try {
             setLoading(true)
-            const result = await getDeckAnalyticsAction(archetypeId)
+            const result = await getDeckAnalyticsAction(archetypeId, undefined, period)
             if (result.success && result.analytics) {
                 setTotalDecks(result.totalDecks || 0)
                 const mapped: KeyCardAdoption[] = result.analytics.map((stat: any) => ({
@@ -89,6 +91,28 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
                         className="p-2 hover:bg-gray-200 rounded-full transition text-black"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                {/* 期間タブ */}
+                <div className="flex border-b bg-white">
+                    <button
+                        onClick={() => setPeriod('all')}
+                        className={`flex-1 py-2.5 text-sm font-bold transition-colors ${period === 'all'
+                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                    >
+                        全期間
+                    </button>
+                    <button
+                        onClick={() => setPeriod('recent')}
+                        className={`flex-1 py-2.5 text-sm font-bold transition-colors ${period === 'recent'
+                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                            : 'text-gray-400 hover:text-gray-600'
+                        }`}
+                    >
+                        直近2ヶ月
                     </button>
                 </div>
 
