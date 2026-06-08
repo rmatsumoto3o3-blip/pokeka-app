@@ -44,12 +44,15 @@ function categoryOf(supertype: string | null, subtypes: string[] | null): string
 
 export async function generateStaticParams() {
     const { data } = await supabase.from('deck_archetypes').select('name')
-    return (data || []).map((a) => ({ name: encodeURIComponent(a.name) }))
+    // Next.js が自動でエンコードするため、ここではデコード済みの生の名前を返す
+    return (data || []).map((a) => ({ name: a.name }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { name } = await params
+    // params.name はエンコードされたまま渡る場合があるためデコードする
     const decoded = decodeURIComponent(name)
+    const encoded = encodeURIComponent(decoded)
     const title = `${decoded}デッキの採用カード・レシピ【直近2ヶ月】`
     const description = `ポケカ「${decoded}」デッキの直近2ヶ月の採用カード一覧と採用率。全国の大会データから集計したリアルな構築をカードごとの採用率・平均枚数で確認できます。`
     return {
@@ -59,19 +62,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         openGraph: {
             title: `${decoded}デッキの採用カード・レシピ | PokéLix`,
             description,
-            url: `https://www.pokelix.jp/archetypes/${name}`,
+            url: `https://www.pokelix.jp/archetypes/${encoded}`,
             siteName: 'PokéLix（ポケリス）',
             locale: 'ja_JP',
             type: 'website',
         },
         alternates: {
-            canonical: `https://www.pokelix.jp/archetypes/${name}`,
+            canonical: `https://www.pokelix.jp/archetypes/${encoded}`,
         },
     }
 }
 
 export default async function ArchetypePage({ params }: Props) {
     const { name } = await params
+    // params.name はエンコードされたまま渡る場合があるためデコードする
     const decoded = decodeURIComponent(name)
 
     const { data: arch } = await supabase
