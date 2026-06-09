@@ -422,6 +422,45 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                 </div>
             </section>
 
+            {/* その他の運営サイト Section */}
+            <section className="py-10 bg-gray-50">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
+                    <div className="mb-6 text-center">
+                        <span className="text-gray-500 font-bold tracking-wider uppercase text-sm">Other Sites</span>
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mt-2">その他の運営サイト</h2>
+                        <p className="mt-2 text-gray-500 text-sm">PokéLixが運営する他のサービスもぜひ。</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                        {/* O-TCG Pocket */}
+                        <a
+                            href="https://otcg.pokelix.jp/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-100 p-6 hover:shadow-lg hover:border-emerald-300 transition-all flex flex-col"
+                        >
+                            <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1">Card Game Maker</span>
+                            <h3 className="font-bold text-gray-900 text-lg mb-1">O-TCG Pocket</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed flex-grow">オリジナルのカードゲームを開発できるプラットフォーム。</p>
+                            <span className="mt-3 text-emerald-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-block">サイトを開く →</span>
+                        </a>
+
+                        {/* 将棋 */}
+                        <a
+                            href="https://shogi.pokelix.jp/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-100 p-6 hover:shadow-lg hover:border-amber-300 transition-all flex flex-col"
+                        >
+                            <span className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-1">Board Game</span>
+                            <h3 className="font-bold text-gray-900 text-lg mb-1">将棋</h3>
+                            <p className="text-gray-500 text-sm leading-relaxed flex-grow">ブラウザで遊べる将棋ゲーム。</p>
+                            <span className="mt-3 text-amber-600 text-sm font-bold group-hover:translate-x-1 transition-transform inline-block">遊んでみる →</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
             {/* Usage Guide Section */}
             <section className="py-2.5 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100">
                 <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
