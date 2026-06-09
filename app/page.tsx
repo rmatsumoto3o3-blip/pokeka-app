@@ -72,6 +72,30 @@ const getCachedWeeklyRanking = unstable_cache(
   { revalidate: 3600 } // 1時間キャッシュ
 )
 
+// 直近2ヶ月の採用カードデータがあるアーキタイプID（リンク表示の404回避用、24時間キャッシュ）
+const getCachedRecentArchetypeIds = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    // Supabaseのmax-rows(1000)制限があるためページングで全行取得
+    const ids = new Set<string>()
+    for (let offset = 0; offset < 10000; offset += 1000) {
+      const { data } = await supabase
+        .from('archetype_cards_recent')
+        .select('archetype_id')
+        .range(offset, offset + 999)
+      if (!data || data.length === 0) break
+      data.forEach(r => { if (r.archetype_id) ids.add(r.archetype_id) })
+      if (data.length < 1000) break
+    }
+    return Array.from(ids)
+  },
+  ['recent-archetype-ids'],
+  { revalidate: 86400 }
+)
+
 export const metadata: Metadata = {
   title: 'PokéLix（ポケリス）| ポケカ デッキシミュレーター・初手確率',
   description: 'ポケモンカードのデッキシミュレーター。環境デッキ採用率・初手確率・一人回し練習が無料で使えるサイト。デッキコードを入力するだけで初手7枚の確率、サイド落ちリスクをモンテカルロ法で即計算（「ポケカ シュミレーター」とも呼ばれます）。',
@@ -106,11 +130,13 @@ export default async function Home() {
     { data: articles },
     analyticsData,
     weeklyRanking,
+    recentArchetypeIds,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
     getCachedAnalytics(),
     getCachedWeeklyRanking(),
+    getCachedRecentArchetypeIds(),
   ])
 
   // 直近7日間のデッキ数が多い順にアーキタイプをソート
@@ -142,6 +168,7 @@ export default async function Home() {
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}
+        recentArchetypeIds={recentArchetypeIds}
       />
     </>
   )

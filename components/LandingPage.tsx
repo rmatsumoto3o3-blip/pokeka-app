@@ -21,9 +21,10 @@ interface LandingPageProps {
     archetypes: DeckArchetype[]
     articles: Article[]
     analyticsData?: Record<string, any[]>
+    recentArchetypeIds?: string[]
 }
 
-export default function LandingPage({ decks, archetypes, articles, analyticsData }: LandingPageProps) {
+export default function LandingPage({ decks, archetypes, articles, analyticsData, recentArchetypeIds = [] }: LandingPageProps) {
     const router = useRouter()
 
     // Color Change Only: White base, Pop borders
@@ -335,6 +336,34 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                             <KeyCardAdoptionList initialArchetypes={archetypes} initialAnalyticsData={analyticsData} />
                         </div>
                     </div>
+
+                    {/* 環境デッキ別 採用カード（各アーキタイプ詳細ページへの導線） */}
+                    {(() => {
+                        const recentSet = new Set(recentArchetypeIds)
+                        const linkable = archetypes.filter(a => recentSet.has(a.id))
+                        if (linkable.length === 0) return null
+                        return (
+                            <div className="mt-8" id="deck-pages">
+                                <div className="mb-4">
+                                    <h3 className="text-xl md:text-2xl font-bold text-gray-900">環境デッキ別 採用カード</h3>
+                                    <p className="text-gray-600 mt-1">各デッキの直近2ヶ月の採用カードと採用率を、デッキ別の専用ページで確認できます。</p>
+                                </div>
+                                <div className="bg-white rounded-2xl border-2 border-indigo-100 shadow-sm p-4 md:p-5">
+                                    <div className="flex flex-wrap gap-2">
+                                        {linkable.map(a => (
+                                            <Link
+                                                key={a.id}
+                                                href={`/archetypes/${encodeURIComponent(a.name)}`}
+                                                className="px-3 py-1.5 bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 text-sm font-medium rounded-full border border-gray-200 hover:border-indigo-300 transition-colors"
+                                            >
+                                                {a.name}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    })()}
                 </div>
             </section>
 
