@@ -6,7 +6,8 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 
 export const revalidate = 86400 // 24時間（GASが毎日更新）
-export const dynamicParams = true
+// generateStaticParams に無いアーキタイプ名は404を返す（ソフト404を防ぐ）
+export const dynamicParams = false
 
 interface Props {
     params: Promise<{ name: string }>
