@@ -6,16 +6,18 @@ export interface CardStack {
     toolCount: number
     damage: number
     status?: 'none' | 'poison' | 'burn' | 'confused' | 'paralyzed' | 'asleep'
+    playedTurn?: number
 }
 
 // Helper to create a stack from a single card
-export function createStack(card: Card): CardStack {
+export function createStack(card: Card, turn: number = 0): CardStack {
     return {
         cards: [card],
         energyCount: card.supertype === 'Energy' ? 1 : 0,
         toolCount: card.subtypes?.includes('Pokémon Tool') ? 1 : 0,
         damage: 0,
-        status: 'none'
+        status: 'none',
+        playedTurn: turn
     }
 }
 

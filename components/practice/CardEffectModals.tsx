@@ -15,6 +15,7 @@ import {
     type NightStretcherState,
     type GenesectState,
     type ArchaludonState,
+    type BlazikenEXState,
     type TatsugiriState,
     type OgerponState,
     type ZoroarkState,
@@ -81,6 +82,8 @@ interface CardEffectModalsProps {
     setGenesectState: React.Dispatch<React.SetStateAction<GenesectState | null>>
     archaludonState: ArchaludonState | null
     setArchaludonState: React.Dispatch<React.SetStateAction<ArchaludonState | null>>
+    blazikenEXState: BlazikenEXState | null
+    setBlazikenEXState: React.Dispatch<React.SetStateAction<BlazikenEXState | null>>
     tatsugiriState: TatsugiriState | null
     ogerponState: OgerponState | null
     setOgerponState: React.Dispatch<React.SetStateAction<OgerponState | null>>
@@ -151,6 +154,9 @@ interface CardEffectModalsProps {
     handleGenesectConfirm: () => void
     handleArchaludonEnergySelect: (i: number) => void
     handleArchaludonTargetSelect: (type: 'battle' | 'bench', index: number) => void
+    handleBlazikenEXSelectEnergy: (i: number) => void
+    handleBlazikenEXConfirmEnergy: () => void
+    handleBlazikenEXTargetSelect: (type: 'battle' | 'bench', index: number) => void
     handleTatsugiriSelect: (i: number) => void
     handleTatsugiriConfirm: () => void
     handleOgerponSelect: (i: number) => void
@@ -212,6 +218,7 @@ export function CardEffectModals({
     nightStretcherState, setNightStretcherState,
     genesectState, setGenesectState,
     archaludonState, setArchaludonState,
+    blazikenEXState, setBlazikenEXState,
     tatsugiriState,
     ogerponState, setOgerponState,
     zoroarkState, setZoroarkState,
@@ -246,6 +253,7 @@ export function CardEffectModals({
     handleNightStretcherSelect, handleNightStretcherConfirm,
     handleGenesectSelect, handleGenesectConfirm,
     handleArchaludonEnergySelect, handleArchaludonTargetSelect,
+    handleBlazikenEXSelectEnergy, handleBlazikenEXConfirmEnergy, handleBlazikenEXTargetSelect,
     handleTatsugiriSelect, handleTatsugiriConfirm,
     handleOgerponSelect, handleOgerponConfirm,
     handleZoroarkSelect, handleZoroarkConfirm,
@@ -1348,6 +1356,121 @@ export function CardEffectModals({
 
                         <button
                             onClick={() => setArchaludonState(prev => prev ? { ...prev, step: 'select_energy' } : null)}
+                            className="mt-12 bg-gray-800 text-white font-bold px-12 py-3 rounded-full hover:bg-gray-700 transition active:scale-95"
+                        >
+                            戻る
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Blaziken ex Selection Modal */}
+            {blazikenEXState && blazikenEXState.step === 'select_energy' && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setBlazikenEXState(null)} />
+                    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b flex justify-between items-center bg-red-50">
+                            <div>
+                                <h3 className="text-xl font-black text-red-900">特性: たぎるとうし (トラッシュ検索)</h3>
+                                <p className="text-sm text-red-700">基本エネルギーを1枚選択してください</p>
+                            </div>
+                            <button onClick={() => setBlazikenEXState(null)} className="text-gray-400 hover:text-gray-600 p-2">✕</button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                {blazikenEXState.candidates.map((card, i) => {
+                                    const isSelected = blazikenEXState.selectedEnergyIndex === i
+                                    const isBasicEnergy = isEnergy(card) && !card.subtypes?.includes('Special')
+                                    return (
+                                        <div
+                                            key={i}
+                                            onClick={() => isBasicEnergy && handleBlazikenEXSelectEnergy(i)}
+                                            className={`relative cursor-pointer transition-all duration-200 
+                                                ${isBasicEnergy ? '' : 'grayscale opacity-30 cursor-not-allowed'}
+                                                ${isSelected ? 'ring-4 ring-red-500 scale-105 z-10' : 'hover:opacity-100'}
+                                            `}
+                                        >
+                                            <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-md">
+                                                <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
+                                                {isSelected && (
+                                                    <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                                                        <div className="bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg">✓</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+                            <span className="font-bold text-gray-600">
+                                {blazikenEXState.selectedEnergyIndex !== null ? '1' : '0'} / 1 枚選択中
+                            </span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setBlazikenEXState(null)} className="px-6 py-2 text-gray-500 font-bold">キャンセル</button>
+                                <button
+                                    onClick={handleBlazikenEXConfirmEnergy}
+                                    disabled={blazikenEXState.selectedEnergyIndex === null}
+                                    className="bg-red-600 text-white font-black px-10 py-3 rounded-full shadow-lg hover:bg-red-700 disabled:bg-gray-300 disabled:shadow-none transition active:scale-95"
+                                >
+                                    つける先を選択
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Blaziken Target Selection Modal */}
+            {blazikenEXState && blazikenEXState.step === 'select_target' && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-md" onClick={() => setBlazikenEXState(null)} />
+                    <div className="relative text-center w-full max-w-2xl px-4">
+                        <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-red-500 mb-8">
+                            <h3 className="text-2xl font-black text-gray-900 mb-2">エネルギーをつける先を選択</h3>
+                            <p className="text-red-600 font-bold">バトル場またはベンチのポケモンを選択してください</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Battle Field Option */}
+                            {battleField && (
+                                <button
+                                    onClick={() => handleBlazikenEXTargetSelect('battle', 0)}
+                                    className="w-full bg-white hover:bg-red-50 p-6 rounded-2xl border-2 border-transparent hover:border-red-500 transition-all flex items-center gap-6 group"
+                                >
+                                    <div className="w-16 h-24 relative flex-shrink-0 group-hover:scale-105 transition">
+                                        <Image src={getTopCard(battleField).imageUrl} alt="" fill className="object-cover rounded-lg shadow" unoptimized />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-xs font-bold text-gray-500 mb-1 tracking-widest uppercase">Battle Field</div>
+                                        <div className="text-xl font-black text-gray-900">{getTopCard(battleField).name}</div>
+                                    </div>
+                                </button>
+                            )}
+
+                            {/* Bench Options */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {bench.map((stack, i) => stack && (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleBlazikenEXTargetSelect('bench', i)}
+                                        className="bg-white hover:bg-red-50 p-4 rounded-2xl border-2 border-transparent hover:border-red-500 transition-all flex items-center gap-4 group"
+                                    >
+                                        <div className="w-12 h-16 relative flex-shrink-0 group-hover:scale-105 transition">
+                                            <Image src={getTopCard(stack).imageUrl} alt="" fill className="object-cover rounded-lg shadow" unoptimized />
+                                        </div>
+                                        <div className="text-left">
+                                            <div className="text-xs font-bold text-gray-500 mb-0.5 tracking-widest uppercase">Bench {i + 1}</div>
+                                            <div className="text-sm font-black text-gray-900 truncate max-w-[120px]">{getTopCard(stack).name}</div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setBlazikenEXState(prev => prev ? { ...prev, step: 'select_energy' } : null)}
                             className="mt-12 bg-gray-800 text-white font-bold px-12 py-3 rounded-full hover:bg-gray-700 transition active:scale-95"
                         >
                             戻る
