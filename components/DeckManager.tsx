@@ -543,12 +543,12 @@ function DeckCard({
                     <div className="flex -space-x-2">
                         {deck.icon_1 && (
                             <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={24} height={24} className="object-contain" />
+                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={24} height={24} className="object-contain" unoptimized />
                             </div>
                         )}
                         {deck.icon_2 && (
                             <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={24} height={24} className="object-contain" />
+                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={24} height={24} className="object-contain" unoptimized />
                             </div>
                         )}
                     </div>

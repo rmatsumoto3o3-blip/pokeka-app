@@ -584,12 +584,12 @@ export default function MatchAnalytics({ userId }: MatchAnalyticsProps) {
                                             <div className="flex -space-x-1.5">
                                                 {match.opponent_icon_1 && (
                                                     <div className="w-7 h-7 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                                        <Image src={`/pokemon-icons/${match.opponent_icon_1}.png`} alt={match.opponent_icon_1} width={22} height={22} className="object-contain" />
+                                                        <Image src={`/pokemon-icons/${match.opponent_icon_1}.png`} alt={match.opponent_icon_1} width={22} height={22} className="object-contain" unoptimized />
                                                     </div>
                                                 )}
                                                 {match.opponent_icon_2 && (
                                                     <div className="w-7 h-7 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                                        <Image src={`/pokemon-icons/${match.opponent_icon_2}.png`} alt={match.opponent_icon_2} width={22} height={22} className="object-contain" />
+                                                        <Image src={`/pokemon-icons/${match.opponent_icon_2}.png`} alt={match.opponent_icon_2} width={22} height={22} className="object-contain" unoptimized />
                                                     </div>
                                                 )}
                                             </div>
