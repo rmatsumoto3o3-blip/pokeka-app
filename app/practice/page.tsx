@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { fetchDeckData, buildDeck, shuffle, type Card } from '@/lib/deckParser'
-import { createStack } from '@/lib/cardStack'
+import { isPokemon, createStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from '../../components/DeckPractice'
 import CoinTossOverlay from '../../components/CoinTossOverlay'
 import {
@@ -37,6 +37,7 @@ function PracticeContent() {
     const [isFlipping, setIsFlipping] = useState(false)
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<any>(null)
+    const [loadCounter, setLoadCounter] = useState(0)
 
     const player1Ref = useRef<DeckPracticeRef>(null)
     const player2Ref = useRef<DeckPracticeRef>(null)
@@ -97,8 +98,10 @@ function PracticeContent() {
             }
         }
     }, [searchParams])
+        const [activePlayer, setActivePlayer] = useState<'player1' | 'player2'>('player1')
 
     const loadDecks = async (code1?: string, code2?: string) => {
+        setLoadCounter(prev => prev + 1)
         const targetCode1 = code1 || deckCode1
         const targetCode2 = code2 || deckCode2
 
@@ -166,7 +169,6 @@ function PracticeContent() {
 
     // Mobile detection
     const [isMobile, setIsMobile] = useState(false)
-    const [activePlayer, setActivePlayer] = useState<'player1' | 'player2'>('player1')
 
     // Stadium Menu
     const [showStadiumMenu, setShowStadiumMenu] = useState(false)
@@ -181,6 +183,13 @@ function PracticeContent() {
         if (stadium1) setStadium1(null)
         if (stadium2) setStadium2(null)
         setShowStadiumMenu(false)
+    }
+
+    const handleReset = () => {
+        setDeck1([])
+        setDeck2([])
+        setStadium1(null)
+        setStadium2(null)
     }
 
     useEffect(() => {
@@ -266,6 +275,16 @@ function PracticeContent() {
                             デッキコードを入力して、対戦練習を始めましょう
                         </p>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handleReset}
+                            className="p-2 bg-white/10 text-white/70 hover:bg-red-500/20 hover:text-red-400 rounded-xl transition-all"
+                            title="全てをリセット"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Deck Code Input */}
@@ -344,6 +363,7 @@ function PracticeContent() {
                                         ${isMobile && activePlayer === 'player2' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
                                     `}>
                                         <DeckPractice
+                                            key={`p1-${loadCounter}`}
                                             ref={player1Ref}
                                             idPrefix="player1"
                                             deck={deck1}
@@ -357,6 +377,7 @@ function PracticeContent() {
                                                 setStadium1(card)
                                                 setStadium2(null)
                                             }}
+                                            onTurnEnd={() => setActivePlayer('player2')}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player1', effect)}
                                             onAttackTrigger={(dmg, type, idx) => player2Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
                                         />
@@ -391,6 +412,7 @@ function PracticeContent() {
                                                                         alt={activeStadium.name}
                                                                         fill
                                                                         className="rounded shadow-lg object-contain"
+                                                                        unoptimized
                                                                     />
                                                                     {/* Keep X button as quick shortcut */}
                                                                     <button
@@ -485,6 +507,7 @@ function PracticeContent() {
                                         ${isMobile && activePlayer === 'player1' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
                                     `}>
                                         <DeckPractice
+                                            key={`p2-${loadCounter}`}
                                             ref={player2Ref}
                                             idPrefix="player2"
                                             deck={deck2}
@@ -499,6 +522,7 @@ function PracticeContent() {
                                                 setStadium2(card)
                                                 setStadium1(null)
                                             }}
+                                            onTurnEnd={() => setActivePlayer('player1')}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player2', effect)}
                                             onAttackTrigger={(dmg, type, idx) => player1Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
                                         />
@@ -600,8 +624,9 @@ function PracticeContent() {
                         onComplete={() => setIsFlipping(false)} 
                     />
                 )}
-            </div >
-        </div >
+
+            </div>
+        </div>
     )
 }
 

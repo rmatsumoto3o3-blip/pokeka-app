@@ -191,6 +191,7 @@ export default function FeaturedCardTrends() {
                                         alt={card.card_name}
                                         fill
                                         className={`object-cover transition-opacity ${isSelected ? 'opacity-100' : 'opacity-90 group-hover:opacity-100'}`}
+                                        unoptimized
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Image</div>
@@ -215,7 +216,7 @@ export default function FeaturedCardTrends() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-14 relative rounded overflow-hidden border border-gray-200 shadow-sm hidden md:block">
-                                {selectedCard.image_url && <Image src={selectedCard.image_url} alt={selectedCard.card_name} fill className="object-cover" />}
+                                {selectedCard.image_url && <Image src={selectedCard.image_url} alt={selectedCard.card_name} fill className="object-cover" unoptimized />}
                             </div>
                             <div>
                                 <h3 className="text-base font-bold text-gray-900">{selectedCard.card_name}</h3>
