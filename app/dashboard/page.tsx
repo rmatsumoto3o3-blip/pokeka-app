@@ -29,7 +29,7 @@ export default function Dashboard() {
     const supabase = createClient()
     const [userId, setUserId] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
-    const [activeTab, setActiveTab] = useState('decks') // decks, analytics, reference, articles
+    const [activeTab, setActiveTab] = useState('tools')
     const [loading, setLoading] = useState(true)
     const [isAddDeckModalOpen, setIsAddDeckModalOpen] = useState(false)
 
@@ -176,11 +176,20 @@ export default function Dashboard() {
                     <div className="flex justify-between h-14 md:h-16">
                         <div className="flex overflow-x-auto no-scrollbar items-center">
                             <div className="flex-shrink-0 flex items-center">
-                                <span className="text-base md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-2 md:mr-8 whitespace-nowrap">
-                                    ポケカ戦績
-                                </span>
+                                <Link href="/" className="text-base md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-2 md:mr-8 whitespace-nowrap hover:opacity-80 transition">
+                                    TOPへ
+                                </Link>
                             </div>
                             <div className="flex space-x-1 md:space-x-8 items-center whitespace-nowrap">
+                                <button
+                                    onClick={() => setActiveTab('tools')}
+                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'tools'
+                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                >
+                                    ツール
+                                </button>
                                 <button
                                     onClick={() => setActiveTab('decks')}
                                     className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'decks'
@@ -296,6 +305,26 @@ export default function Dashboard() {
                     {/* Main Content Column */}
                     <div className="lg:col-span-3 space-y-6">
 
+
+                        {activeTab === 'tools' && (
+                            <div className="space-y-4">
+                                <h2 className="text-lg font-bold text-gray-900">ツール一覧</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <Link href="/simulator" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">初手確率シミュレーター</div>
+                                        <div className="text-sm text-gray-500">特定のカードが初手に来る確率を計算</div>
+                                    </Link>
+                                    <Link href="/practice" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">一人回し練習</div>
+                                        <div className="text-sm text-gray-500">デッキコードを入力して対戦練習</div>
+                                    </Link>
+                                    <Link href="/practice/prize-trainer" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">サイド落ち推論トレーニング</div>
+                                        <div className="text-sm text-gray-500">サイド落ちを読む力を鍛える</div>
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
 
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
