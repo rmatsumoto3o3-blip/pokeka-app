@@ -183,6 +183,33 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                 </div>
             </section>
 
+            {/* 管理者の遊び場 */}
+            <section className="py-5 bg-white">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 px-6 py-5 md:px-8 md:py-6 shadow-lg">
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 text-white">
+                            <div className="flex-1">
+                                <h2 className="text-lg md:text-2xl font-extrabold mb-1 leading-tight">
+                                    管理者の遊び場
+                                </h2>
+                                <p className="text-white/80 text-xs md:text-sm leading-relaxed">
+                                    管理者が作ったゲームを公開しています。
+                                </p>
+                            </div>
+                            <Link
+                                href="/playground"
+                                className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-slate-800 font-bold text-sm md:text-base px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 whitespace-nowrap"
+                            >
+                                見てみる
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Ad Section (TOYGER, etc) */}
             <section className="py-2.5 bg-white">
                 <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
