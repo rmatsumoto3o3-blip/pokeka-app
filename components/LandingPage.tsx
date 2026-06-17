@@ -73,93 +73,63 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                         <span className="block sm:inline">あなたのポケカライフを充実させる機能がここに。</span>
                         <span className="font-bold text-pink-600 block mt-1">シミュレーションでデッキを分析</span>
                     </p>
-                    <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
-                        <div className="grid grid-cols-2 gap-3 w-full max-w-2xl px-2 sm:px-0">
-                            {/* Row 1 */}
-                            <a
-                                href="#deck-distribution"
-                                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center py-4"
-                            >
-                                環境デッキ分布
-                                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </a>
-                            <a
-                                href="#featured-trends"
-                                className="bg-white text-gray-700 font-bold text-sm sm:text-lg border-2 border-gray-100 hover:border-pink-200 hover:bg-pink-50 transition-all duration-200 shadow-sm rounded-xl flex items-center justify-center py-4"
-                            >
-                                注目カード採用率
-                            </a>
+                </div>
+            </section>
 
-                            {/* Row 2 */}
-                            <Link
-                                href="/practice"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 py-4"
-                            >
-                                <Image
-                                    src="/Lucario.png"
-                                    alt="Practice"
-                                    width={24}
-                                    height={24}
-                                    className="w-5 h-5 sm:w-6 sm:h-6 filter brightness-0 invert"
-                                />
-                                一人回し
-                            </Link>
-                            <Link
-                                href="/simulator"
-                                className="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 py-4"
-                            >
-                                <Image
-                                    src="/king.png"
-                                    alt="Simulator"
-                                    width={24}
-                                    height={24}
-                                    className="w-5 h-5 sm:w-6 sm:h-6 filter brightness-0 invert"
-                                />
-                                確率シミュ
-                            </Link>
-
-                            {/* Row 3 */}
-                            <Link
-                                href="/global-simulator"
-                                className="px-4 py-2.5 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                🌎 Global Sim
-                            </Link>
-                            <Link
-                                href="/practice/prize-trainer"
-                                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:bg-slate-800 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                🏆 サイド推論
-                            </Link>
-                            <Link
-                                href="/kids"
-                                className="px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                ポケカで算数
-                            </Link>
-                            <a
-                                href="https://otcg.pokelix.jp/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                O-TCG Pocket
-                            </a>
-                        </div>
+            {/* ツール一覧グリッド */}
+            <section className="py-5 bg-white">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Tools</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <a href="#deck-distribution" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-deck-distribution.png" alt="環境デッキ分布" fill className="object-cover" unoptimized />
+                            </div>
+                        </a>
+                        <a href="#featured-trends" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-card-adoption.png" alt="注目カード採用率" fill className="object-cover" unoptimized />
+                            </div>
+                        </a>
+                        <Link href="/practice" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-practice.png" alt="一人回し練習" fill className="object-cover" unoptimized />
+                            </div>
+                        </Link>
+                        <Link href="/simulator" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-simulator.png" alt="確率シミュレーター" fill className="object-cover" unoptimized />
+                            </div>
+                        </Link>
+                        <Link href="/global-simulator" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-global-sim.png" alt="Global Simulator" fill className="object-cover" unoptimized />
+                            </div>
+                        </Link>
+                        <Link href="/practice/prize-trainer" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-prize-trainer.png" alt="サイド推論" fill className="object-cover" unoptimized />
+                            </div>
+                        </Link>
+                        <Link href="/kids" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-kids.png" alt="ポケカで算数" fill className="object-cover" unoptimized />
+                            </div>
+                        </Link>
+                        <a href="https://otcg.pokelix.jp/" target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                            <div className="aspect-video relative">
+                                <Image src="/thumb-otcg-pocket.png" alt="O-TCG Pocket" fill className="object-cover" unoptimized />
+                            </div>
+                        </a>
                     </div>
                 </div>
             </section>
 
-            {/* Simulator CTA Section */}
+            {/* Simulator CTA + 管理者の遊び場 */}
             <section className="py-5 bg-white">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-3">
                     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-600 px-6 py-5 md:px-8 md:py-6 shadow-lg">
                         <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
-
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 text-white">
                             <div className="flex-1">
                                 <h2 className="text-lg md:text-2xl font-extrabold mb-1 leading-tight">
@@ -174,6 +144,27 @@ export default function LandingPage({ decks, archetypes, articles, analyticsData
                                 className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-purple-700 font-bold text-sm md:text-base px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 whitespace-nowrap"
                             >
                                 使ってみる（無料）
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </div>
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 px-6 py-5 md:px-8 md:py-6 shadow-lg">
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 text-white">
+                            <div className="flex-1">
+                                <h2 className="text-lg md:text-2xl font-extrabold mb-1 leading-tight">
+                                    管理者の遊び場
+                                </h2>
+                                <p className="text-white/80 text-xs md:text-sm leading-relaxed">
+                                    管理者が作ったゲームを公開しています。
+                                </p>
+                            </div>
+                            <Link
+                                href="/playground"
+                                className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-slate-800 font-bold text-sm md:text-base px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200 whitespace-nowrap"
+                            >
+                                見てみる
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
