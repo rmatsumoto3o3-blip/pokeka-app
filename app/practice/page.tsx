@@ -551,6 +551,14 @@ function PracticeContent() {
         }
     }, [])
 
+    useEffect(() => {
+        if (savedPracticeDecks.length === 0) return
+        setCabtHumanDeckId(current => {
+            if (current.startsWith('local:')) return current
+            return `local:${savedPracticeDecks[0].id}`
+        })
+    }, [savedPracticeDecks])
+
     const syncPracticeDecksToFirebase = async (nextDecks: SavedPracticeDeck[]) => {
         setFirebaseDeckStatus('syncing')
         try {
@@ -1340,11 +1348,6 @@ function PracticeContent() {
                                                 onChange={(event) => setCabtHumanDeckId(event.target.value)}
                                                 className="mt-1 w-full rounded-lg border border-white/20 bg-gray-950 px-2 py-2 text-xs text-white outline-none focus:border-cyan-300"
                                             >
-                                                {VIRTUAL_PRACTICE_DECKS.map(deck => (
-                                                    <option key={deck.id} value={deck.id}>
-                                                        {deck.label}
-                                                    </option>
-                                                ))}
                                                 {savedPracticeDecks.length > 0 && (
                                                     <optgroup label="保存デッキ">
                                                         {savedPracticeDecks.map(deck => (
@@ -1354,6 +1357,13 @@ function PracticeContent() {
                                                         ))}
                                                     </optgroup>
                                                 )}
+                                                <optgroup label="仮想デッキ">
+                                                    {VIRTUAL_PRACTICE_DECKS.map(deck => (
+                                                        <option key={deck.id} value={deck.id}>
+                                                            {deck.label}
+                                                        </option>
+                                                    ))}
+                                                </optgroup>
                                             </select>
                                         </label>
                                         <label className="text-[11px] font-bold text-cyan-100">
