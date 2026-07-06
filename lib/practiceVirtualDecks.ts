@@ -59,7 +59,7 @@ function pokemonIconImage(name: string): string | undefined {
 export const VIRTUAL_PRACTICE_DECKS = [
     {
         "id": "alakazam_deck",
-        "label": "フーディン",
+        "label": "フーディン1 / バトルケージ",
         "source": "alakazam_deck.csv",
         "cards": [
             {
@@ -247,7 +247,7 @@ export const VIRTUAL_PRACTICE_DECKS = [
     },
     {
         "id": "alakazam_kadoraba_night_mine_deck",
-        "label": "フーディン カドラバ/Nighttime Mine",
+        "label": "フーディン2 / カドラバ・夜の鉱山",
         "source": "alakazam_kadoraba_night_mine_deck.csv",
         "cards": [
             {
@@ -452,7 +452,7 @@ export const VIRTUAL_PRACTICE_DECKS = [
     },
     {
         "id": "alakazam_night_mine_deck",
-        "label": "フーディン Nighttime Mine",
+        "label": "フーディン3 / 夜の鉱山",
         "source": "alakazam_night_mine_deck.csv",
         "cards": [
             {
@@ -687,7 +687,7 @@ export const VIRTUAL_PRACTICE_DECKS = [
     },
     {
         "id": "alakazam_third_ptcg_deck",
-        "label": "フーディン THIRD PTCG",
+        "label": "フーディン4 / THIRD型",
         "source": "alakazam_third_ptcg_deck.csv",
         "cards": [
             {
@@ -892,7 +892,7 @@ export const VIRTUAL_PRACTICE_DECKS = [
     },
     {
         "id": "alakazam_tubotu_deck",
-        "label": "フーディン tubotu",
+        "label": "フーディン5 / tubotu型",
         "source": "alakazam_tubotu_deck.csv",
         "cards": [
             {
