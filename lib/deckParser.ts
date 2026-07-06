@@ -6,6 +6,8 @@ export interface CardData {
     subtypes?: string[]
     setCode?: string
     collectorNumber?: string
+    hp?: number
+    cardId?: number
 }
 
 export interface Card {
@@ -14,6 +16,8 @@ export interface Card {
     supertype: string
     subtypes?: string[]
     types?: string[]
+    hp?: number
+    cardId?: number
 }
 
 export async function fetchDeckData(deckCode: string): Promise<CardData[]> {
@@ -191,7 +195,9 @@ export function buildDeck(cards: CardData[]): Card[] {
             name: card.name,
             imageUrl: card.imageUrl,
             supertype: card.supertype,
-            subtypes: card.subtypes
+            subtypes: card.subtypes,
+            hp: card.hp,
+            cardId: card.cardId
         })
     )
 }

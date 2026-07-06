@@ -71,7 +71,7 @@ import {
 
 export type { DeckPracticeRef }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, isActive = true, onTurnEnd, onEffectTrigger, onAttackTrigger }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, isActive = true, onTurnEnd, onEffectTrigger, onAttackTrigger, onKnockOut }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
     const [remaining, setRemaining] = useState<Card[]>([])
     const [trash, setTrash] = useState<Card[]>([])
@@ -130,6 +130,50 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const showToast = (msg: string) => {
         setToast(msg)
         setTimeout(() => setToast(null), 3000)
+    }
+
+
+    const getMainPokemonFromStack = (stack: CardStack | null): Card | null => {
+        if (!stack) return null
+        return [...stack.cards].reverse().find(isPokemon) || null
+    }
+
+    const getStackHp = (stack: CardStack | null): number | null => {
+        const pokemon = getMainPokemonFromStack(stack)
+        return typeof pokemon?.hp === 'number' && pokemon.hp > 0 ? pokemon.hp : null
+    }
+
+    const getPrizeCountForStack = (stack: CardStack): number => {
+        const pokemon = getMainPokemonFromStack(stack)
+        if (!pokemon) return 1
+        return isRuleBox(pokemon) ? 2 : 1
+    }
+
+    const resolveKnockOut = (targetType: 'battle' | 'bench', targetIndex: number, knockedStack: CardStack) => {
+        const prizeCount = getPrizeCountForStack(knockedStack)
+        const owner = idPrefix === 'player2' ? 'player2' : 'player1'
+
+        setTrash(prev => [...prev, ...knockedStack.cards])
+
+        if (targetType === 'battle') {
+            const promoteIndex = bench.findIndex(Boolean)
+            const promoted = promoteIndex >= 0 ? bench[promoteIndex] : null
+            const nextBench = [...bench]
+            if (promoteIndex >= 0) nextBench[promoteIndex] = null
+            setBattleField(promoted)
+            setBench(nextBench)
+            const fieldEmpty = !promoted && !nextBench.some(Boolean)
+            showToast(`${playerName}のバトルポケモンがきぜつしました`)
+            onKnockOut?.(owner, prizeCount, fieldEmpty)
+            return
+        }
+
+        const nextBench = [...bench]
+        nextBench[targetIndex] = null
+        setBench(nextBench)
+        const fieldEmpty = !battleField && !nextBench.some(Boolean)
+        showToast(`${playerName}のベンチポケモンがきぜつしました`)
+        onKnockOut?.(owner, prizeCount, fieldEmpty)
     }
 
     const [peekDeckSearch, setPeekDeckSearch] = useState(false)
@@ -391,19 +435,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 if (targetRef === 'battle') {
                     if (battleField) {
                         const newDamage = (battleField.damage || 0) + amount
-                        setBattleField({ ...battleField, damage: newDamage })
-                        showToast(`相手の技により バトル場に ${amount} ダメージを受けました`)
+                        const hp = getStackHp(battleField)
+                        if (hp !== null && newDamage >= hp) {
+                            resolveKnockOut('battle', 0, { ...battleField, damage: newDamage })
+                        } else {
+                            setBattleField({ ...battleField, damage: newDamage })
+                            showToast(`相手の技により バトル場に ${amount} ダメージを受けました`)
+                        }
                     } else {
                         showToast('バトル場にポケモンがいません（ダメージ不発）')
                     }
                 } else if (targetRef === 'bench') {
                     const stack = bench[targetIdx]
                     if (stack) {
-                        const newBench = [...bench]
                         const newDamage = (stack.damage || 0) + amount
-                        newBench[targetIdx] = { ...stack, damage: newDamage }
-                        setBench(newBench)
-                        showToast(`相手の技により ベンチ(${targetIdx + 1})に ${amount} ダメージを受けました`)
+                        const nextStack = { ...stack, damage: newDamage }
+                        const hp = getStackHp(stack)
+                        if (hp !== null && newDamage >= hp) {
+                            resolveKnockOut('bench', targetIdx, nextStack)
+                        } else {
+                            const newBench = [...bench]
+                            newBench[targetIdx] = nextStack
+                            setBench(newBench)
+                            showToast(`相手の技により ベンチ(${targetIdx + 1})に ${amount} ダメージを受けました`)
+                        }
                     } else {
                         showToast('指定されたベンチにポケモンがいません')
                     }
@@ -471,6 +526,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         },
         takePrize: (index: number = 0) => {
             takePrizeCard(index)
+        },
+        takePrizes: (count: number) => {
+            takePrizeCards(count)
         },
         shuffleDeck: () => {
             shuffleDeck()
@@ -972,6 +1030,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(prev => [...prev, prize])
         setPrizeCards(prev => prev.filter((_, i) => i !== index))
         showToast('サイドを1枚取りました')
+    }
+
+    const takePrizeCards = (count: number) => {
+        if (count <= 0) return
+        setPrizeCards(prev => {
+            const takeCount = Math.min(count, prev.length)
+            const taken = prev.slice(0, takeCount)
+            if (taken.length > 0) {
+                setHand(current => [...current, ...taken])
+                showToast(`サイドを${taken.length}枚取りました`)
+            }
+            return prev.slice(takeCount)
+        })
     }
 
     const shuffleDeck = () => {
@@ -1771,6 +1842,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 relative">
+                        <button onClick={nextTurn} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 transition whitespace-nowrap">番終了</button>
                         <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
                         
                         {prizeCards.length === 0 && battleField !== null && (

@@ -60,7 +60,7 @@ export function CascadingStack({ stack, width, height, onDamageChange, onDamageC
                             alt={card.name}
                             width={width}
                             height={height}
-                            className={`rounded-lg shadow-2xl bg-[#0a0a0c] no-touch-menu no-select no-tap-highlight ring-1 ring-white/10 transition-shadow duration-500 ${isTopPokemon && currentStatus ? currentStatus.glow : 'shadow-black/50'}`}
+                            className={`rounded-lg shadow-2xl bg-[#0a0a0c] object-contain no-touch-menu no-select no-tap-highlight ring-1 ring-white/10 transition-shadow duration-500 ${isTopPokemon && currentStatus ? currentStatus.glow : 'shadow-black/50'}`}
                             draggable={false}
                             unoptimized
                         />

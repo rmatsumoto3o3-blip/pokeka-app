@@ -19,6 +19,7 @@ export interface DeckPracticeProps {
     isOpponent?: boolean
     isActive?: boolean
     onTurnEnd?: () => void
+    onKnockOut?: (defender: 'player1' | 'player2', prizeCount: number, fieldEmpty: boolean) => void
 }
 
 export interface DeckPracticeRef {
@@ -37,6 +38,7 @@ export interface DeckPracticeRef {
     playToBench: (handIndex: number, targetIndex?: number) => void
     trashFromHand: (handIndex: number) => void
     takePrize: (index?: number) => void
+    takePrizes: (count: number) => void
     shuffleDeck: () => void
     drawCards: (count: number) => void
     isSupporterUsed: () => boolean
