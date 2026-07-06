@@ -456,6 +456,7 @@ function PracticeContent() {
     const [deckBuilderCards, setDeckBuilderCards] = useState<Record<number, number>>({})
     const [savedPracticeDecks, setSavedPracticeDecks] = useState<SavedPracticeDeck[]>([])
     const [selectedSavedDeckId, setSelectedSavedDeckId] = useState('')
+    const [firebaseDeckStatus, setFirebaseDeckStatus] = useState<'idle' | 'syncing' | 'saved' | 'local-only' | 'error'>('idle')
     const isCpuModeRequested = isCpuDeckCode(deckCode2)
     const canShowCpuUnlock = !deckCode1.trim() && isCpuModeRequested
     const canLoadDeckCodes = isCpuModeRequested ? Boolean(deckCode1.trim()) : Boolean(deckCode1.trim() || deckCode2.trim())
@@ -477,10 +478,66 @@ function PracticeContent() {
         }
     }, [])
 
+    useEffect(() => {
+        let cancelled = false
+
+        const loadFirebaseDecks = async () => {
+            setFirebaseDeckStatus('syncing')
+            try {
+                const response = await fetch('/api/practice-decks', { cache: 'no-store' })
+                const data = await response.json().catch(() => ({})) as { ok?: boolean; decks?: SavedPracticeDeck[] }
+                if (cancelled) return
+                if (!response.ok || data.ok === false) {
+                    setFirebaseDeckStatus('local-only')
+                    return
+                }
+                const decks = Array.isArray(data.decks) ? data.decks : []
+                if (decks.length > 0) {
+                    setSavedPracticeDecks(decks)
+                    setSelectedSavedDeckId(current => current || decks[0]?.id || '')
+                    localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(decks))
+                }
+                setFirebaseDeckStatus('saved')
+            } catch (err) {
+                if (!cancelled) {
+                    console.error('Failed to load Firebase practice decks', err)
+                    setFirebaseDeckStatus('local-only')
+                }
+            }
+        }
+
+        void loadFirebaseDecks()
+
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    const syncPracticeDecksToFirebase = async (nextDecks: SavedPracticeDeck[]) => {
+        setFirebaseDeckStatus('syncing')
+        try {
+            const response = await fetch('/api/practice-decks', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ decks: nextDecks }),
+            })
+            const data = await response.json().catch(() => ({})) as { ok?: boolean }
+            if (!response.ok || data.ok === false) {
+                setFirebaseDeckStatus('local-only')
+                return
+            }
+            setFirebaseDeckStatus('saved')
+        } catch (err) {
+            console.error('Failed to sync Firebase practice decks', err)
+            setFirebaseDeckStatus('error')
+        }
+    }
+
     const persistSavedPracticeDecks = (nextDecks: SavedPracticeDeck[]) => {
         setSavedPracticeDecks(nextDecks)
         localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(nextDecks))
         if (!selectedSavedDeckId && nextDecks[0]) setSelectedSavedDeckId(nextDecks[0].id)
+        void syncPracticeDecksToFirebase(nextDecks)
     }
 
     const builderEntries = useMemo(() => {
@@ -980,7 +1037,26 @@ function PracticeContent() {
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <div className="text-sm font-black text-gray-900">デッキ作成</div>
-                                    <div className="mt-1 text-xs font-bold text-gray-500">カードを検索して60枚デッキを保存できます。</div>
+                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500">
+                                        <span>カードを検索して60枚デッキを保存できます。</span>
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                                            firebaseDeckStatus === 'saved'
+                                                ? 'bg-emerald-100 text-emerald-700'
+                                                : firebaseDeckStatus === 'syncing'
+                                                    ? 'bg-blue-100 text-blue-700'
+                                                    : firebaseDeckStatus === 'error'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : 'bg-gray-200 text-gray-600'
+                                        }`}>
+                                            {firebaseDeckStatus === 'saved'
+                                                ? 'Firebase同期済み'
+                                                : firebaseDeckStatus === 'syncing'
+                                                    ? 'Firebase同期中'
+                                                    : firebaseDeckStatus === 'error'
+                                                        ? 'Firebase同期失敗'
+                                                        : 'ローカル保存'}
+                                        </span>
+                                    </div>
                                 </div>
                                 <button
                                     type="button"
