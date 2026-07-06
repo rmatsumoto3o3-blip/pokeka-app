@@ -40,9 +40,20 @@ Only add this locally when you want CPU battle:
 ```env
 NEXT_PUBLIC_ENABLE_CPU_BATTLE=1
 CABT_BRIDGE_URL=http://127.0.0.1:8765
+CABT_BRIDGE_TOKEN=
 ```
 
 Do not set `NEXT_PUBLIC_ENABLE_CPU_BATTLE` in public production unless you intentionally want the CPU route visible.
+
+For remote CPU battle, deploy the `ptcgabc` cabt bridge to Cloud Run, then set:
+
+```env
+NEXT_PUBLIC_ENABLE_CPU_BATTLE=1
+CABT_BRIDGE_URL=https://your-cabt-bridge.run.app
+CABT_BRIDGE_TOKEN=your-shared-secret
+```
+
+Do not put `CABT_BRIDGE_TOKEN` in a `NEXT_PUBLIC_*` variable.
 
 ## 5. Confirm Connection
 
@@ -88,3 +99,4 @@ After Firebase connection succeeds:
 2. Replace fixed `PRACTICE_FIREBASE_OWNER_ID` with Supabase user ID or anonymous practice ID.
 3. Hook CPU/human battle completion to `POST /api/practice-logs`.
 4. Add deck JSON import/export buttons.
+5. Deploy cabt bridge to Cloud Run for remote CPU battle.
