@@ -123,6 +123,7 @@ type SavedPracticeDeck = {
 }
 
 const SAVED_PRACTICE_DECKS_KEY = 'pokelix_practice_saved_decks'
+const CPU_BATTLE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_CPU_BATTLE === '1'
 
 const VIRTUAL_CARD_META_BY_ID = new Map<number, VirtualPracticeDeckCard>(
     VIRTUAL_PRACTICE_DECKS.flatMap(deck => deck.cards.map(card => [card.id, card] as const))
@@ -161,6 +162,38 @@ const isBasicEnergyEntry = (entry?: CabtCardCatalogEntry | VirtualPracticeDeckCa
 
 const isAceSpecEntry = (entry?: CabtCardCatalogEntry | VirtualPracticeDeckCard) => {
     return Boolean(entry?.name.includes('ACE SPEC') || entry?.subtypes?.some(subtype => subtype.includes('ACE SPEC')))
+}
+
+const sanitizeSavedPracticeDecks = (value: unknown): SavedPracticeDeck[] => {
+    if (!Array.isArray(value)) return []
+
+    return value.flatMap(item => {
+        if (!item || typeof item !== 'object') return []
+        const record = item as Record<string, unknown>
+        const cards = Array.isArray(record.cards)
+            ? record.cards.flatMap(line => {
+                if (!line || typeof line !== 'object') return []
+                const cardLine = line as Record<string, unknown>
+                const cardId = Number(cardLine.cardId)
+                const quantity = Number(cardLine.quantity)
+                if (!Number.isInteger(cardId) || !Number.isInteger(quantity)) return []
+                if (cardId <= 0 || quantity <= 0 || quantity > 60) return []
+                return [{ cardId, quantity }]
+            })
+            : []
+        const total = cards.reduce((sum, line) => sum + line.quantity, 0)
+
+        if (typeof record.id !== 'string' || typeof record.name !== 'string') return []
+        if (cards.length === 0 || total !== 60) return []
+
+        return [{
+            id: record.id.slice(0, 120),
+            name: record.name.slice(0, 120),
+            cards,
+            createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date().toISOString(),
+            updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : new Date().toISOString(),
+        }]
+    })
 }
 
 const isCabtEnergyCard = (card?: CabtCard | null) => {
@@ -457,7 +490,7 @@ function PracticeContent() {
     const [savedPracticeDecks, setSavedPracticeDecks] = useState<SavedPracticeDeck[]>([])
     const [selectedSavedDeckId, setSelectedSavedDeckId] = useState('')
     const [firebaseDeckStatus, setFirebaseDeckStatus] = useState<'idle' | 'syncing' | 'saved' | 'local-only' | 'error'>('idle')
-    const isCpuModeRequested = isCpuDeckCode(deckCode2)
+    const isCpuModeRequested = CPU_BATTLE_ENABLED && isCpuDeckCode(deckCode2)
     const canShowCpuUnlock = !deckCode1.trim() && isCpuModeRequested
     const canLoadDeckCodes = isCpuModeRequested ? Boolean(deckCode1.trim()) : Boolean(deckCode1.trim() || deckCode2.trim())
 
@@ -468,13 +501,14 @@ function PracticeContent() {
         try {
             const raw = localStorage.getItem(SAVED_PRACTICE_DECKS_KEY)
             if (!raw) return
-            const parsed = JSON.parse(raw) as SavedPracticeDeck[]
-            if (Array.isArray(parsed)) {
+            const parsed = sanitizeSavedPracticeDecks(JSON.parse(raw))
+            if (parsed.length > 0) {
                 setSavedPracticeDecks(parsed)
                 setSelectedSavedDeckId(parsed[0]?.id ?? '')
             }
         } catch (err) {
             console.error('Failed to load saved practice decks', err)
+            localStorage.removeItem(SAVED_PRACTICE_DECKS_KEY)
         }
     }, [])
 
@@ -491,11 +525,15 @@ function PracticeContent() {
                     setFirebaseDeckStatus('local-only')
                     return
                 }
-                const decks = Array.isArray(data.decks) ? data.decks : []
+                const decks = sanitizeSavedPracticeDecks(data.decks)
                 if (decks.length > 0) {
                     setSavedPracticeDecks(decks)
                     setSelectedSavedDeckId(current => current || decks[0]?.id || '')
-                    localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(decks))
+                    try {
+                        localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(decks))
+                    } catch (err) {
+                        console.error('Failed to cache Firebase practice decks locally', err)
+                    }
                 }
                 setFirebaseDeckStatus('saved')
             } catch (err) {
@@ -535,7 +573,12 @@ function PracticeContent() {
 
     const persistSavedPracticeDecks = (nextDecks: SavedPracticeDeck[]) => {
         setSavedPracticeDecks(nextDecks)
-        localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(nextDecks))
+        try {
+            localStorage.setItem(SAVED_PRACTICE_DECKS_KEY, JSON.stringify(nextDecks))
+        } catch (err) {
+            console.error('Failed to save practice decks locally', err)
+            setFirebaseDeckStatus('error')
+        }
         if (!selectedSavedDeckId && nextDecks[0]) setSelectedSavedDeckId(nextDecks[0].id)
         void syncPracticeDecksToFirebase(nextDecks)
     }

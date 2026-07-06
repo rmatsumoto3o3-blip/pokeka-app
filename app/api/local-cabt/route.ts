@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const CABT_BRIDGE_URL = process.env.CABT_BRIDGE_URL || 'http://127.0.0.1:8765'
+const CPU_BATTLE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_CPU_BATTLE === '1'
 
 export async function GET() {
+    if (!CPU_BATTLE_ENABLED) return disabledResponse()
     return proxy('/state', {}, 'GET')
 }
 
 export async function POST(request: NextRequest) {
+    if (!CPU_BATTLE_ENABLED) return disabledResponse()
+
     const body = await request.json().catch(() => ({}))
     const command = typeof body.command === 'string' ? body.command : 'state'
 
@@ -33,4 +37,11 @@ async function proxy(path: string, body: Record<string, unknown>, method: 'GET' 
             hint: 'ローカルcabtブリッジが起動していません。ptcgabcで scripts/run_cabt_bridge.sh を起動してください。',
         }, { status: 503 })
     }
+}
+
+function disabledResponse() {
+    return NextResponse.json({
+        ok: false,
+        error: 'CPU battle is disabled',
+    }, { status: 403 })
 }

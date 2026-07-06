@@ -21,6 +21,10 @@ FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 FIREBASE_STORAGE_BUCKET=
 PRACTICE_FIREBASE_OWNER_ID=nexpure-private
+
+# Local/private CPU battle switch. Keep this unset in public production.
+NEXT_PUBLIC_ENABLE_CPU_BATTLE=1
+CABT_BRIDGE_URL=http://127.0.0.1:8765
 ```
 
 ## Behavior
@@ -28,6 +32,7 @@ PRACTICE_FIREBASE_OWNER_ID=nexpure-private
 - If Firebase Admin is configured, `/practice` syncs saved decks to Firebase.
 - If Firebase Admin is not configured, `/practice` keeps working with browser `localStorage`.
 - Battle log upload is prepared at `POST /api/practice-logs`, but the UI does not yet call it automatically.
+- CPU battle UI and `/api/local-cabt` are disabled unless `NEXT_PUBLIC_ENABLE_CPU_BATTLE=1`.
 
 ## Review Notes
 
