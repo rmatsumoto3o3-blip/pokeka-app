@@ -491,7 +491,7 @@ function PracticeContent() {
     const [selectedSavedDeckId, setSelectedSavedDeckId] = useState('')
     const [firebaseDeckStatus, setFirebaseDeckStatus] = useState<'idle' | 'syncing' | 'saved' | 'local-only' | 'error'>('idle')
     const isCpuModeRequested = CPU_BATTLE_ENABLED && isCpuDeckCode(deckCode2)
-    const canShowCpuUnlock = isCpuModeRequested
+    const canShowCpuUnlock = !deckCode1.trim() && isCpuModeRequested
     const canLoadDeckCodes = isCpuModeRequested ? Boolean(deckCode1.trim()) : Boolean(deckCode1.trim() || deckCode2.trim())
 
     const player1Ref = useRef<DeckPracticeRef>(null)
@@ -1056,7 +1056,7 @@ function PracticeContent() {
                                 </div>
                                 {canShowCpuUnlock && (
                                     <div className="mt-2 rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700">
-                                        CPU対戦モードを開きます。通常のデッキ2読み込みは行いません。人間側デッキは下のCPU対戦モード内で選びます。
+                                        CPU対戦モードを開きます。通常のデッキ2読み込みは行いません。
                                     </div>
                                 )}
                             </div>
