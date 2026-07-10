@@ -323,7 +323,7 @@ export default function DeckDetailManager({
                                             window.open('/practice?mode=custom', '_blank')
                                         }}
                                         disabled={loading || cardsLoading || deckCards.length === 0}
-                                        className="text-sm bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 shadow-md transition"
+                                        className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-md transition"
                                     >
                                         <Image
                                             src="/Lucario.png"

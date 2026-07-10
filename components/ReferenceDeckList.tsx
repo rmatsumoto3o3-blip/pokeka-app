@@ -9,6 +9,12 @@ import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
 import { getAllReferenceDecksAction } from '@/app/actions'
 
+// deck_records has no deck_name column — build a display name from what's actually stored
+function getDeckDisplayName(deck: ReferenceDeck): string {
+    const parts = [deck.event_location, deck.event_rank].filter(Boolean)
+    return parts.length > 0 ? parts.join(' ') : (deck.deck_code || 'デッキ')
+}
+
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -84,11 +90,6 @@ export default function ReferenceDeckList({
     const [selectedDeckImage, setSelectedDeckImage] = useState<string | null>(null) // Legacy Image Modal
     const [expandedDeckIds, setExpandedDeckIds] = useState<string[]>([])
 
-    // Edit State
-    const [editingDeck, setEditingDeck] = useState<ReferenceDeck | null>(null)
-    const [editName, setEditName] = useState('')
-    const [isSaving, setIsSaving] = useState(false)
-
     // Key Card Drawer State [NEW]
     const [adoptionDrawerData, setAdoptionDrawerData] = useState<{ id: string, name: string } | null>(null)
 
@@ -127,48 +128,12 @@ export default function ReferenceDeckList({
         }
     }
 
-    const handleEdit = (deck: ReferenceDeck, e: React.MouseEvent) => {
-        e.stopPropagation()
-        setEditingDeck(deck)
-        setEditName(deck.deck_name)
-    }
-
-    const handleSaveEdit = async () => {
-        if (!editingDeck) return
-        setIsSaving(true)
-
-        try {
-            const { error } = await supabase
-                .from('reference_decks')
-                .update({
-                    deck_name: editName
-                })
-                .eq('id', editingDeck.id)
-
-            if (error) throw error
-
-            // Update local state
-            setDecks(decks.map(d =>
-                d.id === editingDeck.id
-                    ? { ...d, deck_name: editName }
-                    : d
-            ))
-            setEditingDeck(null)
-            alert('変更を保存しました')
-        } catch (e) {
-            console.error(e)
-            alert('保存に失敗しました')
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
     const handleDelete = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation()
         if (!confirm('本当に削除しますか？')) return
 
         const { error } = await supabase
-            .from('reference_decks')
+            .from('deck_records')
             .delete()
             .eq('id', id)
 
@@ -221,24 +186,24 @@ export default function ReferenceDeckList({
         groupedDecks[key].push(deck)
     })
 
-    // Helper to extract date from name (matches "1/24", "01/24", "3/8" etc at start)
-    const extractDateFromName = (name: string) => {
-        const match = name.match(/^(\d{1,2})\/(\d{1,2})/)
+    // Helper to parse deck_records' own event_date field (e.g. "6/7")
+    const extractDateFromName = (eventDate: string | null | undefined) => {
+        if (!eventDate) return null
+        const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
         if (match) {
             const month = parseInt(match[1], 10)
             const day = parseInt(match[2], 10)
-            // Use current year or 2025 as base for comparison
             const date = new Date(2025, month - 1, day)
             return date.getTime()
         }
         return null
     }
 
-    // Sort decks within each archetype group by extracted date, then created_at
+    // Sort decks within each archetype group by event_date, then created_at
     Object.keys(groupedDecks).forEach(key => {
         groupedDecks[key].sort((a, b) => {
-            const smartDateA = extractDateFromName(a.deck_name)
-            const smartDateB = extractDateFromName(b.deck_name)
+            const smartDateA = extractDateFromName(a.event_date)
+            const smartDateB = extractDateFromName(b.event_date)
 
             if (smartDateA !== null && smartDateB !== null) {
                 if (smartDateB !== smartDateA) return smartDateB - smartDateA
@@ -302,44 +267,6 @@ export default function ReferenceDeckList({
         )
     }
 
-    // Render Edit Modal
-    const renderEditModal = () => {
-        if (!editingDeck) return null
-        return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2.5" onClick={() => setEditingDeck(null)}>
-                <div className="bg-white rounded-xl shadow-xl p-2.5 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold mb-4">デッキ情報を編集</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-1">デッキ名</label>
-                            <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-                        <button
-                            onClick={() => setEditingDeck(null)}
-                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            onClick={handleSaveEdit}
-                            disabled={isSaving}
-                            className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            {isSaving ? '保存中...' : '保存する'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
     if (selectedArchetypeId) {
         const archetypeDecks = groupedDecks[selectedArchetypeId] || []
         const currentArchetype = selectedArchetypeId === 'others'
@@ -365,7 +292,6 @@ export default function ReferenceDeckList({
                     deckName={viewerDeckName}
                 />
                 {renderLegacyModal()}
-                {renderEditModal()}
 
                 {/* Key Card Adoption Drawer [MOVED HERE] */}
                 <KeyCardAdoptionDrawer
@@ -387,7 +313,7 @@ export default function ReferenceDeckList({
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                     </button>
                     <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <span className="bg-gradient-to-r from-pink-500 to-purple-500 w-1 h-6 rounded-full mr-3"></span>
+                        <span className="bg-blue-500 w-1 h-6 rounded-full mr-3"></span>
                         {displayName}
                         <span className="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                             {archetypeDecks.length}
@@ -444,14 +370,14 @@ export default function ReferenceDeckList({
                             <div key={deck.id} className="group transition overflow-hidden">
                                 <div
                                     onClick={() => handleDeckClick(deck)}
-                                    className={`px-2.5 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${expandedDeckIds.includes(deck.id) ? 'bg-purple-50' : 'hover:bg-gray-50'}`}
+                                    className={`px-2.5 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${expandedDeckIds.includes(deck.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
                                 >
                                     {/* Expand Toggle Icon */}
                                     <div className="flex-shrink-0 text-gray-400">
                                         {deck.deck_code ? (
                                             <button
                                                 onClick={(e) => handleToggleExpand(e, deck.id)}
-                                                className={`p-1 rounded-full hover:bg-black/5 transition ${expandedDeckIds.includes(deck.id) ? 'text-purple-600 rotate-90 transform' : ''}`}
+                                                className={`p-1 rounded-full hover:bg-black/5 transition ${expandedDeckIds.includes(deck.id) ? 'text-blue-600 rotate-90 transform' : ''}`}
                                             >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                                             </button>
@@ -473,7 +399,7 @@ export default function ReferenceDeckList({
                                                 </span>
                                             )}
                                             <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
-                                                <AutoFitText text={deck.deck_name} />
+                                                <AutoFitText text={getDeckDisplayName(deck)} />
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
@@ -486,11 +412,7 @@ export default function ReferenceDeckList({
                                             )}
                                             {/* Mobile Date Badge */}
                                             <span className="md:hidden text-[10px] opacity-70">
-                                                {(() => {
-                                                    const match = deck.deck_name.match(/^(\d{1,2})\/(\d{1,2})/)
-                                                    if (match) return `${match[1]}/${match[2]}`
-                                                    return deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-                                                })()}
+                                                {deck.event_date || (deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }))}
                                             </span>
                                             {/* Fallback indicator if image only */}
                                             {!deck.deck_code && deck.image_url && (
@@ -526,12 +448,6 @@ export default function ReferenceDeckList({
                                     {isAdmin && (
                                         <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
                                             <button
-                                                onClick={(e) => handleEdit(deck, e)}
-                                                className="text-blue-500 hover:bg-blue-50 p-1.5 rounded"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                            </button>
-                                            <button
                                                 onClick={(e) => handleDelete(deck.id, e)}
                                                 className="text-red-500 hover:bg-red-50 p-1.5 rounded"
                                             >
@@ -546,7 +462,7 @@ export default function ReferenceDeckList({
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                                                className={`transition-transform duration-200 ${expandedDeckIds.includes(deck.id) ? 'rotate-90 text-purple-500' : ''}`}
+                                                className={`transition-transform duration-200 ${expandedDeckIds.includes(deck.id) ? 'rotate-90 text-blue-500' : ''}`}
                                             >
                                                 <polyline points="9 18 15 12 9 6"></polyline>
                                             </svg>
@@ -614,7 +530,6 @@ export default function ReferenceDeckList({
                 deckName={viewerDeckName}
             />
             {renderLegacyModal()}
-            {renderEditModal()}
 
 
             {/* Archetype Grid */}

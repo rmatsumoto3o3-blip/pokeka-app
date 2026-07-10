@@ -65,7 +65,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
         if (loading) {
             return (
                 <div className="flex flex-col items-center justify-center py-2.5">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
                     <p className="text-gray-500">デッキデータを読み込んでいます...</p>
                 </div>
             )
@@ -95,7 +95,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
             <div className="space-y-6 animate-in fade-in duration-300">
                 {/* Pokemon Section */}
                 {pokemons.length > 0 && (
-                    <CategorySection title="ポケモン" count={countCards(pokemons)} color="bg-purple-100 text-purple-800">
+                    <CategorySection title="ポケモン" count={countCards(pokemons)} color="bg-blue-100 text-blue-800">
                         <CardGrid cards={pokemons} />
                     </CategorySection>
                 )}
@@ -158,7 +158,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
                     <div className="flex items-center gap-3 flex-shrink-0">
                         <Link
                             href={`/practice?mode=custom&code1=${deckCode}`}
-                            className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition text-sm"
+                            className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition text-sm"
                         >
                             <Image
                                 src="/Lucario.png"
@@ -187,7 +187,7 @@ export default function DeckViewerModal({ isOpen, onClose, deckCode, deckName }:
                 <div className="md:hidden p-2.5 border-t bg-white flex justify-center pb-safe">
                     <Link
                         href={`/practice?mode=custom&code1=${deckCode}`}
-                        className="w-full flex justify-center items-center gap-2 px-2.5 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition"
+                        className="w-full flex justify-center items-center gap-2 px-2.5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition"
                     >
                         <Image
                             src="/Lucario.png"

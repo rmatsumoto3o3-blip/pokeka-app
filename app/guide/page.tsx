@@ -1,6 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
+import PublicHeader from '@/components/PublicHeader'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -10,40 +11,16 @@ export const metadata: Metadata = {
 
 export default function GuidePage() {
     return (
-        <div className="min-h-screen bg-pink-50 flex flex-col">
-            {/* Header */}
-            <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center">
-                            <Link href="/">
-                                <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
-                                    ポケカ戦績
-                                </span>
-                            </Link>
-                            <span className="ml-4 text-sm font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                活用ガイド
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/auth"
-                                className="text-sm font-bold text-gray-600 hover:text-gray-900"
-                            >
-                                ログイン / 登録
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </nav>
+        <div className="min-h-screen bg-[#f4f6fa] flex flex-col">
+            <PublicHeader />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl">
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-12">
-                    <div className="bg-gradient-to-br from-pink-500 to-purple-600 p-8 md:p-12 text-center text-white">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-8 md:p-12 text-center text-white">
                         <h1 className="text-3xl md:text-5xl font-bold mb-4">
                             「感覚」ではなく<br />「データ」で勝つ。
                         </h1>
-                        <p className="text-pink-100 text-lg md:text-xl font-medium max-w-2xl mx-auto">
+                        <p className="text-blue-100 text-lg md:text-xl font-medium max-w-2xl mx-auto">
                             このアプリは、ただ勝敗を記録するだけではありません。<br />
                             「どの構築が一番勝てるのか？」を検証し、<br className="hidden md:inline" />あなたのデッキを最強の形へと進化させるためのツールです。
                         </p>
@@ -73,9 +50,9 @@ export default function GuidePage() {
                                         </div>
                                     </div>
                                     <div className="flex gap-4 items-start">
-                                        <div className="bg-white border rounded-full w-8 h-8 flex items-center justify-center font-bold text-pink-500 flex-shrink-0">3</div>
+                                        <div className="bg-white border rounded-full w-8 h-8 flex items-center justify-center font-bold text-blue-500 flex-shrink-0">3</div>
                                         <div>
-                                            <h3 className="font-bold text-lg mb-1 text-pink-600">メールを確認して完了！</h3>
+                                            <h3 className="font-bold text-lg mb-1 text-blue-600">メールを確認して完了！</h3>
                                             <p className="text-gray-600">届いた確認メールのURLをクリックすれば登録完了です。</p>
                                         </div>
                                     </div>
@@ -95,21 +72,21 @@ export default function GuidePage() {
                             </p>
 
                             <div className="grid md:grid-cols-2 gap-6">
-                                <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
-                                    <h3 className="text-xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                                    <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                                         <span>📂</span> デッキフォルダ (親)
                                     </h3>
-                                    <p className="text-sm text-indigo-700 mb-4 font-bold opacity-75">例: リザードンex, ドラパルトex</p>
+                                    <p className="text-sm text-blue-700 mb-4 font-bold opacity-75">例: リザードンex, ドラパルトex</p>
                                     <p className="text-gray-700 text-sm leading-relaxed">
                                         似たようなデッキをまとめる「バインダー」です。<br />
                                         Freeプランなら最大3つまで作成できます。
                                     </p>
                                 </div>
-                                <div className="bg-pink-50 p-6 rounded-xl border border-pink-100">
-                                    <h3 className="text-xl font-bold text-pink-900 mb-2 flex items-center gap-2">
+                                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                                    <h3 className="text-xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                                         <span>🃏</span> バリエーション (子)
                                     </h3>
-                                    <p className="text-sm text-pink-700 mb-4 font-bold opacity-75">例: v1.0(基本型), v1.1(フトゥー採用)</p>
+                                    <p className="text-sm text-blue-700 mb-4 font-bold opacity-75">例: v1.0(基本型), v1.1(フトゥー採用)</p>
                                     <p className="text-gray-700 text-sm leading-relaxed">
                                         実際に使用するデッキです。<br />
                                         デッキ構成の微調整をバージョンとして残せます。
@@ -143,20 +120,20 @@ export default function GuidePage() {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-6 md:p-8">
+                                <div className="bg-gradient-to-r from-blue-50 to-white border border-blue-100 rounded-xl p-6 md:p-8">
                                     <div className="md:w-3/4">
-                                        <span className="text-xs font-bold text-indigo-400 mb-1 block">STEP 3 & 4</span>
-                                        <h3 className="text-2xl font-bold text-indigo-900 mb-4">改造して「更新を保存」</h3>
+                                        <span className="text-xs font-bold text-blue-400 mb-1 block">STEP 3 & 4</span>
+                                        <h3 className="text-2xl font-bold text-blue-900 mb-4">改造して「更新を保存」</h3>
                                         <p className="text-gray-700 mb-6 leading-relaxed">
                                             ここが最重要ポイントです。<br />
                                             登録したデッキの詳細画面で構成を調整したら、
-                                            そのまま<strong className="text-indigo-600">「変更を保存」</strong>ボタンを押してください。
+                                            そのまま<strong className="text-blue-600">「変更を保存」</strong>ボタンを押してください。
                                         </p>
-                                        <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-indigo-100 inline-block">
-                                            <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded">CUSTOM</span>
+                                        <div className="flex items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-blue-100 inline-block">
+                                            <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">CUSTOM</span>
                                             <span className="font-bold text-gray-800 text-sm">v1.1 まけんき採用型</span>
                                         </div>
-                                        <p className="mt-4 text-sm text-indigo-800 font-bold">
+                                        <p className="mt-4 text-sm text-blue-800 font-bold">
                                             公式コードを発行しなくても、あなただけの調整版として即座に記録されます！
                                         </p>
                                     </div>
@@ -172,7 +149,7 @@ export default function GuidePage() {
                             </p>
                             <Link
                                 href="/auth?mode=signup"
-                                className="inline-block bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold px-12 py-4 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition transform"
+                                className="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold px-12 py-4 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition transform"
                             >
                                 無料でアカウント作成
                             </Link>

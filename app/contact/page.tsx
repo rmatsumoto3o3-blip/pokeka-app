@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
     return (
-        <div className="min-h-screen bg-pink-50 flex flex-col">
+        <div className="min-h-screen bg-blue-50 flex flex-col">
             <PublicHeader />
             <main className="flex-grow py-12 px-4">
                 <div className="max-w-2xl mx-auto">

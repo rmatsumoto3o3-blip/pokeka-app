@@ -24,18 +24,24 @@ const CATEGORIES = ['Pokemon', 'Goods', 'Tool', 'Supporter', 'Stadium', 'Energy'
 
 interface KeyCardAdoptionListProps {
     initialArchetypes?: Archetype[]
+    initialAnalyticsData?: Record<string, any[]>
 }
 
-export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardAdoptionListProps) {
+const TOP_COUNT = 10
+
+export default function KeyCardAdoptionList({ initialArchetypes = [], initialAnalyticsData }: KeyCardAdoptionListProps) {
     const supabase = createClient()
     const [archetypes, setArchetypes] = useState<Archetype[]>(initialArchetypes)
-    const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>({})
+    const [analyticsData, setAnalyticsData] = useState<Record<string, KeyCardAdoption[]>>(initialAnalyticsData || {})
     const [expandedArchetypeId, setExpandedArchetypeId] = useState<string | null>(null)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!initialAnalyticsData)
+    const [showAll, setShowAll] = useState(false)
     const [startDate, setStartDate] = useState<string>('')
     const [endDate, setEndDate] = useState<string>('')
 
     useEffect(() => {
+        // サーバーから初期データが渡されている場合はスキップ
+        if (initialAnalyticsData) return
         fetchKeyCards()
     }, [])
 
@@ -137,10 +143,16 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                 <p className="w-full text-xs text-gray-400 mt-1">※例: 3/1 や 03/14 のように入力してください</p>
             </div>
 
-            {archetypes.map((archetype) => {
-                const archetypeCards = analyticsData[archetype.id] || []
-                if (archetypeCards.length === 0) return null // Skip empty archetypes
+            {(() => {
+                // データのあるアーキタイプのみ絞り込み
+                const activeArchetypes = archetypes.filter(a => (analyticsData[a.id] || []).length > 0)
+                const displayArchetypes = showAll ? activeArchetypes : activeArchetypes.slice(0, TOP_COUNT)
+                const remaining = activeArchetypes.length - TOP_COUNT
 
+                return (
+                <>
+                {displayArchetypes.map((archetype) => {
+                const archetypeCards = analyticsData[archetype.id] || []
                 const isExpanded = expandedArchetypeId === archetype.id
 
                 return (
@@ -151,7 +163,7 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                             className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 transition flex justify-between items-center text-left"
                         >
                             <h3 className="font-bold text-gray-900 flex items-center">
-                                <span className="w-1 h-5 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full mr-3"></span>
+                                <span className="w-1 h-5 bg-blue-500 rounded-full mr-3"></span>
                                 {archetype.name}
                             </h3>
                             <span className="text-gray-400">
@@ -214,6 +226,19 @@ export default function KeyCardAdoptionList({ initialArchetypes = [] }: KeyCardA
                     </div>
                 )
             })}
+
+            {/* もっと見る / 折りたたむ ボタン */}
+            {remaining > 0 && (
+                <button
+                    onClick={() => setShowAll(v => !v)}
+                    className="w-full py-3 rounded-xl border-2 border-dashed border-blue-200 text-blue-500 font-bold text-sm hover:bg-blue-50 transition-colors"
+                >
+                    {showAll ? '▲ 折りたたむ' : `▼ もっと見る（残り${remaining}件）`}
+                </button>
+            )}
+            </>
+                )
+            })()}
 
             {Object.keys(analyticsData).length === 0 && (
                 <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">

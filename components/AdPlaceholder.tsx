@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 
 interface AdPlaceholderProps {
     slot?: string
-    format?: 'rectangle' | 'horizontal' | 'vertical' | 'responsive' | 'auto'
+    format?: 'rectangle' | 'horizontal' | 'vertical' | 'responsive' | 'auto' | 'leaderboard'
     label?: string
     className?: string
 }
@@ -28,6 +28,20 @@ export default function AdPlaceholder({
             console.error('AdSense error:', e);
         }
     }, [slot]); // Re-run if slot changes (though usually slots don't change for a component instance)
+
+    if (format === 'leaderboard') {
+        return (
+            <div className={`flex flex-col items-center justify-center ${className}`}>
+                <span className="text-[10px] uppercase tracking-[0.2em] mb-2 text-gray-400 font-bold">{label}</span>
+                <div className="w-full flex items-center justify-center overflow-hidden">
+                    <ins className="adsbygoogle"
+                        style={{ display: 'inline-block', width: '728px', height: '90px', maxWidth: '100%' }}
+                        data-ad-client="ca-pub-2951381820280282"
+                        data-ad-slot={slot}></ins>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`flex flex-col items-center justify-center ${className}`}>

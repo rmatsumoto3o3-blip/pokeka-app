@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>環境デッキ一覧 | PokéLix リニューアル プレビュー</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css">
+<style>
+  :root { --blue:#2563eb; --blue-dark:#1d4ed8; --blue-tint:#eff4ff; --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --faint:#94a3b8; --line:#e5e9f0; --line2:#e2e8f0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'Hiragino Sans','Yu Gothic',Meiryo,system-ui,sans-serif; background:#f4f6fa; color:var(--ink2); -webkit-font-smoothing:antialiased; word-break: auto-phrase; line-break: strict; }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .arrow { display:inline-block; width:44px; font-family:'DejaVu Sans',Arial,sans-serif; font-size:13px; text-align:center; }
+  .up{color:#16a34a;} .down{color:#dc2626;} .flat{color:var(--faint);}
+  .tier-badge{ color:#fff; font-size:12px; font-weight:600; padding:2px 9px; border-radius:5px; }
+  .card{ background:#fff; border:0.5px solid var(--line2); border-radius:8px; }
+  .badge{ font-size:10px; padding:2px 7px; border-radius:4px; }
+  @media (max-width: 860px){ .grid-main{ grid-template-columns:1fr !important; } }
+  @media (max-width: 640px){
+    .tagline{ display:none !important; }
+    .searchbox{ width:auto !important; flex:1 1 auto; min-width:0; }
+    header .wrap{ padding:10px 14px !important; gap:10px; }
+    .navrow{ overflow-x:auto; white-space:nowrap; flex-wrap:nowrap !important; gap:16px !important; -webkit-overflow-scrolling:touch; }
+    .navrow::-webkit-scrollbar{ display:none; }
+    .navrow a{ flex:0 0 auto; }
+    .gametabs{ overflow-x:auto; flex-wrap:nowrap !important; -webkit-overflow-scrolling:touch; }
+    .gametabs::-webkit-scrollbar{ display:none; }
+    .gametabs > *{ flex:0 0 auto; white-space:nowrap; }
+    .gametabs > * span{ white-space:nowrap; }
+    h1{ font-size:20px !important; line-height:1.45 !important; }
+    section .wrap{ padding-left:14px !important; padding-right:14px !important; }
+  }
+</style>
+</head>
+<body>
+
+<header style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px;">
+    <a href="/renewal-preview.html" style="display:flex; align-items:baseline; gap:9px;">
+      <span style="font-size:23px; font-weight:600; color:var(--ink2);">Poké<span style="color:var(--blue);">Lix</span></span>
+      <span class="tagline" style="font-size:11px; color:var(--faint);">Pocket analytics</span>
+    </a>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="searchbox" style="background:#f1f5f9; border-radius:8px; padding:7px 12px; font-size:12px; color:var(--faint); width:220px; display:flex; align-items:center; gap:7px;"><i class="ti ti-search"></i>デッキ・カードを検索</div>
+      <span style="font-size:13px; color:var(--blue); font-weight:600;">ログイン</span>
+    </div>
+  </div>
+</header>
+
+<nav style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap navrow" style="display:flex; gap:22px; padding:9px 20px; font-size:13px; color:#475569;">
+    <a href="/renewal-preview.html">TOP</a><a href="/renewal-deck-list.html" style="color:var(--blue); font-weight:600;">環境デッキ</a><a href="/renewal-practice.html">一人回し</a><a href="/renewal-simulator.html">確率シミュ</a><a href="/renewal-articles.html">記事</a><a href="#" style="color:var(--faint); cursor:default;" onclick="return false;">カード検索 <span style="font-size:9px;">準備中</span></a>
+  </div>
+</nav>
+
+<div style="background:var(--blue);">
+  <div class="wrap gametabs" style="display:flex; gap:2px; padding:0 14px;">
+    <span style="color:#fff; font-size:13px; font-weight:600; padding:11px 18px; background:var(--blue-dark);">ポケカ</span>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">ワンピ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">遊戯王 <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">デュエマ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+  </div>
+</div>
+
+<div class="wrap" style="padding:12px 20px 4px; font-size:11px; color:var(--faint);">
+  <a href="/renewal-preview.html" style="color:var(--blue);">TOP</a> › 環境デッキ
+</div>
+<div class="wrap" style="padding:0 20px 4px;">
+  <h1 style="font-size:22px; font-weight:600; color:var(--ink);">ポケカ 環境デッキ一覧</h1>
+  <p style="font-size:12px; color:var(--muted); margin-top:4px;">全国の大会から集計した入賞デッキ。デッキをタップすると採用カードとレシピを確認できます。</p>
+</div>
+
+<div class="wrap grid-main" style="display:grid; grid-template-columns:1fr 260px; gap:16px; padding:12px 20px;">
+
+  <main style="display:flex; flex-direction:column; gap:18px; min-width:0;">
+
+    <div class="card" style="overflow:hidden;">
+      <div style="background:var(--blue); color:#fff; font-size:14px; font-weight:600; padding:10px 14px; display:flex; align-items:center; gap:7px;"><i class="ti ti-trophy"></i>デッキ別 優勝シェア</div>
+      <div>
+        <div style="display:flex; align-items:center; padding:8px 14px; font-size:11px; color:var(--faint); border-bottom:0.5px solid #eef1f6;"><span style="width:44px;">Tier</span><span style="flex:1;">デッキ</span><span style="width:80px; text-align:right;">優勝シェア</span><span style="width:70px; text-align:center;">前月比</span></div>
+        <a href="/renewal-deck-detail.html" class="card" style="border:0;border-radius:0;border-bottom:0.5px solid #f4f6f9; display:flex; align-items:center; padding:9px 14px;"><span style="width:44px;"><span class="tier-badge" style="background:#dc2626;">S</span></span><span style="flex:1; font-size:13px; color:var(--ink2);">ドラパルト</span><span style="width:80px; text-align:right; font-size:13px; font-weight:600; color:var(--blue-dark);">13.5%</span><span style="width:70px; text-align:center;"><span class="arrow down">↘ 1.5</span></span></a>
+        <a href="/renewal-deck-detail.html" class="card" style="border:0;border-radius:0;border-bottom:0.5px solid #f4f6f9; display:flex; align-items:center; padding:9px 14px;"><span style="width:44px;"><span class="tier-badge" style="background:#dc2626;">S</span></span><span style="flex:1; font-size:13px; color:var(--ink2);">ばけがくれ</span><span style="width:80px; text-align:right; font-size:13px; font-weight:600; color:var(--blue-dark);">8.0%</span><span style="width:70px; text-align:center;"><span class="arrow flat">→ 0.2</span></span></a>
+        <a href="/renewal-deck-detail.html" class="card" style="border:0;border-radius:0;border-bottom:0.5px solid #f4f6f9; display:flex; align-items:center; padding:9px 14px;"><span style="width:44px;"><span class="tier-badge" style="background:#ef9f27; color:#3a2503;">A</span></span><span style="flex:1; font-size:13px; color:var(--ink2);">メガドリュウズ</span><span style="width:80px; text-align:right; font-size:13px; font-weight:600; color:var(--blue-dark);">6.6%</span><span style="width:70px; text-align:center;"><span class="arrow down">↘ 0.9</span></span></a>
+        <a href="/renewal-deck-detail.html" class="card" style="border:0;border-radius:0; display:flex; align-items:center; padding:9px 14px;"><span style="width:44px;"><span class="tier-badge" style="background:#ef9f27; color:#3a2503;">A</span></span><span style="flex:1; font-size:13px; color:var(--ink2);">おまつりおんど</span><span style="width:80px; text-align:right; font-size:13px; font-weight:600; color:var(--blue-dark);">6.0%</span><span style="width:70px; text-align:center;"><span class="arrow flat">→ 0.2</span></span></a>
+      </div>
+    </div>
+
+    <div class="card" style="overflow:hidden;">
+      <div style="font-size:13px; font-weight:600; color:var(--ink); padding:10px 14px; border-bottom:0.5px solid #eef1f6; display:flex; align-items:center; justify-content:space-between;"><span style="display:flex; align-items:center; gap:7px;"><i class="ti ti-cards" style="color:var(--blue);"></i>環境デッキ（アーキタイプ別）</span><span style="font-size:11px; color:var(--faint);">直近30日・優勝968件</span></div>
+      <div style="padding:12px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px;">
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1765940449362.jpg" alt="ドラパルト" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 131</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ドラパルト</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 13.5%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/archetype-images/archetype-covers/1779683925671.jpg" alt="ばけがくれ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 77</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ばけがくれ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 8.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/archetype-images/archetype-covers/1779684937877.jpg" alt="メガドリュウズ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 64</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">メガドリュウズ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 6.6%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1769147396975.jpg" alt="おまつりおんど" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 58</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">おまつりおんど</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 6.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1765255500163.jpg" alt="ゾロアーク" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 53</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ゾロアーク</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 5.5%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1769146183600.jpg" alt="フーディン" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 53</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">フーディン</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 5.5%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1770880940500.jpg" alt="ゲッコウガ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 49</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ゲッコウガ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 5.1%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1769146763398.jpg" alt="メガルカリオ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 40</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">メガルカリオ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 4.1%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1769651005244.jpg" alt="シロナのガブリアス" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 40</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">シロナのガブリアス</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 4.1%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1773033229426.jpg" alt="ガポンバレット" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 39</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ガポンバレット</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 4.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1773032334895.jpg" alt="ヤドキング" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 39</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ヤドキング</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 4.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1770085145297.jpg" alt="オーロンゲ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 37</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">オーロンゲ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 3.8%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/archetype-images/archetype-covers/1780547888109.jpg" alt="カミツオロチex" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 36</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">カミツオロチex</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 3.7%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1773034204794.jpg" alt="ストリンダー" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 29</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ストリンダー</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 3.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1765944587403.jpg" alt="タケルライコ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 27</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">タケルライコ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 2.8%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/archetype-images/archetype-covers/1779684988068.jpg" alt="ドデカバシ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 19</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ドデカバシ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 2.0%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1770085273549.jpg" alt="メガフシギバナ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 17</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">メガフシギバナ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 1.8%</div>
+          </div>
+        </a>
+        <a href="/renewal-archetype.html" class="card" style="overflow:hidden;">
+          <div style="height:88px; background:#f1f5f9; overflow:hidden; position:relative;">
+            <img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1770880680614.jpg" alt="イイネイヌ" loading="lazy" style="width:100%;height:100%;object-fit:cover;">
+            <span style="position:absolute; top:6px; left:6px; background:rgba(37,99,235,.92); color:#fff; font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;">優勝 17</span>
+          </div>
+          <div style="padding:8px 10px;">
+            <div style="font-size:12px; font-weight:600; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">イイネイヌ</div>
+            <div style="font-size:10px; color:var(--faint); margin-top:1px;">シェア 1.8%</div>
+          </div>
+        </a>
+        </div>
+      </div>
+      <div style="padding:11px 14px; text-align:center; border-top:0.5px solid #eef1f6;"><span style="font-size:12px; color:var(--blue); font-weight:600;">すべてのアーキタイプを見る（全18種以上）</span></div>
+    </div>
+
+  </main>
+
+  <aside style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+    <div class="card" style="overflow:hidden;">
+      <div style="background:#1e293b; color:#fff; font-size:12px; font-weight:600; padding:9px 12px;">絞り込み</div>
+      <div style="padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+        <div style="font-size:11px; color:var(--muted);">アーキタイプ</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span class="badge" style="background:var(--blue); color:#fff;">すべて</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">ドラパルト</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">メガドリュウズ</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">ばけがくれ</span>
+        </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">順位</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span class="badge" style="background:var(--blue); color:#fff;">優勝</span>
+          <span class="badge" style="background:#f1f5f9; color:#475569;">入賞</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:var(--blue-tint); border:0.5px solid #c7d7f5; border-radius:8px; padding:13px; text-align:center;">
+      <div style="font-size:12px; color:var(--blue-dark); font-weight:600;"><i class="ti ti-refresh"></i> 大会データ 毎日更新</div>
+      <div style="font-size:11px; color:var(--blue); margin-top:3px;">全国の入賞デッキを自動集計</div>
+    </div>
+  </aside>
+
+</div>
+
+<footer style="background:#fff; border-top:0.5px solid var(--line);">
+  <div class="wrap" style="padding:16px 20px; font-size:11px; color:var(--faint); text-align:center;">PokéLix ー Pocket analytics　運営情報　利用規約　プライバシー　お問い合わせ</div>
+</footer>
+
+</body>
+</html>

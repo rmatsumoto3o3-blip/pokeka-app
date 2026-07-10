@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ドラパルト デッキ一覧 | PokéLix リニューアル プレビュー</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css">
+<style>
+  :root { --blue:#2563eb; --blue-dark:#1d4ed8; --blue-tint:#eff4ff; --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --faint:#94a3b8; --line:#e5e9f0; --line2:#e2e8f0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Hiragino Sans','Yu Gothic',Meiryo,system-ui,sans-serif; background:#f4f6fa; color:var(--ink2); -webkit-font-smoothing:antialiased; word-break: auto-phrase; line-break: strict; }
+  a { color:inherit; text-decoration:none; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  .card { background:#fff; border:0.5px solid var(--line2); border-radius:8px; }
+  .badge { font-size:10px; padding:2px 7px; border-radius:4px; }
+  .stat { background:#f8fafc; border:0.5px solid var(--line2); border-radius:8px; padding:8px 12px; }
+  .stat .l { font-size:10px; color:var(--faint); }
+  .stat .v { font-size:17px; font-weight:600; color:var(--ink); font-family:'DejaVu Sans','Hiragino Sans',sans-serif; }
+  .rtab { font-size:12px; font-weight:600; padding:6px 14px; border-radius:8px; cursor:pointer; white-space:nowrap; color:var(--muted); }
+  .rtab.on { background:#fff; color:var(--blue-dark); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+  @media (max-width: 860px){ .grid-main{ grid-template-columns:1fr !important; } }
+  @media (max-width: 640px){
+    .tagline{ display:none !important; }
+    .searchbox{ width:auto !important; flex:1 1 auto; min-width:0; }
+    header .wrap{ padding:10px 14px !important; gap:10px; }
+    .navrow{ overflow-x:auto; white-space:nowrap; flex-wrap:nowrap !important; gap:16px !important; -webkit-overflow-scrolling:touch; }
+    .navrow::-webkit-scrollbar{ display:none; }
+    .navrow a{ flex:0 0 auto; }
+    .gametabs{ overflow-x:auto; flex-wrap:nowrap !important; -webkit-overflow-scrolling:touch; }
+    .gametabs::-webkit-scrollbar{ display:none; }
+    .gametabs > *{ flex:0 0 auto; white-space:nowrap; }
+    .ranktabs{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .ranktabs::-webkit-scrollbar{ display:none; }
+    .statrow{ gap:8px !important; }
+    .stat{ flex:1 1 0 !important; min-width:0 !important; }
+    h1{ font-size:20px !important; }
+  }
+</style>
+</head>
+<body>
+
+<header style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px;">
+    <a href="/renewal-preview.html" style="display:flex; align-items:baseline; gap:9px;">
+      <span style="font-size:23px; font-weight:600; color:var(--ink2);">Poké<span style="color:var(--blue);">Lix</span></span>
+      <span class="tagline" style="font-size:11px; color:var(--faint);">Pocket analytics</span>
+    </a>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="searchbox" style="background:#f1f5f9; border-radius:8px; padding:7px 12px; font-size:12px; color:var(--faint); width:220px; display:flex; align-items:center; gap:7px;"><i class="ti ti-search"></i>デッキ・カードを検索</div>
+      <span style="font-size:13px; color:var(--blue); font-weight:600;">ログイン</span>
+    </div>
+  </div>
+</header>
+
+<nav style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap navrow" style="display:flex; gap:22px; padding:9px 20px; font-size:13px; color:#475569;">
+    <a href="/renewal-preview.html">TOP</a><a href="/renewal-deck-list.html" style="color:var(--blue); font-weight:600;">環境デッキ</a><a href="/renewal-practice.html">一人回し</a><a href="/renewal-simulator.html">確率シミュ</a><a href="/renewal-articles.html">記事</a><a href="#" style="color:var(--faint); cursor:default;" onclick="return false;">カード検索 <span style="font-size:9px;">準備中</span></a>
+  </div>
+</nav>
+
+<div style="background:var(--blue);">
+  <div class="wrap gametabs" style="display:flex; gap:2px; padding:0 14px;">
+    <span style="color:#fff; font-size:13px; font-weight:600; padding:11px 18px; background:var(--blue-dark);">ポケカ</span>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">ワンピ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">遊戯王 <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">デュエマ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+  </div>
+</div>
+
+<div class="wrap" style="padding:12px 20px 4px; font-size:11px; color:var(--faint);">
+  <a href="/renewal-preview.html" style="color:var(--blue);">TOP</a> › <a href="/renewal-deck-list.html" style="color:var(--blue);">環境デッキ</a> › ドラパルト
+</div>
+
+<div class="wrap grid-main" style="display:grid; grid-template-columns:1fr 300px; gap:16px; padding:8px 20px 20px;">
+
+  <main style="display:flex; flex-direction:column; gap:16px; min-width:0;">
+
+    <div class="card" style="padding:14px;">
+      <div style="display:flex; align-items:center; gap:13px;">
+        <div style="width:60px; height:60px; border-radius:10px; overflow:hidden; background:#f1f5f9; flex-shrink:0;"><img src="https://ovsqbhtxulnoekugwtxh.supabase.co/storage/v1/object/public/deck-images/archetype-covers/1765940449362.jpg" alt="ドラパルト" style="width:100%;height:100%;object-fit:cover;"></div>
+        <div style="min-width:0;">
+          <h1 style="font-size:22px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:8px;">ドラパルト <span class="badge" style="background:#fee2e2; color:#dc2626;">Tier S</span></h1>
+          <div style="font-size:11px; color:var(--faint); margin-top:3px;">集計期間: 直近30日（大会の入賞デッキ）</div>
+        </div>
+      </div>
+      <div class="statrow" style="display:flex; gap:10px; margin-top:13px;">
+        <div class="stat"><div class="l">優勝数</div><div class="v">131</div></div>
+        <div class="stat"><div class="l">優勝シェア</div><div class="v">13.5%</div></div>
+        <div class="stat"><div class="l">前月比</div><div class="v" style="color:#dc2626;">↘ 1.5</div></div>
+        <div class="stat"><div class="l">Tier</div><div class="v" style="color:#dc2626;">S</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow:hidden;">
+      <div style="font-size:13px; font-weight:600; color:var(--ink); padding:10px 14px; border-bottom:0.5px solid #eef1f6; display:flex; align-items:center; gap:7px;"><i class="ti ti-list-details" style="color:var(--blue);"></i>ドラパルトの入賞デッキ</div>
+      <div style="padding:10px 14px; border-bottom:0.5px solid #eef1f6;">
+        <div class="ranktabs" style="display:inline-flex; background:#f1f5f9; border-radius:10px; padding:3px; gap:2px; max-width:100%;">
+          <span class="rtab on">すべて<span style="font-weight:400; opacity:.7; margin-left:4px;">131</span></span>
+          <span class="rtab">優勝<span style="font-weight:400; opacity:.7; margin-left:4px;">131</span></span>
+          <span class="rtab">準優勝</span>
+          <span class="rtab">TOP4</span>
+          <span class="rtab">TOP8</span>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/3 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="pXRyXE-iwmKre-yXyppR" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">pXRyXE-iwmKre-yXyppR</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/3 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="kd5bVk-jFFPuM-Fv5Fkf" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">kd5bVk-jFFPuM-Fv5Fkf</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="aGc48a-qNGAjh-xcDc4J" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">aGc48a-qNGAjh-xcDc4J</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="PQng9N-yiJTAo-PLgQgg" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">PQng9N-yiJTAo-PLgQgg</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="48JxKD-dNKWNJ-84xGcc" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">48JxKD-dNKWNJ-84xGcc</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="xccYc4-VRNeTZ-JKY8Gc" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">xccYc4-VRNeTZ-JKY8Gc</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="R2ypXE-Wdo7Kq-RyX2pR" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">R2ypXE-Wdo7Kq-RyX2pR</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="QNnPPH-vhal5M-ggL69Q" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">QNnPPH-vhal5M-ggL69Q</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/4 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="5VdfFk-PuxonA-Vb5bFF" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">5VdfFk-PuxonA-Vb5bFF</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">6/30 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="c4DGG8-RtcnMU-88DcGx" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">c4DGG8-RtcnMU-88DcGx</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">6/30 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="Q9Ng9n-nPjKoh-NNHngL" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">Q9Ng9n-nPjKoh-NNHngL</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">6/30 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="gNNgn9-Sh6RrM-9gn9LP" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">gNNgn9-Sh6RrM-9gn9LP</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">6/30 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="yXXRpM-olEKiU-yRRppE" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">yXXRpM-olEKiU-yRRppE</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/2 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="D8J8cc-vLg5iY-cGGDJc" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">D8J8cc-vLg5iY-cGGDJc</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; border-bottom:0.5px solid #f4f6f9; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/2 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="XpX2pp-6N9beg-EEXyRR" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">XpX2pp-6N9beg-EEXyRR</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+        <div class="card" style="border:0;border-radius:0; padding:10px 14px; display:flex; align-items:center; gap:10px;">
+          <a href="/renewal-deck-detail.html" style="flex:1; min-width:0; display:flex; align-items:center; gap:10px;">
+            <span class="badge" style="background:#fef2f2; color:#dc2626;">優勝</span>
+            <span style="flex:1; min-width:0; font-size:13px; color:var(--ink2);">ドラパルト <span style="color:var(--faint); font-size:11px;">7/2 ジムバトル</span></span>
+          </a>
+          <button onclick="copyCode(event,this)" data-code="fkFbFV-C2VpQl-bV5d5f" style="display:flex; align-items:center; gap:6px; background:#f1f5f9; border:0.5px solid #e2e8f0; border-radius:5px; padding:2px 7px; cursor:pointer; flex-shrink:0;">
+            <span style="font-family:'DejaVu Sans',monospace; font-size:11px; color:#64748b;">fkFbFV-C2VpQl-bV5d5f</span>
+            <i class="ti ti-copy copy-icon" style="font-size:12px; color:var(--blue);"></i>
+          </button>
+          <a href="/renewal-deck-detail.html" style="flex-shrink:0; display:flex;"><i class="ti ti-chevron-right" style="color:var(--faint); font-size:15px;"></i></a>
+        </div>
+      </div>
+      <div style="padding:11px 14px; text-align:center; border-top:0.5px solid #eef1f6;"><span style="font-size:12px; color:var(--blue); font-weight:600;">もっと見る（ページング）</span></div>
+    </div>
+
+  </main>
+
+  <aside style="display:flex; flex-direction:column; gap:14px; min-width:0;">
+    <div class="card" style="overflow:hidden;">
+      <div style="font-size:13px; font-weight:600; color:var(--ink); padding:10px 14px; border-bottom:0.5px solid #eef1f6; display:flex; align-items:center; gap:7px;"><i class="ti ti-chart-bar" style="color:var(--blue);"></i>主要カード採用率</div>
+      <div style="padding:12px 14px; display:flex; flex-direction:column; gap:9px;">
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ポケパッド</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:100%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">100%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ハイパーボール</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:100%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">100%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ボスの指令</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:100%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">100%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">なかよしポフィン</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:99%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">99%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">アカマツ</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:99%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">99%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">アンフェアスタンプ</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:81%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">81%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ふしぎなアメ</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:75%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">75%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">スペシャルレッドカード</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:73%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">73%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ロケット団の監視塔</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:60%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">60%</span></div>
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#334155; width:120px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">ヨノワール</span><div style="flex:1; background:#eef2ff; border-radius:4px; height:9px;"><div style="width:56%; background:var(--blue); height:9px; border-radius:4px;"></div></div><span style="font-size:11px; color:var(--muted); width:34px; text-align:right; flex-shrink:0;">56%</span></div>
+      </div>
+      <div style="padding:9px 14px; text-align:center; border-top:0.5px solid #eef1f6;"><span style="font-size:11px; color:var(--blue); font-weight:600;">全カードの採用率を見る ›</span></div>
+    </div>
+    <a href="/renewal-deck-list.html" class="card" style="padding:11px; text-align:center; font-size:12px; color:var(--blue); font-weight:600;">← 環境デッキ一覧へ戻る</a>
+  </aside>
+
+</div>
+
+<footer style="background:#fff; border-top:0.5px solid var(--line);">
+  <div class="wrap" style="padding:16px 20px; font-size:11px; color:var(--faint); text-align:center;">PokéLix ー Pocket analytics　運営情報　利用規約　プライバシー　お問い合わせ</div>
+</footer>
+
+<script>
+function copyCode(e,btn){
+  e.preventDefault(); e.stopPropagation();
+  var code=btn.getAttribute('data-code');
+  navigator.clipboard.writeText(code).then(function(){
+    var icon=btn.querySelector('.copy-icon');
+    icon.className='ti ti-check copy-icon';
+    icon.style.color='#16a34a';
+    setTimeout(function(){ icon.className='ti ti-copy copy-icon'; icon.style.color='var(--blue)'; },1500);
+  });
+}
+</script>
+
+</body>
+</html>

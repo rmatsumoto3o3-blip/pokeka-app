@@ -1,706 +1,468 @@
 'use client'
 
-// useState removed as unused per lint
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Footer from '@/components/Footer'
-import ReferenceDeckList from '@/components/ReferenceDeckList'
-import KeyCardAdoptionList from '@/components/KeyCardAdoptionList'
-import DeckDistributionChart from '@/components/DeckDistributionChart'
-import FeaturedCardTrends from '@/components/FeaturedCardTrends'
-import ArchetypeWinChart from '@/components/ArchetypeWinChart'
-import CardSearchAnalysis from '@/components/CardSearchAnalysis'
 import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import { Ico } from '@/components/Icons'
+import { POKEMON_ICONS } from '@/lib/constants'
 
 interface LandingPageProps {
     decks: ReferenceDeck[]
     archetypes: DeckArchetype[]
     articles: Article[]
+    analyticsData?: Record<string, any[]>
+    recentArchetypeIds?: string[]
+    weeklyRanking?: Record<string, number>
+    featuredCards?: { card_name: string; current_adoption_rate: number }[]
 }
 
-export default function LandingPage({ decks, archetypes, articles }: LandingPageProps) {
-    const router = useRouter()
+const TIER_STYLE: Record<string, { badge: string; label: string; text: string }> = {
+    S: { badge: 'bg-red-600', label: 'Sランク', text: 'text-red-600' },
+    A: { badge: 'bg-orange-500', label: 'Aランク', text: 'text-orange-600' },
+    B: { badge: 'bg-lime-600', label: 'Bランク', text: 'text-lime-700' },
+}
 
-    // Color Change Only: White base, Pop borders
+// 環境デッキ分布ドーナツの配色（モックと同一）
+const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
+
+export default function LandingPage({ decks, archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, featuredCards = [] }: LandingPageProps) {
+    const [showMoreAdoption, setShowMoreAdoption] = useState(false)
+
+    const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
+
+    // 直近7日間の実デッキ数（weeklyRanking）に基づく環境Tier表。データが無いアーキタイプは除外。
+    const rankedArchetypes = archetypes
+        .filter(a => (weeklyRanking[a.id] || 0) > 0)
+        .slice(0, 10)
+    const totalRecentDecks = Object.values(weeklyRanking).reduce((a, b) => a + b, 0)
+
+    const tierBuckets: { tier: 'S' | 'A' | 'B'; items: DeckArchetype[] }[] = [
+        { tier: 'S' as const, items: rankedArchetypes.slice(0, 2) },
+        { tier: 'A' as const, items: rankedArchetypes.slice(2, 6) },
+        { tier: 'B' as const, items: rankedArchetypes.slice(6, 10) },
+    ].filter(b => b.items.length > 0)
+
+    // 環境・優勝デッキ集：直近の優勝デッキをアイコンで並べる（モック準拠）
+    const winnerDecks = decks
+        .filter(d => d.event_rank === '優勝' && d.archetype_id && archetypeMap.has(d.archetype_id))
+        .slice(0, 8)
+    const winnerDates = [...new Set(winnerDecks.map(d => d.event_date).filter(Boolean))] as string[]
+    const winnerCaption = winnerDates.length > 0
+        ? (winnerDates.length === 1 ? winnerDates[0] : `${winnerDates[winnerDates.length - 1]}〜${winnerDates[0]}`) + 'の優勝デッキ'
+        : ''
+
+    // 注目カード採用率：運営がピックアップした注目カードの全体採用率（実データ）
+    const visibleCards = showMoreAdoption ? featuredCards.slice(0, 10) : featuredCards.slice(0, 5)
+
+    // 環境デッキ分布：直近30日の優勝デッキをアーキタイプ別に集計（モック準拠のドーナツ）
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
+    const winCounts: Record<string, number> = {}
+    decks.forEach(d => {
+        if (d.event_rank !== '優勝' || !d.archetype_id) return
+        if (d.created_at && new Date(d.created_at).getTime() < thirtyDaysAgo) return
+        winCounts[d.archetype_id] = (winCounts[d.archetype_id] || 0) + 1
+    })
+    const totalWins = Object.values(winCounts).reduce((a, b) => a + b, 0)
+    const topWinEntries = Object.entries(winCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+    const otherWins = totalWins - topWinEntries.reduce((a, [, v]) => a + v, 0)
+    const matchArchetypeIcon = (name: string) => POKEMON_ICONS.find(p => name.includes(p)) || null
+    const donutSegments = [
+        ...topWinEntries.map(([id, count], i) => {
+            const name = archetypeMap.get(id)?.name || 'その他'
+            return { name, count, color: DONUT_COLORS[i], icon: matchArchetypeIcon(name) }
+        }),
+        ...(otherWins > 0 ? [{ name: 'その他', count: otherWins, color: DONUT_COLORS[6], icon: null }] : []),
+    ]
+    const CIRC = 2 * Math.PI * 60 // r=60
+
+    const linkableArchetypes = archetypes.filter(a => new Set(recentArchetypeIds).has(a.id))
+
     return (
-        <div className="min-h-screen bg-white text-gray-900">
+        <div className="min-h-screen bg-[#f4f6fa] text-gray-900">
             <PublicHeader />
 
-            {/* Hero Section */}
-            <section className="relative pt-2.5 pb-2.5 md:pt-2.5 md:pb-2.5 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-pink-100/50 via-purple-100/50 to-blue-100/50 z-0" />
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 relative z-10 text-center">
-                    <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-white border border-pink-200 text-pink-600 text-sm font-semibold shadow-sm animate-fade-in-up">
-                        ✨ 勝つための情報が集まる場所
-                    </div>
-                    <h1 className="font-extrabold text-gray-900 tracking-tight mb-6 animate-fade-in-up delay-100">
-                        <span className="block text-base sm:text-xl md:text-2xl mb-2 text-gray-600">ポケモンカード情報局</span>
-                        <div className="flex items-center justify-center gap-2 md:gap-4 py-2">
-                            <span className="text-4xl sm:text-5xl md:text-7xl leading-tight text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 font-[family-name:var(--font-press-start-2p)]">
-                                PokéLix
-                            </span>
-                            <Image
-                                src="/genger.png"
-                                alt="Gengar"
-                                width={60}
-                                height={60}
-                                className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 object-contain -mb-2"
-                            />
-                        </div>
-                    </h1>
-                    <p className="mt-4 text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200 px-2">
-                        <span className="block sm:inline">環境考察、優勝デッキ情報。</span>
-                        <span className="block sm:inline">あなたのポケカライフを充実させる機能がここに。</span>
-                        <span className="font-bold text-pink-600 block mt-1">シミュレーションでデッキを分析</span>
-                    </p>
-                    <div className="flex flex-col items-center gap-4 animate-fade-in-up delay-300">
-                        <div className="grid grid-cols-2 gap-3 w-full max-w-2xl px-2 sm:px-0">
-                            {/* Row 1 */}
-                            <a
-                                href="#deck-distribution"
-                                className="bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center py-4"
-                            >
-                                環境デッキ分布
-                                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </a>
-                            <a
-                                href="#featured-trends"
-                                className="bg-white text-gray-700 font-bold text-sm sm:text-lg border-2 border-gray-100 hover:border-pink-200 hover:bg-pink-50 transition-all duration-200 shadow-sm rounded-xl flex items-center justify-center py-4"
-                            >
-                                注目カード採用率
-                            </a>
-
-                            {/* Row 2 */}
-                            <Link
-                                href="/practice"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 py-4"
-                            >
-                                <Image
-                                    src="/Lucario.png"
-                                    alt="Practice"
-                                    width={24}
-                                    height={24}
-                                    className="w-5 h-5 sm:w-6 sm:h-6 filter brightness-0 invert"
-                                />
-                                一人回し
-                            </Link>
-                            <Link
-                                href="/simulator"
-                                className="bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-xl font-bold text-sm sm:text-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2 py-4"
-                            >
-                                <Image
-                                    src="/king.png"
-                                    alt="Simulator"
-                                    width={24}
-                                    height={24}
-                                    className="w-5 h-5 sm:w-6 sm:h-6 filter brightness-0 invert"
-                                />
-                                確率シミュ
-                            </Link>
-
-                            {/* Row 3 */}
-                            <Link
-                                href="/global-simulator"
-                                className="px-4 py-2.5 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                🌎 Global Sim
-                            </Link>
-                            <Link
-                                href="/practice/prize-trainer"
-                                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:bg-slate-800 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                🏆 サイド推論
-                            </Link>
-                            <Link
-                                href="/kids"
-                                className="px-4 py-2.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-1"
-                            >
-                                ポケカで算数
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Ad Section (TOYGER, etc) */}
-            <section className="py-2.5 bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                        {/* TOYGER Ad */}
-                        <div className="flex flex-col items-center w-full max-w-sm">
-                            <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
-                            <a
-                                href="https://shopa.jp/9293M3MEXQ2Z"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full hover:opacity-90 transition-opacity"
-                            >
-                                <Image
-                                    src="/ad_sponsor_toyger.png"
-                                    alt="サプライ買うならTOYGER"
-                                    width={400}
-                                    height={150}
-                                    className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
-                                />
-                            </a>
-                        </div>
-
-                        {/* AdSense Unit */}
-                        <div className="w-full max-sm:px-2 max-w-sm">
-                            <AdPlaceholder
-                                slot="1093986865"
-                                format="rectangle"
-                                className="my-2"
-                            />
-                        </div>
-
-                        {/* Dot Picture Promotion */}
-                        <div className="flex flex-col items-center w-full max-w-sm">
-                            <span className="text-xs text-gray-400 mb-1">ドット絵ご提供者様(下記タップでXへ)</span>
-                            <a
-                                href="https://twitter.com/komori541milk"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-[94%] hover:opacity-90 transition-opacity cursor-pointer mx-auto"
-                            >
-                                <Image
-                                    src="/dotpicture.png"
-                                    alt="ドット絵ご提供者様"
-                                    width={1715}
-                                    height={589}
-                                    className="w-full h-auto rounded-lg shadow-sm border border-gray-100"
-                                />
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Main Analytics Section */}
-            <section className="py-2.5 md:py-2.5 bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    {/* Environment Analytics Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Deck Distribution Chart */}
-                        <div id="deck-distribution" className="flex flex-col h-full">
-                            <div className="mb-4">
-                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                    <Image
-                                        src="/Alakazam.png"
-                                        alt="Alakazam"
-                                        width={36}
-                                        height={36}
-                                        className="w-7 h-7 md:w-9 md:h-9"
-                                    />
-                                    環境デッキ分布
-                                </h3>
-                                <p className="text-gray-600 mt-1">登録されている参考デッキのシェア率</p>
-                            </div>
-                            <div className="bg-white rounded-2xl border-2 border-purple-100 shadow-sm p-2.5 md:p-2.5 flex-grow h-[600px] overflow-hidden">
-                                <DeckDistributionChart decks={decks} archetypes={archetypes} />
-                            </div>
-                        </div>
-
-                        {/* Card Search Analysis */}
-                        <div className="flex flex-col h-full">
-                            <div className="mb-4">
-                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                    <span className="text-2xl md:text-3xl">🔍</span>
-                                    カード検索
-                                </h3>
-                                <p className="text-gray-600 mt-1">採用率と平均枚数を分析</p>
-                            </div>
-                            <div className="bg-white rounded-2xl border-2 border-orange-100 shadow-sm p-4 flex-grow h-[600px] overflow-hidden">
-                                <CardSearchAnalysis initialArchetypes={archetypes} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Reference Decks Section */}
-                    <div id="reference-decks" className="mt-8">
-                        <div className="mb-6">
-                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                                <Image
-                                    src="/victory.png"
-                                    alt="victory"
-                                    width={36}
-                                    height={36}
-                                    className="w-7 h-7 md:w-9 md:h-9"
-                                />
-                                環境・優勝デッキ集
-                            </h2>
-                            <p className="text-gray-600 mt-2">大会で結果を残している強力なデッキレシピをチェック</p>
-                        </div>
-                        {/* Unified Reference Deck List */}
-                        <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-2.5 md:p-2.5">
-                            <ReferenceDeckList
-                                initialDecks={decks}
-                                initialArchetypes={archetypes}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Featured Card Trends */}
-                    <div className="mt-8" id="featured-trends">
-                        <FeaturedCardTrends />
-                    </div>
-
-                    <AdPlaceholder
-                        slot="1093986865"
-                        format="auto"
-                        className="mt-12 mb-4"
-                    />
-
-                    {/* Archetype Win Chart */}
-                    <div className="mt-8">
-                        <ArchetypeWinChart />
-                    </div>
-
-                    {/* Key Card Adoption Section */}
-                    <div className="mt-8" id="key-card-adoption">
-                        <div className="mb-4">
-                            <h3 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
-                                <Image
-                                    src="/Klefki.png"
-                                    alt="Klefki"
-                                    width={36}
-                                    height={36}
-                                    className="w-7 h-7 md:w-9 md:h-9"
-                                />
-                                キーカード採用率
-                            </h3>
-                            <p className="text-gray-600 mt-1">環境デッキで採用されているカードの採用枚数を確認</p>
-                        </div>
-                        <div className="bg-white rounded-2xl border-2 border-pink-100 shadow-sm p-2.5 md:p-2.5">
-                            <KeyCardAdoptionList initialArchetypes={archetypes} />
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Usage Guide Section */}
-            <section className="py-2.5 bg-pink-50/50 overflow-hidden border-t border-b border-pink-100">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <div className="text-center mb-12">
-                        <span className="text-pink-500 font-bold tracking-wider uppercase text-sm">How to Use</span>
-                        <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-2">
-                            PokeLixの活用方法
-                        </h2>
-                        <p className="mt-4 text-gray-500 max-w-2xl mx-auto">
-                            デッキの登録から戦績管理まで、3ステップであなたのポケカライフをサポートします。
+            {/* Hero */}
+            <section className="bg-white border-b border-[#eef1f6]">
+                <div className="max-w-[1080px] mx-auto flex gap-4 items-start px-5 py-6">
+                    <div className="w-[5px] self-stretch bg-blue-600 rounded-sm shrink-0" />
+                    <div>
+                        <h1 className="text-xl sm:text-[26px] font-semibold text-gray-900 leading-relaxed">
+                            ポケカの環境考察と練習ツールを、<br />ポケットの中に。
+                        </h1>
+                        <p className="text-[13px] text-gray-500 leading-relaxed mt-2.5">
+                            PokéLix は実際の大会データをもとに、環境Tier・採用率・一人回し・初手確率をまとめて確認できる攻略サイトです。<br />
+                            ポケカを中心に、他TCGの環境考察も同じ見やすさで広げていきます。
                         </p>
                     </div>
-
-                    <div className="relative">
-                        {/* Connecting Line (Desktop) */}
-                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-gradient-to-r from-pink-200 via-purple-200 to-blue-200 transform -translate-y-1/2 z-0"></div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                            {/* Step 1 */}
-                            <div className="bg-white p-2.5 rounded-2xl border-2 border-pink-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
-                                <div className="w-16 h-16 mx-auto bg-pink-100 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                                    📋
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">1. デッキを登録</h3>
-                                <p className="text-gray-600 text-sm leading-relaxed">
-                                    公式のエディタで作成した「デッキコード」を入力するだけ。<br />
-                                    カード画像ごと一瞬で保存できます。
-                                </p>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="bg-white p-2.5 rounded-2xl border-2 border-purple-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
-                                <div className="w-16 h-16 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Image
-                                        src="/Alakazam.png"
-                                        alt="Alakazam"
-                                        width={40}
-                                        height={40}
-                                        className="w-10 h-10"
-                                    />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">2. 分析・カスタマイズ</h3>
-                                <p className="text-gray-600 text-sm leading-relaxed">
-                                    「キーカード採用率」を見ながらデッキを調整。<br />
-                                    自分だけの最強構築を作り上げましょう。
-                                </p>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="bg-white p-2.5 rounded-2xl border-2 border-blue-100 shadow-lg hover:shadow-xl transition-shadow text-center group">
-                                <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
-                                    ⚔️
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">3. 戦績を記録</h3>
-                                <p className="text-gray-600 text-sm leading-relaxed">
-                                    対戦結果をサクサク記録。<br />
-                                    「どのデッキに勝てるか」がグラフで可視化されます。
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="text-center mt-10">
-                            <Link
-                                href="/guide"
-                                className="inline-flex items-center text-purple-600 font-bold hover:text-purple-800 transition-colors text-lg"
-                            >
-                                詳しい使い方はこちら <span className="ml-2">→</span>
-                            </Link>
-                        </div>
-                    </div>
                 </div>
             </section>
 
-            {/* Featured Articles Carousel Section */}
-            <section className="py-2.5 bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <div className="flex justify-between items-end mb-6">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                            🔥 最新のピックアップ記事
-                        </h2>
-                        <Link href="/articles" className="text-pink-600 font-semibold hover:underline">
-                            すべて見る &rarr;
-                        </Link>
-                    </div>
+            {/* Quick entry cards */}
+            <section className="bg-white border-b border-[#eef1f6]">
+                <div className="max-w-[1080px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 px-5 py-2.5">
+                    <a href="#tier" className="bg-white border-2 border-blue-600 rounded-lg text-center py-2.5 px-1.5">
+                        <Ico name="trophy" className="w-7 h-7 mx-auto text-blue-600" />
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">環境Tier表</div>
+                        <div className="text-[11px] text-gray-500">今強いデッキを見る</div>
+                    </a>
+                    <Link href="/practice" className="bg-white border border-[#e2e8f0] rounded-lg text-center py-2.5 px-1.5">
+                        <Ico name="cards" className="w-7 h-7 mx-auto text-blue-600" />
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">一人回し練習</div>
+                        <div className="text-[11px] text-gray-500">盤面で練習</div>
+                    </Link>
+                    <Link href="/simulator" className="bg-white border border-[#e2e8f0] rounded-lg text-center py-2.5 px-1.5">
+                        <Ico name="dice" className="w-7 h-7 mx-auto text-blue-600" />
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">初手確率シミュ</div>
+                        <div className="text-[11px] text-gray-500">確率シミュレーター</div>
+                    </Link>
+                    <Link href="/global-simulator" className="bg-white border border-[#e2e8f0] rounded-lg text-center py-2.5 px-1.5">
+                        <Ico name="world" className="w-7 h-7 mx-auto text-blue-600" />
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">グローバルシミュ</div>
+                        <div className="text-[11px] text-gray-500">PTCGL format</div>
+                    </Link>
+                </div>
+            </section>
 
-                    {/* Horizontal Scroll Container */}
-                    <div className="flex overflow-x-auto pb-8 -mx-4 px-4 space-x-6 no-scrollbar snap-x snap-mandatory">
-                        {articles.map((article) => (
-                            <Link
-                                href={`/articles/${article.slug}`}
-                                key={article.id}
-                                className="flex-none snap-center w-[300px] md:w-[350px] bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden group"
-                            >
-                                <div className="aspect-video w-full relative">
-                                    {article.thumbnail_url ? (
-                                        <Image
-                                            src={article.thumbnail_url}
-                                            alt={article.title}
-                                            width={350}
-                                            height={197}
-                                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                            loading="lazy"
-                                            unoptimized
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center text-4xl">
-                                            📝
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-2.5">
-                                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-pink-600 transition-colors">
-                                        {article.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-600 line-clamp-2">
-                                        {article.excerpt}
-                                    </p>
-                                    <div className="mt-4 flex items-center text-xs text-gray-500">
-                                        <span>{new Date(article.published_at || article.created_at).toLocaleDateString()}</span>
-                                        <span className="mx-2">•</span>
-                                        <span className="text-pink-500 font-medium">読む</span>
+            {/* Ad */}
+            <section className="bg-[#eef2f7] border-b border-[#e5e9f0]">
+                <div className="max-w-[1080px] mx-auto px-5 py-2.5">
+                    <AdPlaceholder slot="5651129539" format="leaderboard" className="mx-auto" />
+                </div>
+            </section>
+
+            <div className="max-w-[1080px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4 px-1.5 py-2.5">
+
+                <main className="flex flex-col gap-4 min-w-0">
+
+                    {/* 環境Tier表 */}
+                    <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（直近7日・${totalRecentDecks}件）`}</span>
+                        </div>
+                        <div className="p-2.5">
+                            {tierBuckets.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">直近7日間のデッキデータがまだありません</p>
+                            ) : tierBuckets.map(({ tier, items }) => (
+                                <div key={tier} className="mb-4 last:mb-0">
+                                    <div className="flex items-center gap-1.5 text-[11px] font-semibold mb-1.5">
+                                        <span className={`text-white text-xs font-semibold px-2.5 py-0.5 rounded ${TIER_STYLE[tier].badge}`}>{tier}</span>
+                                        <span className={TIER_STYLE[tier].text}>{TIER_STYLE[tier].label}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {items.map(a => {
+                                            const share = totalRecentDecks > 0 ? ((weeklyRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
+                                            return (
+                                                <Link
+                                                    key={a.id}
+                                                    href={`/archetypes/${encodeURIComponent(a.name)}`}
+                                                    className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white hover:border-blue-300 transition"
+                                                >
+                                                    <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
+                                                        {a.cover_image_url && (
+                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" unoptimized />
+                                                        )}
+                                                    </div>
+                                                    <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
+                                                    <span className="text-xs font-semibold text-blue-700">{share}%</span>
+                                                </Link>
+                                            )
+                                        })}
                                     </div>
                                 </div>
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Ad Unit: Between Articles and Environment Commentary */}
-            <section className="bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <AdPlaceholder
-                        slot="1093986865"
-                        format="auto"
-                        className="py-4"
-                    />
-                </div>
-            </section>
-
-            {/* Why Data Analysis Section */}
-            <section className="py-16 bg-gradient-to-b from-white to-pink-50/30">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="bg-white p-8 md:p-12 rounded-3xl border border-pink-100 shadow-sm">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 border-b-2 border-pink-100 pb-4">
-                            なぜ今、ポケカに「データ分析」が必要なのか？
-                        </h2>
-
-                        <div className="space-y-8 text-gray-700 leading-relaxed text-sm md:text-base">
-                            <div className="space-y-4">
-                                <p>
-                                    ポケモンカードゲームの魅力は、単なる運だけでなく、緻密なリソース管理とプレイング、<br />
-                                    そして何より「デッキ構築の深さ」にあります。<br />
-                                    しかし、現代のポケカシーンでは、<br />
-                                    SNS上で「Tier 1」とされる有力なデッキレシピが一瞬で拡散され、<br />
-                                    誰もが同じ結論に辿り着きやすい状況（環境の固定化）が生まれています。
-                                </p>
-                                <p>
-                                    このような情報過多の時代において、<br />
-                                    他のプレイヤーと差をつけるために必要なのは、<br />他人のレシピをコピーすることではなく、<br />
-                                    「なぜその60枚なのか」を自分自身のデータで裏付けることです。<br />
-                                    真似することが悪いのではなく、<br />
-                                    そのデッキの強さの根拠を理解することが勝利の鍵であると<br />
-                                    私は思います。
-                                </p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
-                                    <span className="bg-pink-100 text-pink-600 px-2 py-0.5 rounded text-sm">Case 1</span>
-                                    「感覚的相性」を「数値的根拠」へ
-                                </h3>
-                                <p>
-                                    「このデッキ相手は少し不利かも…」という曖昧な感覚。<br />
-                                    これを具体的なデータに変えるのが分析の第一歩です。<br />
-                                    PokéLixで対戦記録を積み重ねることで、<br />
-                                    「後攻時の勝率は40%だが、先攻なら55%ある」<br />
-                                    「特定のサブアタッカーを引けた試合の勝率は70%を超える」といった事実が見えてきます。<br />
-                                    「なんとなく」を「確信」に変えることで、<br />
-                                    大会当日の緊張感の中でも迷いのないプレイングが可能になります。
-                                </p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
-                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-sm">Case 2</span>
-                                    0.1%の事故率を削り出す、数学的アプローチ
-                                </h3>
-                                <p>
-                                    「なかよしポフィン」や「ネストボール」の枚数、あるいはエネルギーの枚数。<br />
-                                    これらを1枚増減させることが、初手の展開率にどれだけ影響するか。<br />
-                                    直感に頼らず「確率シミュレーション」を活用したデッキチューニングを推奨しています。<br />
-                                    例えば、60枚デッキに特定のカードを4枚採用した場合、<br />
-                                    初手7枚（＋最初のドロー1枚）の中にそのカードが含まれる確率は約44.5%です。<br />
-                                    これを「サイド落ち」まで考慮して計算し、<br />
-                                    プランを構築できるかどうかが、トッププレイヤーへの分かれ道となります。<br />
-                                    「理想盤面の完成確率」を1%でも高める努力。<br />
-                                    その積み重ねが、大型大会での予選突破を左右する大きな一歩となります。
-                                </p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 flex items-center gap-2">
-                                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-sm">Case 3</span>
-                                    練習を「効率化」し、時間を資産に変える
-                                </h3>
-                                <p>
-                                    仕事や学業で忙しいプレイヤーにとって、物理的なカードを広げて対戦する時間は限られています。<br />
-                                    PokéLixの「一人回しシミュレーター」や「採用率分析」は、<br />
-                                    隙間時間での「脳内対戦」を強力にサポートします。<br />
-                                    統計的に正しい「キーカード採用率」を参考にしながら、<br />
-                                    メタゲームに合わせた自分だけの60枚を組み上げる。<br />
-                                    「思考の量」を「勝利の質」へ直結させるためのプラットフォームが、ここにあります。
-                                </p>
-                            </div>
-
-                            <div className="bg-gradient-to-br from-pink-50 to-purple-50 p-6 md:p-8 rounded-2xl border border-pink-100 mt-12">
-                                <p className="text-pink-900 font-bold mb-4">
-                                    「勝てる喜びを、もっと理論的に。」
-                                </p>
-                                <p className="text-gray-700 text-sm md:text-base leading-relaxed">
-                                    PokéLixは、データに基づき勝利を目指すすべてのトレーナーに伴走します。<br />
-                                    あなたが積み上げる対戦記録の一行一行が、明日のポケカ文化を形作り、勝利へ導く地図となります。<br />
-                                    さあ、あなたのポケカライフに「分析」という新たな武器を取り入れてみませんか？
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* NEW: Prize Trainer Usage Guide */}
-            <section className="py-20 bg-white overflow-hidden relative border-t border-pink-100">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 bg-pink-100 px-4 py-2 rounded-full border border-pink-200 mb-6">
-                            <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>
-                            <span className="text-pink-600 font-extrabold tracking-widest uppercase text-xs">New Practice Tool</span>
-                        </div>
-                        <h2 className="text-4xl md:text-5xl font-black text-gray-900 mt-2 tracking-tight">
-                            サイド確認練習ツール<br className="md:hidden" /> (Prize Trainer) の使い方
-                        </h2>
-                        <span className="block text-pink-500 font-bold mt-4 text-lg">世界唯一（※Rii調べ）のサイド確認練習ツール</span>
-                        <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-lg leading-relaxed font-medium">
-                            「サイド落ち」の把握はトッププレイヤーへの必須条件。<br />
-                            山札と手札から、サイドにある6枚を瞬時に見抜く力を養いましょう。
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                        {/* Step 1 */}
-                        <div className="bg-white p-10 rounded-[40px] border-2 border-pink-50 hover:border-pink-200 transition-all duration-500 group relative overflow-hidden shadow-sm hover:shadow-xl">
-                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-pink-500/5 pointer-events-none">1</div>
-                            <div className="w-16 h-16 bg-pink-50 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-pink-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-pink-100">
-                                ⌨️
-                            </div>
-                            <h3 className="text-2xl font-black text-gray-900 mb-4">デッキコードを入力</h3>
-                            <p className="text-gray-600 leading-relaxed font-medium">
-                                公式デッキエディタのコードを入力して開始。<br />
-                                自分の今のデッキを使って、実戦さながらのサイド落ちを再現します。
-                            </p>
-                        </div>
-
-                        {/* Step 2 */}
-                        <div className="bg-white p-10 rounded-[40px] border-2 border-purple-50 hover:border-purple-200 transition-all duration-500 group relative overflow-hidden shadow-sm hover:shadow-xl">
-                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-purple-500/5 pointer-events-none">2</div>
-                            <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-purple-100">
-                                🔍
-                            </div>
-                            <h3 className="text-2xl font-black text-gray-900 mb-4">サイド落ちを推論</h3>
-                            <p className="text-gray-600 leading-relaxed font-medium">
-                                山札・手札を確認し、サイドにある6枚を予想。モバイルでも使いやすい「なぞり拡大操作」で、素早くカードを確認できます。
-                            </p>
-                        </div>
-
-                        {/* Step 3 */}
-                        <div className="bg-white p-10 rounded-[40px] border-2 border-blue-50 hover:border-blue-200 transition-all duration-500 group relative overflow-hidden shadow-sm hover:shadow-xl">
-                            <div className="absolute top-0 right-0 p-8 text-8xl font-black text-blue-500/5 pointer-events-none">3</div>
-                            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl mb-8 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-blue-100">
-                                ⏱️
-                            </div>
-                            <h3 className="text-2xl font-black text-gray-900 mb-4">スコアとタイムを計測</h3>
-                            <p className="text-gray-600 leading-relaxed font-medium">
-                                正解率だけでなく「回答時間」も記録。<br />
-                                精度とスピードを同時に磨くことで、限られた対戦時間内の判断力を最大化します。
-                            </p>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="text-center">
-                        <Link
-                            href="/practice/prize-trainer"
-                            className="inline-flex items-center px-12 py-5 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-2xl font-black text-xl hover:shadow-[0_10px_30px_rgba(236,72,153,0.3)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
-                        >
-                            特訓を開始する
-                            <svg className="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path d="M13 7l5 5m0 0l-5 5m5-5H6" strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} />
-                            </svg>
-                        </Link>
+                    {/* 環境・優勝デッキ集 */}
+                    <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
+                            <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
+                            <Link href="/decks" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                        </div>
+                        <div className="p-2.5">
+                            {winnerDecks.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">優勝デッキデータがまだありません</p>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                                        {winnerDecks.map(d => {
+                                            const arch = archetypeMap.get(d.archetype_id!)!
+                                            return (
+                                                <Link key={d.id} href={`/decks/${d.id}`} className="text-center">
+                                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                                        {arch.cover_image_url && (
+                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
+                                                        )}
+                                                        <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
+                                                    </div>
+                                                    <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
+                                                </Link>
+                                            )
+                                        })}
+                                    </div>
+                                    {winnerCaption && (
+                                        <div className="text-[10px] text-gray-400 mt-2 text-right">{winnerCaption}</div>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
-                </div>
-            </section>
 
-            {/* Ad Unit: Between Prize Trainer and Features */}
-            <section className="bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <AdPlaceholder
-                        slot="1093986865"
-                        format="auto"
-                        className="py-4"
-                    />
-                </div>
-            </section>
-
-            {/* Features Section */}
-            <section id="features" className="py-2.5 md:py-2.5 bg-pink-50">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <div className="text-center mb-16">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">充実の戦績管理機能</h2>
-                        <p className="text-gray-600">シンプルで使いやすい機能が揃っています</p>
+                    {/* 注目カード採用率 */}
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center gap-1.5">
+                            <Ico name="chart" className="w-4 h-4 text-blue-600" />注目カード採用率
+                        </div>
+                        <div className="px-3.5 py-2.5 flex flex-col gap-2">
+                            {visibleCards.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">採用率データがまだありません</p>
+                            ) : visibleCards.map((c, i) => (
+                                <div key={i} className="flex items-center gap-2.5">
+                                    <span className="text-xs text-gray-600 w-[150px] truncate shrink-0">{c.card_name}</span>
+                                    <div className="flex-1 bg-blue-50 rounded h-2.5">
+                                        <div className="bg-blue-600 h-2.5 rounded" style={{ width: `${Math.min(100, c.current_adoption_rate)}%` }} />
+                                    </div>
+                                    <span className="text-[11px] text-gray-500 w-10 text-right shrink-0">{c.current_adoption_rate}%</span>
+                                </div>
+                            ))}
+                            {featuredCards.length > 5 && (
+                                <button
+                                    onClick={() => setShowMoreAdoption(v => !v)}
+                                    className="mt-2 w-full bg-gray-50 border border-[#e2e8f0] rounded-lg py-2 text-xs font-semibold text-blue-600"
+                                >
+                                    {showMoreAdoption ? '閉じる' : 'もっと見る（他のカード）'}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    {/* 環境デッキ分布 ・ デッキ別 優勝数（直近30日） */}
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center gap-1.5">
+                            <Ico name="pie" className="w-4 h-4 text-blue-600" />環境デッキ分布 ・ デッキ別 優勝数（直近30日）
+                        </div>
+                        {totalWins === 0 ? (
+                            <p className="text-sm text-gray-400 text-center py-6">直近30日の優勝データがまだありません</p>
+                        ) : (
+                            <div className="flex flex-wrap items-center gap-4 p-2.5">
+                                <svg width="160" height="160" viewBox="0 0 160 160" className="shrink-0">
+                                    <g transform="rotate(-90 80 80)" fill="none" strokeWidth="28">
+                                        {(() => {
+                                            let offset = 0
+                                            return donutSegments.map((seg, i) => {
+                                                const len = (seg.count / totalWins) * CIRC
+                                                const el = (
+                                                    <circle
+                                                        key={i}
+                                                        cx="80" cy="80" r="60"
+                                                        stroke={seg.color}
+                                                        strokeDasharray={`${len} ${CIRC}`}
+                                                        strokeDashoffset={-offset}
+                                                    />
+                                                )
+                                                offset += len
+                                                return el
+                                            })
+                                        })()}
+                                    </g>
+                                    <text x="80" y="76" textAnchor="middle" fontSize="14" fill="#0f172a" fontWeight="600">{totalWins}</text>
+                                    <text x="80" y="92" textAnchor="middle" fontSize="10" fill="#94a3b8">優勝</text>
+                                </svg>
+                                <div className="flex-1 min-w-[200px] flex flex-col gap-1.5">
+                                    {donutSegments.map((seg, i) => (
+                                        <div key={i} className="flex items-center gap-2 text-xs">
+                                            <span className="w-[11px] h-[11px] rounded shrink-0" style={{ backgroundColor: seg.color }} />
+                                            {seg.icon && (
+                                                <img src={`/pokemon-icons/${seg.icon}.png`} alt="" className="w-4 h-4 shrink-0" />
+                                            )}
+                                            <span className="flex-1 text-gray-700 truncate">{seg.name}</span>
+                                            <span className="text-gray-400">{((seg.count / totalWins) * 100).toFixed(1)}%</span>
+                                            <span className="w-[34px] text-right font-semibold text-blue-700">{seg.count}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 無料ツール */}
+                    <div>
+                        <div className="text-sm font-semibold text-gray-900 mb-2.5 pl-2.5 border-l-[3px] border-blue-600">無料ツール</div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            {[
+                                { href: '/practice', icon: 'cards', label: '一人回し練習' },
+                                { href: '/simulator', icon: 'dice', label: '初手確率シミュ' },
+                                { href: '/practice/prize-trainer', icon: 'eye', label: 'サイド推論' },
+                                { href: '/global-simulator', icon: 'world', label: 'グローバルシミュ' },
+                                { href: '/#reference-decks', icon: 'pie', label: '環境デッキ分布' },
+                                { href: '#tier', icon: 'chart', label: '注目カード採用率' },
+                                { href: '/kids', icon: 'calc', label: 'ポケカで算数' },
+                                { href: 'https://otcg.pokelix.jp/', icon: 'phone', label: 'O-TCG Pocket', external: true },
+                            ].map(t => (
+                                <Link
+                                    key={t.label}
+                                    href={t.href}
+                                    target={t.external ? '_blank' : undefined}
+                                    rel={t.external ? 'noopener noreferrer' : undefined}
+                                    className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden"
+                                >
+                                    <div className="h-16 bg-blue-100 flex items-center justify-center">
+                                        <Ico name={t.icon} className="w-7 h-7 text-blue-600" />
+                                    </div>
+                                    <div className="px-2.5 py-2 text-xs font-semibold text-gray-800">{t.label}</div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 環境考察・記事 */}
+                    <div>
+                        <div className="text-sm font-semibold text-gray-900 mb-2.5 pl-2.5 border-l-[3px] border-blue-600">環境考察・記事</div>
+                        <div className="flex flex-col gap-1.5">
+                            {articles.map((article, i) => (
+                                <Link
+                                    key={article.id}
+                                    href={`/articles/${article.slug}`}
+                                    className="bg-white border border-[#e2e8f0] rounded-lg px-3 py-2.5 flex items-center gap-2.5"
+                                >
+                                    <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded shrink-0">記事</span>
+                                    <span className="flex-1 min-w-0 text-[13px] text-gray-800 truncate">{article.title}</span>
+                                    {i === 0 && <span className="text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded shrink-0">NEW</span>}
+                                    <span className="text-[11px] text-gray-400 shrink-0">
+                                        {new Date(article.published_at || article.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}
+                                    </span>
+                                </Link>
+                            ))}
+                            {articles.length === 0 && (
+                                <p className="text-sm text-gray-400 text-center py-4 bg-white rounded-lg border border-[#e2e8f0]">記事はまだありません</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 環境デッキ別 採用カード */}
+                    {linkableArchetypes.length > 0 && (
+                        <div id="deck-pages">
+                            <div className="text-sm font-semibold text-gray-900 mb-2.5 pl-2.5 border-l-[3px] border-blue-600">環境デッキ別 採用カード</div>
+                            <div className="bg-white border border-[#e2e8f0] rounded-lg p-3.5">
+                                <div className="flex flex-wrap gap-2">
+                                    {linkableArchetypes.map(a => (
+                                        <Link
+                                            key={a.id}
+                                            href={`/archetypes/${encodeURIComponent(a.name)}`}
+                                            className="px-3 py-1.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-700 text-sm font-medium rounded-full border border-gray-200 hover:border-blue-300 transition-colors"
+                                        >
+                                            {a.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </main>
+
+                <aside className="flex flex-col gap-3.5 min-w-0">
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="bg-blue-50 text-blue-700 text-xs font-semibold px-3 py-2.5 border-b border-blue-100">他TCGも順次対応</div>
+                        <div className="py-1.5">
+                            {['ワンピースカード', '遊戯王OCG', 'デュエマ'].map(name => (
+                                <div key={name} className="flex items-center justify-between px-3 py-1.5">
+                                    <span className="text-xs text-gray-700">{name}</span>
+                                    <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">準備中</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="bg-slate-800 text-white text-xs font-semibold px-3 py-2.5">人気ランキング</div>
+                        <div className="py-1">
+                            {['環境Tier表', '一人回し練習', '初手確率シミュ', '採用率ランキング', '入賞デッキまとめ'].map((label, i) => (
+                                <div key={label} className="flex items-center gap-2.5 px-3 py-1.5">
+                                    <span className={`font-semibold text-sm w-3.5 ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
+                                    <span className="text-xs text-gray-700">{label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-center">
+                        <div className="text-xs font-semibold text-blue-700 flex items-center justify-center gap-1.5"><Ico name="refresh" className="w-3.5 h-3.5" />大会データ 毎日更新</div>
+                        <div className="text-[11px] text-blue-600 mt-1">全国の入賞デッキを自動集計</div>
+                    </div>
+                </aside>
+            </div>
+
+            {/* Ad row */}
+            <div className="max-w-[1080px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 px-1.5 pb-4">
+                <div className="flex flex-col items-center">
+                    <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
+                    <a href="https://shopa.jp/9293M3MEXQ2Z" target="_blank" rel="noopener noreferrer" className="block w-full hover:opacity-90 transition-opacity">
+                        <Image src="/ad_sponsor_toyger.png" alt="サプライ買うならTOYGER" width={400} height={150} className="w-full h-auto rounded-lg shadow-sm border border-gray-100" />
+                    </a>
+                </div>
+                <div className="flex flex-col items-center">
+                    <span className="text-xs text-gray-400 mb-1">ドット絵ご提供者様(下記タップでXへ)</span>
+                    <a href="https://twitter.com/komori541milk" target="_blank" rel="noopener noreferrer" className="block w-[94%] hover:opacity-90 transition-opacity mx-auto">
+                        <Image src="/dotpicture.png" alt="ドット絵ご提供者様" width={1715} height={589} className="w-full h-auto rounded-lg shadow-sm border border-gray-100" />
+                    </a>
+                </div>
+            </div>
+
+            {/* FAQ Section (kept for structured-data consistency with page.tsx's FAQPage JSON-LD) */}
+            <section className="py-16 bg-gray-50">
+                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-10">
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">よくある質問</h2>
+                        <p className="text-gray-500 text-sm">FAQ — Frequently Asked Questions</p>
+                    </div>
+                    <div className="space-y-4">
                         {[
                             {
-                                icon: <Image
-                                    src="/Alakazam.png"
-                                    alt="Alakazam"
-                                    width={48}
-                                    height={48}
-                                    className="w-12 h-12 mx-auto"
-                                />,
-                                title: "勝率を自動計算",
-                                description: "デッキごとの勝率を自動で計算。相性の良いデッキ、悪いデッキが一目でわかります。"
+                                q: 'このサイトはどのようなサービスですか？',
+                                a: 'スマホやPCのブラウザから、無料でポケモンカードのデッキ構築や検証ができる「ポケカ デッキシミュレーター」ツールです。※よく「ポケカ シュミレーター」とも検索されますが、正しくはシミュレーター（シミュレーション）です。'
                             },
                             {
-                                icon: "📝",
-                                title: "詳細な対戦記録",
-                                description: "先攻・後攻、対戦相手のデッキタイプ、サイド差など、細かいデータまで記録可能。"
+                                q: 'スマホでも使えますか？',
+                                a: 'はい、スマートフォン・タブレット・PCすべてのブラウザに対応しています。アプリのインストールは不要で、ブラウザから即座にご利用いただけます。'
                             },
                             {
-                                icon: "🔍",
-                                title: "参考デッキ閲覧",
-                                description: "強いプレイヤーのデッキ構築をチェックして、自分のデッキ作りの参考に。"
-                            }
-                        ].map((feature, index) => (
-                            <div key={index} className="bg-white rounded-2xl p-6 md:p-8 border-2 border-white hover:border-pink-200 transition-all duration-300 shadow-md hover:shadow-xl text-center">
-                                <div className="flex justify-center items-center h-16 mb-4 md:mb-6 text-4xl md:text-5xl">
-                                    {feature.icon}
+                                q: 'ログイン（アカウント登録）をしないと使えませんか？',
+                                a: 'いいえ、ログインなしでも基本的なシミュレーター機能はどなたでも自由にご利用いただけます。まずは気軽にお試しください。'
+                            },
+                            {
+                                q: 'アカウント登録（ログイン）をすると何ができますか？',
+                                a: 'ログインしていただくことで、自分だけの専用ダッシュボードが使えるようになり、作成したデッキの保存やお気に入り登録、より詳細な分析機能などが解放されます。'
+                            },
+                            {
+                                q: '作成したデッキを使って一人で練習することはできますか？',
+                                a: 'はい、当サイトには強力な「ひとり回し」機能を搭載しています。対戦相手がいないときでも、作成したデッキの動かし方や初手の確率、コンボのつながりなどをじっくり検証・練習していただけます。'
+                            },
+                            {
+                                q: '収録されているカードのデータや採用率は確認できますか？',
+                                a: 'はい、最新のカードデータに対応しており、各デッキにおけるポケカのカード採用率などもチェックしながらデッキビルドを進めることが可能です。'
+                            },
+                            {
+                                q: '確率計算はどのくらい正確ですか？',
+                                a: 'モンテカルロ法による10万回シミュレーションを採用しており、±0.1%以内の高精度で計算しています。単純な計算式では難しい「複数カードの組み合わせ」や「マリガン」も正確にシミュレーション可能です。'
+                            },
+                        ].map((item, i) => (
+                            <details key={i} className="group bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none font-bold text-gray-800 hover:bg-gray-50 transition-colors">
+                                    <span className="text-sm sm:text-base">{item.q}</span>
+                                    <span className="text-blue-500 text-lg shrink-0 group-open:rotate-45 transition-transform duration-200">＋</span>
+                                </summary>
+                                <div className="px-6 pb-5 pt-1 text-gray-600 text-sm leading-relaxed border-t border-gray-100">
+                                    {item.a}
                                 </div>
-                                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2 md:mb-3">{feature.title}</h3>
-                                <p className="text-gray-600 text-sm md:text-base leading-relaxed">{feature.description}</p>
-                            </div>
+                            </details>
                         ))}
-                    </div>
-
-                    <div className="text-center mt-12">
-                        <button
-                            onClick={() => router.push('/auth?mode=signup')}
-                            className="px-8 py-2.5 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-lg rounded-lg font-bold transition shadow-lg hover:shadow-xl"
-                        >
-                            無料で戦績管理を始める
-                        </button>
-                    </div>
-
-                    {/* Global Presence Section */}
-                    <div className="mt-20 pt-16 border-t border-pink-100">
-                        <div className="bg-gradient-to-br from-indigo-900 to-purple-900 rounded-3xl p-8 md:p-12 text-white shadow-xl relative overflow-hidden">
-                            {/* Decorative background elements */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
-
-                            <div className="relative z-10">
-                                <div className="inline-flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-sm font-medium mb-6 backdrop-blur-sm border border-white/10">
-                                    <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
-                                    Global Support
-                                </div>
-
-                                <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                                    PokéLixは世界でも活躍
-                                </h2>
-
-                                <div className="grid md:grid-cols-2 gap-10 items-center">
-                                    <div className="space-y-6 text-indigo-100 leading-relaxed">
-                                        <p>
-                                            現在、PokéLixは日本国内の対戦環境をメインとして、日本語を中心に情報を掲載しています。<br />
-                                            しかし、近年では海外からのアクセスも急速に増加しており、世界中のトレーナーから注目を集めるプラットフォームへと進化しています。
-                                        </p>
-                                        <p>
-                                            こうした需要に応えるため、当サイトの「初手確率シミュレーター」は、海外で主流な形式であるPTCGL（Pokémon TCG Live）のテキストデッキコードを直接読み込み、瞬時に算出できる機能を搭載しました。
-                                        </p>
-                                        <p>
-                                            私たちは、言語の壁を超えて誰もが最高のデータ分析に触れられる環境を目指しています。今後は、海外プレイヤー向けに多言語対応を進め、世界中のポケカファンの架け橋となるサイトを目指してまいります。
-                                        </p>
-                                    </div>
-
-                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
-                                        <div className="flex items-center gap-3 mb-4 text-pink-300">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span className="text-sm font-bold tracking-wider uppercase">Future Vision</span>
-                                        </div>
-                                        <div className="space-y-4 text-sm italic text-indigo-200/80 leading-relaxed border-l-2 border-pink-500/50 pl-4">
-                                            <p>
-                                                "While PokéLix currently focuses on the Japanese competitive scene, we have seen a significant increase in international traffic. To support our global community, our simulator is fully compatible with PTCGL deck codes. We are committed to expanding our multi-language support to empower trainers worldwide."
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>

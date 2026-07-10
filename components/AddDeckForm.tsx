@@ -162,7 +162,7 @@ export default function AddDeckForm({
                                 type="text"
                                 value={deckCode}
                                 onChange={(e) => setDeckCode(e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                 placeholder="例: ggnnLg-abc123...（任意）"
                             />
                         </div>
@@ -176,7 +176,7 @@ export default function AddDeckForm({
                                 value={deckName}
                                 onChange={(e) => setDeckName(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                 placeholder="例: ピカチュウex"
                             />
                         </div>
@@ -197,7 +197,7 @@ export default function AddDeckForm({
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-500 file:text-white hover:file:bg-pink-600 file:cursor-pointer transition"
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer transition"
                             />
                             <p className="mt-2 text-sm text-gray-500">
                                 公式サイトのデッキ画像をアップロードできます
@@ -217,7 +217,7 @@ export default function AddDeckForm({
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`${onClose ? 'flex-[2]' : 'w-full'} py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
+                                className={`${onClose ? 'flex-[2]' : 'w-full'} py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
                             >
                                 {loading ? '登録中...' : 'デッキを登録'}
                             </button>

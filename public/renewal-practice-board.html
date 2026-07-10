@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>一人回し 盤面プレビュー | PokéLix リニューアル プレビュー</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.1.0/dist/tabler-icons.min.css">
+<style>
+  :root { --blue:#2563eb; --blue-dark:#1d4ed8; --blue-tint:#eff4ff; --ink:#0f172a; --ink2:#1e293b; --muted:#64748b; --faint:#94a3b8; --line:#e5e9f0; --line2:#e2e8f0; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Hiragino Sans','Yu Gothic',Meiryo,system-ui,sans-serif; background:#f4f6fa; color:var(--ink2); -webkit-font-smoothing:antialiased; word-break: auto-phrase; line-break: strict; }
+  a { color:inherit; text-decoration:none; }
+  .wrap { max-width:1080px; margin:0 auto; }
+  .board { background:linear-gradient(180deg,#0b1220 0%,#0f172a 100%); border-radius:14px; padding:16px; }
+  .zonelabel { font-size:9px; letter-spacing:.12em; color:#64748b; text-transform:uppercase; text-align:center; margin-bottom:6px; }
+  .cardslot { aspect-ratio:63/88; border-radius:6px; }
+  .cardback { background:linear-gradient(140deg,#1e3a8a,#2563eb 60%,#1d4ed8); border:2px solid rgba(255,255,255,.85); box-shadow:0 2px 6px rgba(0,0,0,.35); }
+  .cardface { background:#fff; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; color:#334155; font-size:9px; font-weight:600; text-align:center; padding:3px; }
+  .emptyslot { border:1.5px dashed rgba(148,163,184,.35); border-radius:6px; }
+  .pill { font-size:10px; color:#93c5fd; background:rgba(37,99,235,.18); border:1px solid rgba(37,99,235,.35); border-radius:6px; padding:2px 8px; }
+  @media (max-width: 860px){ .grid-main{ grid-template-columns:1fr !important; } }
+  @media (max-width: 640px){
+    .tagline{ display:none !important; }
+    .searchbox{ width:auto !important; flex:1 1 auto; min-width:0; }
+    header .wrap{ padding:10px 14px !important; gap:10px; }
+    .navrow{ overflow-x:auto; white-space:nowrap; flex-wrap:nowrap !important; gap:16px !important; -webkit-overflow-scrolling:touch; }
+    .navrow::-webkit-scrollbar{ display:none; }
+    .gametabs{ overflow-x:auto; flex-wrap:nowrap !important; }
+    .gametabs::-webkit-scrollbar{ display:none; }
+    .gametabs > *{ flex:0 0 auto; white-space:nowrap; }
+    .bench{ grid-template-columns:repeat(3,1fr) !important; }
+    h1{ font-size:20px !important; }
+  }
+</style>
+</head>
+<body>
+
+<header style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; padding:12px 20px;">
+    <a href="/renewal-preview.html" style="display:flex; align-items:baseline; gap:9px;">
+      <span style="font-size:23px; font-weight:600; color:var(--ink2);">Poké<span style="color:var(--blue);">Lix</span></span>
+      <span class="tagline" style="font-size:11px; color:var(--faint);">Pocket analytics</span>
+    </a>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="searchbox" style="background:#f1f5f9; border-radius:8px; padding:7px 12px; font-size:12px; color:var(--faint); width:220px; display:flex; align-items:center; gap:7px;"><i class="ti ti-search"></i>デッキ・カードを検索</div>
+      <span style="font-size:13px; color:var(--blue); font-weight:600;">ログイン</span>
+    </div>
+  </div>
+</header>
+
+<nav style="background:#fff; border-bottom:0.5px solid var(--line);">
+  <div class="wrap navrow" style="display:flex; gap:22px; padding:9px 20px; font-size:13px; color:#475569;">
+    <a href="/renewal-preview.html">TOP</a><a href="/renewal-deck-list.html">環境デッキ</a><a href="/renewal-practice.html" style="color:var(--blue); font-weight:600;">一人回し</a><a href="/renewal-simulator.html">確率シミュ</a><a href="/renewal-articles.html">記事</a><a href="#" style="color:var(--faint); cursor:default;" onclick="return false;">カード検索 <span style="font-size:9px;">準備中</span></a>
+  </div>
+</nav>
+
+<div style="background:var(--blue);">
+  <div class="wrap gametabs" style="display:flex; gap:2px; padding:0 14px;">
+    <span style="color:#fff; font-size:13px; font-weight:600; padding:11px 18px; background:var(--blue-dark);">ポケカ</span>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">ワンピ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">遊戯王 <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+    <a href="/renewal-coming-soon.html" style="color:#bfdbfe; font-size:13px; padding:11px 16px;">デュエマ <span style="font-size:10px; color:#93c5fd;">準備中</span></a>
+  </div>
+</div>
+
+<div class="wrap" style="padding:12px 20px 4px; font-size:11px; color:var(--faint);"><a href="/renewal-preview.html" style="color:var(--blue);">TOP</a> › <a href="/renewal-practice.html" style="color:var(--blue);">一人回し</a> › 盤面（構成イメージ）</div>
+<div class="wrap" style="padding:0 20px 10px;">
+  <h1 style="font-size:20px; font-weight:600; color:var(--ink);">一人回し 盤面プレビュー</h1>
+  <p style="font-size:12px; color:var(--muted); margin-top:4px;">構成・操作（ドラッグ移動、カード効果、ズーム等）は現行のまま。配色とアクセントだけ新デザインに合わせたイメージです。</p>
+</div>
+
+<div class="wrap" style="padding:0 20px 24px;">
+  <div class="board">
+
+    <!-- 相手側 -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+      <span class="pill"><i class="ti ti-user"></i> CPU / 相手</span>
+      <span class="pill">サイド 6</span>
+    </div>
+    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:8px;">
+      <div class="cardslot cardback" style="width:52px;"></div>
+      <div class="cardslot emptyslot" style="width:52px;"></div>
+      <div class="cardslot emptyslot" style="width:52px;"></div>
+    </div>
+    <div style="display:flex; justify-content:center; margin-bottom:14px;">
+      <div class="cardslot cardface" style="width:70px;">バトル場</div>
+    </div>
+
+    <!-- 中央: スタジアム / ターン表示 -->
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:8px 0; border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); margin-bottom:14px;">
+      <span class="pill"><i class="ti ti-flag"></i> スタジアム: なし</span>
+      <span class="pill" style="background:rgba(37,99,235,.28); color:#dbeafe;"><i class="ti ti-clock"></i> あなたのターン</span>
+    </div>
+
+    <!-- 自分側 -->
+    <div style="display:flex; justify-content:center; margin-bottom:10px;">
+      <div class="cardslot cardface" style="width:80px; height:112px; border:2px solid var(--blue);">ドラパルトex<br><span style="color:#64748b;">HP320</span></div>
+    </div>
+    <div class="bench" style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-width:460px; margin:0 auto 14px;">
+      <div class="cardslot cardface">マシマシラ</div>
+      <div class="cardslot cardface">ドロンチ</div>
+      <div class="cardslot emptyslot"></div>
+      <div class="cardslot emptyslot"></div>
+      <div class="cardslot emptyslot"></div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span class="pill">サイド 6</span>
+      <span class="pill"><i class="ti ti-user"></i> あなた</span>
+    </div>
+
+    <!-- 手札 -->
+    <div style="margin-top:10px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08);">
+      <div class="zonelabel">あなたの手札 — 7枚</div>
+      <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+        <div class="cardslot cardback" style="width:44px;"></div>
+      </div>
+    </div>
+
+    <!-- 山札・トラッシュ -->
+    <div style="display:flex; justify-content:center; gap:24px; margin-top:14px;">
+      <div style="text-align:center;"><div class="cardslot cardback" style="width:48px; margin:0 auto 4px;"></div><span style="font-size:10px; color:#94a3b8;">山札 47</span></div>
+      <div style="text-align:center;"><div class="cardslot emptyslot" style="width:48px; margin:0 auto 4px; display:flex; align-items:center; justify-content:center; color:#475569;"><i class="ti ti-trash" style="font-size:16px;"></i></div><span style="font-size:10px; color:#94a3b8;">トラッシュ 0</span></div>
+    </div>
+
+    <!-- アクションバー -->
+    <div style="display:flex; justify-content:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
+      <span style="background:var(--blue); color:#fff; font-size:12px; font-weight:600; padding:9px 18px; border-radius:8px;"><i class="ti ti-cards" style="vertical-align:-1px; margin-right:5px;"></i>1枚ドロー</span>
+      <span style="background:rgba(255,255,255,.08); color:#e2e8f0; font-size:12px; font-weight:600; padding:9px 18px; border-radius:8px; border:0.5px solid rgba(255,255,255,.14);"><i class="ti ti-arrows-shuffle" style="vertical-align:-1px; margin-right:5px;"></i>シャッフル</span>
+      <span style="background:rgba(255,255,255,.08); color:#e2e8f0; font-size:12px; font-weight:600; padding:9px 18px; border-radius:8px; border:0.5px solid rgba(255,255,255,.14);"><i class="ti ti-player-track-next" style="vertical-align:-1px; margin-right:5px;"></i>ターン終了</span>
+    </div>
+
+  </div>
+
+  <div class="card" style="background:#fff; border:0.5px solid var(--line2); border-radius:8px; padding:14px; margin-top:16px;">
+    <div style="font-size:12px; font-weight:600; color:var(--ink); margin-bottom:6px;"><i class="ti ti-info-circle" style="color:var(--blue);"></i> このプレビューについて</div>
+    <p style="font-size:12px; color:var(--muted); line-height:1.8;">ドラッグ&ドロップでのカード移動、タップでのカード効果発動、ズーム確認、CPU対戦などの操作・機能は現行のまま変更しません。ここでは配色（紫→青）と枠・余白のトーンだけを他ページと揃えたイメージを示しています。</p>
+  </div>
+</div>
+
+<footer style="background:#fff; border-top:0.5px solid var(--line); margin-top:16px;">
+  <div class="wrap" style="padding:16px 20px; font-size:11px; color:var(--faint); text-align:center;">PokéLix ー Pocket analytics　運営情報　利用規約　プライバシー　お問い合わせ</div>
+</footer>
+
+</body>
+</html>

@@ -124,7 +124,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
     }
 
     return (
-        <div className="bg-white rounded-2xl p-6 border-2 border-purple-100 shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border-2 border-blue-100 shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center">
                     <span className="text-2xl mr-2">🌍</span>
@@ -133,7 +133,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                 {!isAdding && (
                     <button
                         onClick={() => setIsAdding(true)}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
                     >
                         + 新しい環境を追加
                     </button>
@@ -142,7 +142,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
 
             {/* Add/Edit Form */}
             {isAdding && (
-                <form onSubmit={handleSubmit} className="mb-6 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                <form onSubmit={handleSubmit} className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                     <h3 className="font-bold text-gray-900 mb-4">
                         {editingId ? '環境を編集' : '新しい環境を追加'}
                     </h3>
@@ -157,7 +157,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="例: Hレギュ"
                             />
                         </div>
@@ -171,7 +171,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                                 value={formData.start_date}
                                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                                 required
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
 
@@ -183,7 +183,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                                 type="date"
                                 value={formData.end_date}
                                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <p className="text-xs text-gray-500 mt-1">空欄の場合は現在進行中</p>
                         </div>
@@ -196,7 +196,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                                 type="text"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="例: Hレギュレーション開始"
                             />
                         </div>
@@ -205,7 +205,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                     <div className="flex gap-2">
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
                         >
                             {editingId ? '更新' : '追加'}
                         </button>
@@ -230,7 +230,7 @@ export default function EnvironmentManager({ }: EnvironmentManagerProps) {
                     environments.map((env) => (
                         <div
                             key={env.id}
-                            className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-purple-300 transition"
+                            className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-300 transition"
                         >
                             <div className="flex justify-between items-start">
                                 <div className="flex-1">

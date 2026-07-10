@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
+import PublicHeader from '@/components/PublicHeader'
 
 export default function PrizeTrainerPage() {
     const [deckCode, setDeckCode] = useState('')
@@ -156,7 +157,9 @@ export default function PrizeTrainerPage() {
     }, [gameState])
 
     return (
-        <div className="min-h-screen bg-slate-50 py-8 px-4 relative">
+        <div className="min-h-screen bg-slate-50 relative">
+            <PublicHeader />
+            <div className="py-8 px-4">
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Navigation Buttons */}
                 <div className="flex justify-start gap-2">
@@ -200,7 +203,7 @@ export default function PrizeTrainerPage() {
                         <div className="text-center space-y-4">
                             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">
                                 Prize Trainer
-                                <span className="block text-lg font-bold text-pink-500 mt-2 uppercase tracking-[0.3em]">サイド落ち推論特訓</span>
+                                <span className="block text-lg font-bold text-blue-500 mt-2 uppercase tracking-[0.3em]">サイド落ち推論特訓</span>
                             </h1>
                             <p className="text-slate-500 font-medium">
                                 デッキコードを入力して、サイドに落ちた6枚を当てる訓練を開始しましょう。
@@ -274,7 +277,7 @@ export default function PrizeTrainerPage() {
                             {/* Starting Hand Display - Clean List */}
                             <div className="pt-4 border-t border-slate-800 p-[5px]">
                                 <h3 className="text-[10px] font-black text-slate-500 mb-2 tracking-[0.2em] uppercase flex items-center gap-2 px-2">
-                                    <span className="w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
                                     Starting Hand (手札)
                                 </h3>
                                 <div
@@ -336,7 +339,7 @@ export default function PrizeTrainerPage() {
                                         return (
                                             <div
                                                 key={i}
-                                                className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border-2 transition-colors ${count > 0 ? 'bg-pink-50 border-pink-200' : 'border-slate-50 bg-slate-50/30'}`}
+                                                className={`w-full flex justify-between items-center p-2 rounded-lg text-sm border-2 transition-colors ${count > 0 ? 'bg-blue-50 border-blue-200' : 'border-slate-50 bg-slate-50/30'}`}
                                             >
                                                 <div className="flex-1 min-w-0 pr-2">
                                                     <div className="truncate font-bold text-slate-800">{card.name}</div>
@@ -349,7 +352,7 @@ export default function PrizeTrainerPage() {
                                                     >
                                                         -
                                                     </button>
-                                                    <span className={`w-5 text-center font-mono font-black text-base ${count > 0 ? 'text-pink-600' : 'text-slate-300'}`}>
+                                                    <span className={`w-5 text-center font-mono font-black text-base ${count > 0 ? 'text-blue-600' : 'text-slate-300'}`}>
                                                         {count}
                                                     </span>
                                                     <button
@@ -368,7 +371,7 @@ export default function PrizeTrainerPage() {
                                 <div className="pt-4 border-t border-slate-100">
                                     <div className="flex justify-between text-xs mb-3 font-bold text-slate-500">
                                         <span>選択済みカード</span>
-                                        <span className={currentTotalGuesses === 6 ? 'text-pink-600 uppercase tracking-tighter' : ''}>
+                                        <span className={currentTotalGuesses === 6 ? 'text-blue-600 uppercase tracking-tighter' : ''}>
                                             {currentTotalGuesses} / 6 枚
                                         </span>
                                     </div>
@@ -460,11 +463,11 @@ export default function PrizeTrainerPage() {
                                 <div className="space-y-4 pt-4 border-t border-slate-100">
                                     <div className="flex justify-between items-center px-2">
                                         <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
-                                            <span className="w-1.5 h-4 bg-pink-500 rounded-full"></span>
+                                            <span className="w-1.5 h-4 bg-blue-500 rounded-full"></span>
                                             実際のサイド落ち
                                         </h3>
                                         <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
-                                            正解数: <span className="text-pink-600 font-black">
+                                            正解数: <span className="text-blue-600 font-black">
                                                 {prizes.reduce((acc, card, i) => {
                                                     const cardOccurrences = prizes.slice(0, i + 1).filter(p => p.name === card.name).length
                                                     return acc + (selectedPrizeGuesses[card.name] >= cardOccurrences ? 1 : 0)
@@ -525,6 +528,7 @@ export default function PrizeTrainerPage() {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
 
             <style jsx global>{`

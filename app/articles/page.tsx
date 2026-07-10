@@ -42,7 +42,7 @@ export default async function ArticlesPage() {
                         <Link
                             href={`/articles/${article.slug}`}
                             key={article.id}
-                            className="group flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-pink-200"
+                            className="group flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:border-blue-200"
                         >
                             {article.thumbnail_url ? (
                                 <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
@@ -53,27 +53,27 @@ export default async function ArticlesPage() {
                                     />
                                 </div>
                             ) : (
-                                <div className="aspect-video w-full flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 text-4xl">
+                                <div className="aspect-video w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-white text-4xl">
                                     📝
                                 </div>
                             )}
 
                             <div className="p-6 flex-1 flex flex-col">
                                 <div className="mb-2">
-                                    <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-2 py-1 rounded-md">
+                                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
                                         コラム
                                     </span>
                                     <span className="text-xs text-gray-500 ml-2">
                                         {new Date(article.published_at || article.created_at).toLocaleDateString()}
                                     </span>
                                 </div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-pink-600 transition-colors line-clamp-2">
+                                <h2 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
                                     {article.title}
                                 </h2>
                                 <p className="text-gray-600 text-sm line-clamp-3 mb-4 flex-1">
                                     {article.excerpt}
                                 </p>
-                                <div className="text-pink-600 text-sm font-bold flex items-center mt-auto">
+                                <div className="text-blue-600 text-sm font-bold flex items-center mt-auto">
                                     続きを読む
                                     <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

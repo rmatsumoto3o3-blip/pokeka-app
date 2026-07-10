@@ -37,7 +37,7 @@ export default function PrivacyPage() {
                             このような広告配信事業者は、ユーザーの興味に応じた商品やサービスの広告を表示するため、当サイトや他サイトへのアクセスに関する情報「Cookie」（氏名、住所、メールアドレス、電話番号は含まれません）を使用することがあります。
                         </p>
                         <p className="mb-4">
-                            Google AdSense に関して、このプロセスの詳細やこのような情報が広告配信事業者に使用されないようにする方法については、<a href="https://policies.google.com/technologies/ads?hl=ja" target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:underline">Googleのポリシーと規約</a>をご覧ください。
+                            Google AdSense に関して、このプロセスの詳細やこのような情報が広告配信事業者に使用されないようにする方法については、<a href="https://policies.google.com/technologies/ads?hl=ja" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Googleのポリシーと規約</a>をご覧ください。
                         </p>
                     </section>
 

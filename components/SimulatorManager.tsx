@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { getDeckDataAction } from '@/app/actions'
-import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawRandomHand } from '@/utils/probability'
+import { calculateOpeningProbability, calculateRemainingInDeckProbability, calculatePrizeProbability, calculateRemainingDistribution, simulateCustomHandProbability, drawHandAndPrizes, calculateDrawByTurnProbability, simulateNextDrawProbability, drawTargetWithinDraws, type NextDrawResult } from '@/utils/probability'
 import type { CardData } from '@/lib/deckParser'
 
 interface SimulatorManagerProps {
@@ -20,6 +20,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
     const [simResult, setSimResult] = useState<{ and: string, or: string } | null>(null)
     const [randomHand, setRandomHand] = useState<CardData[]>([])
+    const [prizeCards, setPrizeCards] = useState<CardData[]>([])
+    const [drawByTurnCard, setDrawByTurnCard] = useState<string>('')
+    const [drawByTurnN, setDrawByTurnN] = useState<number>(3)
+    const [nextDraw, setNextDraw] = useState<NextDrawResult[]>([])
+    const [trashedNames, setTrashedNames] = useState<string[]>([])
+    const [nextDrawOpen, setNextDrawOpen] = useState<boolean>(false)
+    // 盤面カスタム確率
+    const [boardExclude, setBoardExclude] = useState<Record<string, number>>({})
+    const [targetCard, setTargetCard] = useState<string>('')
+    const [drawCount, setDrawCount] = useState<number>(3)
+    const [boardOpen, setBoardOpen] = useState<boolean>(false)
 
     const isGlobal = initialCards.length > 0
 
@@ -118,13 +129,58 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         }
     }, [initialCards])
 
-    // Auto-draw when cards are loaded
+    // デッキ読み込み時に初手7枚＋サイド6枚を引く（トラッシュ・盤面指定もリセット）
     useEffect(() => {
-        if (cards.length > 0 && randomHand.length === 0) {
-            const hand = drawRandomHand(cards)
+        setTrashedNames([])
+        setBoardExclude({})
+        setTargetCard('')
+        if (cards.length > 0) {
+            const { hand, prizes } = drawHandAndPrizes(cards)
             setRandomHand(hand)
+            setPrizeCards(prizes)
+        } else {
+            setRandomHand([])
+            setPrizeCards([])
         }
-    }, [cards, randomHand.length])
+    }, [cards])
+
+    // 次の1枚予測を計算（初手7枚・サイド6枚・トラッシュを山札から抜いて再計算）
+    useEffect(() => {
+        if (cards.length === 0 || randomHand.length === 0) { setNextDraw([]); return }
+        const handNames = randomHand.map(c => c.name)
+        const prizeNames = prizeCards.map(c => c.name)
+        setNextDraw(simulateNextDrawProbability(cards, [...handNames, ...prizeNames, ...trashedNames]))
+    }, [cards, randomHand, prizeCards, trashedNames])
+
+    // クリックで1枚ずつトラッシュへ。デッキ採用枚数に達したら0に戻す
+    const cycleTrash = (name: string, maxQty: number) => {
+        setTrashedNames(prev => {
+            const current = prev.filter(n => n === name).length
+            const others = prev.filter(n => n !== name)
+            if (current >= maxQty) return others // リセット
+            return [...others, ...Array(current + 1).fill(name)]
+        })
+    }
+
+    // 盤面カスタム: 山札にない枚数を増減（0〜採用枚数）
+    const adjustBoard = (name: string, delta: number, maxQty: number) => {
+        setBoardExclude(prev => {
+            const next = Math.max(0, Math.min(maxQty, (prev[name] || 0) + delta))
+            return { ...prev, [name]: next }
+        })
+    }
+
+    // 盤面カスタムの残り山札・確率を計算
+    const deckTotalCount = cards.reduce((s, c) => s + c.quantity, 0)
+    const boardExcludedTotal = Object.values(boardExclude).reduce((s, v) => s + v, 0)
+    const remainingDeckCount = deckTotalCount - boardExcludedTotal
+    const targetCardData = cards.find(c => c.name === targetCard)
+    const targetRemaining = targetCardData
+        ? targetCardData.quantity - (boardExclude[targetCard] || 0)
+        : 0
+    const boardProbability = targetCardData
+        ? drawTargetWithinDraws(targetRemaining, remainingDeckCount, drawCount)
+        : null
 
     // Categorize
     const categorizedCards = {
@@ -149,8 +205,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                 <th className="px-2 md:px-4 py-3 text-left w-16 whitespace-nowrap">{t.image}</th>
                                 <th className="px-2 md:px-4 py-3 text-left whitespace-nowrap">{t.cardName}</th>
                                 <th className="px-2 md:px-4 py-3 text-center w-20 whitespace-nowrap">{t.quantity}</th>
-                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-pink-50 text-pink-700 whitespace-nowrap">{t.openingHand}</th>
-                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-orange-50 text-orange-700 whitespace-nowrap">{t.prizeRisk}</th>
+                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-blue-50 text-blue-700 whitespace-nowrap">{t.openingHand}</th>
+                                <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-blue-50 text-blue-700 whitespace-nowrap">{t.prizeRisk}</th>
                                 <th className="hidden md:table-cell px-2 md:px-4 py-3 text-center w-32 bg-blue-50 text-blue-700 whitespace-nowrap">{t.remainingInDeck}</th>
                             </tr>
                         </thead>
@@ -168,10 +224,10 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                             </td>
                                             <td className="px-2 md:px-4 py-2">
                                                 <div className="relative w-8 h-11 md:w-10 md:h-14 bg-gray-200 rounded overflow-hidden shadow-sm flex items-center justify-center">
-                                                    {card.imageUrl ? (
-                                                        <Image src={card.imageUrl} alt={card.name} fill className="object-cover" unoptimized />
-                                                    ) : (
-                                                        <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase">{t.noImage}</span>
+                                                    <span className="text-[10px] md:text-xs text-gray-400 font-bold uppercase">{t.noImage}</span>
+                                                    {card.imageUrl && (
+                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                        <img src={card.imageUrl} alt={card.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
                                                     )}
                                                 </div>
                                             </td>
@@ -180,10 +236,10 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                 {card.subtypes && <span className="ml-2 text-xs text-gray-400 font-normal">({card.subtypes.join(', ')})</span>}
                                             </td>
                                             <td className="px-2 md:px-4 py-2 text-center font-bold text-gray-900 whitespace-nowrap">{card.quantity}</td>
-                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-pink-600 bg-pink-50/30 whitespace-nowrap">
+                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-blue-600 bg-blue-50/30 whitespace-nowrap">
                                                 {calculateOpeningProbability(card.quantity)}%
                                             </td>
-                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-orange-600 bg-orange-50/30 whitespace-nowrap">
+                                            <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-blue-600 bg-blue-50/30 whitespace-nowrap">
                                                 {calculatePrizeProbability(card.quantity)}%
                                             </td>
                                             <td className="hidden md:table-cell px-2 md:px-4 py-2 text-center font-bold text-blue-600 bg-blue-50/30 whitespace-nowrap">
@@ -195,13 +251,13 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                 <td colSpan={7} className="px-4 md:px-8 py-4">
                                                     {/* Mobile View: Simple Stats */}
                                                     <div className="md:hidden grid grid-cols-1 gap-3">
-                                                        <div className="bg-white p-3 rounded-lg border border-pink-100 flex justify-between items-center shadow-sm">
+                                                        <div className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center shadow-sm">
                                                             <span className="text-sm font-bold text-gray-600">{t.openingHand}</span>
-                                                            <span className="text-lg font-black text-pink-600">{calculateOpeningProbability(card.quantity)}%</span>
+                                                            <span className="text-lg font-black text-blue-600">{calculateOpeningProbability(card.quantity)}%</span>
                                                         </div>
-                                                        <div className="bg-white p-3 rounded-lg border border-orange-100 flex justify-between items-center shadow-sm">
+                                                        <div className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center shadow-sm">
                                                             <span className="text-sm font-bold text-gray-600">{t.prizeRisk}</span>
-                                                            <span className="text-lg font-black text-orange-600">{calculatePrizeProbability(card.quantity)}%</span>
+                                                            <span className="text-lg font-black text-blue-600">{calculatePrizeProbability(card.quantity)}%</span>
                                                         </div>
                                                         <div className="bg-white p-3 rounded-lg border border-blue-100 flex justify-between items-center shadow-sm">
                                                             <span className="text-sm font-bold text-gray-600">{t.remainingInDeck}</span>
@@ -302,14 +358,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
         })))
         setSimResult(result)
 
-        // Draw random hand
-        const hand = drawRandomHand(cards)
+        // 初手7枚＋サイド6枚を引く
+        const { hand, prizes } = drawHandAndPrizes(cards)
         setRandomHand(hand)
+        setPrizeCards(prizes)
     }
 
     const handleDrawAgain = () => {
-        const hand = drawRandomHand(cards)
+        const { hand, prizes } = drawHandAndPrizes(cards)
         setRandomHand(hand)
+        setPrizeCards(prizes)
+        setTrashedNames([])
     }
 
     // Modal Component for Selection (Render Function to prevent remounting)
@@ -348,12 +407,12 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                     onClick={() => handleToggleCardSelection(c.name)}
                                                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all active:scale-[0.98]
                                                         ${isSelected
-                                                            ? 'border-violet-500 bg-violet-50 ring-1 ring-violet-500'
-                                                            : 'border-gray-200 hover:border-violet-300 bg-white'
+                                                            ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                                                            : 'border-gray-200 hover:border-blue-300 bg-white'
                                                         }`}
                                                 >
                                                     <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors
-                                                        ${isSelected ? 'bg-violet-500 border-violet-500' : 'bg-white border-gray-300'}
+                                                        ${isSelected ? 'bg-blue-500 border-blue-500' : 'bg-white border-gray-300'}
                                                     `}>
                                                         {isSelected && <span className="text-white text-xs">✓</span>}
                                                     </div>
@@ -363,7 +422,8 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                                     </div>
                                                     {c.imageUrl && (
                                                         <div className="relative w-8 h-11 shrink-0">
-                                                            <Image src={c.imageUrl} alt="" fill className="object-cover rounded shadow-sm opacity-80" unoptimized />
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img src={c.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover rounded shadow-sm opacity-80" onError={(e) => e.currentTarget.remove()} />
                                                         </div>
                                                     )}
                                                 </div>
@@ -381,7 +441,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                         </span>
                         <button
                             onClick={() => setIsSelectorOpen(false)}
-                            className="bg-violet-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-violet-700 transition shadow-sm"
+                            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shadow-sm"
                         >
                             {t.confirm}
                         </button>
@@ -406,7 +466,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                 value={deckCode}
                                 onChange={(e) => setDeckCode(e.target.value)}
                                 placeholder={t.placeholder}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                             />
                         </div>
                         <button
@@ -415,7 +475,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                             className={`px-6 py-2 rounded-lg font-bold text-white transition shadow-md whitespace-nowrap h-[42px] flex items-center justify-center min-w-[120px]
                                 ${loading || !deckCode
                                     ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 active:scale-95'
+                                    : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-90 active:scale-95'
                                 }`}
                         >
                             {loading ? (
@@ -437,14 +497,14 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
 
             {/* Random Hand Display (Quick Draw) - Show as soon as cards are loaded */}
             {cards.length > 0 && randomHand.length > 0 && (
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-violet-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center justify-between mb-6">
                         <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <span className="text-2xl">🃏</span> {t.sampleHand}
                         </h4>
                         <button
                             onClick={handleDrawAgain}
-                            className="text-sm font-bold text-violet-600 hover:text-violet-800 bg-violet-50 px-4 py-2 rounded-full border border-violet-100 shadow-sm transition active:scale-95 flex items-center gap-2"
+                            className="text-sm font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm transition active:scale-95 flex items-center gap-2"
                         >
                             <span className="text-base">🔄</span> {t.drawAgain}
                         </button>
@@ -452,18 +512,17 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
                         {randomHand.map((c, i) => (
                             <div key={i} className="relative aspect-[63/88] rounded-lg overflow-hidden bg-gray-100 shadow-md group border border-gray-50">
-                                {c.imageUrl ? (
-                                    <Image
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
+                                    {c.name}
+                                </div>
+                                {c.imageUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
                                         src={c.imageUrl}
                                         alt={c.name}
-                                        fill
-                                        className="object-cover transition-transform group-hover:scale-110"
-                                        unoptimized
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        onError={(e) => e.currentTarget.remove()}
                                     />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
-                                        {c.name}
-                                    </div>
                                 )}
                             </div>
                         ))}
@@ -471,9 +530,267 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                 </div>
             )}
 
+            {/* Prize Cards Display */}
+            {cards.length > 0 && prizeCards.length > 0 && (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-100">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4">
+                        {lang === 'ja' ? 'サイド（6枚）' : 'Prize Cards (6)'}
+                    </h4>
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        {prizeCards.map((c, i) => (
+                            <div key={i} className="relative aspect-[63/88] rounded-lg overflow-hidden bg-gray-100 shadow-md group border border-gray-50">
+                                <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-400 font-bold p-1 text-center">
+                                    {c.name}
+                                </div>
+                                {c.imageUrl && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={c.imageUrl}
+                                        alt={c.name}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        onError={(e) => e.currentTarget.remove()}
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Next Draw Prediction Section */}
+            {cards.length > 0 && nextDraw.length > 0 && (
+                <div className="bg-gradient-to-br from-blue-50 to-blue-50 p-6 rounded-xl shadow-sm border-2 border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {lang === 'ja' ? '次に引く1枚 予測' : 'Next Card Prediction'}
+                        </h4>
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+                            {lang === 'ja' ? '残り山札から厳密計算' : 'Exact (remaining deck)'}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-5">
+                        {lang === 'ja'
+                            ? '初手7枚とサイド6枚を引いた残りの山札47枚から、次に引く1枚を予測します。引き直すと再計算されます。'
+                            : 'Predicts the next card from the 47 cards left after the opening hand and 6 prizes. Recalculates when you redraw.'}
+                    </p>
+
+                    {/* Top prediction */}
+                    {(() => {
+                        const top = nextDraw[0]
+                        return (
+                            <div className="flex items-center gap-4 bg-white rounded-xl p-4 border border-blue-200 shadow-sm mb-4">
+                                <div className="relative w-16 h-22 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center" style={{ aspectRatio: '63/88', height: '5.5rem' }}>
+                                    <span className="absolute text-[9px] text-gray-400 font-bold p-1 text-center">{top.name}</span>
+                                    {top.imageUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={top.imageUrl} alt={top.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-0.5">{lang === 'ja' ? '最有力' : 'Most Likely'}</div>
+                                    <div className="font-bold text-gray-900 text-lg truncate">{top.name}</div>
+                                    <div className="text-3xl font-extrabold text-blue-600">{top.probability.toFixed(1)}<span className="text-base">%</span></div>
+                                </div>
+                            </div>
+                        )
+                    })()}
+
+                    {/* Ranking list (2nd〜10th) */}
+                    <div className="space-y-1.5">
+                        {nextDraw.slice(1, 10).map((r, i) => (
+                            <div key={r.name} className="flex items-center gap-3 bg-white/70 rounded-lg px-3 py-2 border border-blue-100">
+                                <span className="text-xs font-bold text-gray-400 w-5 text-center">{i + 2}</span>
+                                <div className="relative w-6 h-8 shrink-0 rounded overflow-hidden bg-gray-100">
+                                    {r.imageUrl && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => e.currentTarget.remove()} />
+                                    )}
+                                </div>
+                                <span className="flex-1 text-sm font-medium text-gray-700 truncate">{r.name}</span>
+                                <span className="text-sm font-bold text-blue-600">{r.probability.toFixed(1)}%</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Trash control */}
+                    <div className="mt-5 pt-4 border-t border-blue-200">
+                        <button
+                            onClick={() => setNextDrawOpen(v => !v)}
+                            className="text-sm font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1"
+                        >
+                            {lang === 'ja' ? 'トラッシュにあるカードを指定' : 'Set cards in the trash'}
+                            <span className="text-xs">{nextDrawOpen ? '▲' : '▼'}</span>
+                            {trashedNames.length > 0 && (
+                                <span className="ml-1 text-xs bg-blue-200 text-blue-800 rounded-full px-2 py-0.5">{trashedNames.length}</span>
+                            )}
+                        </button>
+
+                        {nextDrawOpen && (
+                            <div className="mt-3">
+                                <p className="text-xs text-gray-500 mb-2">
+                                    {lang === 'ja'
+                                        ? 'トラッシュにあるカードをタップで指定すると、残り山札から再計算します。サイドに行ったカード（青）は自動で反映済みです。'
+                                        : 'Tap a card to mark it as trashed and recalculate. Prized cards (blue) are already applied.'}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {cards.map(c => {
+                                        const prizeCount = prizeCards.filter(p => p.name === c.name).length
+                                        const trashedCount = trashedNames.filter(n => n === c.name).length
+                                        const maxTrash = c.quantity - prizeCount
+                                        const isPrized = prizeCount > 0
+                                        const isTrashed = trashedCount > 0
+                                        return (
+                                            <button
+                                                key={c.name}
+                                                onClick={() => maxTrash > 0 && cycleTrash(c.name, maxTrash)}
+                                                disabled={maxTrash <= 0}
+                                                className={`text-xs px-2.5 py-1 rounded-full border transition-all ${isTrashed
+                                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm'
+                                                    : isPrized
+                                                        ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
+                                                } ${maxTrash <= 0 ? 'cursor-default' : ''}`}
+                                            >
+                                                {c.name}
+                                                {isPrized && <span className="ml-1 font-bold">{lang === 'ja' ? 'サイド' : 'P'}{prizeCount}</span>}
+                                                {isTrashed && <span className="ml-1 font-bold">{lang === 'ja' ? 'トラッシュ' : 'T'}{trashedCount}</span>}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                                {trashedNames.length > 0 && (
+                                    <button
+                                        onClick={() => setTrashedNames([])}
+                                        className="mt-3 text-xs text-gray-400 hover:text-red-500 underline"
+                                    >
+                                        {lang === 'ja' ? 'トラッシュ指定をクリア' : 'Clear trash'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Board Custom Probability Section */}
+            {cards.length > 0 && (
+                <div className="bg-gradient-to-br from-blue-50 to-blue-50 p-6 rounded-xl shadow-sm border-2 border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {lang === 'ja' ? '盤面から引ける確率' : 'Draw Probability from Board State'}
+                        </h4>
+                        <span className="text-xs font-normal text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+                            {lang === 'ja' ? '超幾何分布で厳密計算' : 'Hypergeometric (exact)'}
+                        </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-5">
+                        {lang === 'ja'
+                            ? '手札・場・トラッシュ・サイドにあるカードの枚数を指定し、残った山札から目当てのカードを引ける確率を計算します。'
+                            : 'Set how many copies are already in hand, play, trash or prizes, then calculate the odds of drawing your target from the remaining deck.'}
+                    </p>
+
+                    {/* Target + draw count + result */}
+                    <div className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm mb-4">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">
+                                    {lang === 'ja' ? '引きたいカード' : 'Target card'}
+                                </label>
+                                <select
+                                    value={targetCard}
+                                    onChange={(e) => setTargetCard(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-400"
+                                >
+                                    <option value="">{lang === 'ja' ? '選択してください' : 'Select a card'}</option>
+                                    {cards.map(c => (
+                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-full sm:w-40">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">
+                                    {lang === 'ja' ? `あと何回ドロー: ${drawCount}` : `Draws: ${drawCount}`}
+                                </label>
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={15}
+                                    value={drawCount}
+                                    onChange={(e) => setDrawCount(Number(e.target.value))}
+                                    className="w-full accent-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        {boardProbability !== null && (
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex items-end justify-between">
+                                <div className="text-xs text-gray-500">
+                                    {lang === 'ja'
+                                        ? `残り山札 ${remainingDeckCount}枚 ／ 対象 ${targetRemaining}枚`
+                                        : `Deck left ${remainingDeckCount} / target ${targetRemaining}`}
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-xs font-bold text-blue-600 uppercase tracking-wide">
+                                        {lang === 'ja' ? `${drawCount}ドロー以内に引ける確率` : `Within ${drawCount} draws`}
+                                    </div>
+                                    <div className="text-4xl font-extrabold text-blue-600">{boardProbability.toFixed(1)}<span className="text-lg">%</span></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Board state editor */}
+                    <button
+                        onClick={() => setBoardOpen(v => !v)}
+                        className="text-sm font-bold text-blue-700 hover:text-blue-900 flex items-center gap-1"
+                    >
+                        {lang === 'ja' ? '盤面を指定（山札にないカード）' : 'Set board state (cards outside the deck)'}
+                        <span className="text-xs">{boardOpen ? '▲' : '▼'}</span>
+                        {boardExcludedTotal > 0 && (
+                            <span className="ml-1 text-xs bg-blue-200 text-blue-800 rounded-full px-2 py-0.5">{boardExcludedTotal}</span>
+                        )}
+                    </button>
+
+                    {boardOpen && (
+                        <div className="mt-3 space-y-1.5 max-h-80 overflow-y-auto pr-1">
+                            {cards.map(c => {
+                                const ex = boardExclude[c.name] || 0
+                                return (
+                                    <div key={c.name} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-100">
+                                        <span className="flex-1 text-sm text-gray-700 truncate">{c.name}</span>
+                                        <span className="text-xs text-gray-400">{c.quantity - ex}{lang === 'ja' ? '枚 山札' : ' deck'}</span>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => adjustBoard(c.name, -1, c.quantity)}
+                                                disabled={ex <= 0}
+                                                className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 font-bold disabled:opacity-30 hover:bg-gray-50"
+                                            >−</button>
+                                            <span className="w-6 text-center text-sm font-bold text-blue-700">{ex}</span>
+                                            <button
+                                                onClick={() => adjustBoard(c.name, 1, c.quantity)}
+                                                disabled={ex >= c.quantity}
+                                                className="w-7 h-7 rounded-md border border-gray-200 text-gray-600 font-bold disabled:opacity-30 hover:bg-gray-50"
+                                            >＋</button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {boardExcludedTotal > 0 && (
+                                <button
+                                    onClick={() => setBoardExclude({})}
+                                    className="mt-2 text-xs text-gray-400 hover:text-red-500 underline"
+                                >
+                                    {lang === 'ja' ? '盤面指定をクリア' : 'Clear board'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Custom Hand Simulation Section */}
             {cards.length > 0 && (
-                <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 rounded-xl shadow-sm border-2 border-violet-100 mb-10">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-50 p-6 rounded-xl shadow-sm border-2 border-blue-100 mb-10">
                     <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                         <span className="text-2xl">✨</span>
                         {t.customSimulator}
@@ -490,7 +807,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                                 onClick={() => setIsSelectorOpen(true)}
                                 className={`w-full px-3 py-2 border rounded-lg text-sm text-left flex justify-between items-center transition-colors
                                     ${selectedCardNames.length > 0
-                                        ? 'border-violet-500 bg-violet-50 text-violet-900 font-bold'
+                                        ? 'border-blue-500 bg-blue-50 text-blue-900 font-bold'
                                         : 'border-gray-300 bg-white text-gray-500 hover:border-gray-400'
                                     }`}
                             >
@@ -519,7 +836,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                         <button
                             onClick={handleAddCondition}
                             disabled={selectedCardNames.length === 0}
-                            className="w-full md:w-auto bg-violet-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-violet-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition whitespace-nowrap"
+                            className="w-full md:w-auto bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition whitespace-nowrap"
                         >
                             {t.addCondition}
                         </button>
@@ -529,13 +846,13 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                     {customTargets.length > 0 && (
                         <div className="space-y-3 mb-6">
                             {customTargets.map((t_item, idx) => (
-                                <div key={idx} className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white px-4 py-3 rounded-lg border border-violet-200 shadow-sm animate-in fade-in slide-in-from-top-1 gap-2">
+                                <div key={idx} className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white px-4 py-3 rounded-lg border border-blue-200 shadow-sm animate-in fade-in slide-in-from-top-1 gap-2">
                                     <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full">
                                         <span className="font-bold text-gray-800 break-all">{t_item.name}</span>
                                         <select
                                             value={t_item.targetQuantity}
                                             onChange={(e) => handleUpdateQuantity(t_item.id, parseInt(e.target.value))}
-                                            className="font-bold text-violet-600 text-lg bg-transparent border-b border-violet-300 focus:outline-none focus:border-violet-600 px-1 py-0 disabled:opacity-50"
+                                            className="font-bold text-blue-600 text-lg bg-transparent border-b border-blue-300 focus:outline-none focus:border-blue-600 px-1 py-0 disabled:opacity-50"
                                         >
                                             {Array.from({ length: Math.min(7, t_item.deckQuantity) }, (_, i) => i + 1).map(n => (
                                                 <option key={n} value={n}>{n}{t.pcs}</option>
@@ -558,7 +875,7 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                         <button
                             onClick={runCustomSimulation}
                             disabled={customTargets.length === 0}
-                            className="w-full md:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all"
+                            className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all"
                         >
                             {t.calculate} 🎲
                         </button>
@@ -566,15 +883,15 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                         {simResult !== null && (
                             <div className="flex flex-col gap-4 w-full md:w-auto animate-in fade-in zoom-in duration-300">
                                 <div className="flex flex-col md:flex-row gap-4">
-                                    <div className="bg-white p-3 rounded-xl border border-violet-100 shadow-sm flex flex-col items-center min-w-[140px]">
+                                    <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm flex flex-col items-center min-w-[140px]">
                                         <span className="text-[10px] font-bold text-gray-500 uppercase">{t.andProb}</span>
-                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-fuchsia-600">
+                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-600">
                                             {simResult.and}%
                                         </span>
                                     </div>
-                                    <div className="bg-white p-3 rounded-xl border border-fuchsia-100 shadow-sm flex flex-col items-center min-w-[140px]">
+                                    <div className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm flex flex-col items-center min-w-[140px]">
                                         <span className="text-[10px] font-bold text-gray-500 uppercase">{t.orProb}</span>
-                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-pink-500">
+                                        <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-500">
                                             {simResult.or}%
                                         </span>
                                     </div>
@@ -585,6 +902,75 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
                 </div>
             )}
 
+
+            {/* Draw by Turn Calculator */}
+            {cards.length > 0 && (() => {
+                const selectedCard = cards.find(c => c.name === drawByTurnCard)
+                const prob = selectedCard ? calculateDrawByTurnProbability(selectedCard.quantity, drawByTurnN) : null
+                return (
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-50 p-6 rounded-xl shadow-sm border-2 border-blue-100">
+                        <h3 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <span className="text-2xl">📅</span>
+                            {lang === 'ja' ? 'ターン別引ける確率' : 'Draw by Turn Calculator'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-5">
+                            {lang === 'ja'
+                                ? '指定したターンまでに、そのカードを1枚以上引いている確率を計算します（初手7枚 + 毎ターン1ドロー）'
+                                : 'Probability of drawing at least 1 copy of a card by turn N (7-card opening hand + 1 draw per turn)'}
+                        </p>
+                        <div className="flex flex-col md:flex-row gap-4 items-end">
+                            <div className="flex-1">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">{lang === 'ja' ? 'カード' : 'Card'}</label>
+                                <select
+                                    value={drawByTurnCard}
+                                    onChange={e => setDrawByTurnCard(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                >
+                                    <option value="">{lang === 'ja' ? 'カードを選択...' : 'Select a card...'}</option>
+                                    {cards.map((c, i) => (
+                                        <option key={i} value={c.name}>{c.name} ×{c.quantity}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="w-full md:w-40">
+                                <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">{lang === 'ja' ? 'ターン数' : 'By Turn'}</label>
+                                <select
+                                    value={drawByTurnN}
+                                    onChange={e => setDrawByTurnN(parseInt(e.target.value))}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                >
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 10].map(n => (
+                                        <option key={n} value={n}>{lang === 'ja' ? `${n}ターン目まで` : `Turn ${n}`}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        {prob !== null && (
+                            <div className="mt-4 bg-white rounded-xl p-4 border border-blue-100 flex items-center justify-between animate-in fade-in duration-300">
+                                <div className="text-sm text-gray-600 font-medium">
+                                    {lang === 'ja'
+                                        ? `${drawByTurnCard} を${drawByTurnN}ターン目までに引ける確率`
+                                        : `Probability of drawing ${drawByTurnCard} by Turn ${drawByTurnN}`}
+                                </div>
+                                <div className="text-4xl font-black text-blue-600">{prob}%</div>
+                            </div>
+                        )}
+                        {prob !== null && selectedCard && (
+                            <div className="mt-3 grid grid-cols-4 md:grid-cols-8 gap-2">
+                                {[1,2,3,4,5,6,7,8].map(n => {
+                                    const p = parseFloat(calculateDrawByTurnProbability(selectedCard.quantity, n))
+                                    return (
+                                        <div key={n} className={`text-center p-2 rounded-lg border text-xs font-bold ${n === drawByTurnN ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                                            <div className="opacity-60">{lang === 'ja' ? `T${n}` : `T${n}`}</div>
+                                            <div>{p}%</div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )
+            })()}
 
             {/* Results */}
             {
@@ -610,12 +996,12 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             {/* Results Table */}
             {
                 cards.length > 0 && (
-                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-indigo-100 animate-fade-in-up">
+                    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-blue-100 animate-fade-in-up">
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-bold text-gray-900 border-l-4 border-indigo-500 pl-4">
+                            <h2 className="text-2xl font-bold text-gray-900 border-l-4 border-blue-500 pl-4">
                                 {t.analysisResults}
                             </h2>
-                            <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold">
+                            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">
                                 {t.total}: {cards.reduce((acc, c) => acc + c.quantity, 0)}{t.pcs}
                             </span>
                         </div>

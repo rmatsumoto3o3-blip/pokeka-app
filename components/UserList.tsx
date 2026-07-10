@@ -70,7 +70,7 @@ export default function UserList() {
                     {user.discord_avatar ? (
                       <img className="h-10 w-10 rounded-full" src={user.discord_avatar} alt="" />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-500 font-bold">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 font-bold">
                         {user.nickname?.[0] || 'U'}
                       </div>
                     )}

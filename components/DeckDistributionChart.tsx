@@ -88,7 +88,7 @@ export default function DeckDistributionChart({ decks: initialDecks, archetypes:
     const data = useMemo(() => {
         // 1. Create a map of Archetype ID -> Info (Name, Icons)
         const archetypeInfoMap = new Map<string, { name: string, icon_1: string | null }>()
-        archetypes.forEach(a => archetypeInfoMap.set(a.id, { name: a.name, icon_1: a.icon_1 || null }))
+        archetypes.forEach(a => archetypeInfoMap.set(a.id, { name: a.name, icon_1: null }))
 
         // 2. Aggregate counts
         const counts: Record<string, { value: number, icon: string | null }> = {}

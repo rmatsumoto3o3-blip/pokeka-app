@@ -4,6 +4,8 @@ export interface CardData {
     quantity: number
     supertype: string
     subtypes?: string[]
+    setCode?: string
+    collectorNumber?: string
 }
 
 export interface Card {
@@ -143,8 +145,8 @@ export function parsePTCGLFormat(text: string): CardData[] {
     const lines = text.split('\n')
 
     // PTCGL Format Regex: Quantity (1), Name (2), Set (3), Number (4)
-    // Example: "2 Comfey LOR 79"
-    const cardRegex = /^(\d+)\s+(.+?)\s+([A-Z0-9]{2,})\s+(\d+)\s*$/i
+    // Number can be numeric (79) or alphanumeric (TG01, GG01, SWSH001)
+    const cardRegex = /^(\d+)\s+(.+?)\s+([A-Z]{2,}[A-Z0-9-]*)\s+([A-Z0-9]+)\s*$/i
 
     lines.forEach(line => {
         const trimmed = line.trim()
@@ -170,10 +172,12 @@ export function parsePTCGLFormat(text: string): CardData[] {
 
             cards.push({
                 name,
-                imageUrl: '', // Placeholder for now
+                imageUrl: '',
                 quantity,
                 supertype,
-                subtypes: subtype ? [subtype] : undefined
+                subtypes: subtype ? [subtype] : undefined,
+                setCode,
+                collectorNumber,
             })
         }
     })

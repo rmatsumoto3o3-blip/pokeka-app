@@ -29,41 +29,26 @@ export default function PublicHeader() {
     }, [])
 
     return (
-        <header className="border-b-2 border-pink-200 bg-white/90 backdrop-blur-lg sticky top-0 z-50">
+        <header className="border-b border-[#e5e9f0] bg-white/90 backdrop-blur-lg sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5 md:py-2.5">
                 <div className="flex justify-between items-center">
-                    <Link href="/" className="flex items-center">
-                        <h1 className="text-xl sm:text-2xl text-gray-900 whitespace-nowrap cursor-pointer font-[family-name:var(--font-dotgothic-16)] tracking-wider flex items-center gap-1">
-                            <Image src="/pikachu.png" alt="pikachu" width={28} height={28} className="inline-block" />
-                            ポケリス
-                            <Image src="/pikachu.png" alt="pikachu" width={28} height={28} className="inline-block" />
-                        </h1>
+                    <Link href="/" className="flex items-baseline gap-2">
+                        <span className="text-[23px] font-semibold text-gray-800 whitespace-nowrap">
+                            Poké<span className="text-blue-600">Lix</span>
+                        </span>
+                        <span className="hidden sm:inline text-[11px] text-gray-400">Pocket analytics</span>
                     </Link>
 
-                    <div className="flex gap-2 md:gap-3 items-center">
-                        <Link
-                            href="/guide"
-                            className="hidden lg:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
-                        >
-                            活用ガイド
-                        </Link>
-                        <Link
-                            href="/about"
-                            className="hidden lg:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
-                        >
-                            ポケリスについて
-                        </Link>
-                        <Link
-                            href="/articles"
-                            className="hidden md:block px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap font-medium"
-                        >
-                            コラム・記事
-                        </Link>
+                    <div className="flex gap-2 md:gap-3 items-center flex-1 justify-end min-w-0">
+                        <div className="hidden md:flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 text-xs text-gray-400 w-[220px] cursor-default select-none">
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" /></svg>
+                            デッキ・カードを検索 <span className="text-[9px]">準備中</span>
+                        </div>
 
                         {isLoggedIn ? (
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border-2 border-pink-200 rounded-full hover:border-pink-400 transition shadow-sm group"
+                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border-2 border-blue-200 rounded-full hover:border-blue-400 transition shadow-sm group"
                             >
                                 {user?.user_metadata?.avatar_url ? (
                                     <Image
@@ -75,11 +60,11 @@ export default function PublicHeader() {
                                         unoptimized
                                     />
                                 ) : (
-                                    <div className="w-7 h-7 bg-pink-100 rounded-full flex items-center justify-center text-pink-500 font-bold text-xs">
+                                    <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 font-bold text-xs">
                                         {user?.user_metadata?.nickname?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
                                     </div>
                                 )}
-                                <span className="text-xs md:text-sm font-bold text-gray-700 max-w-[80px] md:max-w-[120px] truncate group-hover:text-pink-600 transition">
+                                <span className="text-xs md:text-sm font-bold text-gray-700 max-w-[80px] md:max-w-[120px] truncate group-hover:text-blue-600 transition">
                                     {user?.user_metadata?.nickname || user?.user_metadata?.full_name || 'マイページ'}
                                 </span>
                             </button>
@@ -87,13 +72,13 @@ export default function PublicHeader() {
                             <>
                                 <button
                                     onClick={() => router.push('/auth')}
-                                    className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-pink-500 transition whitespace-nowrap"
+                                    className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-blue-500 transition whitespace-nowrap"
                                 >
                                     ログイン
                                 </button>
                                 <button
                                     onClick={() => router.push('/auth?mode=signup')}
-                                    className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
+                                    className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
                                 >
                                     無料で登録
                                 </button>
@@ -102,6 +87,23 @@ export default function PublicHeader() {
                     </div>
                 </div>
             </div>
+
+            <div className="bg-blue-600">
+                <div className="max-w-7xl mx-auto px-3.5 flex items-center gap-0.5 overflow-x-auto whitespace-nowrap">
+                    <span className="text-white text-[13px] font-semibold px-4 py-2.5 bg-blue-700 shrink-0">ポケカ</span>
+                </div>
+            </div>
+
+            <nav className="border-t border-blue-100 bg-white">
+                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                    <Link href="/" className="text-blue-600 font-semibold shrink-0">TOP</Link>
+                    <Link href="/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                    <Link href="/practice" className="hover:text-blue-600 transition shrink-0">一人回し</Link>
+                    <Link href="/simulator" className="hover:text-blue-600 transition shrink-0">確率シミュ</Link>
+                    <Link href="/articles" className="hover:text-blue-600 transition shrink-0">記事</Link>
+                    <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
+                </div>
+            </nav>
         </header>
     )
 }

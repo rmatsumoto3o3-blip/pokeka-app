@@ -289,7 +289,7 @@ export function GameModals(props: GameModalsProps) {
                             }
                             closeMenu()
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-purple-50 hover:text-purple-600 text-sm flex items-center gap-2 text-gray-900 font-bold"
+                        className="w-full text-left px-4 py-2 hover:bg-blue-50 hover:text-blue-600 text-sm flex items-center gap-2 text-gray-900 font-bold"
                     >
                         詳細を見る
                     </button>

@@ -22,7 +22,7 @@ export default function ContactForm() {
     }
 
     return (
-        <div className="bg-white rounded-2xl p-8 border-2 border-pink-200 shadow-sm">
+        <div className="bg-white rounded-2xl p-8 border-2 border-blue-200 shadow-sm">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">お問い合わせ</h1>
 
             <div className="space-y-6 text-gray-700">
@@ -31,7 +31,7 @@ export default function ContactForm() {
                         ポケカ戦績管理アプリに関するお問い合わせは、以下のTwitter (X) アカウントまでDMまたはリプライでご連絡ください。
                     </p>
 
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
+                    <div className="bg-gradient-to-r from-blue-50 to-white rounded-lg p-6 border-2 border-blue-200">
                         <p className="text-sm text-gray-600 mb-3">お問い合わせ先</p>
                         <a
                             href="https://x.com/Rii_pokelix"
@@ -72,7 +72,7 @@ export default function ContactForm() {
             <div className="mt-8 text-center">
                 <button
                     onClick={handleBack}
-                    className="inline-block px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white rounded-lg transition"
+                    className="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg transition"
                 >
                     {isLoggedIn ? 'ダッシュボードに戻る' : 'トップページに戻る'}
                 </button>

@@ -596,7 +596,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     type="text"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                             </div>
                             <div>
@@ -604,7 +604,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 <select
                                     value={editEventRank}
                                     onChange={(e) => setEditEventRank(e.target.value as any)}
-                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                    className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
                                 >
                                     <option value="">(なし)</option>
                                     <option value="優勝">優勝</option>
@@ -640,25 +640,25 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             )}
 
             {/* Archetype Management Section (Collapsible) */}
-            <div className="bg-white rounded-lg shadow border-2 border-purple-100 overflow-hidden">
+            <div className="bg-white rounded-lg shadow border-2 border-blue-100 overflow-hidden">
                 <button
                     onClick={() => setIsManageMode(!isManageMode)}
-                    className="w-full flex justify-between items-center p-2.5 bg-purple-50 hover:bg-purple-100 transition"
+                    className="w-full flex justify-between items-center p-2.5 bg-blue-50 hover:bg-blue-100 transition"
                 >
                     <span className="font-bold text-gray-800 flex items-center">
                         <span className="bg-white p-1 rounded mr-2 text-sm shadow-sm">📁</span>
                         デッキタイプ設定（画像管理・並び替え）
                     </span>
-                    <span className="text-purple-600">{isManageMode ? '▲ 閉じる' : '▼ 開く'}</span>
+                    <span className="text-blue-600">{isManageMode ? '▲ 閉じる' : '▼ 開く'}</span>
                 </button>
 
                 {isManageMode && (
                     <div className="p-2.5 space-y-8 animate-in slide-in-from-top-2">
                         {/* Tab Switcher inside Manage Mode */}
                         <div className="flex gap-4 border-b border-gray-200 pb-2 mb-4">
-                            <button className="text-sm font-bold text-purple-600 border-b-2 border-purple-600 pb-2">デッキタイプ設定</button>
+                            <button className="text-sm font-bold text-blue-600 border-b-2 border-blue-600 pb-2">デッキタイプ設定</button>
                             <button
-                                className="text-sm font-bold text-gray-500 hover:text-purple-600 pb-2"
+                                className="text-sm font-bold text-gray-500 hover:text-blue-600 pb-2"
                                 onClick={() => alert('実装中: 画面が長くなるのでタブ切り替えにした方がいいかも')}
                             >
                                 注目カード設定
@@ -666,11 +666,11 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         </div>
 
                         {/* Backfill Utility */}
-                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-                            <h4 className="text-sm font-bold text-orange-800 mb-2 flex items-center">
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center">
                                 <span className="mr-2">🛠️</span> メンテナンスツール
                             </h4>
-                            <p className="text-xs text-orange-700 mb-4">
+                            <p className="text-xs text-blue-700 mb-4">
                                 過去に登録された全てのデッキ（参考デッキ・分析データ）の名前を再スキャンし、「優勝」「準優勝」などの戦績ランクを自動的に割り振ります。
                                 ※数分かかる場合があります。
                             </p>
@@ -678,7 +678,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 <button
                                     onClick={handleBackfill}
                                     disabled={isBackfilling}
-                                    className="bg-orange-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-orange-700 disabled:opacity-50 shadow-sm"
+                                    className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 shadow-sm"
                                 >
                                     {isBackfilling ? '一括判定を実行中...' : '既存デッキのランクを一括判定'}
                                 </button>
@@ -689,15 +689,15 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 )}
                             </div>
                             
-                            <hr className="my-4 border-orange-200" />
-                            <p className="text-xs text-orange-700 mb-4">
+                            <hr className="my-4 border-blue-200" />
+                            <p className="text-xs text-blue-700 mb-4">
                                 登録されている全デッキデータを読み込み、カードの採用率等の統計データを再計算して専用のデータベーステーブル（Egress対策用）に保存します。※数分かかる場合があります。
                             </p>
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={handleCalculateStats}
                                     disabled={isCalculating}
-                                    className="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 shadow-sm"
+                                    className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 shadow-sm"
                                 >
                                     {isCalculating ? '集計データを更新中...' : '集計データを更新（Egress対策用）'}
                                 </button>
@@ -743,7 +743,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         <button
                                             onClick={handleCreateArchetype}
                                             disabled={!newArchetypeName}
-                                            className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 disabled:opacity-50"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
                                         >
                                             新規作成
                                         </button>
@@ -758,13 +758,13 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                             type="file"
                                             accept="image/*"
                                             onChange={(e) => setArchetypeImageFile(e.target.files?.[0] || null)}
-                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 mb-4"
+                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-4"
                                         />
                                     </div>
                                     <button
                                         onClick={handleUpdateArchetypeSettings}
                                         disabled={!manageArchetypeId || archetypeLoading}
-                                        className="w-full py-2 bg-purple-600 text-white font-bold rounded-md hover:bg-purple-700 disabled:opacity-50 shadow-sm"
+                                        className="w-full py-2 bg-blue-600 text-white font-bold rounded-md hover:bg-blue-700 disabled:opacity-50 shadow-sm"
                                     >
                                         {archetypeLoading ? '保存中...' : '設定を保存'}
                                     </button>
@@ -778,7 +778,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                     <button
                                         onClick={saveOrder}
                                         disabled={isSaving}
-                                        className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 disabled:opacity-50"
+                                        className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
                                     >
                                         {isSaving ? '保存中...' : '順序を保存'}
                                     </button>
@@ -849,7 +849,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                             <select
                                 value={selectedArchetype}
                                 onChange={(e) => setSelectedArchetype(e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                             >
                                 {localArchetypes.map(a => (
                                     <option key={a.id} value={a.id}>{a.name}</option>
@@ -862,7 +862,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    デッキ名 <span className="text-pink-500 font-bold">*</span>
+                                    デッキ名 <span className="text-blue-500 font-bold">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -874,7 +874,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         if (detected) setInputEventRank(detected)
                                     }}
                                     placeholder="例: 優勝デッキ"
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                                 />
                             </div>
 
@@ -885,7 +885,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                 <select
                                     value={inputEventRank}
                                     onChange={(e) => setInputEventRank(e.target.value as any)}
-                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                                 >
                                     <option value="">なし</option>
                                     <option value="優勝">優勝</option>
@@ -927,13 +927,13 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                             <div className="flex gap-4 border-b mb-4">
                                 <button
                                     onClick={() => setImportMode('manual')}
-                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'manual' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'}`}
+                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'manual' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
                                 >
                                     個別入力
                                 </button>
                                 <button
                                     onClick={() => setImportMode('url')}
-                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'url' ? 'border-b-2 border-pink-600 text-pink-600' : 'text-gray-500'}`}
+                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'url' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
                                 >
                                     URLから一括(Pokecabook)
                                 </button>
@@ -950,12 +950,12 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                             value={inputCode}
                                             onChange={(e) => setInputCode(e.target.value)}
                                             placeholder="ここへ公式デッキコードを入力"
-                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                                         />
                                         <button
                                             onClick={handleAddDeck}
                                             disabled={isAdding || !inputCode}
-                                            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
                                         >
                                             {isAdding ? '解析中...' : '追加'}
                                         </button>
@@ -975,7 +975,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                 value={importUrl}
                                                 onChange={(e) => setImportUrl(e.target.value)}
                                                 placeholder="https://pokecabook.com/archives/..."
-                                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 sm:text-sm p-2 border bg-white text-gray-900"
+                                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                                             />
                                             <div className="flex items-center gap-2">
                                                 <input
@@ -984,7 +984,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                     onChange={(e) => setScrapeStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
                                                     placeholder="M/D"
                                                     maxLength={5}
-                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 text-sm p-2 border bg-white text-gray-900 text-center"
+                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border bg-white text-gray-900 text-center"
                                                     title="開始日 (例: 1/24)"
                                                 />
                                                 <span className="text-gray-400">〜</span>
@@ -994,14 +994,14 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                     onChange={(e) => setScrapeEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
                                                     placeholder="M/D"
                                                     maxLength={5}
-                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500 text-sm p-2 border bg-white text-gray-900 text-center"
+                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border bg-white text-gray-900 text-center"
                                                     title="終了日 (例: 1/25)"
                                                 />
                                             </div>
                                             <button
                                                 onClick={handleScrape}
                                                 disabled={isScraping || !importUrl}
-                                                className="bg-pink-600 text-white px-4 py-2 rounded-md font-bold hover:bg-pink-700 disabled:opacity-50 shadow-sm whitespace-nowrap"
+                                                className="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 disabled:opacity-50 shadow-sm whitespace-nowrap"
                                             >
                                                 {isScraping ? '取得中...' : 'デッキ一覧を取得'}
                                             </button>
@@ -1017,7 +1017,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                 <button
                                                     onClick={handleBulkAdd}
                                                     disabled={isAdding}
-                                                    className="bg-indigo-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-indigo-700 disabled:opacity-50"
+                                                    className="bg-blue-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-blue-700 disabled:opacity-50"
                                                 >
                                                     {isAdding ? '登録中...' : 'まとめて登録'}
                                                 </button>
@@ -1029,7 +1029,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                                             type="checkbox"
                                                             checked={deck.selected}
                                                             onChange={() => toggleDeckSelection(idx)}
-                                                            className="text-indigo-600 rounded"
+                                                            className="text-blue-600 rounded"
                                                         />
                                                         <div className="flex-1 min-w-0">
                                                             <div className="text-xs font-bold truncate text-gray-800">{deck.name}</div>
@@ -1051,7 +1051,7 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         type="checkbox"
                                         checked={data?.decks?.length ? data.decks.every(d => selectedDeleteDecks.has(d.id)) : false}
                                         onChange={toggleAllDeleteSelection}
-                                        className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500 cursor-pointer"
+                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
                                         title="すべて選択"
                                     />
                                     <span>登録済みデッキ一覧</span>
@@ -1125,14 +1125,14 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
             {
                 loading && !data ? (
                     <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                         <p className="mt-4 text-gray-600 font-medium">データを集計中...</p>
                     </div>
                 ) : (
                     <div className="bg-white p-6 rounded-lg shadow">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
                             <div>
-                                <h2 className="text-2xl font-bold text-black border-l-4 border-indigo-500 pl-3">集計結果</h2>
+                                <h2 className="text-2xl font-bold text-black border-l-4 border-blue-500 pl-3">集計結果</h2>
                                 <div className="flex items-center gap-1.5 mt-3">
                                     {[
                                         { label: 'すべて', value: undefined },
@@ -1147,8 +1147,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                             className={`
                                                 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border
                                                 ${rankFilter === tab.value 
-                                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' 
-                                                    : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300 hover:text-indigo-600'}
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                                                    : 'bg-white text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-600'}
                                             `}
                                         >
                                             {tab.label}
@@ -1158,9 +1158,9 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                             </div>
                             {data && (
                                 <div className="flex flex-col items-end">
-                                    <div className="text-sm bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100 shadow-sm">
-                                        <span className="text-xs text-indigo-400 font-bold uppercase block mb-0.5">集計母数</span>
-                                        <span className="font-black text-xl text-indigo-900">{data.totalDecks}</span> <span className="text-xs font-bold text-indigo-500">デッキ</span>
+                                    <div className="text-sm bg-blue-50 text-blue-700 px-4 py-2 rounded-xl border border-blue-100 shadow-sm">
+                                        <span className="text-xs text-blue-400 font-bold uppercase block mb-0.5">集計母数</span>
+                                        <span className="font-black text-xl text-blue-900">{data.totalDecks}</span> <span className="text-xs font-bold text-blue-500">デッキ</span>
                                     </div>
                                 </div>
                             )}

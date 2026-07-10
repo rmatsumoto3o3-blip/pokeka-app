@@ -145,7 +145,7 @@ export default function DeckList({
                     {decks.map((deck) => (
                         <div
                             key={deck.id}
-                            className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
+                            className="bg-white rounded-xl overflow-hidden border-2 border-blue-100 hover:border-blue-400 transition shadow-sm hover:shadow-md"
                         >
                             {/* ... image ... */}
 
@@ -158,7 +158,7 @@ export default function DeckList({
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setSelectedDeck(selectedDeck === deck.id ? null : deck.id)}
-                                        className="flex-1 py-1.5 px-3 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm text-sm"
+                                        className="flex-1 py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-sm"
                                     >
                                         {selectedDeck === deck.id ? '閉じる' : '記録'}
                                     </button>

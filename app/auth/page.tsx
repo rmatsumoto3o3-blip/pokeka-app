@@ -36,7 +36,7 @@ function AuthContent() {
                     password,
                 })
                 if (error) throw error
-                router.push('/dashboard')
+                router.push('/')
             } else {
                 // Sign up
                 const { data, error } = await supabase.auth.signUp({
@@ -59,22 +59,21 @@ function AuthContent() {
         }
     }
 
-    // Color Change: White background, Pop card
     return (
-        <div className="min-h-screen flex items-center justify-center bg-pink-50 px-4">
-            <div className="w-full max-w-md p-6 md:p-8 bg-white rounded-2xl shadow-xl border-2 border-pink-200">
+        <div className="min-h-screen flex items-center justify-center bg-[#f4f6fa] px-4">
+            <div className="w-full max-w-md p-6 md:p-8 bg-white rounded-2xl shadow-sm border border-[#e2e8f0]">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                        <span className="text-pink-500">⚡</span> ポケカ戦績
+                    <h1 className="text-2xl font-semibold text-gray-800 mb-2">
+                        Poké<span className="text-blue-600">Lix</span>
                     </h1>
-                    <p className="text-gray-600">
-                        {isLogin ? 'ログインして戦績を記録' : '新規アカウント作成'}
+                    <p className="text-gray-500 text-sm">
+                        {isLogin ? 'ログインしてマイページを利用' : '新規アカウント作成'}
                     </p>
                 </div>
 
                 {error && (
-                    <div className={`mb-4 p-3 rounded-lg ${error.includes('確認メール')
-                        ? 'bg-green-50 text-green-700 border border-green-200'
+                    <div className={`mb-4 p-3 rounded-lg text-sm ${error.includes('確認メール')
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         : 'bg-red-50 text-red-700 border border-red-200'
                         }`}>
                         {error}
@@ -91,7 +90,7 @@ function AuthContent() {
                                 type="text"
                                 value={nickname}
                                 onChange={(e) => setNickname(e.target.value)}
-                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                 placeholder="プレイヤー名（任意）"
                             />
                         </div>
@@ -106,7 +105,7 @@ function AuthContent() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             placeholder="your@email.com"
                         />
                     </div>
@@ -121,7 +120,7 @@ function AuthContent() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             minLength={6}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                             placeholder="6文字以上"
                         />
                     </div>
@@ -129,7 +128,7 @@ function AuthContent() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading ? '処理中...' : isLogin ? 'ログイン' : '新規登録'}
                     </button>
@@ -175,7 +174,7 @@ function AuthContent() {
                             setIsLogin(!isLogin)
                             setError(null)
                         }}
-                        className="text-pink-500 hover:text-pink-600 transition font-medium"
+                        className="text-blue-600 hover:text-blue-700 transition font-medium text-sm"
                     >
                         {isLogin ? 'アカウントを作成' : 'ログインに戻る'}
                     </button>
@@ -196,7 +195,7 @@ function AuthContent() {
 
 export default function AuthPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-pink-50">読み込み中...</div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#f4f6fa]">読み込み中...</div>}>
             <AuthContent />
         </Suspense>
     )

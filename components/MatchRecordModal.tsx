@@ -26,7 +26,7 @@ const MatchRecordModal: FC<MatchRecordModalProps> = ({ isOpen, onClose, deckId, 
             <div className="relative w-full max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
                 <div className="p-1 px-6 pt-6 flex justify-between items-center bg-gray-50 border-b border-gray-100">
                     <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <span className="text-pink-500">📝</span> 試合結果の記録
+                        <span className="text-blue-500">📝</span> 試合結果の記録
                     </h3>
                     <button
                         onClick={onClose}

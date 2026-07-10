@@ -153,8 +153,8 @@ export default function AddMatchForm({
                         type="button"
                         onClick={() => setGoingFirst('後攻')}
                         className={`flex-1 py-3 px-4 rounded-xl font-bold transition-all shadow-sm ${goingFirst === '後攻'
-                            ? 'bg-purple-700 text-white translate-y-[-2px] shadow-purple-200 ring-2 ring-purple-400'
-                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-purple-200 hover:bg-purple-50'
+                            ? 'bg-blue-700 text-white translate-y-[-2px] shadow-blue-200 ring-2 ring-blue-400'
+                            : 'bg-white text-gray-400 border-2 border-gray-100 hover:border-blue-200 hover:bg-blue-50'
                             }`}
                     >
                         後攻
@@ -172,7 +172,7 @@ export default function AddMatchForm({
                         <select
                             value={mySide}
                             onChange={(e) => setMySide(Number(e.target.value))}
-                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-pink-400 cursor-pointer appearance-none"
+                            className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none"
                             style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%236B7280\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 1rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.2em 1.2em' }}
                         >
                             {[0, 1, 2, 3, 4, 5, 6].map(n => (
@@ -203,7 +203,7 @@ export default function AddMatchForm({
                         type="text"
                         value={opponentName}
                         onChange={(e) => setOpponentName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                         placeholder="デカヌチャンex など"
                     />
                 </div>
@@ -221,7 +221,7 @@ export default function AddMatchForm({
                         value={date}
                         onChange={(e) => setDate(e.target.value)}
                         required
-                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                     />
                 </div>
             </div>
@@ -232,7 +232,7 @@ export default function AddMatchForm({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                     placeholder="試合の重要なポイントなど..."
                 />
             </div>
@@ -240,7 +240,7 @@ export default function AddMatchForm({
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all disabled:opacity-50"
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.01] transition-all disabled:opacity-50"
             >
                 {loading ? '記録中...' : '試合を記録する'}
             </button>

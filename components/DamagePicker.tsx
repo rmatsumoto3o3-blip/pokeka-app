@@ -15,11 +15,11 @@ export default function DamagePicker({
   onClose: () => void 
 }) {
   const statuses: { label: string, value: Status, color: string, glow: string }[] = [
-    { label: 'どく', value: 'poison', color: 'bg-purple-600/80', glow: 'shadow-[0_0_15px_rgba(168,85,247,0.5)]' },
+    { label: 'どく', value: 'poison', color: 'bg-blue-600/80', glow: 'shadow-[0_0_15px_rgba(168,85,247,0.5)]' },
     { label: 'やけど', value: 'burn', color: 'bg-orange-600/80', glow: 'shadow-[0_0_15px_rgba(249,115,22,0.5)]' },
     { label: 'ねむり', value: 'asleep', color: 'bg-blue-600/80', glow: 'shadow-[0_0_15px_rgba(59,130,246,0.5)]' },
     { label: 'マヒ', value: 'paralyzed', color: 'bg-yellow-500/80', glow: 'shadow-[0_0_15px_rgba(234,179,8,0.5)]' },
-    { label: 'こんらん', value: 'confused', color: 'bg-pink-600/80', glow: 'shadow-[0_0_15px_rgba(236,72,153,0.5)]' },
+    { label: 'こんらん', value: 'confused', color: 'bg-blue-600/80', glow: 'shadow-[0_0_15px_rgba(236,72,153,0.5)]' },
     { label: '回復', value: 'none', color: 'bg-emerald-600/80', glow: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]' },
   ]
 

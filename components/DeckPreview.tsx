@@ -47,7 +47,7 @@ export default function DeckPreview({ deckCode }: DeckPreviewProps) {
     if (loading) {
         return (
             <div className="p-2.5 text-center bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-2"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2"></div>
                 <p className="text-gray-500 text-sm">デッキ情報を読み込み中...</p>
 
             </div>

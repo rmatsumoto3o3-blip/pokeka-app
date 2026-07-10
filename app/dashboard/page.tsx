@@ -23,6 +23,7 @@ import ArchetypeWinChart from '@/components/ArchetypeWinChart'
 import DeckDistributionChart from '@/components/DeckDistributionChart'
 import FeaturedCardTrends from '@/components/FeaturedCardTrends'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import { Ico } from '@/components/Icons'
 
 export default function Dashboard() {
     const supabase = createClient()
@@ -150,7 +151,7 @@ export default function Dashboard() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-pink-50">
+            <div className="min-h-screen flex items-center justify-center bg-blue-50">
                 <div className="text-gray-600 text-xl font-medium">読み込み中...</div>
             </div>
         )
@@ -161,123 +162,59 @@ export default function Dashboard() {
     // Helper for limits
     const isDeckLimitReached = !isAdmin && deckCount >= maxDecks
 
-    const getDeckUsageColor = () => {
-        if (isAdmin) return 'text-purple-600 bg-purple-50'
-        if (deckCount >= maxDecks) return 'text-red-600 bg-red-50'
-        if (deckCount >= maxDecks - 2) return 'text-yellow-600 bg-yellow-50'
-        return 'text-green-600 bg-green-50'
-    }
+    const tabClass = (tab: string) =>
+        `shrink-0 px-3 py-3 text-[13px] font-semibold border-b-2 transition whitespace-nowrap ${activeTab === tab
+            ? 'border-blue-600 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-800'
+        }`
 
     return (
-        <div className="min-h-screen bg-pink-50">
-            <nav className="bg-white border-b-2 border-pink-200 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5">
-                    <div className="flex justify-between h-14 md:h-16">
-                        <div className="flex overflow-x-auto no-scrollbar items-center">
-                            <div className="flex-shrink-0 flex items-center">
-                                <span className="text-base md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600 mr-2 md:mr-8 whitespace-nowrap">
-                                    ポケカ戦績
-                                </span>
-                            </div>
-                            <div className="flex space-x-1 md:space-x-8 items-center whitespace-nowrap">
-                                <button
-                                    onClick={() => setActiveTab('decks')}
-                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'decks'
-                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
-                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                        }`}
-                                >
-                                    デッキ管理
-                                </button>
-                                {/* History Tab Removed */}
-                                <button
-                                    onClick={() => setActiveTab('analytics')}
-                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'analytics'
-                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
-                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                        }`}
-                                >
-                                    戦績分析
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('reference')}
-                                    className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'reference'
-                                        ? 'border-pink-500 text-gray-900 bg-pink-50 md:bg-transparent rounded-md md:rounded-none'
-                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                        }`}
-                                >
-                                    参考デッキ
-                                </button>
-                                <Link
-                                    href="/practice"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 transition ml-2 shadow-sm gap-1"
-                                >
-                                    <Image
-                                        src="/Lucario.png"
-                                        alt="Practice"
-                                        width={20}
-                                        height={20}
-                                        className="w-4 h-4 md:w-5 md:h-5 filter brightness-0 invert"
-                                    />
-                                    一人回し
-                                </Link>
-                                <Link
-                                    href="/practice/prize-trainer"
-                                    className="inline-flex items-center px-2 py-1 md:px-3 md:py-1 my-1 border border-transparent text-xs md:text-sm font-medium rounded-full text-white bg-slate-900 hover:bg-slate-800 transition ml-2 shadow-sm gap-1"
-                                >
-                                    🏆 サイド推論
-                                </Link>
-                                {isAdmin && (
-                                    <button
-                                        onClick={() => setActiveTab('articles')}
-                                        className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'articles'
-                                            ? 'border-purple-500 text-purple-900 bg-purple-50 md:bg-transparent rounded-md md:rounded-none'
-                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        記事管理
-                                    </button>
-                                )}
-                                {isAdmin && (
-                                    <button
-                                        onClick={() => setActiveTab('users')}
-                                        className={`inline-flex items-center px-2 py-1 md:px-1 md:pt-1 border-b-2 text-xs md:text-sm font-medium transition ${activeTab === 'users'
-                                            ? 'border-indigo-500 text-indigo-900 bg-indigo-50 md:bg-transparent rounded-md md:rounded-none'
-                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                                            }`}
-                                    >
-                                        ユーザー一覧
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex items-center ml-2 md:ml-4 flex-shrink-0">
-                            {/* Usage Counter (Mobile/Desktop) */}
-                            <div className={`hidden md:flex items-center px-3 py-1 rounded-full text-xs font-bold mr-4 ${getDeckUsageColor()}`}>
-                                <span className="mr-1">🔥</span>
-                                {isAdmin ? '無制限' : `デッキ: ${deckCount}/${maxDecks}`}
-                            </div>
+        <div className="min-h-screen bg-[#f4f6fa]">
+            <nav className="bg-white border-b border-[#e5e9f0] sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between h-14">
+                    <Link href="/" className="flex items-baseline gap-1.5 shrink-0">
+                        <span className="text-lg font-semibold text-gray-800">Poké<span className="text-blue-600">Lix</span></span>
+                        <span className="hidden sm:inline text-[10px] text-gray-400">マイページ</span>
+                    </Link>
 
-                            <button
-                                onClick={handleSignOut}
-                                className="text-xs md:text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap px-2 py-1 bg-gray-100 rounded md:bg-transparent"
-                            >
-                                ログアウト
-                            </button>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleSignOut}
+                            className="text-[12px] text-gray-500 hover:text-gray-800 whitespace-nowrap px-2.5 py-1.5 hover:bg-gray-50 rounded-lg transition"
+                        >
+                            ログアウト
+                        </button>
+                    </div>
+                </div>
+
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-4 overflow-x-auto no-scrollbar border-t border-[#eef1f6]">
+                    <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setActiveTab('decks')} className={tabClass('decks')}>デッキ管理</button>
+                        <button onClick={() => setActiveTab('analytics')} className={tabClass('analytics')}>戦績分析</button>
+                        <button onClick={() => setActiveTab('reference')} className={tabClass('reference')}>参考デッキ</button>
+                        {isAdmin && <button onClick={() => setActiveTab('articles')} className={tabClass('articles')}>記事管理</button>}
+                        {isAdmin && <button onClick={() => setActiveTab('users')} className={tabClass('users')}>ユーザー一覧</button>}
+                    </div>
+                    <div className="flex items-center gap-2 py-2 shrink-0">
+                        <Link
+                            href="/practice"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold rounded-full text-blue-700 bg-blue-50 hover:bg-blue-100 transition"
+                        >
+                            <Ico name="cards" className="w-3.5 h-3.5" />
+                            一人回し
+                        </Link>
+                        <Link
+                            href="/practice/prize-trainer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-bold rounded-full text-white bg-slate-900 hover:bg-slate-800 transition"
+                        >
+                            <Ico name="eye" className="w-3.5 h-3.5" />
+                            サイド推論
+                        </Link>
                     </div>
                 </div>
             </nav>
-
-            {/* Mobile Usage Counter */}
-            <div className="md:hidden bg-white border-b border-pink-100 px-4 py-2 flex justify-end">
-                <div className={`flex items-center px-3 py-1 rounded-full text-xs font-bold ${getDeckUsageColor()}`}>
-                    <span className="mr-1">🔥</span>
-                    {isAdmin ? '無制限' : `デッキ: ${deckCount}/${maxDecks}`}
-                </div>
-            </div>
 
             <main className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5 md:py-2.5">
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -287,16 +224,14 @@ export default function Dashboard() {
 
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm relative overflow-hidden">
+                                <div className="bg-white rounded-xl p-4 md:p-6 border border-[#e2e8f0] shadow-sm relative overflow-hidden">
                                     <div className="flex justify-between items-center mb-6">
                                         <h2 className="text-lg md:text-xl font-bold text-gray-900">登録済みデッキ</h2>
                                         <button
                                             onClick={() => setIsAddDeckModalOpen(true)}
-                                            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] transition-all"
+                                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 mr-2">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                            </svg>
+                                            <Ico name="plus" className="w-4 h-4 mr-1.5" />
                                             新しいデッキを登録
                                         </button>
                                     </div>
@@ -323,7 +258,7 @@ export default function Dashboard() {
                                         />
                                         {/* Modal Content */}
                                         <div className="relative w-full max-w-xl animate-in fade-in zoom-in duration-200">
-                                            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-pink-200">
+                                            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-4 border-blue-200">
                                                 <AddDeckForm
                                                     userId={userId}
                                                     onSuccess={() => {
@@ -354,9 +289,9 @@ export default function Dashboard() {
                                     isAdmin) && (
                                         <>
                                             <EnvironmentManager userEmail={userEmail} />
-                                            <div className="bg-white rounded-2xl p-6 border-2 border-orange-100 shadow-sm mt-8">
+                                            <div className="bg-white rounded-2xl p-6 border-2 border-blue-100 shadow-sm mt-8">
                                                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                                    <span className="flex items-center justify-center bg-orange-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                                    <span className="flex items-center justify-center bg-blue-100 p-1.5 rounded-lg mr-2 w-9 h-9">
                                                         <img
                                                             src="/Alakazam.png"
                                                             alt="Alakazam"
@@ -370,7 +305,7 @@ export default function Dashboard() {
                                         </>
                                     )}
 
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-200 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
                                     <ReferenceDeckList
                                         userId={userId}
@@ -379,9 +314,9 @@ export default function Dashboard() {
                                     />
                                 </div>
 
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-orange-100 shadow-sm">
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                        <span className="flex items-center justify-center bg-orange-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                        <span className="flex items-center justify-center bg-blue-100 p-1.5 rounded-lg mr-2 w-9 h-9">
                                             <img
                                                 src="/Klefki.png"
                                                 alt="Klefki"
@@ -395,9 +330,9 @@ export default function Dashboard() {
 
                                 <ArchetypeWinChart />
 
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-purple-100 shadow-sm">
+                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
-                                        <span className="flex items-center justify-center bg-purple-100 p-1.5 rounded-lg mr-2 w-9 h-9">
+                                        <span className="flex items-center justify-center bg-blue-100 p-1.5 rounded-lg mr-2 w-9 h-9">
                                             <img
                                                 src="/Alakazam.png"
                                                 alt="Alakazam"
@@ -412,13 +347,13 @@ export default function Dashboard() {
                         )}
 
                         {activeTab === 'articles' && isAdmin && (
-                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-pink-200 shadow-sm">
+                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-200 shadow-sm">
                                 <ArticleManager />
                             </div>
                         )}
                         
                         {activeTab === 'users' && isAdmin && (
-                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-indigo-200 shadow-sm">
+                            <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-200 shadow-sm">
                                 <h2 className="text-xl font-bold mb-4">ユーザー管理</h2>
                                 <UserList />
                             </div>
@@ -469,9 +404,9 @@ export default function Dashboard() {
                             </div>
 
                             {/* Mobile Discord Linking Section */}
-                            <div className="bg-white rounded-xl p-4 border-2 border-pink-100 shadow-sm space-y-3 mb-6">
-                                <h3 className="text-sm font-bold text-gray-900 border-b border-pink-50 pb-2 flex items-center gap-2">
-                                    <span className="text-pink-500">🔗</span> アカウント連携
+                            <div className="bg-white rounded-xl p-4 border-2 border-blue-100 shadow-sm space-y-3 mb-6">
+                                <h3 className="text-sm font-bold text-gray-900 border-b border-blue-50 pb-2 flex items-center gap-2">
+                                    <span className="text-blue-500">🔗</span> アカウント連携
                                 </h3>
                                 <button
                                     onClick={async () => {
@@ -479,7 +414,7 @@ export default function Dashboard() {
                                         const { error } = await supabase.auth.signInWithOAuth({
                                             provider: 'discord',
                                             options: {
-                                                redirectTo: `${window.location.origin}/auth/callback`
+                                                redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
                                             }
                                         })
                                         if (error) {
@@ -544,9 +479,9 @@ export default function Dashboard() {
                         </div>
 
                         {/* Discord Linking Section */}
-                        <div className="bg-white rounded-xl p-4 border-2 border-pink-100 shadow-sm space-y-3">
-                            <h3 className="text-sm font-bold text-gray-900 border-b border-pink-50 pb-2 flex items-center gap-2">
-                                <span className="text-pink-500">🔗</span> アカウント連携
+                        <div className="bg-white rounded-xl p-4 border-2 border-blue-100 shadow-sm space-y-3">
+                            <h3 className="text-sm font-bold text-gray-900 border-b border-blue-50 pb-2 flex items-center gap-2">
+                                <span className="text-blue-500">🔗</span> アカウント連携
                             </h3>
                             <button
                                 onClick={async () => {
@@ -554,7 +489,7 @@ export default function Dashboard() {
                                     const { error } = await supabase.auth.signInWithOAuth({
                                         provider: 'discord',
                                         options: {
-                                            redirectTo: `${window.location.origin}/auth/callback`
+                                            redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
                                         }
                                     })
                                     if (error) {

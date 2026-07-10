@@ -46,12 +46,12 @@ export default function InvitationCodeInput({ userId, onSuccess }: InvitationCod
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     placeholder="コードを入力"
-                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                     type="submit"
                     disabled={loading || !code}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-bold disabled:opacity-50 transition"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold disabled:opacity-50 transition"
                 >
                     {loading ? '確認中...' : '適用'}
                 </button>

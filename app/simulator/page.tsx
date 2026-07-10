@@ -1,17 +1,15 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import SimulatorManager from '@/components/SimulatorManager'
 import AdPlaceholder from '@/components/AdPlaceholder'
 
-export default async function SimulatorPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}) {
-    const resolvedParams = await searchParams
-    const code = typeof resolvedParams.code === 'string' ? resolvedParams.code : undefined
+export default function SimulatorPage() {
+    const searchParams = useSearchParams()
+    const codeParam = searchParams.get('code')
+    const code = codeParam ?? undefined
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -68,13 +66,13 @@ export default async function SimulatorPage({
                             <div>
                                 <h3 className="text-lg font-bold text-gray-900 mb-3">💡 活用のアドバイス</h3>
                                 <div className="space-y-4">
-                                    <div className="bg-pink-50 p-4 rounded-lg border border-pink-100">
-                                        <h4 className="font-bold text-pink-800 mb-1">ボール系統の配分調整に</h4>
-                                        <p className="text-sm text-pink-700">ネストボールやハイパーボールなど、初動でたねポケモンに触れるカードの枚数を調整する際に役立ちます。ターゲットとする確率（例：90%以上）を決めて微調整しましょう。</p>
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <h4 className="font-bold text-blue-800 mb-1">ボール系統の配分調整に</h4>
+                                        <p className="text-sm text-blue-700">ネストボールやハイパーボールなど、初動でたねポケモンに触れるカードの枚数を調整する際に役立ちます。ターゲットとする確率（例：90%以上）を決めて微調整しましょう。</p>
                                     </div>
-                                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                                        <h4 className="font-bold text-purple-800 mb-1">事故率の可視化</h4>
-                                        <p className="text-sm text-purple-700">「たね切れ」による負けや、サポートが引けずに停滞する確率は構築段階で決まっています。シミュレーションを繰り返すことで、実戦での「運負け」を「構築のミス」として改善できます。</p>
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <h4 className="font-bold text-blue-800 mb-1">事故率の可視化</h4>
+                                        <p className="text-sm text-blue-700">「たね切れ」による負けや、サポートが引けずに停滞する確率は構築段階で決まっています。シミュレーションを繰り返すことで、実戦での「運負け」を「構築のミス」として改善できます。</p>
                                     </div>
                                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                                         <h4 className="font-bold text-blue-800 mb-1">サイド落ちの恐怖を克服</h4>

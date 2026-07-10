@@ -9,9 +9,9 @@ function AuthErrorContent() {
     const errorMsg = searchParams.get('error')
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-pink-50 px-4">
-            <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border-2 border-pink-200 text-center">
-                <div className="text-pink-500 text-6xl mb-4">⚠️</div>
+        <div className="min-h-screen flex items-center justify-center bg-[#f4f6fa] px-4">
+            <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-sm border border-[#e2e8f0] text-center">
+                <div className="text-red-500 text-5xl mb-4">⚠️</div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-4">認証エラー</h1>
                 <p className="text-gray-600 mb-4">
                     ログイン処理中にエラーが発生しました。
@@ -30,7 +30,7 @@ function AuthErrorContent() {
                 )}
                 <Link
                     href="/auth"
-                    className="inline-block w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white font-semibold rounded-lg shadow-md transition-all duration-200"
+                    className="inline-block w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition"
                 >
                     ログイン画面に戻る
                 </Link>
@@ -41,7 +41,7 @@ function AuthErrorContent() {
 
 export default function AuthErrorPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-pink-50">読み込み中...</div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#f4f6fa]">読み込み中...</div>}>
             <AuthErrorContent />
         </Suspense>
     )

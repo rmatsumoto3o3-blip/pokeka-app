@@ -137,7 +137,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
 
                     <button
                         onClick={handleLoadSuggestions}
-                        className="text-sm text-purple-600 font-bold mb-4 hover:underline flex items-center"
+                        className="text-sm text-blue-600 font-bold mb-4 hover:underline flex items-center"
                     >
                         ✨ おすすめから追加 (全期間の採用率)
                     </button>
@@ -217,7 +217,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
                                                 onClick={() => !added && !loading && handleAddFromSuggestion(s.name)}
                                                 className={`
                                                     relative group bg-white rounded-lg shadow-sm border overflow-hidden cursor-pointer transition-all
-                                                    ${added ? 'opacity-50 border-green-300' : 'hover:shadow-md hover:border-purple-300 hover:-translate-y-1'}
+                                                    ${added ? 'opacity-50 border-green-300' : 'hover:shadow-md hover:border-blue-300 hover:-translate-y-1'}
                                                 `}
                                             >
                                                 {/* Rank Badge */}
@@ -240,8 +240,8 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
 
                                                     {/* Hover Overlay */}
                                                     {!added && (
-                                                        <div className="absolute inset-0 bg-purple-600/0 group-hover:bg-purple-600/10 transition-colors flex items-center justify-center">
-                                                            <div className="opacity-0 group-hover:opacity-100 bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
+                                                        <div className="absolute inset-0 bg-blue-600/0 group-hover:bg-blue-600/10 transition-colors flex items-center justify-center">
+                                                            <div className="opacity-0 group-hover:opacity-100 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all">
                                                                 追加
                                                             </div>
                                                         </div>
@@ -259,7 +259,7 @@ export default function FeaturedCardsManager({ userId }: { userId: string }) {
                                                     {/* Loading Overlay */}
                                                     {loading && (
                                                         <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                                                         </div>
                                                     )}
                                                 </div>

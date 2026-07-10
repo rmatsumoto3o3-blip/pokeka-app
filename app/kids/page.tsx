@@ -1,10 +1,12 @@
 import MathLearningTool from '@/components/MathLearningTool'
 import Link from 'next/link'
+import PublicHeader from '@/components/PublicHeader'
 
 export default function KidsPage() {
     return (
-        <main className="min-h-screen bg-gradient-to-b from-yellow-50 to-orange-100 py-12 px-4">
-            <div className="max-w-4xl mx-auto">
+        <main className="min-h-screen bg-gradient-to-b from-yellow-50 to-orange-100">
+            <PublicHeader />
+            <div className="max-w-4xl mx-auto py-12 px-4">
                 <div className="text-center mb-12">
                     <h1 className="text-4xl md:text-6xl font-black text-orange-600 mb-4 drop-shadow-sm">
                         ポケカで算数

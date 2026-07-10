@@ -9,6 +9,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import DeckDetailManager from './DeckDetailManager'
 import MatchRecordModal from './MatchRecordModal'
+import { Ico } from './Icons'
 
 interface DeckListProps {
     userId: string
@@ -270,7 +271,7 @@ export default function DeckManager({
                         {!isCreatingFolder ? (
                             <button
                                 onClick={() => setIsCreatingFolder(true)}
-                                className="text-sm bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-100 font-bold flex items-center gap-1"
+                                className="text-sm bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg border border-blue-100 hover:bg-blue-100 font-bold flex items-center gap-1"
                             >
                                 <span className="text-lg">+</span> フォルダ作成
                             </button>
@@ -281,46 +282,13 @@ export default function DeckManager({
                                     value={newFolderName}
                                     onChange={(e) => setNewFolderName(e.target.value)}
                                     placeholder="フォルダ名 (例: リザードンex)"
-                                    className="text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-300 w-48 bg-white text-gray-900"
+                                    className="text-sm px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 w-48 bg-white text-gray-900"
                                     autoFocus
                                 />
-                                <button onClick={handleCreateFolder} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700">作成</button>
+                                <button onClick={handleCreateFolder} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700">作成</button>
                                 <button onClick={() => setIsCreatingFolder(false)} className="text-xs text-gray-500 hover:text-gray-700 px-2">キャンセル</button>
                             </div>
                         )}
-                    </div>
-
-                    {/* Simulator Portal Card */}
-                    <div className="bg-orange-50/50 rounded-xl overflow-hidden border-2 border-orange-200 border-dashed hover:border-orange-400 transition shadow-sm hover:shadow-md flex flex-col w-full max-w-sm">
-                        <div className="p-2.5 flex-1 flex flex-col">
-                            <h3 className="text-xl font-bold text-orange-900 mb-2 flex items-center gap-2">
-                                <span className="flex items-center justify-center w-6 h-6 mr-1">
-                                    <Image
-                                        src="/king.png"
-                                        alt="Simulate"
-                                        width={24}
-                                        height={24}
-                                        className="w-5 h-5"
-                                    />
-                                </span>
-                                確率シミュレーター
-                            </h3>
-                            <p className="text-sm text-orange-800 mb-4 opacity-80">
-                                初手率・サイド落ち率などを計算して、デッキの安定性を分析します。
-                            </p>
-
-                            <div className="flex-1 flex flex-col justify-end">
-                                <Link
-                                    href="/simulator"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full py-2.5 bg-gradient-to-r from-orange-400 to-red-500 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:scale-[1.02] text-center font-bold flex items-center justify-center gap-2"
-                                >
-                                    <span>🚀</span>
-                                    シミュレーターを開く
-                                </Link>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -328,9 +296,9 @@ export default function DeckManager({
                 {archetypes.length > 0 && (
                     <div className="space-y-4">
                         <h3 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-                            <span>📁</span> デッキフォルダ
+                            <Ico name="folder" className="w-4 h-4 text-gray-400" /> デッキフォルダ
                         </h3>
-                        <div className="grid grid-cols-1 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {archetypes.map(arch => {
                                 const archDecks = getArchetypeDecks(arch.id)
                                 const isExpanded = expandedArchetypeId === arch.id
@@ -341,41 +309,39 @@ export default function DeckManager({
                                 const winRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0
 
                                 return (
-                                    <div key={arch.id} className="bg-white rounded-xl border-2 border-indigo-100 shadow-sm overflow-hidden">
+                                    <div key={arch.id} className={`bg-white rounded-xl border border-[#e2e8f0] overflow-hidden ${isExpanded ? 'sm:col-span-2 lg:col-span-3' : ''}`}>
                                         {/* Folder Header */}
                                         <div
-                                            className="p-2.5 bg-indigo-50/50 flex justify-between items-center cursor-pointer hover:bg-indigo-50 transition"
+                                            className="p-3.5 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition"
                                             onClick={() => setExpandedArchetypeId(isExpanded ? null : arch.id)}
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className="bg-indigo-100 p-2.5 rounded-lg text-2xl">🔥</div>
-                                                <div>
-                                                    <h4 className="text-xl font-bold text-gray-900">{arch.name}</h4>
-                                                    <div className="text-xs text-gray-500 flex gap-3 mt-1">
-                                                        <span>デッキ数: {archDecks.length}</span>
-                                                        <span className="text-gray-300">|</span>
-                                                        <span>総試合数: {totalMatches}</span>
-                                                        <span className="text-gray-300">|</span>
-                                                        <span className={`${winRate >= 50 ? 'text-green-600' : 'text-red-500'} font-bold`}>
-                                                            勝率: {winRate.toFixed(1)}%
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+                                                    <Ico name="folder" className="w-4.5 h-4.5 text-blue-600" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="text-sm font-bold text-gray-900 truncate">{arch.name}</h4>
+                                                    <div className="text-[11px] text-gray-500 flex gap-1.5 mt-0.5 flex-wrap">
+                                                        <span>{archDecks.length}デッキ</span>
+                                                        <span className="text-gray-300">·</span>
+                                                        <span>{totalMatches}試合</span>
+                                                        <span className="text-gray-300">·</span>
+                                                        <span className={`${winRate >= 50 ? 'text-emerald-600' : 'text-red-500'} font-bold`}>
+                                                            {winRate.toFixed(1)}%
                                                         </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className={`transform transition duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
-                                                    ▼
-                                                </div>
-                                            </div>
+                                            <Ico name="chevronDown" className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
                                         </div>
 
                                         {/* Folder Content (Expanded) */}
                                         {isExpanded && (
-                                            <div className="p-2.5 bg-indigo-50/20 border-t border-indigo-100">
+                                            <div className="p-3.5 bg-gray-50/60 border-t border-[#eef1f6]">
                                                 <div className="flex justify-between mb-4 items-start">
                                                     {/* Add Variant Form or Button */}
                                                     {addingVariationToArchId === arch.id ? (
-                                                        <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-indigo-200 shadow-sm w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
+                                                        <div className="flex flex-col gap-2 bg-white p-2.5 rounded-lg border border-blue-200 shadow-sm w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
                                                             <div className="text-xs font-bold text-gray-500">新規バリエーション追加</div>
                                                             <div className="flex gap-2">
                                                                 <input
@@ -383,7 +349,7 @@ export default function DeckManager({
                                                                     placeholder="デッキコード"
                                                                     value={newDeckCode}
                                                                     onChange={(e) => setNewDeckCode(e.target.value)}
-                                                                    className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:border-indigo-500 outline-none bg-white text-gray-900"
+                                                                    className="flex-1 text-xs px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none bg-white text-gray-900"
                                                                     autoFocus
                                                                 />
                                                                 <input
@@ -391,7 +357,7 @@ export default function DeckManager({
                                                                     placeholder="ver"
                                                                     value={newVersionLabel}
                                                                     onChange={(e) => setNewVersionLabel(e.target.value)}
-                                                                    className="w-16 text-xs px-2 py-1 border border-gray-300 rounded focus:border-indigo-500 outline-none bg-white text-gray-900"
+                                                                    className="w-16 text-xs px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none bg-white text-gray-900"
                                                                 />
                                                             </div>
                                                             <div className="flex gap-2 justify-end">
@@ -404,7 +370,7 @@ export default function DeckManager({
                                                                 <button
                                                                     onClick={() => handleAddVariant(arch.id)}
                                                                     disabled={!newDeckCode}
-                                                                    className="text-xs bg-indigo-600 text-white px-3 py-1 rounded font-bold hover:bg-indigo-700 disabled:opacity-50"
+                                                                    className="text-xs bg-blue-600 text-white px-3 py-1 rounded font-bold hover:bg-blue-700 disabled:opacity-50"
                                                                 >
                                                                     追加
                                                                 </button>
@@ -418,7 +384,7 @@ export default function DeckManager({
                                                                 setNewDeckCode('')
                                                                 setNewVersionLabel(`v${archDecks.length + 1}.0`)
                                                             }}
-                                                            className="text-xs bg-white text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-indigo-50 font-bold flex items-center gap-1"
+                                                            className="text-xs bg-white text-blue-600 border border-blue-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-blue-50 font-bold flex items-center gap-1"
                                                         >
                                                             <span>+</span> バリエーション追加
                                                         </button>
@@ -517,38 +483,35 @@ function DeckCard({
     onOpenMock
 }: any) {
     return (
-        <div
-            className="bg-white rounded-xl overflow-hidden border-2 border-pink-100 hover:border-pink-400 transition shadow-sm hover:shadow-md"
-        >
+        <div className="bg-white rounded-xl overflow-hidden border border-[#e2e8f0] hover:border-blue-300 transition shadow-sm hover:shadow-md">
             {deck.image_url && (
                 <div className="relative">
                     <img
                         src={deck.image_url}
                         alt={deck.deck_name}
-                        className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition"
+                        className="w-full h-40 object-cover cursor-pointer hover:opacity-90 transition"
                         onClick={() => onImageClick(deck.image_url)}
                     />
-                    {/* Custom Badge Overlay */}
                     {deck.custom_cards && (
-                        <div className="absolute top-2 right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg border border-white/20">
+                        <div className="absolute top-2 right-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
                             CUSTOM
                         </div>
                     )}
                 </div>
             )}
 
-            <div className="p-2.5">
-                <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-bold text-gray-900 truncate" title={deck.deck_name}>{deck.deck_name}</h3>
-                    <div className="flex -space-x-2">
+            <div className="p-3.5">
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-base font-bold text-gray-900 truncate flex-1 min-w-0" title={deck.deck_name}>{deck.deck_name}</h3>
+                    <div className="flex -space-x-1.5 shrink-0">
                         {deck.icon_1 && (
-                            <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={24} height={24} className="object-contain" />
+                            <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={18} height={18} className="object-contain" />
                             </div>
                         )}
                         {deck.icon_2 && (
-                            <div className="w-8 h-8 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={24} height={24} className="object-contain" />
+                            <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
+                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={18} height={18} className="object-contain" />
                             </div>
                         )}
                     </div>
@@ -556,41 +519,34 @@ function DeckCard({
 
                 {/* Deck Code or Version/Memo */}
                 {deck.custom_cards ? (
-                    <div className="text-sm mb-4 font-mono flex items-center gap-2">
-                        <span className="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-bold">
+                    <div className="text-xs mb-3 font-mono flex items-center gap-1.5">
+                        <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold shrink-0">
                             {deck.version_label || '派生'}
                         </span>
-                        <span className="text-gray-600 truncate" title={deck.memo || 'Custom Edit'}>
+                        <span className="text-gray-500 truncate" title={deck.memo || 'Custom Edit'}>
                             {deck.memo || '編集済みデッキ'}
                         </span>
                     </div>
                 ) : (
-                    <p className="text-sm text-gray-500 mb-4 font-mono">{deck.deck_code}</p>
+                    <p className="text-xs text-gray-400 mb-3 font-mono truncate">{deck.deck_code}</p>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="bg-gray-50 rounded-lg p-2 text-center text-gray-700">
-                        <div className="text-2xl font-bold text-gray-900">{deck.total_matches}</div>
-                        <div className="text-xs text-gray-500">試合数</div>
+                <div className="flex items-center justify-between mb-3.5 px-1">
+                    <div className="text-xs text-gray-400">
+                        <span className="text-emerald-600 font-bold">{deck.wins}勝</span>
+                        <span className="mx-1">{deck.losses}敗</span>
+                        <span>{deck.draws}分</span>
+                        <span className="ml-1.5">（{deck.total_matches}試合）</span>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-2 text-center">
-                        <div className="text-2xl font-bold text-green-600">
-                            {deck.win_rate.toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-gray-500">勝率</div>
+                    <div className={`text-lg font-bold ${deck.win_rate >= 50 ? 'text-emerald-600' : 'text-gray-700'}`}>
+                        {deck.win_rate.toFixed(1)}%
                     </div>
                 </div>
 
-                <div className="flex gap-2 text-sm mb-4 font-medium">
-                    <span className="text-green-600">{deck.wins}勝</span>
-                    <span className="text-red-600">{deck.losses}敗</span>
-                    <span className="text-gray-600">{deck.draws}分</span>
-                </div>
-
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                     <button
                         onClick={() => onSelectDeck(selectedDeck === deck.id ? null : deck.id)}
-                        className="flex-1 py-1.5 px-3 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition shadow-sm text-sm"
+                        className="flex-1 py-1.5 px-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition text-xs font-bold"
                     >
                         {selectedDeck === deck.id ? '閉じる' : '記録'}
                     </button>
@@ -598,23 +554,23 @@ function DeckCard({
                         href={`/practice?code1=${deck.deck_code}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 py-1.5 px-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition shadow-sm text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
+                        className="flex-1 py-1.5 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-center text-xs font-bold flex items-center justify-center whitespace-nowrap"
                     >
                         一人回し
                     </Link>
                     <button
                         onClick={() => onDelete(deck.id)}
-                        className="py-1.5 px-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg border border-red-200 transition text-sm"
+                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg border border-red-100 transition"
+                        aria-label="削除"
                     >
-                        削除
+                        <Ico name="trash" className="w-3.5 h-3.5" />
                     </button>
                 </div>
-                {/* Mock Open Button */}
                 <button
                     onClick={onOpenMock}
-                    className="w-full mt-2 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-200 border border-gray-200 flex items-center justify-center gap-1"
+                    className="w-full mt-1.5 py-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1"
                 >
-                    <span>✨</span> 詳細・編集 (Mock)
+                    <Ico name="sparkle" className="w-3 h-3" /> 詳細・編集 (Mock)
                 </button>
             </div>
         </div>

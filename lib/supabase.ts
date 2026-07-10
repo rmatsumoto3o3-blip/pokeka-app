@@ -25,12 +25,9 @@ export interface UserProfile {
 
 export interface DeckArchetype {
   id: string
-  user_id: string
   name: string
   display_order: number | null
   cover_image_url: string | null
-  icon_1: string | null
-  icon_2: string | null
   created_at: string
 }
 
@@ -67,16 +64,18 @@ export interface Match {
   created_at: string
 }
 
+// deck_records テーブルの実カラムに対応（deck_name/image_url/deck_url/event_type は存在しない）
 export interface ReferenceDeck {
   id: string
-  deck_name: string
   deck_code: string | null
-  deck_url: string | null
-  image_url: string | null
-  event_type: 'City League' | 'Championship' | 'Worldwide' | 'Gym Battle' | null
   event_rank: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null
+  event_date: string | null
+  event_location: string | null
   archetype_id: string | null
   created_at: string
+  // 互換用（実データには存在しないため常に undefined）
+  deck_name?: string
+  image_url?: string | null
 }
 
 export interface AnalyzedDeck {

@@ -172,7 +172,7 @@ export default function ArticleManager() {
                 {!isEditing && (
                     <button
                         onClick={() => setIsEditing(true)}
-                        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                     >
                         新規記事作成
                     </button>
@@ -189,7 +189,7 @@ export default function ArticleManager() {
                                 type="text"
                                 value={title}
                                 onChange={handleTitleChange}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-gray-900 bg-white"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                                 required
                             />
                         </div>
@@ -200,7 +200,7 @@ export default function ArticleManager() {
                                 type="text"
                                 value={slug}
                                 onChange={(e) => setSlug(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 font-mono text-sm text-gray-900 bg-white"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 font-mono text-sm text-gray-900 bg-white"
                                 placeholder="example-article-slug"
                                 required
                             />
@@ -236,7 +236,7 @@ export default function ArticleManager() {
                                             setThumbnailUrl('') // Clear URL if file is selected
                                         }
                                     }}
-                                    className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-sm"
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-sm"
                                 />
 
                                 <div className="text-center text-sm text-gray-500">または</div>
@@ -249,7 +249,7 @@ export default function ArticleManager() {
                                         setThumbnailUrl(e.target.value)
                                         setThumbnailFile(null) // Clear file if URL is entered
                                     }}
-                                    className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 text-sm"
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-sm"
                                     placeholder="https://example.com/image.jpg"
                                     disabled={!!thumbnailFile}
                                 />
@@ -261,7 +261,7 @@ export default function ArticleManager() {
                             <textarea
                                 value={excerpt}
                                 onChange={(e) => setExcerpt(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-20 text-gray-900 bg-white"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 h-20 text-gray-900 bg-white"
                             />
                         </div>
 
@@ -272,7 +272,7 @@ export default function ArticleManager() {
                             <textarea
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500 h-96 font-mono text-sm text-gray-900 bg-white"
+                                className="w-full p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 h-96 font-mono text-sm text-gray-900 bg-white"
                                 required
                             />
                         </div>
@@ -324,29 +324,29 @@ export default function ArticleManager() {
 
 
                         {/* Link Inserter Tool */}
-                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                            <label className="block text-sm font-bold text-purple-800 mb-2">
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <label className="block text-sm font-bold text-blue-800 mb-2">
                                 🔗 本文挿入用リンク作成
                             </label>
                             <div className="flex gap-2 items-end">
                                 <div className="flex-1">
-                                    <label className="block text-xs text-purple-600 mb-1">表示テキスト</label>
+                                    <label className="block text-xs text-blue-600 mb-1">表示テキスト</label>
                                     <input
                                         type="text"
                                         value={linkText}
                                         onChange={(e) => setLinkText(e.target.value)}
                                         placeholder="ここをクリック"
-                                        className="w-full text-sm p-2 border border-purple-200 rounded text-gray-900"
+                                        className="w-full text-sm p-2 border border-blue-200 rounded text-gray-900"
                                     />
                                 </div>
                                 <div className="flex-[2]">
-                                    <label className="block text-xs text-purple-600 mb-1">URL</label>
+                                    <label className="block text-xs text-blue-600 mb-1">URL</label>
                                     <input
                                         type="text"
                                         value={linkUrl}
                                         onChange={(e) => setLinkUrl(e.target.value)}
                                         placeholder="https://example.com"
-                                        className="w-full text-sm p-2 border border-purple-200 rounded text-gray-900"
+                                        className="w-full text-sm p-2 border border-blue-200 rounded text-gray-900"
                                     />
                                 </div>
                                 <button
@@ -359,7 +359,7 @@ export default function ArticleManager() {
                                         setLinkUrl('')
                                         alert('リンクタグを末尾に追加しました！')
                                     }}
-                                    className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-purple-700 h-[38px]"
+                                    className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 h-[38px]"
                                 >
                                     追加
                                 </button>
@@ -372,7 +372,7 @@ export default function ArticleManager() {
                                 id="isPublished"
                                 checked={isPublished}
                                 onChange={(e) => setIsPublished(e.target.checked)}
-                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                             <label htmlFor="isPublished" className="ml-2 block text-sm text-gray-900">
                                 公開する
@@ -389,7 +389,7 @@ export default function ArticleManager() {
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-bold"
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold"
                             >
                                 保存する
                             </button>
@@ -429,7 +429,7 @@ export default function ArticleManager() {
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => handleEdit(article)}
-                                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                                            className="text-blue-600 hover:text-blue-900 mr-4"
                                         >
                                             編集
                                         </button>

@@ -13,7 +13,7 @@ export default function AboutPage() {
 
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
                 <div className="text-center mb-16">
-                    <h1 className="text-4xl md:text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-purple-600">
+                    <h1 className="text-4xl md:text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-600">
                         About PokéLix
                     </h1>
                     <p className="text-xl text-gray-600 font-medium">「データ」で、ポケカはもっと楽しくなる。</p>
@@ -21,7 +21,7 @@ export default function AboutPage() {
 
                 <div className="prose prose-pink max-w-none text-gray-700 leading-loose">
                     <section className="mb-12">
-                        <h2 className="text-2xl font-bold mb-6 text-gray-900 border-l-4 border-pink-500 pl-4">PokéLix（ポケリス）とは？</h2>
+                        <h2 className="text-2xl font-bold mb-6 text-gray-900 border-l-4 border-blue-500 pl-4">PokéLix（ポケリス）とは？</h2>
                         <p className="mb-6">
                             PokéLix（ポケリス）は、ポケモンカード（ポケカ）プレイヤーのために開発された、次世代の戦績管理・分析プラットフォームです。
                             単に勝敗を記録するだけでなく、膨大な対戦データから「どのデッキが今、本当に強いのか」「自分のデッキにはどのカードが必要なのか」を可視化し、プレイヤーの直感を「確信」へと変えることを目的としています。
@@ -29,7 +29,7 @@ export default function AboutPage() {
                     </section>
 
                     <section className="mb-12">
-                        <h2 className="text-2xl font-bold mb-6 text-gray-900 border-l-4 border-purple-500 pl-4">開発に至った背景</h2>
+                        <h2 className="text-2xl font-bold mb-6 text-gray-900 border-l-4 border-blue-500 pl-4">開発に至った背景</h2>
                         <p className="mb-6">
                             現代のポケモンカードシーンは、凄まじいスピードで環境（メタクイック）が変化します。
                             SNSやYouTubeには毎日多くの「優勝レシピ」が流れてきますが、それらを目にするだけでは「なぜそのカードが入っているのか」「自分の地域やジムバトルで本当に勝てるのか」を判断するのは容易ではありません。
@@ -41,25 +41,25 @@ export default function AboutPage() {
                         </p>
                     </section>
 
-                    <section className="mb-12 bg-pink-50 p-8 rounded-2xl border border-pink-100">
+                    <section className="mb-12 bg-blue-50 p-8 rounded-2xl border border-blue-100">
                         <h2 className="text-2xl font-bold mb-6 text-gray-900">PokéLixが提供する価値</h2>
                         <ul className="space-y-4 list-none pl-0">
                             <li className="flex items-start gap-3">
-                                <span className="text-pink-500 text-xl">✔</span>
+                                <span className="text-blue-500 text-xl">✔</span>
                                 <div>
                                     <strong className="block text-gray-900">圧倒的な分析スピード</strong>
                                     デッキコードを入力するだけで、採用カードの傾向を瞬時にデータ化。
                                 </div>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="text-pink-500 text-xl">✔</span>
+                                <span className="text-blue-500 text-xl">✔</span>
                                 <div>
                                     <strong className="block text-gray-900">「一人回し」をデジタルで拡張</strong>
                                     物理的なカードを広げる必要はありません。ブラウザ一つで、いつでもどこでも理想の動きをシミュレーションできます。
                                 </div>
                             </li>
                             <li className="flex items-start gap-3">
-                                <span className="text-pink-500 text-xl">✔</span>
+                                <span className="text-blue-500 text-xl">✔</span>
                                 <div>
                                     <strong className="block text-gray-900">プレイヤー同士の知見共有</strong>
                                     ユーザーの皆様と共に、常に最新のカードロジックや統計手法を取り入れ、進化し続けています。
@@ -88,7 +88,7 @@ export default function AboutPage() {
                                     <tr>
                                         <th className="text-left py-3 text-gray-500 font-medium w-32">連絡先</th>
                                         <td className="py-3 text-gray-700">
-                                            <a href="/contact" className="text-pink-600 hover:underline">お問い合わせフォーム</a> 参照
+                                            <a href="/contact" className="text-blue-600 hover:underline">お問い合わせフォーム</a> 参照
                                         </td>
                                     </tr>
                                 </tbody>

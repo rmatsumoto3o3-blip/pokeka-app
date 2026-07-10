@@ -31,10 +31,10 @@ export default function SideArticleList() {
     if (articles.length === 0) return null
 
     return (
-        <div className="bg-white rounded-xl border border-pink-100 shadow-sm overflow-hidden">
-            <div className="p-2.5 border-b border-gray-100 bg-pink-50/50 flex justify-between items-center">
+        <div className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
+            <div className="p-2.5 border-b border-gray-100 bg-blue-50/50 flex justify-between items-center">
                 <h3 className="text-sm font-bold text-gray-900">📝 新着記事</h3>
-                <Link href="/articles" className="text-xs text-pink-600 hover:underline">
+                <Link href="/articles" className="text-xs text-blue-600 hover:underline">
                     一覧へ
                 </Link>
             </div>
@@ -62,7 +62,7 @@ export default function SideArticleList() {
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h4 className="text-xs font-bold text-gray-900 line-clamp-2 group-hover:text-pink-600 mb-1 leading-snug">
+                                <h4 className="text-xs font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 mb-1 leading-snug">
                                     {article.title}
                                 </h4>
                                 <p className="text-[10px] text-gray-500">

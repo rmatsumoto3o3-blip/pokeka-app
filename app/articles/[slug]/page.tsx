@@ -56,7 +56,7 @@ export default async function ArticleDetailPage({ params }: Props) {
                     {/* Header */}
                     <div className="mb-8 border-b border-gray-200 pb-8 text-center">
                         <div className="flex justify-center items-center gap-2 mb-4">
-                            <span className="text-sm font-semibold text-pink-600 bg-pink-50 px-3 py-1 rounded-full">
+                            <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                                 コラム
                             </span>
                             <span className="text-sm text-gray-500">
@@ -92,7 +92,7 @@ export default async function ArticleDetailPage({ params }: Props) {
                 <div className="border-t border-gray-200 mt-12 pt-8 flex justify-center">
                     <Link
                         href="/articles"
-                        className="flex items-center text-pink-600 hover:text-pink-700 font-bold transition"
+                        className="flex items-center text-blue-600 hover:text-blue-700 font-bold transition"
                     >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />

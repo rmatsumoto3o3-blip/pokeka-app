@@ -163,7 +163,7 @@ export default function FeaturedCardTrends() {
             </div>
 
             {/* Master: Card Grid */}
-            <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3 mb-6">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-1.5 mb-6">
                 {cards.map((card) => {
                     const isSelected = selectedCardId === card.id
                     return (
@@ -177,7 +177,7 @@ export default function FeaturedCardTrends() {
                         >
                             {/* Adoption Rate Badge */}
                             <div className={`
-                                absolute top-1 right-1 z-10 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm
+                                absolute top-0.5 right-0.5 z-10 text-[9px] font-bold px-1 py-0.5 rounded shadow-sm
                                 ${isSelected ? 'bg-blue-600 text-white' : 'bg-gray-800/80 text-white'}
                             `}>
                                 {card.current_adoption_rate.toFixed(1)}%
@@ -199,7 +199,7 @@ export default function FeaturedCardTrends() {
 
                             {/* Name Footer (Mobile Friendly) */}
                             <div className={`
-                                p-1.5 text-center text-xs font-bold truncate transition-colors
+                                p-1 text-center text-[10px] font-bold truncate transition-colors
                                 ${isSelected ? 'bg-blue-50 text-blue-700' : 'bg-white text-gray-700'}
                             `}>
                                 {card.card_name}
