@@ -61,6 +61,7 @@ export interface MenuBuilderParams {
     useKangaskhanEX: (source: 'battle' | 'bench', index: number) => void
     useGenesectEX: () => void
     useArchaludonEX: (handIndex?: number) => void
+    useBlazikenEX: () => void
     useLunaCycle: (source: 'battle' | 'bench', index: number) => void
     useNPointUp: (handIndex: number) => void
     useCyano: (handIndex: number) => void
@@ -125,6 +126,7 @@ export function useMenuBuilder(params: MenuBuilderParams) {
         useKangaskhanEX,
         useGenesectEX,
         useArchaludonEX,
+        useBlazikenEX,
         useLunaCycle,
         useNPointUp,
         useCyano,
@@ -710,6 +712,17 @@ export function useMenuBuilder(params: MenuBuilderParams) {
                     closeMenu()
                 },
                 color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'バシャーモex' && (source === 'battle' || source === 'bench')) {
+            actions.push({
+                label: '特性: たぎるとうし',
+                action: () => {
+                    useBlazikenEX()
+                    closeMenu()
+                },
+                color: 'bg-red-50 text-red-700 hover:bg-red-100'
             })
         }
 

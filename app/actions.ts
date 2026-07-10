@@ -552,7 +552,7 @@ export async function getAllReferenceDecksAction() {
             .from('deck_records')
             .select('id, deck_code, archetype_id, event_rank, event_date, event_location, created_at')
             .order('created_at', { ascending: false })
-            .limit(1000)
+            .limit(50)
 
         if (error) throw error
         return { success: true, data: data || [] }

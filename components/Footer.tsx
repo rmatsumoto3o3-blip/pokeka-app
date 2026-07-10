@@ -6,7 +6,7 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="text-gray-600 text-[10px] md:text-sm font-medium">
-                        © 株式会社3O3 / Rii
+                        © Rii
                         <p className="mt-1 text-[10px] opacity-60 leading-tight">
                             当サイトはファン有志による非公式サイトであり、株式会社ポケモン様、任天堂株式会社様とは一切関係ありません。
                         </p>

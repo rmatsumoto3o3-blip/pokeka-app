@@ -18,6 +18,8 @@ export interface DeckPracticeProps {
     mobile?: boolean
     isOpponent?: boolean
     isActive?: boolean
+    onTurnEnd?: () => void
+    onKnockOut?: (defender: 'player1' | 'player2', prizeCount: number, fieldEmpty: boolean) => void
 }
 
 export interface DeckPracticeRef {
@@ -27,6 +29,28 @@ export interface DeckPracticeRef {
     receiveEffect: (effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'apply_damage' | 'special_red_card' | 'xerosic', amount?: number, targetType?: 'battle' | 'bench', targetIndex?: number) => void
     startSelection: (config: { title: string; onSelect: (type: 'battle' | 'bench', index: number) => void }) => void
     getPrizeCount: () => number
+    getHand: () => Card[]
+    getBench: () => (CardStack | null)[]
+    getBattleField: () => CardStack | null
+    getTrash: () => Card[]
+    getDeck: () => Card[]
+    playToBattleField: (handIndex: number) => void
+    playToBench: (handIndex: number, targetIndex?: number) => void
+    trashFromHand: (handIndex: number) => void
+    takePrize: (index?: number) => void
+    takePrizes: (count: number) => void
+    shuffleDeck: () => void
+    drawCards: (count: number) => void
+    isSupporterUsed: () => boolean
+    isEnergyAttached: () => boolean
+    setSupporterUsed: (used: boolean) => void
+    setEnergyAttached: (attached: boolean) => void
+    mulligan: () => void
+    isMulliganing: () => boolean
+    setupPrizes: () => void
+    endTurn: () => void
+    nextTurn: () => void
+    isActivePlayer: () => boolean
 }
 
 // ============================================================
@@ -294,3 +318,10 @@ export interface AkamatsuState {
     selectedIndices: number[]
     forHandIndex: number | null
 }
+
+export interface BlazikenEXState {
+    step: 'select_energy' | 'select_target'
+    candidates: Card[]
+    selectedEnergyIndex: number | null
+}
+

@@ -23,6 +23,7 @@ import {
     type EnergyRetrievalState,
     type GenesectState,
     type ArchaludonState,
+    type BlazikenEXState,
     type NoctowlState,
     type MegaLucarioEXAttackState,
     type PreciousCarrierState,
@@ -97,6 +98,8 @@ export interface CardEffectHandlerParams {
     setGenesectState: Dispatch<SetStateAction<GenesectState | null>>
     archaludonState: ArchaludonState | null
     setArchaludonState: Dispatch<SetStateAction<ArchaludonState | null>>
+    blazikenEXState: BlazikenEXState | null
+    setBlazikenEXState: Dispatch<SetStateAction<BlazikenEXState | null>>
     noctowlState: NoctowlState | null
     setNoctowlState: Dispatch<SetStateAction<NoctowlState | null>>
     megaLucarioEXAttackState: MegaLucarioEXAttackState | null
@@ -191,6 +194,7 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         energyRetrievalState, setEnergyRetrievalState,
         genesectState, setGenesectState,
         archaludonState, setArchaludonState,
+        blazikenEXState, setBlazikenEXState,
         noctowlState, setNoctowlState,
         megaLucarioEXAttackState, setMegaLucarioEXAttackState,
         preciousCarrierState, setPreciousCarrierState,
@@ -1650,6 +1654,78 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         setArchaludonState(null)
     }
 
+    // --- Blaziken ex (たぎるとうし) Logic ---
+    const useBlazikenEX = () => {
+        // Find Basic Energies in trash
+        const basicEnergies = trash.filter(card => isEnergy(card) && !card.subtypes?.includes('Special'))
+        if (basicEnergies.length === 0) {
+            alert("トラッシュに基本エネルギーがありません")
+            return
+        }
+
+        setBlazikenEXState({
+            step: 'select_energy',
+            candidates: [...trash],
+            selectedEnergyIndex: null
+        })
+    }
+
+    const handleBlazikenEXSelectEnergy = (index: number) => {
+        if (!blazikenEXState) return
+        const card = trash[index]
+        if (!isEnergy(card) || card.subtypes?.includes('Special')) {
+            alert("基本エネルギーを選択してください")
+            return
+        }
+        setBlazikenEXState(prev => {
+            if (!prev) return null
+            return {
+                ...prev,
+                selectedEnergyIndex: prev.selectedEnergyIndex === index ? null : index
+            }
+        })
+    }
+
+    const handleBlazikenEXConfirmEnergy = () => {
+        if (!blazikenEXState || blazikenEXState.selectedEnergyIndex === null) return
+        setBlazikenEXState({ ...blazikenEXState, step: 'select_target' })
+    }
+
+    const handleBlazikenEXTargetSelect = (type: 'battle' | 'bench', index: number) => {
+        if (!blazikenEXState || blazikenEXState.selectedEnergyIndex === null) return
+        const energyCard = trash[blazikenEXState.selectedEnergyIndex]
+
+        if (type === 'battle') {
+            setBattleField(prev => {
+                if (!prev) return prev
+                return {
+                    ...prev,
+                    cards: [...prev.cards, energyCard],
+                    energyCount: prev.energyCount + 1
+                }
+            })
+        } else {
+            setBench(prev => {
+                const nextBench = [...prev]
+                const stack = nextBench[index]
+                if (stack) {
+                    nextBench[index] = {
+                        ...stack,
+                        cards: [...stack.cards, energyCard],
+                        energyCount: stack.energyCount + 1
+                    }
+                }
+                return nextBench
+            })
+        }
+
+        // Remove from trash
+        setTrash(prev => prev.filter((_, idx) => idx !== blazikenEXState.selectedEnergyIndex))
+        showToast(`たぎるとうし: ${energyCard.name}をポケモンにつけました`)
+        setBlazikenEXState(null)
+    }
+
+
     const useNoctowl = (handIndex: number) => {
         const card = hand[handIndex]
         if (!card) return
@@ -2730,6 +2806,10 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         useArchaludonEX,
         handleArchaludonEnergySelect,
         handleArchaludonTargetSelect,
+        useBlazikenEX,
+        handleBlazikenEXSelectEnergy,
+        handleBlazikenEXConfirmEnergy,
+        handleBlazikenEXTargetSelect,
         useNoctowl,
         handleNoctowlSelect,
         handleNoctowlConfirm,

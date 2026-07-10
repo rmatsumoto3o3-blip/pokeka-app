@@ -66,13 +66,14 @@ import {
     type BrocksScoutState,
     type RagingBoltState,
     type AkamatsuState,
+    type BlazikenEXState,
 } from './practice/types'
 
 export type { DeckPracticeRef }
 
-const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, isActive = true, onEffectTrigger, onAttackTrigger }, ref) => {
+const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onReset, playerName = "プレイヤー", compact = false, stadium: externalStadium, onStadiumChange, idPrefix = "", mobile = false, isOpponent = false, isActive = true, onTurnEnd, onEffectTrigger, onAttackTrigger, onKnockOut }, ref) => {
     const [hand, setHand] = useState<Card[]>([])
-    const [remaining, setRemaining] = useState<Card[]>(deck)
+    const [remaining, setRemaining] = useState<Card[]>([])
     const [trash, setTrash] = useState<Card[]>([])
     const [isBackfilling, setIsBackfilling] = useState(false)
     const [backfillCount, setBackfillCount] = useState<number | null>(null)
@@ -131,6 +132,50 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setTimeout(() => setToast(null), 3000)
     }
 
+
+    const getMainPokemonFromStack = (stack: CardStack | null): Card | null => {
+        if (!stack) return null
+        return [...stack.cards].reverse().find(isPokemon) || null
+    }
+
+    const getStackHp = (stack: CardStack | null): number | null => {
+        const pokemon = getMainPokemonFromStack(stack)
+        return typeof pokemon?.hp === 'number' && pokemon.hp > 0 ? pokemon.hp : null
+    }
+
+    const getPrizeCountForStack = (stack: CardStack): number => {
+        const pokemon = getMainPokemonFromStack(stack)
+        if (!pokemon) return 1
+        return isRuleBox(pokemon) ? 2 : 1
+    }
+
+    const resolveKnockOut = (targetType: 'battle' | 'bench', targetIndex: number, knockedStack: CardStack) => {
+        const prizeCount = getPrizeCountForStack(knockedStack)
+        const owner = idPrefix === 'player2' ? 'player2' : 'player1'
+
+        setTrash(prev => [...prev, ...knockedStack.cards])
+
+        if (targetType === 'battle') {
+            const promoteIndex = bench.findIndex(Boolean)
+            const promoted = promoteIndex >= 0 ? bench[promoteIndex] : null
+            const nextBench = [...bench]
+            if (promoteIndex >= 0) nextBench[promoteIndex] = null
+            setBattleField(promoted)
+            setBench(nextBench)
+            const fieldEmpty = !promoted && !nextBench.some(Boolean)
+            showToast(`${playerName}のバトルポケモンがきぜつしました`)
+            onKnockOut?.(owner, prizeCount, fieldEmpty)
+            return
+        }
+
+        const nextBench = [...bench]
+        nextBench[targetIndex] = null
+        setBench(nextBench)
+        const fieldEmpty = !battleField && !nextBench.some(Boolean)
+        showToast(`${playerName}のベンチポケモンがきぜつしました`)
+        onKnockOut?.(owner, prizeCount, fieldEmpty)
+    }
+
     const [peekDeckSearch, setPeekDeckSearch] = useState(false)
     const [damageSelector, setDamageSelector] = useState<{
         isOpen: boolean
@@ -179,6 +224,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     // Nのポイントアップ State
     const [nPointUpState, setNPointUpState] = useState<NPointUpState | null>(null)
 
+    // バシャーモex State
+    const [blazikenEXState, setBlazikenEXState] = useState<BlazikenEXState | null>(null)
+
     // シアノ State
     const [cyanoState, setCyanoState] = useState<CyanoState | null>(null)
 
@@ -202,6 +250,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // ルナトーン State
     const [lunacycleUsedThisTurn, setLunacycleUsedThisTurn] = useState(false)
+    const [supporterUsedThisTurn, setSupporterUsedThisTurn] = useState(false)
+    const [energyAttachedThisTurn, setEnergyAttachedThisTurn] = useState(false)
 
     // プレシャスキャリー State
     const [preciousCarrierState, setPreciousCarrierState] = useState<PreciousCarrierState | null>(null)
@@ -238,6 +288,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // タケルライコex State
     const [ragingBoltState, setRagingBoltState] = useState<RagingBoltState | null>(null)
+    const [mulliganReveal, setMulliganReveal] = useState<Card[] | null>(null)
+    const [turnCount, setTurnCount] = useState(0) // 0 means setup, 1+ are actual turns
 
 
 
@@ -383,19 +435,30 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 if (targetRef === 'battle') {
                     if (battleField) {
                         const newDamage = (battleField.damage || 0) + amount
-                        setBattleField({ ...battleField, damage: newDamage })
-                        showToast(`相手の技により バトル場に ${amount} ダメージを受けました`)
+                        const hp = getStackHp(battleField)
+                        if (hp !== null && newDamage >= hp) {
+                            resolveKnockOut('battle', 0, { ...battleField, damage: newDamage })
+                        } else {
+                            setBattleField({ ...battleField, damage: newDamage })
+                            showToast(`相手の技により バトル場に ${amount} ダメージを受けました`)
+                        }
                     } else {
                         showToast('バトル場にポケモンがいません（ダメージ不発）')
                     }
                 } else if (targetRef === 'bench') {
                     const stack = bench[targetIdx]
                     if (stack) {
-                        const newBench = [...bench]
                         const newDamage = (stack.damage || 0) + amount
-                        newBench[targetIdx] = { ...stack, damage: newDamage }
-                        setBench(newBench)
-                        showToast(`相手の技により ベンチ(${targetIdx + 1})に ${amount} ダメージを受けました`)
+                        const nextStack = { ...stack, damage: newDamage }
+                        const hp = getStackHp(stack)
+                        if (hp !== null && newDamage >= hp) {
+                            resolveKnockOut('bench', targetIdx, nextStack)
+                        } else {
+                            const newBench = [...bench]
+                            newBench[targetIdx] = nextStack
+                            setBench(newBench)
+                            showToast(`相手の技により ベンチ(${targetIdx + 1})に ${amount} ダメージを受けました`)
+                        }
                     } else {
                         showToast('指定されたベンチにポケモンがいません')
                     }
@@ -447,24 +510,66 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         getPrizeCount: () => {
             return prizeCards.length
         },
-        takePrize: () => {
-            takePrizeCard()
-        }
+        getHand: () => hand,
+        getBench: () => bench,
+        getBattleField: () => battleField,
+        getTrash: () => trash,
+        getDeck: () => remaining,
+        playToBattleField: (handIndex: number) => {
+            playToBattleField(handIndex)
+        },
+        playToBench: (handIndex: number, targetIndex?: number) => {
+            playToBench(handIndex, targetIndex)
+        },
+        trashFromHand: (handIndex: number) => {
+            trashFromHand(handIndex)
+        },
+        takePrize: (index: number = 0) => {
+            takePrizeCard(index)
+        },
+        takePrizes: (count: number) => {
+            takePrizeCards(count)
+        },
+        shuffleDeck: () => {
+            shuffleDeck()
+        },
+        drawCards: (count: number) => {
+            drawCards(count)
+        },
+        isSupporterUsed: () => supporterUsedThisTurn,
+        isEnergyAttached: () => energyAttachedThisTurn,
+        setSupporterUsed: (used: boolean) => setSupporterUsedThisTurn(used),
+        setEnergyAttached: (attached: boolean) => setEnergyAttachedThisTurn(attached),
+        mulligan: () => {
+            mulligan()
+        },
+        isMulliganing: () => {
+            return !!mulliganReveal
+        },
+        setupPrizes: () => {
+            setupPrizeCards()
+        },
+        nextTurn: () => {
+            nextTurn()
+        },
+        endTurn: () => {
+            nextTurn()
+        },
+        getTurnCount: () => turnCount,
+        isActivePlayer: () => isActive
     }))
 
     // Auto-setup prize cards and draw initial hand when deck is first loaded
     useEffect(() => {
-        if (!initialized && deck.length === 60) {
-            // Use the prop 'deck' directly instead of 'remaining' which might be stale
-            const prizes = deck.slice(0, 6)
-            setPrizeCards(prizes)
-            const afterPrizes = deck.slice(6)
+        if (!initialized && deck && deck.length === 60) {
+            console.log(`[${playerName}] Initializing deck...`)
+            // ポケカの準備ルールに従い、最初は手札7枚のみを引き、サイドはまだ置かない
+            const initialHand = deck.slice(0, 7)
+            const initialRemaining = deck.slice(7)
 
-            // Auto-draw 7 cards
-            const initialHand = afterPrizes.slice(0, 7)
+            setPrizeCards([])
             setHand(initialHand)
-            setRemaining(afterPrizes.slice(7))
-
+            setRemaining(initialRemaining)
             setInitialized(true)
         }
     }, [deck, initialized])
@@ -535,9 +640,12 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }, [mobile, idPrefix])
 
     const setupPrizeCards = () => {
-        const prizes = remaining.slice(0, 6)
-        setPrizeCards(prizes)
-        setRemaining(prev => prev.slice(6))
+        if (prizeCards.length > 0) return; // 既にセットされている場合は無視
+        setRemaining(prev => {
+            const newPrizes = prev.slice(0, 6);
+            setPrizeCards(newPrizes);
+            return prev.slice(6);
+        });
     }
 
     const drawCards = (count: number) => {
@@ -547,15 +655,34 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const mulligan = () => {
-        // Capture current states to calculate new deck
-        const currentRemaining = remaining
-        const currentHand = hand
-        const newDeck = [...currentRemaining, ...currentHand].sort(() => Math.random() - 0.5)
+        const combined = [
+            ...remaining, 
+            ...hand, 
+            ...prizeCards,
+            ...(battleField ? battleField.cards : []),
+            ...bench.flatMap(s => s ? s.cards : [])
+        ]
+        
+        // Show cards and wait for user to click a button
+        setMulliganReveal([...hand])
+    }
 
-        const drawn = newDeck.slice(0, 7)
-        setHand(drawn)
+    const executeMulligan = () => {
+        const combined = [
+            ...remaining, 
+            ...hand, 
+            ...prizeCards,
+            ...(battleField ? battleField.cards : []),
+            ...bench.flatMap(s => s ? s.cards : [])
+        ]
+        const newDeck = combined.sort(() => Math.random() - 0.5)
+        setHand(newDeck.slice(0, 7))
+        setPrizeCards([])
+        setBattleField(null)
+        setBench(new Array(8).fill(null))
         setRemaining(newDeck.slice(7))
-        showToast('引き直しました')
+        setMulliganReveal(null)
+        showToast('手札を山札に戻して7枚引き直しました')
     }
 
     const increaseBenchSize = () => {
@@ -624,23 +751,44 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     // Action Logic
     const playToBattleField = (handIndex: number) => {
         const card = hand[handIndex]
+        if (!card) return
+
+        // 1. エネルギー手ばり制限
+        if (isEnergy(card)) {
+            if (energyAttachedThisTurn) {
+                alert("エネルギーは自分の番に1枚しかつけられません")
+                return
+            }
+        }
+
         if (battleField) {
             if (canStack(card, battleField)) {
+                // 進化やアタッチ
                 setBattleField(current => {
-                    if (!current) return createStack(card)
+                    if (!current) return createStack(card, turnCount)
                     return {
                         ...current,
                         cards: [...current.cards, card],
                         energyCount: current.energyCount + (isEnergy(card) ? 1 : 0),
-                        toolCount: current.toolCount + (isTool(card) ? 1 : 0)
+                        toolCount: current.toolCount + (isTool(card) ? 1 : 0),
+                        playedTurn: turnCount
                     }
                 })
+                if (isEnergy(card)) setEnergyAttachedThisTurn(true)
             } else {
+                if (isEnergy(card)) {
+                    alert("エネルギーはポケモンにしかつけられません")
+                    return
+                }
                 setTrash(prev => [...prev, ...battleField.cards])
-                setBattleField(createStack(card))
+                setBattleField(createStack(card, turnCount))
             }
         } else {
-            setBattleField(createStack(card))
+            if (isEnergy(card)) {
+                alert("エネルギーはポケモンにしかつけられません")
+                return
+            }
+            setBattleField(createStack(card, turnCount))
         }
         setHand(prev => prev.filter((_, i) => i !== handIndex))
         closeMenu()
@@ -649,6 +797,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const playToBench = (handIndex: number, targetIndex?: number) => {
         const card = hand[handIndex]
         if (!card) return
+
+        // 1. エネルギー手ばり制限
+        if (isEnergy(card)) {
+            if (energyAttachedThisTurn) {
+                alert("エネルギーは自分の番に1枚しかつけられません")
+                return
+            }
+        }
 
         if (targetIndex !== undefined) {
             setBench(currentBench => {
@@ -660,14 +816,20 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             ...stack,
                             cards: [...stack.cards, card],
                             energyCount: stack.energyCount + (isEnergy(card) ? 1 : 0),
-                            toolCount: stack.toolCount + (isTool(card) ? 1 : 0)
+                            toolCount: stack.toolCount + (isTool(card) ? 1 : 0),
+                            playedTurn: turnCount
                         }
+                        if (isEnergy(card)) setEnergyAttachedThisTurn(true)
                     } else {
+                        if (isEnergy(card)) {
+                            alert("エネルギーはポケモンにしかつけられません")
+                            return currentBench
+                        }
                         setTrash(prev => [...prev, ...stack.cards])
-                        nextBench[targetIndex] = createStack(card)
+                        nextBench[targetIndex] = createStack(card, turnCount)
                     }
                 } else {
-                    nextBench[targetIndex] = createStack(card)
+                    nextBench[targetIndex] = createStack(card, turnCount)
                 }
                 return nextBench
             })
@@ -676,7 +838,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 const emptySlotIndex = currentBench.findIndex((slot, i) => i < benchSize && slot === null)
                 if (emptySlotIndex !== -1) {
                     const nextBench = [...currentBench]
-                    nextBench[emptySlotIndex] = createStack(card)
+                    nextBench[emptySlotIndex] = createStack(card, turnCount)
                     return nextBench
                 } else {
                     alert("ベンチがいっぱいです")
@@ -870,6 +1032,19 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         showToast('サイドを1枚取りました')
     }
 
+    const takePrizeCards = (count: number) => {
+        if (count <= 0) return
+        setPrizeCards(prev => {
+            const takeCount = Math.min(count, prev.length)
+            const taken = prev.slice(0, takeCount)
+            if (taken.length > 0) {
+                setHand(current => [...current, ...taken])
+                showToast(`サイドを${taken.length}枚取りました`)
+            }
+            return prev.slice(takeCount)
+        })
+    }
+
     const shuffleDeck = () => {
         setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
         showToast('山札をシャッフルしました')
@@ -881,6 +1056,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setPecharuntUsedThisTurn(false)
         setMunkidoriUsedThisTurn(false)
         setFanCallUsedThisTurn(false)
+        setSupporterUsedThisTurn(false)
+        setEnergyAttachedThisTurn(false)
+        setTurnCount(prev => prev + 1)
 
         // Mega Brave reset logic:
         // If it was used this turn, it becomes "used last turn" (still restricted).
@@ -888,6 +1066,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setMegaBraveUsedLastTurn(false)
 
         showToast('次の番になりました')
+        if (onTurnEnd) onTurnEnd()
     }
 
 
@@ -914,6 +1093,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         meowthEXState, setMeowthEXState,
         ironLeavesEXState, setIronLeavesEXState,
         nPointUpState, setNPointUpState,
+        blazikenEXState, setBlazikenEXState,
         cyanoState, setCyanoState,
         ogerponWellspringState, setOgerponWellspringState,
         bugCatchingSetState, setBugCatchingSetState,
@@ -976,6 +1156,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useEnergyRetrieval, handleEnergyRetrievalSelect, handleEnergyRetrievalConfirm,
         useKangaskhanEX, useGenesectEX, handleGenesectSelect, handleGenesectConfirm,
         useArchaludonEX, handleArchaludonEnergySelect, handleArchaludonTargetSelect,
+        useBlazikenEX, handleBlazikenEXSelectEnergy, handleBlazikenEXConfirmEnergy, handleBlazikenEXTargetSelect,
         useNoctowl, handleNoctowlSelect, handleNoctowlConfirm,
         useMegaLucarioEX, handleMegaLucarioEXSelectEnergy, handleMegaLucarioEXConfirmEnergy, handleMegaLucarioEXAttachClick,
         handleMegaLucarioEnergySelect, startMegaLucarioEnergyAttachment, applyMegaLucarioEnergy, resetMegaBrave,
@@ -1035,6 +1216,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useKangaskhanEX,
         useGenesectEX,
         useArchaludonEX,
+        useBlazikenEX,
         useLunaCycle,
         useNPointUp,
         useCyano,
@@ -1660,7 +1842,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </div>
 
                     <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 relative">
+                        <button onClick={nextTurn} className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 transition whitespace-nowrap">番終了</button>
                         <button onClick={() => drawCards(1)} disabled={remaining.length === 0} className="px-3 py-1 bg-blue-500 text-white rounded text-xs font-bold hover:bg-blue-600 transition disabled:opacity-50 whitespace-nowrap">1枚引く</button>
+                        
+                        {prizeCards.length === 0 && battleField !== null && (
+                            <button onClick={setupPrizeCards} className="px-3 py-1 bg-yellow-500 text-white rounded text-xs font-bold hover:bg-yellow-600 transition whitespace-nowrap animate-pulse">
+                                サイドセット
+                            </button>
+                        )}
 
                         {/* Desktop View Buttons (Hidden on Mobile) */}
                         <div className="hidden md:flex gap-1">
@@ -1845,7 +2034,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             {/* Hand - Bottom Slot (Show on Mobile if Active, or Always on Desktop) */}
             {((mobile && isActive) || (!mobile)) && (
                 <div className="rounded-2xl shadow-2xl p-2 sm:p-5 bg-white/[0.05] backdrop-blur-md border border-white/10 mt-4 z-[50] overflow-visible">
-                    <h2 className="text-[10px] sm:text-xs font-black text-white/40 mb-4 uppercase tracking-[0.3em] text-center">{playerName}の手札 — {hand.length}枚</h2>
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                        <h2 className="text-[10px] sm:text-xs font-black text-white/40 uppercase tracking-[0.3em]">{playerName}の手札 — {hand.length}枚</h2>
+                    </div>
                     
                     <div className={mobile ? "hand-fanning-container-mobile hide-scrollbar w-full px-1" : "hand-fanning-container-pc hide-scrollbar px-10"}>
                         {hand.map((card, i) => {
@@ -1859,7 +2050,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                         data={{ type: 'hand', index: i, card, playerPrefix: idPrefix }}
                                         onClick={(e) => handleCardClick(e, card, 'hand', i)}
                                     >
-                                        <div className="relative cursor-pointer shadow-[0_8px_16px_rgba(0,0,0,0.5)] rounded-lg group overflow-hidden border border-white/5">
+                                        <div className="relative cursor-pointer shadow-[0_8px_16px_rgba(0,0,0,0.5)] rounded-lg group overflow-hidden border border-white/5 aspect-[5/7]">
                                             <Image
                                                 src={card.imageUrl}
                                                 alt={card.name}
@@ -1921,6 +2112,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 setGenesectState={setGenesectState}
                 archaludonState={archaludonState}
                 setArchaludonState={setArchaludonState}
+                blazikenEXState={blazikenEXState}
+                setBlazikenEXState={setBlazikenEXState}
                 tatsugiriState={tatsugiriState}
                 ogerponState={ogerponState}
                 setOgerponState={setOgerponState}
@@ -1987,6 +2180,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 handleGenesectConfirm={handleGenesectConfirm}
                 handleArchaludonEnergySelect={handleArchaludonEnergySelect}
                 handleArchaludonTargetSelect={handleArchaludonTargetSelect}
+                handleBlazikenEXSelectEnergy={handleBlazikenEXSelectEnergy}
+                handleBlazikenEXConfirmEnergy={handleBlazikenEXConfirmEnergy}
+                handleBlazikenEXTargetSelect={handleBlazikenEXTargetSelect}
                 handleTatsugiriSelect={handleTatsugiriSelect}
                 handleTatsugiriConfirm={handleTatsugiriConfirm}
                 handleOgerponSelect={handleOgerponSelect}
@@ -2043,6 +2239,37 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Mulligan Reveal Overlay */}
+            {mulliganReveal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm p-6">
+                    <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl border border-gray-100">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">マリガン（たねがいません）</h3>
+                        <p className="text-gray-500 mb-8 text-center">相手（CPU）の手札を公開しています。</p>
+                        
+                        <div className="flex flex-wrap justify-center gap-4 mb-10">
+                            {mulliganReveal.map((card, i) => (
+                                <div key={i} className="relative group">
+                                    <div className="w-24 h-36 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                                        <div className="p-2 text-[10px] text-gray-800 font-bold leading-tight">
+                                            {card.name}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-center">
+                            <button 
+                                onClick={executeMulligan}
+                                className="px-10 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xl rounded-2xl transition-all shadow-lg"
+                            >
+                                全て山札に戻して引き直す
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 })

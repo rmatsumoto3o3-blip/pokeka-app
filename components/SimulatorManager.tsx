@@ -499,14 +499,14 @@ export default function SimulatorManager({ initialDeckCode = '', initialCards = 
             {cards.length > 0 && randomHand.length > 0 && (
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span className="text-2xl">🃏</span> {t.sampleHand}
+                        <h4 className="text-lg font-bold text-gray-800">
+                            {t.sampleHand}
                         </h4>
                         <button
                             onClick={handleDrawAgain}
                             className="text-sm font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm transition active:scale-95 flex items-center gap-2"
                         >
-                            <span className="text-base">🔄</span> {t.drawAgain}
+                            {t.drawAgain}
                         </button>
                     </div>
                     <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">

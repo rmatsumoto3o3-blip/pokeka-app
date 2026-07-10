@@ -506,12 +506,12 @@ function DeckCard({
                     <div className="flex -space-x-1.5 shrink-0">
                         {deck.icon_1 && (
                             <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={18} height={18} className="object-contain" />
+                                <Image src={`/pokemon-icons/${deck.icon_1}.png`} alt={deck.icon_1} width={18} height={18} className="object-contain" unoptimized />
                             </div>
                         )}
                         {deck.icon_2 && (
                             <div className="w-6 h-6 bg-white rounded-full border border-gray-100 flex items-center justify-center p-0.5 shadow-sm">
-                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={18} height={18} className="object-contain" />
+                                <Image src={`/pokemon-icons/${deck.icon_2}.png`} alt={deck.icon_2} width={18} height={18} className="object-contain" unoptimized />
                             </div>
                         )}
                     </div>

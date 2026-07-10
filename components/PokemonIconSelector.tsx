@@ -91,6 +91,7 @@ export default function PokemonIconSelector({
                                         width={32}
                                         height={32}
                                         className="object-contain"
+                                        unoptimized
                                     />
                                     <button
                                         type="button"
@@ -148,6 +149,7 @@ export default function PokemonIconSelector({
                                         width={32}
                                         height={32}
                                         className="object-contain"
+                                        unoptimized
                                     />
                                     {isSelected && (
                                         <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-0.5">

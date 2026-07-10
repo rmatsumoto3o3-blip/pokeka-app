@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { getOrCreateProfileAction } from '@/app/actions'
-import InvitationCodeInput from '@/components/InvitationCodeInput'
 
 import AddDeckForm from '@/components/AddDeckForm'
 import DeckManager from '@/components/DeckManager'
@@ -15,6 +13,7 @@ import AnalyticsManager from '@/components/AnalyticsManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
 import UserList from '@/components/UserList'
+import WeeklyReport from '@/components/WeeklyReport'
 import SideArticleList from '@/components/SideArticleList'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
@@ -29,7 +28,7 @@ export default function Dashboard() {
     const supabase = createClient()
     const [userId, setUserId] = useState<string | null>(null)
     const [userEmail, setUserEmail] = useState<string>('')
-    const [activeTab, setActiveTab] = useState('decks') // decks, analytics, reference, articles
+    const [activeTab, setActiveTab] = useState('tools')
     const [loading, setLoading] = useState(true)
     const [isAddDeckModalOpen, setIsAddDeckModalOpen] = useState(false)
 
@@ -55,7 +54,7 @@ export default function Dashboard() {
                     setUserEmail(email)
 
                     // Admin Check
-                    if (['player1@pokeka.local', 'r.matsumoto.3o3@gmail.com', 'nexpure.event@gmail.com', 'admin@pokeka.local'].includes(email)) {
+                    if (email === 'player1@pokeka.local') {
                         setIsAdmin(true)
                     }
 
@@ -189,11 +188,13 @@ export default function Dashboard() {
 
                 <div className="max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-4 overflow-x-auto no-scrollbar border-t border-[#eef1f6]">
                     <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setActiveTab('tools')} className={tabClass('tools')}>ツール</button>
                         <button onClick={() => setActiveTab('decks')} className={tabClass('decks')}>デッキ管理</button>
                         <button onClick={() => setActiveTab('analytics')} className={tabClass('analytics')}>戦績分析</button>
                         <button onClick={() => setActiveTab('reference')} className={tabClass('reference')}>参考デッキ</button>
                         {isAdmin && <button onClick={() => setActiveTab('articles')} className={tabClass('articles')}>記事管理</button>}
                         {isAdmin && <button onClick={() => setActiveTab('users')} className={tabClass('users')}>ユーザー一覧</button>}
+                        {isAdmin && <button onClick={() => setActiveTab('weekly-report')} className={tabClass('weekly-report')}>環境レポート</button>}
                     </div>
                     <div className="flex items-center gap-2 py-2 shrink-0">
                         <Link
@@ -221,6 +222,26 @@ export default function Dashboard() {
                     {/* Main Content Column */}
                     <div className="lg:col-span-3 space-y-6">
 
+
+                        {activeTab === 'tools' && (
+                            <div className="space-y-4">
+                                <h2 className="text-lg font-bold text-gray-900">ツール一覧</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <Link href="/simulator" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">初手確率シミュレーター</div>
+                                        <div className="text-sm text-gray-500">特定のカードが初手に来る確率を計算</div>
+                                    </Link>
+                                    <Link href="/practice" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">一人回し練習</div>
+                                        <div className="text-sm text-gray-500">デッキコードを入力して対戦練習</div>
+                                    </Link>
+                                    <Link href="/practice/prize-trainer" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">サイド落ち推論トレーニング</div>
+                                        <div className="text-sm text-gray-500">サイド落ちを読む力を鍛える</div>
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
 
                         {activeTab === 'decks' && (
                             <div className="space-y-6">
@@ -356,6 +377,13 @@ export default function Dashboard() {
                             <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-200 shadow-sm">
                                 <h2 className="text-xl font-bold mb-4">ユーザー管理</h2>
                                 <UserList />
+                            </div>
+                        )}
+
+                        {activeTab === 'weekly-report' && isAdmin && (
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-bold text-gray-900">環境レポート</h2>
+                                <WeeklyReport />
                             </div>
                         )}
 

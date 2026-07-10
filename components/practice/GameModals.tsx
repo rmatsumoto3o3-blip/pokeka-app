@@ -136,7 +136,7 @@ export function GameModals(props: GameModalsProps) {
             }
         }
 
-        const onStatusChange = (status: any) => {
+        const onStatusChange = (status: 'none' | 'poison' | 'burn' | 'confused' | 'asleep' | 'paralyzed') => {
             updateStatus(damageTarget.type, damageTarget.index, status)
         }
 
@@ -478,6 +478,17 @@ export function GameModals(props: GameModalsProps) {
         if (showDetailModal && !detailModal) {
             return (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setShowDetailModal(null)}>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setShowDetailModal(null)
+                        }}
+                        className="fixed right-4 top-4 z-[10000] rounded-full bg-white px-3 py-1.5 text-lg font-black text-gray-900 shadow-xl hover:bg-gray-100"
+                        aria-label="詳細を閉じる"
+                    >
+                        ×
+                    </button>
                     <div className="relative max-w-4xl w-full max-h-[90vh] flex items-center justify-center">
                         <div className="relative w-full max-h-[85vh] aspect-[73/102]">
                             <Image
@@ -513,6 +524,17 @@ export function GameModals(props: GameModalsProps) {
 
         return (
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setDetailModal(null)}>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        setDetailModal(null)
+                    }}
+                    className="fixed right-4 top-4 z-[10000] rounded-full bg-white px-3 py-1.5 text-lg font-black text-gray-900 shadow-xl hover:bg-gray-100"
+                    aria-label="詳細を閉じる"
+                >
+                    ×
+                </button>
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col md:flex-row" onClick={e => e.stopPropagation()}>
 
                     {/* Left: Main Image */}

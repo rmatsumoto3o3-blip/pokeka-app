@@ -47,7 +47,7 @@ export default function NotFound() {
                         </Link>
                         <Link
                             href="/articles"
-                            className="py-3 rounded-xl font-bold text-sm text-gray-700 bg-white border-2 border-gray-100 hover:border-amber-200 hover:bg-amber-50 transition-all"
+                            className="py-3 rounded-xl font-bold text-sm text-gray-700 bg-white border-2 border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-all"
                         >
                             コラム・記事
                         </Link>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getDeckAnalyticsAction } from '@/app/actions'
 
 interface KeyCardAdoption {
@@ -115,6 +116,14 @@ export default function KeyCardAdoptionDrawer({ isOpen, onClose, archetypeId, ar
                         直近2ヶ月
                     </button>
                 </div>
+
+                {/* 詳細ページへの導線 */}
+                <Link
+                    href={`/archetypes/${encodeURIComponent(archetypeName)}`}
+                    className="block mx-4 mt-3 text-center text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg py-2.5 transition-colors"
+                >
+                    {archetypeName}デッキの採用カード詳細ページへ →
+                </Link>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-white custom-scrollbar">
                     {loading ? (

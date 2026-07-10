@@ -7,13 +7,7 @@ import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
 import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
-import { getAllReferenceDecksAction } from '@/app/actions'
-
-// deck_records has no deck_name column — build a display name from what's actually stored
-function getDeckDisplayName(deck: ReferenceDeck): string {
-    const parts = [deck.event_location, deck.event_rank].filter(Boolean)
-    return parts.length > 0 ? parts.join(' ') : (deck.deck_code || 'デッキ')
-}
+import { getArchetypeDistributionStatsAction, getDeckRecordsByArchetypeAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -73,12 +67,17 @@ export default function ReferenceDeckList({
     gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
 }: ReferenceDeckListProps) {
     const supabase = createClient()
-    const [decks, setDecks] = useState<ReferenceDeck[]>(initialDecks)
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
     const [selectedEvent, setSelectedEvent] = useState('All')
     const [selectedArchetypeId, setSelectedArchetypeId] = useState<string | null>(null) // Use ID for navigation
     const [selectedRank, setSelectedRank] = useState<string>('All')
-    const [loading, setLoading] = useState(initialDecks.length === 0)
+    const [loading, setLoading] = useState(true)
+    // GAS 集計データ（archetype_card_stats から取得）
+    const [gasDeckCounts, setGasDeckCounts] = useState<Record<string, number>>({})
+    const [gasRankCounts, setGasRankCounts] = useState<Record<string, Record<string, number>>>({})
+    // deck_records（スプレッドシート由来の個別デッキ一覧）
+    const [deckRecords, setDeckRecords] = useState<any[]>([])
+    const [deckRecordsLoading, setDeckRecordsLoading] = useState(false)
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1)
@@ -100,21 +99,20 @@ export default function ReferenceDeckList({
         userEmail === 'admin@pokeka.local'
 
     useEffect(() => {
-        if (initialDecks.length > 0) return
+        // GAS 集計データは常に取得
+        getArchetypeDistributionStatsAction().then(res => {
+            if (res.success) {
+                setGasDeckCounts(res.deckCounts)
+                setGasRankCounts(res.rankCounts)
+            }
+        })
 
         const loadData = async () => {
-            await Promise.all([fetchDecks(), fetchArchetypes()])
+            await fetchArchetypes()
             setLoading(false)
         }
         loadData()
-    }, [initialDecks.length])
-
-    const fetchDecks = async () => {
-        const res = await getAllReferenceDecksAction()
-        if (res.success && res.data) {
-            setDecks(res.data)
-        }
-    }
+    }, [])
 
     const fetchArchetypes = async () => {
         const { data, error } = await supabase
@@ -138,7 +136,7 @@ export default function ReferenceDeckList({
             .eq('id', id)
 
         if (!error) {
-            setDecks(decks.filter(d => d.id !== id))
+            setDeckRecords(deckRecords.filter(d => d.id !== id))
         }
     }
 
@@ -164,79 +162,6 @@ export default function ReferenceDeckList({
                 : [...prev, deckId]
         )
     }
-
-    // Filter Logic
-    const filteredDecks = decks
-
-    // Helper to get archetype for a deck
-    const getArchetypeForDeck = (archetypeId: string | null) => {
-        if (!archetypeId) return null
-        return archetypes.find(a => a.id === archetypeId)
-    }
-
-    // Grouping Logic
-    const groupedDecks: { [key: string]: ReferenceDeck[] } = {}
-
-    filteredDecks.forEach(deck => {
-        const archetype = getArchetypeForDeck(deck.archetype_id)
-        const key = archetype ? archetype.id : 'others'
-        if (!groupedDecks[key]) {
-            groupedDecks[key] = []
-        }
-        groupedDecks[key].push(deck)
-    })
-
-    // Helper to parse deck_records' own event_date field (e.g. "6/7")
-    const extractDateFromName = (eventDate: string | null | undefined) => {
-        if (!eventDate) return null
-        const match = eventDate.match(/^(\d{1,2})\/(\d{1,2})/)
-        if (match) {
-            const month = parseInt(match[1], 10)
-            const day = parseInt(match[2], 10)
-            const date = new Date(2025, month - 1, day)
-            return date.getTime()
-        }
-        return null
-    }
-
-    // Sort decks within each archetype group by event_date, then created_at
-    Object.keys(groupedDecks).forEach(key => {
-        groupedDecks[key].sort((a, b) => {
-            const smartDateA = extractDateFromName(a.event_date)
-            const smartDateB = extractDateFromName(b.event_date)
-
-            if (smartDateA !== null && smartDateB !== null) {
-                if (smartDateB !== smartDateA) return smartDateB - smartDateA
-            } else if (smartDateA !== null) {
-                return -1 // A has date, B doesn't -> A stays above (or below? usually dated decks are better)
-            } else if (smartDateB !== null) {
-                return 1
-            }
-
-            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
-            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
-            return dateB - dateA
-        })
-    })
-
-    // Sort Archetype IDs for display
-    const sortedArchetypeIds = Object.keys(groupedDecks).sort((aId, bId) => {
-        if (aId === 'others') return 1
-        if (bId === 'others') return -1
-
-        const aArch = archetypes.find(a => a.id === aId)
-        const bArch = archetypes.find(a => a.id === bId)
-
-        const aOrder = aArch?.display_order ?? 9999
-        const bOrder = bArch?.display_order ?? 9999
-
-        if (aOrder !== bOrder) {
-            return aOrder - bOrder
-        }
-        const aName = aArch?.name || ''
-        const bName = bArch?.name || ''
-        return aName.localeCompare(bName)
-    })
 
     if (loading) return <div className="text-gray-500 text-center py-8">読み込み中...</div>
 
@@ -268,17 +193,18 @@ export default function ReferenceDeckList({
     }
 
     if (selectedArchetypeId) {
-        const archetypeDecks = groupedDecks[selectedArchetypeId] || []
         const currentArchetype = selectedArchetypeId === 'others'
             ? { name: 'その他' }
             : archetypes.find(a => a.id === selectedArchetypeId)
 
         const displayName = currentArchetype?.name || 'その他'
+        const totalDeckCount = gasDeckCounts[selectedArchetypeId] || deckRecords.length
 
-        const filteredByRank = selectedRank === 'All' 
-            ? archetypeDecks 
-            : archetypeDecks.filter(d => d.event_rank === selectedRank)
-                            
+        // ランクフィルタ
+        const filteredByRank = selectedRank === 'All'
+            ? deckRecords
+            : deckRecords.filter(d => d.event_rank === selectedRank)
+
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
         const paginatedDecks = filteredByRank.slice(startIndex, startIndex + ITEMS_PER_PAGE)
         const totalPages = Math.ceil(filteredByRank.length / ITEMS_PER_PAGE)
@@ -316,7 +242,7 @@ export default function ReferenceDeckList({
                         <span className="bg-blue-500 w-1 h-6 rounded-full mr-3"></span>
                         {displayName}
                         <span className="ml-3 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                            {archetypeDecks.length}
+                            {totalDeckCount}
                         </span>
                         {/* Adoption Rate Button [MOVED] */}
                         {selectedArchetypeId !== 'others' && (
@@ -348,7 +274,7 @@ export default function ReferenceDeckList({
                             {rank === 'All' ? 'すべて' : rank}
                             {rank !== 'All' && (
                                 <span className="ml-1.5 text-[10px] opacity-70">
-                                    {archetypeDecks.filter(d => d.event_rank === rank).length}
+                                    {deckRecords.filter(d => d.event_rank === rank).length}
                                 </span>
                             )}
                         </button>
@@ -359,14 +285,32 @@ export default function ReferenceDeckList({
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
                     {/* Header Row */}
                     <div className="bg-gray-50 px-2.5 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
-                        <div className="flex-1">デッキ名</div>
+                        <div className="flex-1">デッキ</div>
                         <div className="w-24 hidden md:block text-center">日付</div>
                         <div className="w-24 hidden md:block text-center">CODE</div>
-                        {isAdmin && <div className="w-20 text-right">管理</div>}
                     </div>
 
+                    {deckRecordsLoading ? (
+                        <div className="p-10 flex items-center justify-center gap-3 text-gray-400">
+                            <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span className="text-sm font-medium">読み込み中...</span>
+                        </div>
+                    ) : (
                     <div className="divide-y divide-gray-100">
-                        {paginatedDecks.map((deck) => (
+                        {paginatedDecks.map((deck) => {
+                            // event_locationから日付プレフィックスを除去（半角・全角どちらも対応）
+                            const cleanLocation = (deck.event_location || '').replace(/^[\d０-９]{1,2}[/／][\d０-９]{1,2}\s*/, '').trim()
+                            const displayName = deck.event_date && cleanLocation
+                                ? `${deck.event_date} ${cleanLocation}`
+                                : deck.event_date || cleanLocation || deck.deck_code
+                            const dateLabel = deck.event_date || (deck.created_at
+                                ? new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+                                : '')
+                            const isExpanded = expandedDeckIds.includes(deck.id)
+                            return (
                             <div key={deck.id} className="group transition overflow-hidden">
                                 <div
                                     onClick={() => handleDeckClick(deck)}
@@ -382,14 +326,14 @@ export default function ReferenceDeckList({
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                                             </button>
                                         ) : (
-                                            <div className="w-6 h-6"></div> // Spacer
+                                            <div className="w-6 h-6"></div>
                                         )}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             {deck.event_rank && (
-                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-tighter ${
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-tighter flex-shrink-0 ${
                                                     deck.event_rank === '優勝' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                                                     deck.event_rank === '準優勝' ? 'bg-gray-100 text-gray-700 border border-gray-200' :
                                                     'bg-blue-50 text-blue-600 border border-blue-100'
@@ -399,11 +343,10 @@ export default function ReferenceDeckList({
                                                 </span>
                                             )}
                                             <div className="font-bold text-gray-900 text-sm h-5 flex items-center">
-                                                <AutoFitText text={getDeckDisplayName(deck)} />
+                                                <AutoFitText text={displayName} />
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-
                                             {deck.deck_code && (
                                                 <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
                                                     <span className="text-[10px] mr-1 opacity-50">CODE:</span>
@@ -411,9 +354,9 @@ export default function ReferenceDeckList({
                                                 </span>
                                             )}
                                             {/* Mobile Date Badge */}
-                                            <span className="md:hidden text-[10px] opacity-70">
-                                                {deck.event_date || (deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }))}
-                                            </span>
+                                            {dateLabel && (
+                                                <span className="md:hidden text-[10px] opacity-70">{dateLabel}</span>
+                                            )}
                                             {/* Fallback indicator if image only */}
                                             {!deck.deck_code && deck.image_url && (
                                                 <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
@@ -423,12 +366,12 @@ export default function ReferenceDeckList({
                                         </div>
                                     </div>
 
-                                    {/* Desktop Date Display */}
+                                    {/* Desktop Date */}
                                     <div className="w-24 hidden md:flex items-center justify-center text-[10px] text-gray-500 font-medium">
                                         {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
                                     </div>
 
-                                    {/* Desktop Code Copy Button (Quick Action) */}
+                                    {/* Desktop Code Copy */}
                                     <div className="w-24 hidden md:flex items-center justify-center">
                                         {deck.deck_code && (
                                             <button
@@ -467,20 +410,18 @@ export default function ReferenceDeckList({
                                                 <polyline points="9 18 15 12 9 6"></polyline>
                                             </svg>
                                         )}
-                                        {!deck.deck_code && deck.image_url && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                                        )}
                                     </div>
                                 </div>
 
-                                {/* Expanded Content */}
-                                {expandedDeckIds.includes(deck.id) && deck.deck_code && (
+                                {/* Expanded Deck Preview */}
+                                {isExpanded && deck.deck_code && (
                                     <div className="border-t border-gray-100 bg-gray-50/50 p-2 md:p-2.5">
                                         <DeckPreview deckCode={deck.deck_code} />
                                     </div>
                                 )}
                             </div>
-                        ))}
+                            )
+                        })}
 
                         {/* Pagination Controls */}
                         {totalPages > 1 && (
@@ -510,7 +451,8 @@ export default function ReferenceDeckList({
                             </div>
                         )}
                     </div>
-                    {filteredByRank.length === 0 && (
+                    )}
+                    {!deckRecordsLoading && filteredByRank.length === 0 && (
                         <div className="p-8 text-center text-gray-400">
                             該当するデッキはありません
                         </div>
@@ -519,6 +461,16 @@ export default function ReferenceDeckList({
             </div>
         )
     }
+
+    // gasDeckCounts のキーを deck_archetypes の display_order でソートして使う
+    const gridArchetypeIds = Object.keys(gasDeckCounts).sort((aId, bId) => {
+        const aArch = archetypes.find(a => a.id === aId)
+        const bArch = archetypes.find(a => a.id === bId)
+        const aOrder = aArch?.display_order ?? 9999
+        const bOrder = bArch?.display_order ?? 9999
+        if (aOrder !== bOrder) return aOrder - bOrder
+        return (aArch?.name || '').localeCompare(bArch?.name || '')
+    })
 
     // VIEW: Top Level (Folders) - Remains mostly Grid for Archetypes
     return (
@@ -531,16 +483,15 @@ export default function ReferenceDeckList({
             />
             {renderLegacyModal()}
 
-
             {/* Archetype Grid */}
-            {(filteredDecks.length === 0) ? (
+            {gridArchetypeIds.length === 0 ? (
                 <div className="text-center py-10 bg-white/50 rounded-xl border border-dashed border-gray-300">
                     <p className="text-gray-500">該当する参考デッキはありません</p>
                 </div>
             ) : (
                 <div className={gridClassName}>
-                    {sortedArchetypeIds.map(archetypeId => {
-                        const decks = groupedDecks[archetypeId]
+                    {gridArchetypeIds.map(archetypeId => {
+                        const deckCount = gasDeckCounts[archetypeId] ?? 0
 
                         let displayName = 'その他'
                         let coverImage = null
@@ -555,21 +506,19 @@ export default function ReferenceDeckList({
                             }
                         }
 
-                        // Fallback cover image logic: if no archetype cover, use first deck's image if available (Legacy support)
-                        if (!coverImage && decks.length > 0) {
-                            // Try to find a deck with an image
-                            const deckWithImage = decks.find(d => d.image_url)
-                            if (deckWithImage) {
-                                coverImage = deckWithImage.image_url
-                            }
-                        }
-
                         return (
                             <button
                                 key={archetypeId}
                                 onClick={() => {
                                     setSelectedArchetypeId(archetypeId)
                                     setCurrentPage(1)
+                                    setSelectedRank('All')
+                                    setDeckRecords([])
+                                    setDeckRecordsLoading(true)
+                                    getDeckRecordsByArchetypeAction(archetypeId).then(res => {
+                                        if (res.success) setDeckRecords(res.data)
+                                        setDeckRecordsLoading(false)
+                                    })
                                 }}
                                 className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1 group text-left"
                             >
@@ -594,7 +543,7 @@ export default function ReferenceDeckList({
                                     <div className="absolute bottom-0 left-0 right-0 p-2.5 md:p-2.5 text-white">
                                         <h3 className="text-lg md:text-xl font-bold truncate leading-tight mb-1">{displayName}</h3>
                                         <p className="text-xs md:text-sm text-gray-200 font-medium flex items-center">
-                                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs mr-2">{decks.length} Decks</span>
+                                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs mr-2">{deckCount} Decks</span>
                                         </p>
                                     </div>
                                 </div>

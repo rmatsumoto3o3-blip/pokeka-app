@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase, Article } from '@/lib/supabase'
+import { saveArticleAction, deleteArticleAction } from '@/app/actions'
 
 export default function ArticleManager() {
     const [articles, setArticles] = useState<Article[]>([])
@@ -108,6 +109,7 @@ export default function ArticleManager() {
                 finalThumbnailUrl = data.publicUrl
             }
 
+            const now = new Date().toISOString()
             const articleData = {
                 title,
                 slug,
@@ -115,28 +117,22 @@ export default function ArticleManager() {
                 excerpt,
                 thumbnail_url: finalThumbnailUrl,
                 is_published: isPublished,
-                updated_at: new Date().toISOString(),
+                published_at: now,
+                updated_at: now,
             }
 
-            if (editingArticle?.id) {
-                // Update
-                const { error } = await supabase
-                    .from('articles')
-                    .update(articleData)
-                    .eq('id', editingArticle.id)
+            const result = await saveArticleAction({
+                id: editingArticle?.id,
+                title,
+                slug,
+                content,
+                excerpt,
+                thumbnail_url: finalThumbnailUrl,
+                is_published: isPublished,
+            })
 
-                if (error) throw error
-                alert('記事を更新しました')
-            } else {
-                // Create
-                const { error } = await supabase
-                    .from('articles')
-                    .insert([articleData])
-
-                if (error) throw error
-                alert('記事を作成しました')
-            }
-
+            if (!result.success) throw new Error(result.error)
+            alert(editingArticle?.id ? '記事を更新しました' : '記事を作成しました')
             resetForm()
             fetchArticles()
         } catch (error) {
@@ -149,12 +145,8 @@ export default function ArticleManager() {
         if (!confirm('本当に削除しますか？')) return
 
         try {
-            const { error } = await supabase
-                .from('articles')
-                .delete()
-                .eq('id', id)
-
-            if (error) throw error
+            const result = await deleteArticleAction(id)
+            if (!result.success) throw new Error(result.error)
             alert('記事を削除しました')
             fetchArticles()
         } catch (error) {

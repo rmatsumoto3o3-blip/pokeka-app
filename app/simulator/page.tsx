@@ -75,7 +75,7 @@ export default function SimulatorPage() {
                                         <p className="text-sm text-blue-700">「たね切れ」による負けや、サポートが引けずに停滞する確率は構築段階で決まっています。シミュレーションを繰り返すことで、実戦での「運負け」を「構築のミス」として改善できます。</p>
                                     </div>
                                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                        <h4 className="font-bold text-blue-800 mb-1">サイド落ちの恐怖を克服</h4>
+                                        <h4 className="font-bold text-blue-800 mb-1">ポケカのサイド落ち確率を計算して克服</h4>
                                         <p className="text-sm text-blue-700">1枚しか入れていないエーススペックや、ピン差しのサポートがサイドに落ちる確率は約10%です。この「10%」を許容するか、2枚目を入れるかの判断材料にしてください。</p>
                                     </div>
                                 </div>

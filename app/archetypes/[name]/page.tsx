@@ -6,7 +6,8 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 
 export const revalidate = 86400 // 24時間（GASが毎日更新）
-export const dynamicParams = true
+// generateStaticParams に無いアーキタイプ名は404を返す（ソフト404を防ぐ）
+export const dynamicParams = false
 
 interface Props {
     params: Promise<{ name: string }>
@@ -42,6 +43,17 @@ function categoryOf(supertype: string | null, subtypes: string[] | null): string
     return 'Goods'
 }
 
+// params.name を安全にデコード（二重エンコードURLにも対応）
+function safeDecodeName(raw: string): string {
+    let d = raw
+    try { d = decodeURIComponent(raw) } catch { return raw }
+    // まだ %XX が残っていたら二重エンコードなのでもう一度デコード
+    if (/%[0-9A-Fa-f]{2}/.test(d)) {
+        try { d = decodeURIComponent(d) } catch { /* そのまま */ }
+    }
+    return d
+}
+
 export async function generateStaticParams() {
     const { data } = await supabase.from('deck_archetypes').select('name')
     // Next.js が自動でエンコードするため、ここではデコード済みの生の名前を返す
@@ -50,8 +62,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { name } = await params
-    // params.name はエンコードされたまま渡る場合があるためデコードする
-    const decoded = decodeURIComponent(name)
+    const decoded = safeDecodeName(name)
     const encoded = encodeURIComponent(decoded)
     const title = `${decoded}デッキの採用カード・レシピ【直近2ヶ月】`
     const description = `ポケカ「${decoded}」デッキの直近2ヶ月の採用カード一覧と採用率。全国の大会データから集計したリアルな構築をカードごとの採用率・平均枚数で確認できます。`
@@ -75,8 +86,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArchetypePage({ params }: Props) {
     const { name } = await params
-    // params.name はエンコードされたまま渡る場合があるためデコードする
-    const decoded = decodeURIComponent(name)
+    const decoded = safeDecodeName(name)
 
     const { data: arch } = await supabase
         .from('deck_archetypes')

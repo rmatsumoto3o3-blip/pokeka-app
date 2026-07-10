@@ -4,7 +4,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import type { Metadata } from 'next'
 
-export const revalidate = 3600 // Revalidate every hour
+export const revalidate = 60 // Revalidate every 60 seconds
 
 export const metadata: Metadata = {
     title: 'コラム・記事一覧 | PokéLix',
