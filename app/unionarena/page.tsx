@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import UnionArenaLandingPage from '@/components/UnionArenaLandingPage'
-import { getUnionArenaArchetypesAction, getUnionArenaDeckRecordsAction, getUnionArenaWeeklyRankingAction } from '@/app/actions'
+import { getUnionArenaArchetypesAction, getUnionArenaDeckRecordsAction, getUnionArenaWeeklyRankingAction, getUnionArenaSeriesAction, getUnionArenaRecommendedDecksAction } from '@/app/actions'
 
 export const metadata: Metadata = {
     title: 'ユニアリ環境デッキ・Tier表 | PokéLix（ポケリス）',
@@ -13,10 +13,12 @@ export const metadata: Metadata = {
 export const revalidate = 60
 
 export default async function UnionArenaPage() {
-    const [archetypesRes, decksRes, weeklyRankingRes] = await Promise.all([
+    const [archetypesRes, decksRes, weeklyRankingRes, seriesRes, recommendedRes] = await Promise.all([
         getUnionArenaArchetypesAction(),
         getUnionArenaDeckRecordsAction(),
         getUnionArenaWeeklyRankingAction(),
+        getUnionArenaSeriesAction(),
+        getUnionArenaRecommendedDecksAction(),
     ])
     const weeklyRanking = weeklyRankingRes.data || {}
 
@@ -30,6 +32,8 @@ export default async function UnionArenaPage() {
             archetypes={sortedArchetypes}
             decks={decksRes.data || []}
             weeklyRanking={weeklyRanking}
+            series={seriesRes.data || []}
+            recommendedDecks={recommendedRes.data || []}
         />
     )
 }

@@ -9,10 +9,26 @@ import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { Ico } from '@/components/Icons'
 
+interface UnionArenaSeries {
+    tag_code: string
+    name: string
+    logo_url: string | null
+}
+
+interface UnionArenaRecommendedDeck {
+    id: string
+    deck_code: string | null
+    tag_code: string | null
+    deck_name: string | null
+    image_url: string | null
+}
+
 interface UnionArenaLandingPageProps {
     decks: UnionArenaDeckRecord[]
     archetypes: UnionArenaDeckArchetype[]
     weeklyRanking?: Record<string, number>
+    series?: UnionArenaSeries[]
+    recommendedDecks?: UnionArenaRecommendedDeck[]
 }
 
 const TIER_STYLE: Record<string, { badge: string; label: string; text: string }> = {
@@ -21,8 +37,17 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
     B: { badge: 'bg-lime-600', label: 'Bランク', text: 'text-lime-700' },
 }
 
-export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking = {} }: UnionArenaLandingPageProps) {
+export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking = {}, series = [], recommendedDecks = [] }: UnionArenaLandingPageProps) {
     const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
+
+    // タイトル別デッキ：シリーズごとに公式おすすめデッキをグループ化（デッキがあるシリーズのみ）
+    const decksBySeries = new Map<string, UnionArenaRecommendedDeck[]>()
+    recommendedDecks.forEach(d => {
+        if (!d.tag_code) return
+        if (!decksBySeries.has(d.tag_code)) decksBySeries.set(d.tag_code, [])
+        decksBySeries.get(d.tag_code)!.push(d)
+    })
+    const seriesWithDecks = series.filter(s => (decksBySeries.get(s.tag_code) || []).length > 0)
 
     // 直近7日間の実デッキ数（weeklyRanking）に基づく環境Tier表。データが無いアーキタイプは除外。
     const rankedArchetypes = archetypes
@@ -171,6 +196,46 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                             )}
                         </div>
                     </div>
+
+                    {/* タイトル別デッキ */}
+                    {seriesWithDecks.length > 0 && (
+                        <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                            <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
+                                <span className="flex items-center gap-1.5"><Ico name="cards" className="w-4 h-4 text-blue-600" />タイトル別デッキ（公式おすすめ）</span>
+                                <Link href="/unionarena/titles" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                            </div>
+                            <div className="p-2.5 flex flex-col gap-4">
+                                {seriesWithDecks.map(s => {
+                                    const sDecks = decksBySeries.get(s.tag_code) || []
+                                    return (
+                                        <div key={s.tag_code}>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                {s.logo_url && (
+                                                    <div className="relative w-12 h-6 shrink-0">
+                                                        <Image src={s.logo_url} alt={s.name} fill className="object-contain" unoptimized />
+                                                    </div>
+                                                )}
+                                                <span className="text-xs font-semibold text-gray-800">{s.name}</span>
+                                                <span className="text-[10px] text-gray-400">{sDecks.length}件</span>
+                                            </div>
+                                            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                                                {sDecks.map(d => (
+                                                    <Link key={d.id} href={`/unionarena/titles/${d.id}`} className="text-center">
+                                                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                                            {d.image_url && (
+                                                                <Image src={d.image_url} alt={d.deck_name || s.name} fill className="object-contain" unoptimized />
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{d.deck_name || s.name}</div>
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Ad (in-content) */}
                     <div className="bg-white border border-[#e2e8f0] rounded-lg py-2.5">
