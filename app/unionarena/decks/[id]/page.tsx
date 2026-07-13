@@ -19,6 +19,8 @@ async function getDeck(id: string) {
             event_date,
             event_location,
             archetype_id,
+            color,
+            deck_name,
             created_at,
             unionarena_deck_archetypes (
                 id,
@@ -84,6 +86,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         </div>
                         <div className="p-6 md:w-2/3 flex flex-col justify-center">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                {deck.color && (
+                                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700">{deck.color}</span>
+                                )}
                                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">{archetype}</span>
                                 {deck.event_rank && (
                                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">{deck.event_rank}</span>

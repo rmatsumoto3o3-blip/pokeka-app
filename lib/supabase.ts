@@ -95,6 +95,9 @@ export interface UnionArenaDeckRecord {
   event_location: string | null
   archetype_id: string | null
   created_at: string
+  // 色タグ（例: "紫"）とフル表記のデッキ名（例: "【紫】アイドルマスター シャイニーカラーズ"）
+  color: string | null
+  deck_name: string | null
 }
 
 export interface AnalyzedDeck {

@@ -91,11 +91,11 @@ function parseDeckEntries_(html) {
         // decksTit の中身は "優勝<br>【紫】アイドルマスター シャイニーカラーズ" のような形式
         const titMatch = block.match(/js_decksTit">([\s\S]*?)<\/span>/);
         let rank = '';
-        let archetypeName = '';
+        let deckName = ''; // 色タグ込みのフルネーム（例: 【紫】アイドルマスター シャイニーカラーズ）
         if (titMatch) {
             const parts = titMatch[1].split(/<br\s*\/?>/i).map(function (s) { return decodeHtmlEntities_(s.trim()); });
             rank = parts[0] || '';
-            archetypeName = parts[1] || parts[0] || '';
+            deckName = parts[1] || parts[0] || '';
         }
 
         const dateMatch = block.match(/decksHeadTit">更新日<\/span><br>([\d.]+)/);
@@ -105,12 +105,14 @@ function parseDeckEntries_(html) {
             ? rawDate.split('.').slice(1).map(function (n) { return String(parseInt(n, 10)); }).join('/')
             : '';
 
-        if (!archetypeName) continue;
+        if (!deckName) continue;
 
         decks.push({
             deckCode: deckCode,
             eventName: eventName,
-            archetypeName: normalizeArchetypeName_(archetypeName),
+            deckName: deckName,
+            archetypeName: normalizeArchetypeName_(deckName),
+            color: extractColor_(deckName),
             rank: normalizeRank_(rank),
             eventDate: eventDate,
         });
@@ -119,9 +121,15 @@ function parseDeckEntries_(html) {
     return decks;
 }
 
-// 【紫】アイドルマスター シャイニーカラーズ -> アイドルマスター シャイニーカラーズ（色タグを除去）
+// 【紫】アイドルマスター シャイニーカラーズ -> アイドルマスター シャイニーカラーズ（色タグを除去、シリーズ名のみ）
 function normalizeArchetypeName_(name) {
     return name.replace(/^【[^】]+】/, '').trim();
+}
+
+// 【紫】アイドルマスター シャイニーカラーズ -> 紫（色タグの中身だけ抽出。無ければ空文字）
+function extractColor_(name) {
+    const m = name.match(/^【([^】]+)】/);
+    return m ? m[1] : '';
 }
 
 // 公式ページの実表記は「優勝」「準優勝」「2位」「3位」「4位」等。
@@ -177,18 +185,31 @@ function getOrCreateArchetype_(supabaseUrl, serviceKey, cache, name) {
 }
 
 // ------------------------------------------------------------------
-// 4. deck_code が未登録なら unionarena_deck_records に挿入（重複防止）
+// 4. deck_code が未登録なら unionarena_deck_records に挿入（重複防止）。
+//    既存レコードで color / deck_name が未設定なら追記する（過去分のバックフィル）。
 // ------------------------------------------------------------------
 function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
     const headers = supabaseHeaders_(serviceKey);
 
     const existsRes = UrlFetchApp.fetch(
-        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id',
+        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,color,deck_name',
         { headers: headers, muteHttpExceptions: true }
     );
     const existing = JSON.parse(existsRes.getContentText());
     if (existing && existing.length > 0) {
-        return false; // 既に登録済み
+        const row = existing[0];
+        if (!row.color || !row.deck_name) {
+            UrlFetchApp.fetch(
+                supabaseUrl + '/rest/v1/unionarena_deck_records?id=eq.' + row.id,
+                {
+                    method: 'patch',
+                    headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+                    payload: JSON.stringify({ color: deck.color || null, deck_name: deck.deckName || null }),
+                    muteHttpExceptions: true,
+                }
+            );
+        }
+        return false; // 既に登録済み（新規カウントはしない）
     }
 
     const insertRes = UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_deck_records', {
@@ -200,6 +221,8 @@ function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
             event_rank: deck.rank || null,
             event_date: deck.eventDate || null,
             event_location: deck.eventName || null,
+            deck_name: deck.deckName || null,
+            color: deck.color || null,
         }),
         muteHttpExceptions: true,
     });

@@ -1458,7 +1458,7 @@ export async function getUnionArenaDeckRecordsAction() {
     try {
         const { data, error } = await getSupabaseAdmin()
             .from('unionarena_deck_records')
-            .select('id, deck_code, archetype_id, event_rank, event_date, event_location, created_at')
+            .select('id, deck_code, archetype_id, event_rank, event_date, event_location, color, deck_name, created_at')
             .order('created_at', { ascending: false })
             .limit(1000)
 

@@ -63,6 +63,9 @@ export default async function UnionArenaDecksPage() {
                                                     {d.event_rank && (
                                                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">{d.event_rank}</span>
                                                     )}
+                                                    {d.color && (
+                                                        <span className="absolute top-1 right-1 text-[10px] font-bold text-white bg-purple-600 px-1.5 py-0.5 rounded">{d.color}</span>
+                                                    )}
                                                 </div>
                                                 <div className="px-2.5 py-2">
                                                     <p className="text-xs font-medium text-gray-800 truncate">{d.event_location || d.deck_code}</p>
