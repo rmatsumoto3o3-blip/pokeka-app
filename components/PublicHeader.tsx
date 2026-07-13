@@ -125,6 +125,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
                         <Link href="/unionarena" className="text-blue-600 font-semibold shrink-0">TOP</Link>
                         <Link href="/unionarena/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                        <Link href="/unionarena/titles" className="hover:text-blue-600 transition shrink-0">タイトル別デッキ</Link>
                         <span className="text-gray-300 shrink-0 cursor-default">一人回し <span className="text-[10px]">準備中</span></span>
                         <span className="text-gray-300 shrink-0 cursor-default">確率シミュ <span className="text-[10px]">準備中</span></span>
                         <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>

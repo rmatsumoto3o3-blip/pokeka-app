@@ -66,7 +66,7 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
 
             {/* Quick entry cards */}
             <section className="bg-white border-b border-[#eef1f6]">
-                <div className="max-w-[1080px] mx-auto grid grid-cols-2 gap-3 px-5 py-2.5">
+                <div className="max-w-[1080px] mx-auto grid grid-cols-3 gap-3 px-5 py-2.5">
                     <a href="#tier" className="bg-white border-2 border-blue-600 rounded-lg text-center py-2.5 px-1.5">
                         <Ico name="trophy" className="w-7 h-7 mx-auto text-blue-600" />
                         <div className="text-[15px] font-semibold text-gray-900 mt-1.5">環境Tier表</div>
@@ -76,6 +76,11 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                         <Ico name="list" className="w-7 h-7 mx-auto text-blue-600" />
                         <div className="text-[15px] font-semibold text-gray-900 mt-1.5">デッキ一覧</div>
                         <div className="text-[11px] text-gray-500">大会入賞デッキ</div>
+                    </Link>
+                    <Link href="/unionarena/titles" className="bg-white border border-[#e2e8f0] rounded-lg text-center py-2.5 px-1.5">
+                        <Ico name="cards" className="w-7 h-7 mx-auto text-blue-600" />
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">タイトル別デッキ</div>
+                        <div className="text-[11px] text-gray-500">公式おすすめ</div>
                     </Link>
                 </div>
             </section>
@@ -174,10 +179,11 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                     {/* 無料ツール */}
                     <div>
                         <div className="text-sm font-semibold text-gray-900 mb-2.5 pl-2.5 border-l-[3px] border-blue-600">無料ツール</div>
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-3 gap-2.5">
                             {[
                                 { href: '/unionarena/decks', icon: 'list', label: 'デッキ一覧' },
                                 { href: '#tier', icon: 'trophy', label: '環境Tier表' },
+                                { href: '/unionarena/titles', icon: 'cards', label: 'タイトル別デッキ' },
                             ].map(t => (
                                 <Link
                                     key={t.label}

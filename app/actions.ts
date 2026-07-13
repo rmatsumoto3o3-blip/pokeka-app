@@ -1490,3 +1490,35 @@ export async function getUnionArenaWeeklyRankingAction() {
         return { success: false, data: {} as Record<string, number> }
     }
 }
+
+// シリーズマスター（参加タイトル）一覧
+export async function getUnionArenaSeriesAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_series')
+            .select('tag_code, name, logo_url')
+            .order('name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaSeriesAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+// 公式おすすめデッキ（タイトル別）一覧
+export async function getUnionArenaRecommendedDecksAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_recommended_decks')
+            .select('id, deck_code, tag_code, deck_name, image_url')
+            .order('deck_name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaRecommendedDecksAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
