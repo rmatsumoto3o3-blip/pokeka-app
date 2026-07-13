@@ -57,9 +57,11 @@ export default async function UnionArenaDecksPage() {
                                         {archDecks.map((d: any) => (
                                             <Link key={d.id} href={`/unionarena/decks/${d.id}`} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
                                                 <div className="relative aspect-square bg-gray-100">
-                                                    {arch?.cover_image_url && (
-                                                        <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
-                                                    )}
+                                                    {d.thumbnail_url ? (
+                                                        <Image src={d.thumbnail_url} alt={d.deck_name || arch?.name || ''} fill className="object-contain" unoptimized />
+                                                    ) : arch?.cover_image_url ? (
+                                                        <Image src={arch.cover_image_url} alt={arch.name} fill className="object-contain p-2" unoptimized />
+                                                    ) : null}
                                                     {d.event_rank && (
                                                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">{d.event_rank}</span>
                                                     )}

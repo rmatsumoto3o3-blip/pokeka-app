@@ -98,6 +98,8 @@ export interface UnionArenaDeckRecord {
   // 色タグ（例: "紫"）とフル表記のデッキ名（例: "【紫】アイドルマスター シャイニーカラーズ"）
   color: string | null
   deck_name: string | null
+  // 公式ページのデッキごとのサムネイル画像（シリーズロゴより優先して表示に使う）
+  thumbnail_url: string | null
 }
 
 export interface AnalyzedDeck {

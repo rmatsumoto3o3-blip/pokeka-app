@@ -21,6 +21,7 @@ async function getDeck(id: string) {
             archetype_id,
             color,
             deck_name,
+            thumbnail_url,
             created_at,
             unionarena_deck_archetypes (
                 id,
@@ -65,7 +66,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     if (!deck) notFound()
 
     const archetype = (deck.unionarena_deck_archetypes as any)?.name || 'Unknown'
-    const imageUrl = (deck.unionarena_deck_archetypes as any)?.cover_image_url as string | undefined
+    const imageUrl = (deck.thumbnail_url || (deck.unionarena_deck_archetypes as any)?.cover_image_url) as string | undefined
     const displayName = deck.event_date ? `${deck.event_date} ${deck.event_location || ''}`.trim() : (deck.deck_code || archetype)
     const mainDeck = deck.deckData?.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
@@ -79,7 +80,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     <div className="md:flex">
                         <div className="md:w-1/3 bg-gray-100 relative aspect-[4/3] md:aspect-auto">
                             {imageUrl ? (
-                                <img src={imageUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />
+                                <img src={imageUrl} alt={displayName} className="absolute inset-0 w-full h-full object-contain" />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-4xl">🃏</div>
                             )}

@@ -88,6 +88,10 @@ function parseDeckEntries_(html) {
         const eventNameMatch = block.match(/decksCategory[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/);
         const eventName = eventNameMatch ? decodeHtmlEntities_(eventNameMatch[1].trim()) : '';
 
+        // デッキごとのサムネイル画像（シリーズロゴより優先して使う実際のカード/デッキ画像）
+        const thumbMatch = block.match(/decksthumbnail"><img src="([^"]+)"/);
+        const thumbnailUrl = thumbMatch ? UNIONARENA_ORIGIN + thumbMatch[1] : '';
+
         // decksTit の中身は "優勝<br>【紫】アイドルマスター シャイニーカラーズ" のような形式
         const titMatch = block.match(/js_decksTit">([\s\S]*?)<\/span>/);
         let rank = '';
@@ -115,6 +119,7 @@ function parseDeckEntries_(html) {
             color: extractColor_(deckName),
             rank: normalizeRank_(rank),
             eventDate: eventDate,
+            thumbnailUrl: thumbnailUrl,
         });
     }
 
@@ -186,25 +191,29 @@ function getOrCreateArchetype_(supabaseUrl, serviceKey, cache, name) {
 
 // ------------------------------------------------------------------
 // 4. deck_code が未登録なら unionarena_deck_records に挿入（重複防止）。
-//    既存レコードで color / deck_name が未設定なら追記する（過去分のバックフィル）。
+//    既存レコードで color / deck_name / thumbnail_url が未設定なら追記する（過去分のバックフィル）。
 // ------------------------------------------------------------------
 function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
     const headers = supabaseHeaders_(serviceKey);
 
     const existsRes = UrlFetchApp.fetch(
-        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,color,deck_name',
+        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,color,deck_name,thumbnail_url',
         { headers: headers, muteHttpExceptions: true }
     );
     const existing = JSON.parse(existsRes.getContentText());
     if (existing && existing.length > 0) {
         const row = existing[0];
-        if (!row.color || !row.deck_name) {
+        if (!row.color || !row.deck_name || !row.thumbnail_url) {
             UrlFetchApp.fetch(
                 supabaseUrl + '/rest/v1/unionarena_deck_records?id=eq.' + row.id,
                 {
                     method: 'patch',
                     headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
-                    payload: JSON.stringify({ color: deck.color || null, deck_name: deck.deckName || null }),
+                    payload: JSON.stringify({
+                        color: deck.color || null,
+                        deck_name: deck.deckName || null,
+                        thumbnail_url: deck.thumbnailUrl || null,
+                    }),
                     muteHttpExceptions: true,
                 }
             );
@@ -223,6 +232,7 @@ function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
             event_location: deck.eventName || null,
             deck_name: deck.deckName || null,
             color: deck.color || null,
+            thumbnail_url: deck.thumbnailUrl || null,
         }),
         muteHttpExceptions: true,
     });

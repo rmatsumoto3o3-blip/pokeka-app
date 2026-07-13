@@ -115,7 +115,7 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                                                 >
                                                     <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
                                                         {a.cover_image_url && (
-                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" unoptimized />
+                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-contain p-0.5" unoptimized />
                                                         )}
                                                     </div>
                                                     <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
@@ -146,9 +146,11 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                                             return (
                                                 <Link key={d.id} href={`/unionarena/decks/${d.id}`} className="text-center">
                                                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                                        {arch.cover_image_url && (
-                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
-                                                        )}
+                                                        {d.thumbnail_url ? (
+                                                            <Image src={d.thumbnail_url} alt={d.deck_name || arch.name} fill className="object-contain" unoptimized />
+                                                        ) : arch.cover_image_url ? (
+                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-contain p-2" unoptimized />
+                                                        ) : null}
                                                         <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
                                                     </div>
                                                     <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
