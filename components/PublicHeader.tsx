@@ -49,44 +49,46 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                             デッキ・カードを検索 <span className="text-[9px]">準備中</span>
                         </div>
 
-                        {isLoggedIn ? (
-                            <button
-                                onClick={() => router.push('/dashboard')}
-                                className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border-2 border-blue-200 rounded-full hover:border-blue-400 transition shadow-sm group"
-                            >
-                                {user?.user_metadata?.avatar_url ? (
-                                    <Image
-                                        src={user.user_metadata.avatar_url}
-                                        alt="User Avatar"
-                                        width={28}
-                                        height={28}
-                                        className="rounded-full"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 font-bold text-xs">
-                                        {user?.user_metadata?.nickname?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
-                                    </div>
-                                )}
-                                <span className="text-xs md:text-sm font-bold text-gray-700 max-w-[80px] md:max-w-[120px] truncate group-hover:text-blue-600 transition">
-                                    {user?.user_metadata?.nickname || user?.user_metadata?.full_name || 'マイページ'}
-                                </span>
-                            </button>
-                        ) : (
-                            <>
+                        {game === 'pokemon' && (
+                            isLoggedIn ? (
                                 <button
-                                    onClick={() => router.push('/auth')}
-                                    className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-blue-500 transition whitespace-nowrap"
+                                    onClick={() => router.push('/dashboard')}
+                                    className="flex items-center gap-2 px-2 py-1.5 md:px-3 md:py-2 bg-white border-2 border-blue-200 rounded-full hover:border-blue-400 transition shadow-sm group"
                                 >
-                                    ログイン
+                                    {user?.user_metadata?.avatar_url ? (
+                                        <Image
+                                            src={user.user_metadata.avatar_url}
+                                            alt="User Avatar"
+                                            width={28}
+                                            height={28}
+                                            className="rounded-full"
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 font-bold text-xs">
+                                            {user?.user_metadata?.nickname?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
+                                        </div>
+                                    )}
+                                    <span className="text-xs md:text-sm font-bold text-gray-700 max-w-[80px] md:max-w-[120px] truncate group-hover:text-blue-600 transition">
+                                        {user?.user_metadata?.nickname || user?.user_metadata?.full_name || 'マイページ'}
+                                    </span>
                                 </button>
-                                <button
-                                    onClick={() => router.push('/auth?mode=signup')}
-                                    className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
-                                >
-                                    無料で登録
-                                </button>
-                            </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => router.push('/auth')}
+                                        className="px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm text-gray-600 hover:text-blue-500 transition whitespace-nowrap"
+                                    >
+                                        ログイン
+                                    </button>
+                                    <button
+                                        onClick={() => router.push('/auth?mode=signup')}
+                                        className="px-3 py-1.5 md:px-6 md:py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs md:text-base rounded-lg font-semibold transition shadow-md whitespace-nowrap"
+                                    >
+                                        無料で登録
+                                    </button>
+                                </>
+                            )
                         )}
                     </div>
                 </div>
@@ -126,9 +128,6 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         <Link href="/unionarena" className="text-blue-600 font-semibold shrink-0">TOP</Link>
                         <Link href="/unionarena/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
                         <Link href="/unionarena/titles" className="hover:text-blue-600 transition shrink-0">タイトル別デッキ</Link>
-                        <span className="text-gray-300 shrink-0 cursor-default">一人回し <span className="text-[10px]">準備中</span></span>
-                        <span className="text-gray-300 shrink-0 cursor-default">確率シミュ <span className="text-[10px]">準備中</span></span>
-                        <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
                     </div>
                 </nav>
             )}
