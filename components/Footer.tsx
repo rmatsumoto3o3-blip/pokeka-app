@@ -1,6 +1,15 @@
 import Link from 'next/link'
 
-export default function Footer() {
+interface FooterProps {
+    game?: 'pokemon' | 'unionarena'
+}
+
+const DISCLAIMER: Record<'pokemon' | 'unionarena', string> = {
+    pokemon: '当サイトはファン有志による非公式サイトであり、株式会社ポケモン様、任天堂株式会社様とは一切関係ありません。',
+    unionarena: '当サイトはファン有志による非公式サイトであり、株式会社バンダイ様とは一切関係ありません。',
+}
+
+export default function Footer({ game = 'pokemon' }: FooterProps) {
     return (
         <footer className="bg-black/20 border-t border-white/10 mt-12">
             <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5">
@@ -8,7 +17,7 @@ export default function Footer() {
                     <div className="text-gray-600 text-[10px] md:text-sm font-medium">
                         © Rii
                         <p className="mt-1 text-[10px] opacity-60 leading-tight">
-                            当サイトはファン有志による非公式サイトであり、株式会社ポケモン様、任天堂株式会社様とは一切関係ありません。
+                            {DISCLAIMER[game]}
                         </p>
                     </div>
 

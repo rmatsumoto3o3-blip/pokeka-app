@@ -6,7 +6,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 
-export default function PublicHeader() {
+interface PublicHeaderProps {
+    game?: 'pokemon' | 'unionarena'
+}
+
+export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
     const supabase = createClient()
     const router = useRouter()
     const [user, setUser] = React.useState<any>(null)
@@ -90,20 +94,43 @@ export default function PublicHeader() {
 
             <div className="bg-blue-600">
                 <div className="max-w-7xl mx-auto px-3.5 flex items-center gap-0.5 overflow-x-auto whitespace-nowrap">
-                    <span className="text-white text-[13px] font-semibold px-4 py-2.5 bg-blue-700 shrink-0">ポケカ</span>
+                    <Link
+                        href="/"
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'pokemon' ? 'text-white bg-blue-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
+                    >
+                        ポケカ
+                    </Link>
+                    <Link
+                        href="/unionarena"
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'unionarena' ? 'text-white bg-blue-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
+                    >
+                        ユニアリ
+                    </Link>
                 </div>
             </div>
 
-            <nav className="border-t border-blue-100 bg-white">
-                <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
-                    <Link href="/" className="text-blue-600 font-semibold shrink-0">TOP</Link>
-                    <Link href="/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
-                    <Link href="/practice" className="hover:text-blue-600 transition shrink-0">一人回し</Link>
-                    <Link href="/simulator" className="hover:text-blue-600 transition shrink-0">確率シミュ</Link>
-                    <Link href="/articles" className="hover:text-blue-600 transition shrink-0">記事</Link>
-                    <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
-                </div>
-            </nav>
+            {game === 'pokemon' ? (
+                <nav className="border-t border-blue-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/" className="text-blue-600 font-semibold shrink-0">TOP</Link>
+                        <Link href="/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                        <Link href="/practice" className="hover:text-blue-600 transition shrink-0">一人回し</Link>
+                        <Link href="/simulator" className="hover:text-blue-600 transition shrink-0">確率シミュ</Link>
+                        <Link href="/articles" className="hover:text-blue-600 transition shrink-0">記事</Link>
+                        <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
+                    </div>
+                </nav>
+            ) : (
+                <nav className="border-t border-blue-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/unionarena" className="text-blue-600 font-semibold shrink-0">TOP</Link>
+                        <Link href="/unionarena/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                        <span className="text-gray-300 shrink-0 cursor-default">一人回し <span className="text-[10px]">準備中</span></span>
+                        <span className="text-gray-300 shrink-0 cursor-default">確率シミュ <span className="text-[10px]">準備中</span></span>
+                        <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
+                    </div>
+                </nav>
+            )}
         </header>
     )
 }
