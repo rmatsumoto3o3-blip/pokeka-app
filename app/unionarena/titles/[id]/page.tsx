@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import UnionArenaDeckCardGrid from '@/components/UnionArenaDeckCardGrid'
+import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchUnionArenaDeckData, type UnionArenaDeckData } from '@/lib/unionArenaDeckParser'
 
 export const revalidate = 3600
@@ -130,6 +131,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         )}
                     </div>
                 )}
+
+                <div className="mt-8 rounded-2xl border border-gray-100 bg-white px-4 py-5 shadow-sm">
+                    <AdPlaceholder slot="5651129539" format="leaderboard" className="mx-auto" />
+                </div>
             </main>
         </div>
     )
