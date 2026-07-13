@@ -489,7 +489,7 @@ function PracticeContent() {
     const [deckBuilderCards, setDeckBuilderCards] = useState<Record<number, number>>({})
     const [savedPracticeDecks, setSavedPracticeDecks] = useState<SavedPracticeDeck[]>([])
     const [selectedSavedDeckId, setSelectedSavedDeckId] = useState('')
-    const [firebaseDeckStatus, setFirebaseDeckStatus] = useState<'idle' | 'syncing' | 'saved' | 'local-only' | 'error'>('idle')
+    const [, setFirebaseDeckStatus] = useState<'idle' | 'syncing' | 'saved' | 'local-only' | 'error'>('idle')
     const isCpuModeRequested = CPU_BATTLE_ENABLED && isCpuDeckCode(deckCode2)
     const canShowCpuUnlock = !deckCode1.trim() && isCpuModeRequested
     const canLoadDeckCodes = isCpuModeRequested ? Boolean(deckCode1.trim()) : Boolean(deckCode1.trim() || deckCode2.trim())
@@ -1090,23 +1090,6 @@ function PracticeContent() {
                                     <div className="text-sm font-black text-gray-900">デッキ作成</div>
                                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500">
                                         <span>カードを検索して60枚デッキを保存できます。</span>
-                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
-                                            firebaseDeckStatus === 'saved'
-                                                ? 'bg-emerald-100 text-emerald-700'
-                                                : firebaseDeckStatus === 'syncing'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : firebaseDeckStatus === 'error'
-                                                        ? 'bg-red-100 text-red-700'
-                                                        : 'bg-gray-200 text-gray-600'
-                                        }`}>
-                                            {firebaseDeckStatus === 'saved'
-                                                ? 'Firebase同期済み'
-                                                : firebaseDeckStatus === 'syncing'
-                                                    ? 'Firebase同期中'
-                                                    : firebaseDeckStatus === 'error'
-                                                        ? 'Firebase同期失敗'
-                                                        : 'ローカル保存'}
-                                        </span>
                                     </div>
                                 </div>
                                 <button
@@ -1239,7 +1222,7 @@ function PracticeContent() {
                                                 </div>
                                             ))}
                                             {builderTotal !== 60 && (
-                                                <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">60枚にすると保存・CPU対戦に使いやすくなります。</div>
+                                                <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">60枚にすると保存できます。</div>
                                             )}
                                         </div>
 
