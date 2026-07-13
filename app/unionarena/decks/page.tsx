@@ -47,7 +47,7 @@ export default async function UnionArenaDecksPage() {
                         Object.entries(grouped).map(([archId, archDecks]) => {
                             const arch = archId === 'others' ? { name: 'その他', cover_image_url: null } : archetypeMap.get(archId)
                             return (
-                                <section key={archId} className="mb-8">
+                                <section key={archId} id={`arch-${archId}`} className="mb-8 scroll-mt-24">
                                     <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                                         <span className="w-1.5 h-5 bg-blue-500 rounded-full"></span>
                                         {arch?.name || 'その他'}

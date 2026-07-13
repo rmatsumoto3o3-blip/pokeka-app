@@ -114,9 +114,10 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                                         {items.map(a => {
                                             const share = totalRecentDecks > 0 ? ((weeklyRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
                                             return (
-                                                <div
+                                                <Link
                                                     key={a.id}
-                                                    className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white"
+                                                    href={`/unionarena/decks#arch-${a.id}`}
+                                                    className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white hover:border-blue-300 hover:shadow-sm transition"
                                                 >
                                                     <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
                                                         {a.cover_image_url && (
@@ -125,7 +126,7 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                                                     </div>
                                                     <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
                                                     <span className="text-xs font-semibold text-blue-700">{share}%</span>
-                                                </div>
+                                                </Link>
                                             )
                                         })}
                                     </div>
