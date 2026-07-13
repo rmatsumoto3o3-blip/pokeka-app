@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'assets.tcgdex.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.unionarena-tcg.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'files.bandai-tcg-plus.com',
+      },
     ],
   },
 };

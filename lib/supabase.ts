@@ -78,6 +78,30 @@ export interface ReferenceDeck {
   image_url?: string | null
 }
 
+// ユニオンアリーナ専用テーブル（unionarena_* 、ポケカ側とは完全に独立）
+export interface UnionArenaDeckArchetype {
+  id: string
+  name: string
+  display_order: number | null
+  cover_image_url: string | null
+  created_at: string
+}
+
+export interface UnionArenaDeckRecord {
+  id: string
+  deck_code: string | null
+  event_rank: string | null
+  event_date: string | null
+  event_location: string | null
+  archetype_id: string | null
+  created_at: string
+  // 色タグ（例: "紫"）とフル表記のデッキ名（例: "【紫】アイドルマスター シャイニーカラーズ"）
+  color: string | null
+  deck_name: string | null
+  // 公式ページのデッキごとのサムネイル画像（シリーズロゴより優先して表示に使う）
+  thumbnail_url: string | null
+}
+
 export interface AnalyzedDeck {
   id: string
   user_id: string

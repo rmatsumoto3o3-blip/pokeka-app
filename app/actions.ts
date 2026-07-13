@@ -1433,3 +1433,92 @@ export async function deleteArticleAction(id: string): Promise<{ success: boolea
         return { success: false, error: (error as Error).message }
     }
 }
+
+// ==========================================================================
+// ユニオンアリーナ（unionarena_* テーブル、ポケカ側とは完全に独立）
+// ==========================================================================
+
+export async function getUnionArenaArchetypesAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_deck_archetypes')
+            .select('*')
+            .order('display_order', { ascending: true })
+            .order('name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaArchetypesAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+export async function getUnionArenaDeckRecordsAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_deck_records')
+            .select('id, deck_code, archetype_id, event_rank, event_date, event_location, color, deck_name, thumbnail_url, created_at')
+            .order('created_at', { ascending: false })
+            .limit(1000)
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaDeckRecordsAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+// 直近7日間のアーキタイプ別デッキ数（環境Tier表用）
+export async function getUnionArenaWeeklyRankingAction() {
+    try {
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_deck_records')
+            .select('archetype_id')
+            .gte('created_at', since)
+
+        if (error) throw error
+        const counts: Record<string, number> = {}
+        ;(data || []).forEach(r => {
+            if (r.archetype_id) counts[r.archetype_id] = (counts[r.archetype_id] || 0) + 1
+        })
+        return { success: true, data: counts }
+    } catch (e) {
+        console.error('getUnionArenaWeeklyRankingAction error:', e)
+        return { success: false, data: {} as Record<string, number> }
+    }
+}
+
+// シリーズマスター（参加タイトル）一覧
+export async function getUnionArenaSeriesAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_series')
+            .select('tag_code, name, logo_url')
+            .order('name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaSeriesAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+// 公式おすすめデッキ（タイトル別）一覧
+export async function getUnionArenaRecommendedDecksAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('unionarena_recommended_decks')
+            .select('id, deck_code, tag_code, deck_name, image_url')
+            .order('deck_name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getUnionArenaRecommendedDecksAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}

@@ -215,6 +215,11 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                         </div>
                     </div>
 
+                    {/* Ad (in-content) */}
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg py-2.5">
+                        <AdPlaceholder slot="5651129539" format="leaderboard" className="mx-auto" />
+                    </div>
+
                     {/* 注目カード採用率 */}
                     <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center gap-1.5">
@@ -290,6 +295,11 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                                 </div>
                             </div>
                         )}
+                    </div>
+
+                    {/* Ad (in-content) */}
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg py-2.5">
+                        <AdPlaceholder slot="5651129539" format="leaderboard" className="mx-auto" />
                     </div>
 
                     {/* 無料ツール */}
@@ -396,6 +406,10 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                         <div className="text-xs font-semibold text-blue-700 flex items-center justify-center gap-1.5"><Ico name="refresh" className="w-3.5 h-3.5" />大会データ 毎日更新</div>
                         <div className="text-[11px] text-blue-600 mt-1">全国の入賞デッキを自動集計</div>
                     </div>
+
+                    <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden p-2.5">
+                        <AdPlaceholder format="rectangle" />
+                    </div>
                 </aside>
             </div>
 
@@ -403,14 +417,14 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
             <div className="max-w-[1080px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 px-1.5 pb-4">
                 <div className="flex flex-col items-center">
                     <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
-                    <a href="https://shopa.jp/9293M3MEXQ2Z" target="_blank" rel="noopener noreferrer" className="block w-full hover:opacity-90 transition-opacity">
-                        <Image src="/ad_sponsor_toyger.png" alt="サプライ買うならTOYGER" width={400} height={150} className="w-full h-auto rounded-lg shadow-sm border border-gray-100" />
+                    <a href="https://shopa.jp/9293M3MEXQ2Z" target="_blank" rel="noopener noreferrer" className="block w-full h-16 sm:h-20 hover:opacity-90 transition-opacity">
+                        <Image src="/ad_sponsor_toyger.png" alt="サプライ買うならTOYGER" width={400} height={150} className="w-full h-full object-cover rounded-lg shadow-sm border border-gray-100" />
                     </a>
                 </div>
                 <div className="flex flex-col items-center">
                     <span className="text-xs text-gray-400 mb-1">ドット絵ご提供者様(下記タップでXへ)</span>
-                    <a href="https://twitter.com/komori541milk" target="_blank" rel="noopener noreferrer" className="block w-[94%] hover:opacity-90 transition-opacity mx-auto">
-                        <Image src="/dotpicture.png" alt="ドット絵ご提供者様" width={1715} height={589} className="w-full h-auto rounded-lg shadow-sm border border-gray-100" />
+                    <a href="https://twitter.com/komori541milk" target="_blank" rel="noopener noreferrer" className="block w-[94%] h-16 sm:h-20 hover:opacity-90 transition-opacity mx-auto">
+                        <Image src="/dotpicture.png" alt="ドット絵ご提供者様" width={1715} height={589} className="w-full h-full object-cover rounded-lg shadow-sm border border-gray-100" />
                     </a>
                 </div>
             </div>
