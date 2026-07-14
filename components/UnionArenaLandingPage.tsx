@@ -294,7 +294,7 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                     </div>
 
                     <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden p-2.5">
-                        <AdPlaceholder format="rectangle" />
+                        <AdPlaceholder slot="2515406718" format="auto" />
                     </div>
                 </aside>
             </div>
