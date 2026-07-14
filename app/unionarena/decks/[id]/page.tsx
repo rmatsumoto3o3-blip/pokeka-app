@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import UnionArenaDeckCardGrid from '@/components/UnionArenaDeckCardGrid'
-import { fetchUnionArenaDeckData, type UnionArenaDeckData } from '@/lib/unionArenaDeckParser'
+import { fetchUnionArenaDeckData, type UnionArenaCard } from '@/lib/unionArenaDeckParser'
 
 export const revalidate = 3600
 export const dynamicParams = true
@@ -34,16 +34,27 @@ async function getDeck(id: string) {
 
     if (error || !deck) return null
 
-    let deckData: UnionArenaDeckData | null = null
-    if (deck.deck_code) {
+    // 1. DBに保存済みのカード構成があればそれを使う（公式API非依存・deck_code失効に耐える）
+    //    card_list列が未作成でもクエリ失敗を握りつぶして従来動作にフォールバックする
+    let mainDeck: UnionArenaCard[] = []
+    const { data: stored } = await supabase
+        .from('unionarena_deck_records')
+        .select('card_list')
+        .eq('id', id)
+        .single()
+    if (stored?.card_list && Array.isArray(stored.card_list) && stored.card_list.length > 0) {
+        mainDeck = stored.card_list as UnionArenaCard[]
+    } else if (deck.deck_code) {
+        // 2. 未保存なら公式APIからリアルタイム取得（フォールバック）
         try {
-            deckData = await fetchUnionArenaDeckData(deck.deck_code)
+            const deckData = await fetchUnionArenaDeckData(deck.deck_code)
+            mainDeck = deckData.mainDeck
         } catch (e) {
             console.error('Failed to fetch Union Arena deck recipe:', e)
         }
     }
 
-    return { ...deck, deckData }
+    return { ...deck, mainDeck }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -68,7 +79,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const archetype = (deck.unionarena_deck_archetypes as any)?.name || 'Unknown'
     const imageUrl = (deck.thumbnail_url || (deck.unionarena_deck_archetypes as any)?.cover_image_url) as string | undefined
     const displayName = deck.event_date ? `${deck.event_date} ${deck.event_location || ''}`.trim() : (deck.deck_code || archetype)
-    const mainDeck = deck.deckData?.mainDeck || []
+    const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
 
     return (

@@ -15,6 +15,77 @@
 const UNIONARENA_LIST_URL = 'https://www.unionarena-tcg.com/jp/decks/top-placing/';
 const UNIONARENA_TITLES_URL = 'https://www.unionarena-tcg.com/jp/decks/titles/';
 const UNIONARENA_ORIGIN = 'https://www.unionarena-tcg.com';
+const UNIONARENA_STORAGE_BUCKET = 'unionarena-images';
+const BANDAI_API = 'https://api.bandai-tcg-plus.com';
+const UNIONARENA_GAME_TITLE_ID = 9;
+
+// ------------------------------------------------------------------
+// 画像を公式サイトから取得し Supabase Storage に保存して公開URLを返す。
+// 既にStorageのURL（storage/v1/object/public を含む）ならそのまま返す。
+// ------------------------------------------------------------------
+function cacheImageToStorage_(supabaseUrl, serviceKey, sourceUrl, storagePath) {
+    if (!sourceUrl) return sourceUrl;
+    if (sourceUrl.indexOf('/storage/v1/object/public/') !== -1) return sourceUrl; // 既に自前保存済み
+
+    const imgRes = UrlFetchApp.fetch(sourceUrl, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (imgRes.getResponseCode() !== 200) {
+        throw new Error('画像取得失敗 ' + imgRes.getResponseCode() + ' ' + sourceUrl);
+    }
+    const blob = imgRes.getBlob();
+    const ext = (sourceUrl.split('?')[0].match(/\.(\w+)$/) || [null, 'png'])[1];
+    const contentType = ext === 'webp' ? 'image/webp' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+
+    const upRes = UrlFetchApp.fetch(supabaseUrl + '/storage/v1/object/' + UNIONARENA_STORAGE_BUCKET + '/' + storagePath, {
+        method: 'post',
+        contentType: contentType,
+        headers: { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey, 'x-upsert': 'true' },
+        payload: blob.getBytes(),
+        muteHttpExceptions: true,
+    });
+    if (upRes.getResponseCode() >= 300) {
+        throw new Error('画像アップロード失敗 ' + upRes.getResponseCode() + ' ' + upRes.getContentText());
+    }
+    return supabaseUrl + '/storage/v1/object/public/' + UNIONARENA_STORAGE_BUCKET + '/' + storagePath;
+}
+
+// ------------------------------------------------------------------
+// deck_code から実カード構成を取得（bandai-tcg-plus.com 公開API 2段）。
+// アプリの lib/unionArenaDeckParser.ts と同じ形の配列を返す。失敗時は null。
+// ------------------------------------------------------------------
+function fetchCardList_(deckCode) {
+    try {
+        const urlCodeRes = UrlFetchApp.fetch(BANDAI_API + '/api/user/deck/url_code?deck_code=' + encodeURIComponent(deckCode), { muteHttpExceptions: true });
+        if (urlCodeRes.getResponseCode() !== 200) return null;
+        const urlCode = JSON.parse(urlCodeRes.getContentText())?.success?.url_code;
+        if (!urlCode) return null;
+
+        const recipeRes = UrlFetchApp.fetch(
+            BANDAI_API + '/api/user/deck/recipe?url_code=' + encodeURIComponent(urlCode)
+            + '&game_title_id=' + UNIONARENA_GAME_TITLE_ID + '&encode=0',
+            { muteHttpExceptions: true }
+        );
+        if (recipeRes.getResponseCode() !== 200) return null;
+        const success = JSON.parse(recipeRes.getContentText())?.success;
+        if (!success) return null;
+
+        return (success.main_deck || []).map(function (c) {
+            return {
+                id: c.id,
+                code: c.code,
+                cardNumber: c.card_number,
+                name: c.card_name,
+                quantity: c.card_count,
+                imageUrl: c.image_url,
+                cost: c.cost,
+                color: c.color,
+                type: c.type,
+            };
+        });
+    } catch (e) {
+        Logger.log('fetchCardList_ error (' + deckCode + '): ' + e);
+        return null;
+    }
+}
 
 function syncUnionArenaDecks() {
     const props = PropertiesService.getScriptProperties();
@@ -197,23 +268,29 @@ function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
     const headers = supabaseHeaders_(serviceKey);
 
     const existsRes = UrlFetchApp.fetch(
-        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,color,deck_name,thumbnail_url',
+        supabaseUrl + '/rest/v1/unionarena_deck_records?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,color,deck_name,thumbnail_url,card_list',
         { headers: headers, muteHttpExceptions: true }
     );
     const existing = JSON.parse(existsRes.getContentText());
     if (existing && existing.length > 0) {
         const row = existing[0];
-        if (!row.color || !row.deck_name || !row.thumbnail_url) {
+        const needsThumb = !row.thumbnail_url || row.thumbnail_url.indexOf('/storage/v1/object/public/') === -1;
+        const needsCards = !row.card_list;
+        if (!row.color || !row.deck_name || needsThumb || needsCards) {
+            const patch = { color: deck.color || null, deck_name: deck.deckName || null };
+            if (needsThumb && deck.thumbnailUrl) {
+                patch.thumbnail_url = safeCacheImage_(supabaseUrl, serviceKey, deck.thumbnailUrl, 'decks/' + row.id);
+            }
+            if (needsCards) {
+                const cards = fetchCardList_(deck.deckCode);
+                if (cards) patch.card_list = cards;
+            }
             UrlFetchApp.fetch(
                 supabaseUrl + '/rest/v1/unionarena_deck_records?id=eq.' + row.id,
                 {
                     method: 'patch',
                     headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
-                    payload: JSON.stringify({
-                        color: deck.color || null,
-                        deck_name: deck.deckName || null,
-                        thumbnail_url: deck.thumbnailUrl || null,
-                    }),
+                    payload: JSON.stringify(patch),
                     muteHttpExceptions: true,
                 }
             );
@@ -221,6 +298,7 @@ function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
         return false; // 既に登録済み（新規カウントはしない）
     }
 
+    // 新規: まず挿入してidを得る → 画像をStorage保存・カード構成取得して更新
     const insertRes = UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_deck_records', {
         method: 'post',
         headers: Object.assign({}, headers, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
@@ -232,15 +310,38 @@ function upsertDeckRecord_(supabaseUrl, serviceKey, archetypeId, deck) {
             event_location: deck.eventName || null,
             deck_name: deck.deckName || null,
             color: deck.color || null,
-            thumbnail_url: deck.thumbnailUrl || null,
         }),
         muteHttpExceptions: true,
     });
-
     if (insertRes.getResponseCode() >= 300) {
         throw new Error('デッキ登録に失敗: ' + deck.deckCode + ' / ' + insertRes.getContentText());
     }
+    const newId = JSON.parse(insertRes.getContentText())[0].id;
+
+    const patch = {};
+    if (deck.thumbnailUrl) patch.thumbnail_url = safeCacheImage_(supabaseUrl, serviceKey, deck.thumbnailUrl, 'decks/' + newId);
+    const cards = fetchCardList_(deck.deckCode);
+    if (cards) patch.card_list = cards;
+    if (Object.keys(patch).length > 0) {
+        UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_deck_records?id=eq.' + newId, {
+            method: 'patch',
+            headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+            payload: JSON.stringify(patch),
+            muteHttpExceptions: true,
+        });
+    }
     return true;
+}
+
+// 画像キャッシュはエラーで全体を止めないよう握りつぶす（失敗時は元URLのまま）
+function safeCacheImage_(supabaseUrl, serviceKey, sourceUrl, storagePath) {
+    try {
+        const ext = (sourceUrl.split('?')[0].match(/\.(\w+)$/) || [null, 'png'])[1];
+        return cacheImageToStorage_(supabaseUrl, serviceKey, sourceUrl, storagePath + '.' + ext);
+    } catch (e) {
+        Logger.log('safeCacheImage_ error: ' + e);
+        return sourceUrl;
+    }
 }
 
 function supabaseHeaders_(serviceKey) {
@@ -274,27 +375,28 @@ function syncUnionArenaSeries() {
     Logger.log('検出したシリーズ数: ' + seriesList.length);
 
     const headers = supabaseHeaders_(serviceKey);
+    let updated = 0;
     seriesList.forEach(function (s) {
+        // ロゴ画像をStorageに保存し、以降は自前URLを使う
+        const storedLogo = safeCacheImage_(supabaseUrl, serviceKey, s.logoUrl, 'series/' + s.tagCode);
+
         UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_series', {
             method: 'post',
             headers: Object.assign({}, headers, {
                 'Content-Type': 'application/json',
                 Prefer: 'resolution=merge-duplicates',
             }),
-            payload: JSON.stringify({ tag_code: s.tagCode, name: s.name, logo_url: s.logoUrl }),
+            payload: JSON.stringify({ tag_code: s.tagCode, name: s.name, logo_url: storedLogo }),
             muteHttpExceptions: true,
         });
-    });
 
-    // アーキタイプ名がシリーズ名と一致するものに、ロゴ画像を cover_image_url としてバックフィル
-    let updated = 0;
-    seriesList.forEach(function (s) {
+        // アーキタイプ名がシリーズ名と一致するものに、ロゴ画像を cover_image_url としてバックフィル
         const res = UrlFetchApp.fetch(
             supabaseUrl + '/rest/v1/unionarena_deck_archetypes?name=eq.' + encodeURIComponent(s.name) + '&cover_image_url=is.null',
             {
                 method: 'patch',
                 headers: Object.assign({}, headers, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
-                payload: JSON.stringify({ cover_image_url: s.logoUrl }),
+                payload: JSON.stringify({ cover_image_url: storedLogo }),
                 muteHttpExceptions: true,
             }
         );
@@ -340,21 +442,47 @@ function syncUnionArenaRecommendedDecks() {
     const headers = supabaseHeaders_(serviceKey);
     let inserted = 0;
     decks.forEach(function (deck) {
-        const res = UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_recommended_decks', {
+        // 既存確認（画像・カード構成が保存済みかを見る）
+        const exRes = UrlFetchApp.fetch(
+            supabaseUrl + '/rest/v1/unionarena_recommended_decks?deck_code=eq.' + encodeURIComponent(deck.deckCode) + '&select=id,image_url,card_list',
+            { headers: headers, muteHttpExceptions: true }
+        );
+        const ex = JSON.parse(exRes.getContentText() || '[]');
+        let id = ex.length ? ex[0].id : null;
+        const curImage = ex.length ? ex[0].image_url : null;
+        const curCards = ex.length ? ex[0].card_list : null;
+
+        // 基本情報をupsert（image_urlは自前URLを上書きしないよう含めない）
+        const upRes = UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_recommended_decks', {
             method: 'post',
             headers: Object.assign({}, headers, {
                 'Content-Type': 'application/json',
-                Prefer: 'resolution=merge-duplicates',
+                Prefer: 'resolution=merge-duplicates,return=representation',
             }),
             payload: JSON.stringify({
                 deck_code: deck.deckCode,
                 tag_code: deck.tagCode || null,
                 deck_name: deck.deckName || null,
-                image_url: deck.imageUrl || null,
             }),
             muteHttpExceptions: true,
         });
-        if (res.getResponseCode() < 300) inserted++;
+        if (upRes.getResponseCode() >= 300) { Logger.log('rec upsert失敗: ' + deck.deckCode); return; }
+        if (!id) id = JSON.parse(upRes.getContentText())[0].id;
+        inserted++;
+
+        // 画像Storage保存・カード構成保存（未保存のものだけ）
+        const patch = {};
+        const needImage = !curImage || curImage.indexOf('/storage/v1/object/public/') === -1;
+        if (needImage && deck.imageUrl) patch.image_url = safeCacheImage_(supabaseUrl, serviceKey, deck.imageUrl, 'recommended/' + id);
+        if (!curCards) { const cards = fetchCardList_(deck.deckCode); if (cards) patch.card_list = cards; }
+        if (Object.keys(patch).length > 0) {
+            UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_recommended_decks?id=eq.' + id, {
+                method: 'patch',
+                headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+                payload: JSON.stringify(patch),
+                muteHttpExceptions: true,
+            });
+        }
     });
 
     Logger.log('登録/更新: ' + inserted + '件');

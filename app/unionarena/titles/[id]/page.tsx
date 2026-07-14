@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import UnionArenaDeckCardGrid from '@/components/UnionArenaDeckCardGrid'
 import AdPlaceholder from '@/components/AdPlaceholder'
-import { fetchUnionArenaDeckData, type UnionArenaDeckData } from '@/lib/unionArenaDeckParser'
+import { fetchUnionArenaDeckData, type UnionArenaCard } from '@/lib/unionArenaDeckParser'
 
 export const revalidate = 3600
 export const dynamicParams = true
@@ -30,16 +30,25 @@ async function getRecommendedDeck(id: string) {
 
     if (error || !deck) return null
 
-    let deckData: UnionArenaDeckData | null = null
-    if (deck.deck_code) {
+    // DBに保存済みのカード構成があればそれを使う（公式API非依存）。無ければAPIから取得。
+    let mainDeck: UnionArenaCard[] = []
+    const { data: stored } = await supabase
+        .from('unionarena_recommended_decks')
+        .select('card_list')
+        .eq('id', id)
+        .single()
+    if (stored?.card_list && Array.isArray(stored.card_list) && stored.card_list.length > 0) {
+        mainDeck = stored.card_list as UnionArenaCard[]
+    } else if (deck.deck_code) {
         try {
-            deckData = await fetchUnionArenaDeckData(deck.deck_code)
+            const deckData = await fetchUnionArenaDeckData(deck.deck_code)
+            mainDeck = deckData.mainDeck
         } catch (e) {
             console.error('Failed to fetch Union Arena recommended deck recipe:', e)
         }
     }
 
-    return { ...deck, deckData }
+    return { ...deck, mainDeck }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -64,7 +73,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const seriesName = (deck.unionarena_series as any)?.name || 'Unknown'
     const deckName = deck.deck_name || seriesName
     const imageUrl = deck.image_url || (deck.unionarena_series as any)?.logo_url
-    const mainDeck = deck.deckData?.mainDeck || []
+    const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
 
     return (
