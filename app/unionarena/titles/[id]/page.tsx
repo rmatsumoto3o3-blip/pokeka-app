@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import UnionArenaDeckCardGrid from '@/components/UnionArenaDeckCardGrid'
+import UnionArenaDeckIcon from '@/components/UnionArenaDeckIcon'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchUnionArenaDeckData, type UnionArenaCard } from '@/lib/unionArenaDeckParser'
 
@@ -84,11 +85,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                     <div className="md:flex">
                         <div className="md:w-1/3 bg-gray-100 relative aspect-[4/3] md:aspect-auto">
-                            {imageUrl ? (
-                                <img src={imageUrl} alt={deckName} className="absolute inset-0 w-full h-full object-contain" />
-                            ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-4xl">🃏</div>
-                            )}
+                            <UnionArenaDeckIcon
+                                deckCode={deck.deck_code}
+                                fallbackUrl={imageUrl}
+                                alt={deckName}
+                                className="absolute inset-0 w-full h-full object-contain"
+                            />
                         </div>
                         <div className="p-6 md:w-2/3 flex flex-col justify-center">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">

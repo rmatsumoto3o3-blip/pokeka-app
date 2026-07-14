@@ -1,0 +1,41 @@
+合計 37 デッキ
+
+ファイル名(=デッキコード.png)          | デッキ名
+----------------------------------------------------------------------
+0vuuvlny8gpYgKPy.png  | 【赤】チェンソーマン
+fhB3g5IccBgchUVD.png  | 【紫】チェンソーマン
+VARkC2oMuUrcc9da.png  | 【赤】チェンソーマン
+6tE0suQT4N0q6gLs.png  | 【紫】チェンソーマン
+YuefRDyB0fJiUeVF.png  | 【青】学園アイドルマスター
+aaQLWWLGPww6ymJJ.png  | 【黄】学園アイドルマスター
+ECnuDVhdb0paeI1H.png  | 【青】学園アイドルマスター
+2rdkSBrpIWnNLwlp.png  | 【赤】学園アイドルマスター
+qadcOBz5AODfj6BU.png  | 【黄】学園アイドルマスター
+zsXHNpSg2mO0UkZF.png  | 【赤】学園アイドルマスター
+CeSU6nzZNlJMfk1a.png  | 【紫】犬夜叉
+vt1rPsPewrIHAhLw.png  | 【紫】犬夜叉
+HcG8ievYIQgrkzn8.png  | 【赤】犬夜叉
+aFRXnNp4468RUdjB.png  | 【赤】犬夜叉
+bXVbUd9tzfHnv3Ro.png  | 【黄】陰の実力者になりたくて！
+VoOR44uFUlcj3eYD.png  | 【紫】陰の実力者になりたくて！
+O9JEL72r9NbZPe22.png  | 【黄】陰の実力者になりたくて！
+8hMNQQZfplBU9EAQ.png  | 【紫】陰の実力者になりたくて！
+JWuRFgqzAapKEk58.png  | 【青】「マクロス」シリーズ
+98i32y2Bgczj587l.png  | 【赤】「マクロス」シリーズ
+cLK7CDjtKBCaiG1I.png  | 【赤】「マクロス」シリーズ
+jv2oziEHS4gpJVbR.png  | 【赤】「マクロス」シリーズ
+m5CXNA47yBL3saCx.png  | 【黄】「マクロス」シリーズ
+GB4KBMqRBAYTUcR1.png  | 【黄】「マクロス」シリーズ
+45L8ZXfv4T73OiPy.png  | 【黄】「マクロス」シリーズ
+ERVVdXrvk986j2qL.png  | 【紫】「マクロス」シリーズ
+QDYzQs89Cmdb2UzQ.png  | 【紫】「マクロス」シリーズ
+zSMq6r2RyDImYQPS.png  | 【青】「マクロス」シリーズ
+OlOgWfx0w6EsFcVn.png  | 【青】無職転生 ～異世界行ったら本気だす～
+ZNWiRmJep3XPNeVO.png  | 【緑】無職転生 ～異世界行ったら本気だす～
+52ayWafoDQwTQ062.png  | 【青】無職転生 ～異世界行ったら本気だす～
+jaxbegJu48b6Zm0s.png  | 【緑】無職転生 ～異世界行ったら本気だす～
+Aban5Vev0irObIqp.png  | 【紫】俺だけレベルアップな件
+GS7rkRTAGdK8ztse.png  | 【緑】俺だけレベルアップな件
+5L2ucrxj5fgI9qA7.png  | 【緑】俺だけレベルアップな件
+HcvJPn3KXlKIVGmD.png  | 【緑】俺だけレベルアップな件
+afJTClXv33vM4hXu.png  | 【紫】俺だけレベルアップな件

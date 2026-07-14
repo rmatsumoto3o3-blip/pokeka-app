@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
+import UnionArenaDeckIcon from '@/components/UnionArenaDeckIcon'
 import { getUnionArenaSeriesAction, getUnionArenaRecommendedDecksAction } from '@/app/actions'
 
 export const metadata: Metadata = {
@@ -67,9 +68,12 @@ export default async function UnionArenaTitlesPage() {
                                                 className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition"
                                             >
                                                 <div className="relative aspect-square bg-gray-100">
-                                                    {d.image_url && (
-                                                        <Image src={d.image_url} alt={d.deck_name || s.name} fill className="object-contain" unoptimized />
-                                                    )}
+                                                    <UnionArenaDeckIcon
+                                                        deckCode={d.deck_code}
+                                                        fallbackUrl={d.image_url}
+                                                        alt={d.deck_name || s.name}
+                                                        className="absolute inset-0 w-full h-full object-contain"
+                                                    />
                                                 </div>
                                                 <div className="px-2.5 py-2">
                                                     <p className="text-xs font-medium text-gray-800 truncate">{d.deck_name || s.name}</p>

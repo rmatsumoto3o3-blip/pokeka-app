@@ -7,6 +7,7 @@ import type { UnionArenaDeckRecord, UnionArenaDeckArchetype } from '@/lib/supaba
 
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import UnionArenaDeckIcon from '@/components/UnionArenaDeckIcon'
 import { Ico } from '@/components/Icons'
 
 interface UnionArenaSeries {
@@ -222,9 +223,12 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                                                 {sDecks.map(d => (
                                                     <Link key={d.id} href={`/unionarena/titles/${d.id}`} className="text-center">
                                                         <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                                            {d.image_url && (
-                                                                <Image src={d.image_url} alt={d.deck_name || s.name} fill className="object-contain" unoptimized />
-                                                            )}
+                                                            <UnionArenaDeckIcon
+                                                                deckCode={d.deck_code}
+                                                                fallbackUrl={d.image_url}
+                                                                alt={d.deck_name || s.name}
+                                                                className="absolute inset-0 w-full h-full object-contain"
+                                                            />
                                                         </div>
                                                         <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{d.deck_name || s.name}</div>
                                                     </Link>
