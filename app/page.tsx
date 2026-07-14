@@ -110,6 +110,26 @@ const getCachedRecentArchetypeIds = unstable_cache(
   { revalidate: 86400 }
 )
 
+// TOPの「環境・優勝デッキ集」と「環境デッキ分布(直近30日)」に使う直近デッキ一覧。
+// 大会データはGASが1日1回しか更新しないため、24時間キャッシュで十分。
+// これを毎リクエスト取得していたのがegress増加の主因だったため、必ずキャッシュを通す。
+const getCachedRecentDecks = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data } = await supabase
+      .from('deck_records')
+      .select('id, deck_code, archetype_id, event_rank, event_date, event_location, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1000)
+    return data || []
+  },
+  ['recent-decks-top'],
+  { revalidate: 86400 } // 24時間キャッシュ（1日1回更新に合わせる）
+)
+
 export const metadata: Metadata = {
   title: 'PokéLix（ポケリス）| ポケカ デッキシミュレーター・初手確率',
   description: 'ポケモンカードのデッキシミュレーター。環境デッキ採用率・初手確率・一人回し練習が無料で使えるサイト。デッキコードを入力するだけで初手7枚の確率、サイド落ちリスクをモンテカルロ法で即計算（「ポケカ シュミレーター」とも呼ばれます）。',
@@ -142,7 +162,7 @@ export default async function Home() {
   const [
     { data: archetypes },
     { data: articles },
-    { data: decks },
+    decks,
     analyticsData,
     weeklyRanking,
     recentArchetypeIds,
@@ -150,7 +170,7 @@ export default async function Home() {
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
-    supabase.from('deck_records').select('id, deck_code, archetype_id, event_rank, event_date, event_location, created_at').order('created_at', { ascending: false }).limit(1000),
+    getCachedRecentDecks(),
     getCachedAnalytics(),
     getCachedWeeklyRanking(),
     getCachedRecentArchetypeIds(),
