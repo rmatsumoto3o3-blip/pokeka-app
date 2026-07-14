@@ -104,7 +104,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     </Link>
                     <Link
                         href="/unionarena"
-                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'unionarena' ? 'text-white bg-blue-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'unionarena' ? 'text-white bg-rose-600' : 'text-white bg-rose-500 hover:bg-rose-600'}`}
                     >
                         ユニアリ
                     </Link>
@@ -123,11 +123,11 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     </div>
                 </nav>
             ) : (
-                <nav className="border-t border-blue-100 bg-white">
+                <nav className="border-t border-rose-100 bg-white">
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
-                        <Link href="/unionarena" className="text-blue-600 font-semibold shrink-0">TOP</Link>
-                        <Link href="/unionarena/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
-                        <Link href="/unionarena/titles" className="hover:text-blue-600 transition shrink-0">タイトル別デッキ</Link>
+                        <Link href="/unionarena" className="text-rose-500 font-semibold shrink-0">TOP</Link>
+                        <Link href="/unionarena/decks" className="hover:text-rose-500 transition shrink-0">環境デッキ</Link>
+                        <Link href="/unionarena/titles" className="hover:text-rose-500 transition shrink-0">タイトル別デッキ</Link>
                     </div>
                 </nav>
             )}
