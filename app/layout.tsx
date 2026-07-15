@@ -27,6 +27,7 @@ const dotGothic16 = DotGothic16({
 });
 
 import AdSenseScript from "@/components/AdSenseScript";
+import NoticeBanner from "@/components/NoticeBanner";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://pokelix.jp'),
@@ -107,6 +108,7 @@ export default function RootLayout({
             gtag('config', 'G-P0FYS2RRM2');
           `}
         </Script>
+        <NoticeBanner />
         {children}
       </body>
     </html>
