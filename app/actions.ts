@@ -1,6 +1,14 @@
 'use server'
 
 import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser'
+import { unstable_cache } from 'next/cache'
+import {
+    mockOverseasArchetypes,
+    mockOverseasArchetypeStats,
+    mockOverseasResults,
+    mockOverseasTournaments,
+    OVERSEAS_DATA_MODE,
+} from '@/lib/overseasData'
 
 export async function getDeckDataAction(deckCode: string): Promise<{ success: boolean, data?: CardData[], error?: string }> {
     try {
@@ -49,7 +57,7 @@ async function verifySession(): Promise<{ userId: string; email: string } | null
 }
 
 // 管理者セッションを検証するヘルパー
-async function verifyAdminSession(): Promise<{ userId: string; email: string } | null> {
+export async function verifyAdminSession(): Promise<{ userId: string; email: string } | null> {
     const session = await verifySession()
     if (!session) return null
     if (!ADMIN_EMAILS.includes(session.email)) return null
@@ -1520,5 +1528,59 @@ export async function getUnionArenaRecommendedDecksAction() {
     } catch (e) {
         console.error('getUnionArenaRecommendedDecksAction error:', e)
         return { success: false, data: [] as any[] }
+    }
+}
+
+// ============================================================================
+// 海外ポケカ（overseas_* 専用。現在は承認前のためモックのみ）
+// ============================================================================
+
+// 本番配線時は、このローダー内だけを overseas_* のSELECTへ置き換える。
+// 一覧と事前集計を必ず24時間キャッシュし、ページ表示ごとの全件取得を防ぐ。
+const getCachedOverseasSnapshot = unstable_cache(
+    async () => ({
+        mode: OVERSEAS_DATA_MODE,
+        tournaments: mockOverseasTournaments,
+        archetypes: mockOverseasArchetypes,
+        results: mockOverseasResults,
+        stats: mockOverseasArchetypeStats,
+    }),
+    ['overseas-read-model-v1'],
+    { revalidate: 86400, tags: ['overseas-data'] }
+)
+
+export async function getOverseasTournamentsAction() {
+    const snapshot = await getCachedOverseasSnapshot()
+    return { success: true, mode: snapshot.mode, data: snapshot.tournaments }
+}
+
+export async function getOverseasArchetypesAction() {
+    const snapshot = await getCachedOverseasSnapshot()
+    return { success: true, mode: snapshot.mode, data: snapshot.archetypes }
+}
+
+export async function getOverseasResultsAction() {
+    const snapshot = await getCachedOverseasSnapshot()
+    return { success: true, mode: snapshot.mode, data: snapshot.results }
+}
+
+export async function getOverseasArchetypeStatsAction() {
+    const snapshot = await getCachedOverseasSnapshot()
+    return { success: true, mode: snapshot.mode, data: snapshot.stats }
+}
+
+export async function getOverseasDeckAction(id: string) {
+    const snapshot = await getCachedOverseasSnapshot()
+    const result = snapshot.results.find(item => item.id === id && item.decklistPublic)
+    if (!result) return { success: false, mode: snapshot.mode, data: null }
+
+    return {
+        success: true,
+        mode: snapshot.mode,
+        data: {
+            result,
+            tournament: snapshot.tournaments.find(item => item.id === result.tournamentId) || null,
+            archetype: snapshot.archetypes.find(item => item.id === result.archetypeId) || null,
+        },
     }
 }

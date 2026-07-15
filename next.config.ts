@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'images.pokemontcg.io',
+      },
+      {
+        protocol: 'https',
         hostname: 'www.unionarena-tcg.com',
       },
       {
