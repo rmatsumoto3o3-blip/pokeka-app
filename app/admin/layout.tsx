@@ -1,21 +1,24 @@
+import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { verifyAdminSession } from '@/app/actions'
 
 export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const admin = await verifyAdminSession()
-    if (!admin) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const ADMIN_EMAILS = ['player1@pokeka.local']
+
+    if (!user || !user.email || !ADMIN_EMAILS.includes(user.email)) {
         redirect('/')
     }
 
     const navItems = [
         { href: '/admin', label: 'ダッシュボード' },
         { href: '/admin/weekly-report', label: '週間レポート' },
-        { href: '/admin/seo-report', label: 'SEOレポート' },
     ]
 
     return (
