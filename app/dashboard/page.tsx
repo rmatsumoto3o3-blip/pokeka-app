@@ -401,7 +401,7 @@ export default function Dashboard() {
                                     <a
                                         href="https://shopa.jp/9293M3MEXQ2Z"
                                         target="_blank"
-                                        rel="noopener noreferrer"
+                                        rel="sponsored nofollow noopener noreferrer"
                                         className="block w-full hover:opacity-90 transition-opacity"
                                     >
                                         <img
@@ -476,7 +476,7 @@ export default function Dashboard() {
                                 <a
                                     href="https://shopa.jp/9293M3MEXQ2Z"
                                     target="_blank"
-                                    rel="noopener noreferrer"
+                                    rel="sponsored nofollow noopener noreferrer"
                                     className="block w-full hover:opacity-90 transition-opacity"
                                 >
                                     <img

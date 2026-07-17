@@ -8,6 +8,7 @@ import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import ToygerPromo from '@/components/ToygerPromo'
 import { Ico } from '@/components/Icons'
 import { POKEMON_ICONS } from '@/lib/constants'
 
@@ -407,6 +408,9 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                         <div className="text-[11px] text-blue-600 mt-1">全国の入賞デッキを自動集計</div>
                     </div>
 
+                    <ToygerPromo product="sleeve" />
+                    <ToygerPromo product="deckCase" />
+
                     <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden p-2.5">
                         <AdPlaceholder slot="2515406718" format="auto" />
                     </div>
@@ -416,8 +420,8 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
             {/* Ad row */}
             <div className="max-w-[1080px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2.5 px-1.5 pb-4">
                 <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-400 mb-1">サプライ買うならTOYGER</span>
-                    <a href="https://shopa.jp/9293M3MEXQ2Z" target="_blank" rel="noopener noreferrer" className="block w-full h-16 sm:h-20 hover:opacity-90 transition-opacity">
+                    <span className="text-xs text-gray-400 mb-1">PR: サプライ買うならTOYGER</span>
+                    <a href="https://shopa.jp/9293M3MEXQ2Z" target="_blank" rel="sponsored nofollow noopener noreferrer" className="block w-full h-16 sm:h-20 hover:opacity-90 transition-opacity">
                         <Image src="/ad_sponsor_toyger.png" alt="サプライ買うならTOYGER" width={400} height={150} className="w-full h-full object-cover rounded-lg shadow-sm border border-gray-100" />
                     </a>
                 </div>

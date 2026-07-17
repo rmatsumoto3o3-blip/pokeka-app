@@ -7,6 +7,7 @@ import type { UnionArenaDeckRecord, UnionArenaDeckArchetype } from '@/lib/supaba
 
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import ToygerPromo from '@/components/ToygerPromo'
 import { Ico } from '@/components/Icons'
 
 interface UnionArenaSeries {
@@ -292,6 +293,9 @@ export default function UnionArenaLandingPage({ decks, archetypes, weeklyRanking
                         <div className="text-xs font-semibold text-blue-700 flex items-center justify-center gap-1.5"><Ico name="refresh" className="w-3.5 h-3.5" />大会データ 毎日更新</div>
                         <div className="text-[11px] text-blue-600 mt-1">公式大会の入賞デッキを自動集計</div>
                     </div>
+
+                    <ToygerPromo product="sleeve" />
+                    <ToygerPromo product="deckCase" />
 
                     <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden p-2.5">
                         <AdPlaceholder slot="2515406718" format="auto" />
