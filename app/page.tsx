@@ -49,8 +49,8 @@ const getCachedAnalytics = unstable_cache(
     }
     return byArchetype
   },
-  ['archetype-analytics'],
-  { revalidate: 86400 } // 24時間キャッシュ
+  ['archetype-analytics-v2'],
+  { revalidate: 14400 } // 4時間キャッシュ
 )
 
 function mapCategory(supertype: string, subtypes?: string[]): string {
@@ -82,7 +82,7 @@ const getCachedWeeklyRanking = unstable_cache(
     })
     return counts
   },
-  ['weekly-ranking'],
+  ['weekly-ranking-v2'],
   { revalidate: 3600 } // 1時間キャッシュ
 )
 
@@ -106,12 +106,12 @@ const getCachedRecentArchetypeIds = unstable_cache(
     }
     return Array.from(ids)
   },
-  ['recent-archetype-ids'],
-  { revalidate: 86400 }
+  ['recent-archetype-ids-v2'],
+  { revalidate: 14400 }
 )
 
 // TOPの「環境・優勝デッキ集」と「環境デッキ分布(直近30日)」に使う直近デッキ一覧。
-// 大会データはGASが1日1回しか更新しないため、24時間キャッシュで十分。
+// 大会データはGASが1日1回しか更新しないため、4時間キャッシュで十分。
 // これを毎リクエスト取得していたのがegress増加の主因だったため、必ずキャッシュを通す。
 const getCachedRecentDecks = unstable_cache(
   async () => {
@@ -126,8 +126,8 @@ const getCachedRecentDecks = unstable_cache(
       .limit(1000)
     return data || []
   },
-  ['recent-decks-top'],
-  { revalidate: 86400 } // 24時間キャッシュ（1日1回更新に合わせる）
+  ['recent-decks-top-v2'],
+  { revalidate: 14400 } // 4時間キャッシュ（GASは毎朝8時更新。障害復旧時に丸1日待たされないよう短めにする）
 )
 
 export const metadata: Metadata = {
