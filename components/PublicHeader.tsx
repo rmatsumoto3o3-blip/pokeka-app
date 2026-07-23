@@ -4,19 +4,23 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/client'
 
 interface PublicHeaderProps {
-    game?: 'pokemon' | 'unionarena'
+    game?: 'pokemon' | 'overseas' | 'unionarena'
 }
 
 export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
-    const supabase = createClient()
+    const supabase = React.useMemo(() => createClient(), [])
     const router = useRouter()
-    const [user, setUser] = React.useState<any>(null)
+    const [user, setUser] = React.useState<User | null>(null)
     const [isLoggedIn, setIsLoggedIn] = React.useState(false)
 
     React.useEffect(() => {
+        // ログインUIを表示しないゲームでは認証APIへアクセスしない。
+        if (game !== 'pokemon') return
+
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             setUser(user)
@@ -30,7 +34,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
         })
 
         return () => subscription.unsubscribe()
-    }, [])
+    }, [game, supabase])
 
     return (
         <header className="border-b border-[#e5e9f0] bg-white/90 backdrop-blur-lg sticky top-0 z-50">
@@ -103,6 +107,12 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         ポケカ
                     </Link>
                     <Link
+                        href="/overseas"
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'overseas' ? 'text-white bg-sky-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
+                    >
+                        海外環境
+                    </Link>
+                    <Link
                         href="/unionarena"
                         className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'unionarena' ? 'text-white bg-rose-600' : 'text-white bg-rose-500 hover:bg-rose-600'}`}
                     >
@@ -120,6 +130,14 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         <Link href="/simulator" className="hover:text-blue-600 transition shrink-0">確率シミュ</Link>
                         <Link href="/articles" className="hover:text-blue-600 transition shrink-0">記事</Link>
                         <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
+                    </div>
+                </nav>
+            ) : game === 'overseas' ? (
+                <nav className="border-t border-sky-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/overseas" className="text-sky-600 font-semibold shrink-0">海外TOP</Link>
+                        <Link href="/overseas/decks" className="hover:text-sky-600 transition shrink-0">大会・デッキ一覧</Link>
+                        <Link href="/decks" className="hover:text-sky-600 transition shrink-0">国内環境へ</Link>
                     </div>
                 </nav>
             ) : (
