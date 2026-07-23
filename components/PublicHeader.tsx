@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 
 interface PublicHeaderProps {
-    game?: 'pokemon' | 'unionarena'
+    game?: 'pokemon' | 'overseas' | 'unionarena'
 }
 
 export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
@@ -98,7 +98,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                 <div className="max-w-7xl mx-auto px-3.5 flex items-center gap-0.5 overflow-x-auto whitespace-nowrap">
                     <Link
                         href="/"
-                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'pokemon' ? 'text-white bg-blue-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'pokemon' || game === 'overseas' ? 'text-white bg-blue-700' : 'text-blue-100 hover:bg-blue-700/50'}`}
                     >
                         ポケカ
                     </Link>
@@ -116,10 +116,19 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
                         <Link href="/" className="text-blue-600 font-semibold shrink-0">TOP</Link>
                         <Link href="/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                        <Link href="/overseas" className="hover:text-blue-600 transition shrink-0">海外環境</Link>
                         <Link href="/practice" className="hover:text-blue-600 transition shrink-0">一人回し</Link>
                         <Link href="/simulator" className="hover:text-blue-600 transition shrink-0">確率シミュ</Link>
                         <Link href="/articles" className="hover:text-blue-600 transition shrink-0">記事</Link>
                         <span className="text-gray-300 shrink-0 cursor-default">カード検索 <span className="text-[10px]">準備中</span></span>
+                    </div>
+                </nav>
+            ) : game === 'overseas' ? (
+                <nav className="border-t border-blue-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/overseas" className="text-blue-600 font-semibold shrink-0">海外TOP</Link>
+                        <Link href="/overseas/decks" className="hover:text-blue-600 transition shrink-0">大会・デッキ一覧</Link>
+                        <Link href="/" className="hover:text-blue-600 transition shrink-0">国内環境へ</Link>
                     </div>
                 </nav>
             ) : (
