@@ -870,6 +870,13 @@ export async function backfillEventRanksAction(userId: string) {
     return { success: true, count: 0, error: undefined }
 }
 
+// --- Phase 44: Deck Scraper 停止 ---
+// サイト運営者からの中止要請により、pokecabookスクレイピングを停止。
+// 実処理は削除済み。UI互換のため無効スタブのみ残置。再実装しないこと。
+export async function scrapePokecabookAction(_url: string, _startDate?: string, _endDate?: string) {
+    return { success: false as const, error: 'この機能は提供を終了しました', decks: [] as { name: string; code: string }[] }
+}
+
 // --- Phase 47: Featured Card Trends ---
 
 interface FeaturedCardStat {
