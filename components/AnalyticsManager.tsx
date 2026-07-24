@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 import FeaturedCardsManager from './FeaturedCardsManager'
 // PokemonIconSelector removed for archetypes (automated matching used instead)
 
-import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, scrapePokecabookAction, deleteArchetypeAction, detectRankFromName, backfillEventRanksAction, calculateDeckStatisticsAction } from '@/app/actions'
+import { addDeckToAnalyticsAction, getDeckAnalyticsAction, removeDeckFromAnalyticsAction, updateAnalyzedDeckAction, deleteArchetypeAction, detectRankFromName, backfillEventRanksAction, calculateDeckStatisticsAction } from '@/app/actions'
 
 import Image from 'next/image'
 
@@ -78,12 +78,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
     const [isSaving, setIsSaving] = useState(false)
 
     // Phase 44: Scraper State
-    const [importMode, setImportMode] = useState<'manual' | 'url'>('manual')
-    const [importUrl, setImportUrl] = useState('')
-    const [scrapeStartDate, setScrapeStartDate] = useState('')
-    const [scrapeEndDate, setScrapeEndDate] = useState('')
-    const [scrapedDecks, setScrapedDecks] = useState<{ name: string, code: string, selected: boolean }[]>([])
-    const [isScraping, setIsScraping] = useState(false)
 
     // Phase 45: Bulk Delete State
     const [selectedDeleteDecks, setSelectedDeleteDecks] = useState<Set<string>>(new Set())
@@ -388,65 +382,8 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
         }
     }
 
-    // --- Phase 44: Scraper Logic ---
-    const handleScrape = async () => {
-        if (!importUrl) return
-        setIsScraping(true)
-        setScrapedDecks([])
-        try {
-            const res = await scrapePokecabookAction(importUrl, scrapeStartDate || undefined, scrapeEndDate || undefined)
-            if (res.success && res.decks) {
-                setScrapedDecks(res.decks.map(d => ({ ...d, selected: true }))) // Default select all
-                alert(`${res.decks.length}件のデッキが見つかりました`)
-            } else {
-                alert(res.error || 'デッキが見つかりませんでした')
-            }
-        } catch (e) {
-            alert('スクレイピングエラー')
-        } finally {
-            setIsScraping(false)
-        }
-    }
 
-    const handleBulkAdd = async () => {
-        const selectedDecks = scrapedDecks.filter(d => d.selected)
-        if (selectedDecks.length === 0) return
 
-        if (!confirm(`${selectedDecks.length}件のデッキを一括登録しますか？`)) return
-
-        setIsAdding(true)
-        let successCount = 0
-
-        // Loop sequentially to avoid DB overload and race conditions
-        for (const deck of selectedDecks) {
-            try {
-                const res = await addDeckToAnalyticsAction(
-                    deck.code,
-                    selectedArchetype,
-                    userId,
-                    deck.name || undefined,
-                    undefined, // customImageUrl
-                    syncReference
-                )
-                if (res.success) successCount++
-            } catch (e) {
-                console.error(`Failed to add ${deck.code}`, e)
-            }
-        }
-
-        setIsAdding(false)
-        alert(`${selectedDecks.length}件中 ${successCount}件 を登録しました`)
-        await refreshAnalytics(selectedArchetype)
-        setImportUrl('')
-        setScrapedDecks([])
-        setImportMode('manual') // Back to manual or stay? Maybe stay to import more.
-    }
-
-    const toggleDeckSelection = (index: number) => {
-        const newDecks = [...scrapedDecks]
-        newDecks[index].selected = !newDecks[index].selected
-        setScrapedDecks(newDecks)
-    }
 
     const handleRemoveDeck = async (id: string) => {
         if (!confirm('このデッキデータを分析から除外しますか？')) return
@@ -937,24 +874,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                         </div>
 
                         <div>
-                            {/* Import Mode Toggle */}
-                            <div className="flex gap-4 border-b mb-4">
-                                <button
-                                    onClick={() => setImportMode('manual')}
-                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'manual' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-                                >
-                                    個別入力
-                                </button>
-                                <button
-                                    onClick={() => setImportMode('url')}
-                                    className={`pb-2 px-2 text-sm font-bold ${importMode === 'url' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}
-                                >
-                                    URLから一括(Pokecabook)
-                                </button>
-                            </div>
-
-                            {importMode === 'manual' ? (
-                                <>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         デッキコードを追加
                                     </label>
@@ -975,87 +894,6 @@ export default function AnalyticsManager({ archetypes = [], userId }: { archetyp
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-500 mt-1">※1つずつ追加してください</p>
-                                </>
-                            ) : (
-                                <div className="space-y-4">
-                                    {/* URL Input */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            記事URL (pokecabook_archives用)
-                                        </label>
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <input
-                                                type="text"
-                                                value={importUrl}
-                                                onChange={(e) => setImportUrl(e.target.value)}
-                                                placeholder="https://pokecabook.com/archives/..."
-                                                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
-                                            />
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={scrapeStartDate}
-                                                    onChange={(e) => setScrapeStartDate(e.target.value.replace(/[^0-9/]/g, ''))}
-                                                    placeholder="M/D"
-                                                    maxLength={5}
-                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border bg-white text-gray-900 text-center"
-                                                    title="開始日 (例: 1/24)"
-                                                />
-                                                <span className="text-gray-400">〜</span>
-                                                <input
-                                                    type="text"
-                                                    value={scrapeEndDate}
-                                                    onChange={(e) => setScrapeEndDate(e.target.value.replace(/[^0-9/]/g, ''))}
-                                                    placeholder="M/D"
-                                                    maxLength={5}
-                                                    className="w-16 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2 border bg-white text-gray-900 text-center"
-                                                    title="終了日 (例: 1/25)"
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={handleScrape}
-                                                disabled={isScraping || !importUrl}
-                                                className="bg-blue-600 text-white px-4 py-2 rounded-md font-bold hover:bg-blue-700 disabled:opacity-50 shadow-sm whitespace-nowrap"
-                                            >
-                                                {isScraping ? '取得中...' : 'デッキ一覧を取得'}
-                                            </button>
-                                        </div>
-                                        <p className="text-[10px] text-gray-400 mt-1">※日付を空にすると全件取得します。例: 1/24</p>
-                                    </div>
-
-                                    {/* Scraped Results */}
-                                    {scrapedDecks.length > 0 && (
-                                        <div className="bg-white border rounded-lg p-3">
-                                            <div className="flex justify-between items-center mb-2 pb-2 border-b">
-                                                <span className="font-bold text-sm">{scrapedDecks.length}件検出</span>
-                                                <button
-                                                    onClick={handleBulkAdd}
-                                                    disabled={isAdding}
-                                                    className="bg-blue-600 text-white text-xs px-3 py-1 rounded font-bold hover:bg-blue-700 disabled:opacity-50"
-                                                >
-                                                    {isAdding ? '登録中...' : 'まとめて登録'}
-                                                </button>
-                                            </div>
-                                            <div className="max-h-[200px] overflow-y-auto space-y-1">
-                                                {scrapedDecks.map((deck, idx) => (
-                                                    <label key={idx} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer border-b border-gray-100 last:border-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={deck.selected}
-                                                            onChange={() => toggleDeckSelection(idx)}
-                                                            className="text-blue-600 rounded"
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="text-xs font-bold truncate text-gray-800">{deck.name}</div>
-                                                            <div className="text-[10px] text-gray-500 font-mono">{deck.code}</div>
-                                                        </div>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         <div className="border-t pt-4">
