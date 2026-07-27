@@ -1,9 +1,13 @@
 'use server'
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { verifyAdminSession } from '@/app/actions'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '')
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+// 画像読み取りは精度検証で 2.5-flash が良好だったため専用に用意
+const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
 export async function analyzeDeckDangerAction(
     myBoard: { battle: any; bench: any[]; handCount: number; prizeRemaining: number },
@@ -104,5 +108,126 @@ ${cardAnalysis.map(a => `- ${a.name}: 実際 ${a.actual}枚 / 予想 ${a.guessed
     } catch (error) {
         console.error('AI Feedback Error:', error)
         return { success: false, error: (error as Error).message }
+    }
+}
+
+// ============================================================
+// デッキ写真 → デッキリスト化（管理者専用）
+//   Gemini Visionでカード名+枚数を抽出 → カードマスタ照合で
+//   imageUrl/supertype/subtypes を補完し、cards_json形式で返す。
+//   Supabaseへの書き込みは行わない（読み取り専用）。
+// ============================================================
+export interface ScannedCard {
+    name: string
+    quantity: number
+    imageUrl: string | null
+    supertype: string
+    subtypes: string[]
+    matched: boolean          // マスタと一致したか
+    suggestion?: string       // あいまい一致で補正した場合の元名
+}
+
+function normalizeName(s: string): string {
+    return s
+        .replace(/\s|　/g, '')
+        .replace(/[（(].*?[)）]/g, '') // (ACE SPEC)等の括弧を無視
+        .replace(/ex|EX|ｅｘ/gi, 'ex')
+        .toLowerCase()
+}
+
+function levenshtein(a: string, b: string): number {
+    const m = a.length, n = b.length
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)])
+    for (let j = 0; j <= n; j++) dp[0][j] = j
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+        }
+    }
+    return dp[m][n]
+}
+
+export async function scanDeckImageAction(imageBase64: string, mimeType: string) {
+    const admin = await verifyAdminSession()
+    if (!admin) return { success: false as const, error: '権限がありません', cards: [] }
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        return { success: false as const, error: 'AI APIキーが未設定です', cards: [] }
+    }
+
+    try {
+        const prompt = `この画像はポケモンカードゲームのデッキ（合計60枚）を並べたものです。
+同名カードは重ねて置かれ、重なり枚数=採用枚数です。基本エネルギーも1種類にまとめて数えてください。
+写っているカードを読み取りJSONで出力:
+{"cards":[{"name":"日本語カード名","count":枚数}]}
+- 同じnameは1エントリに合算。読めないものは"?"。JSONのみ出力。`
+
+        const result = await visionModel.generateContent({
+            contents: [{ role: 'user', parts: [
+                { text: prompt },
+                { inlineData: { data: imageBase64, mimeType } },
+            ] }],
+            generationConfig: { temperature: 0.1, responseMimeType: 'application/json' },
+        })
+        const raw = result.response.text().replace(/```json|```/g, '').trim()
+        const parsed = JSON.parse(raw) as { cards?: { name: string; count: number }[] }
+        const ocr = parsed.cards || []
+        if (ocr.length === 0) return { success: false as const, error: 'カードを読み取れませんでした', cards: [] }
+
+        // カードマスタ取得（名前→メタ情報）
+        const supabase = createAdminClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        )
+        const { data: master } = await supabase
+            .from('global_card_stats')
+            .select('card_name, image_url, supertype, subtypes')
+            .eq('event_rank', 'ALL')
+            .not('image_url', 'is', null)
+
+        const byExact = new Map<string, any>()
+        const byNorm = new Map<string, any>()
+        ;(master || []).forEach(r => {
+            if (!byExact.has(r.card_name)) byExact.set(r.card_name, r)
+            const nk = normalizeName(r.card_name)
+            if (!byNorm.has(nk)) byNorm.set(nk, r)
+        })
+        const masterNames = Array.from(byExact.keys())
+
+        const cards: ScannedCard[] = ocr.map(c => {
+            const name = (c.name || '').trim()
+            const qty = Math.max(0, parseInt(String(c.count)) || 0)
+            // ① 完全一致
+            let hit = byExact.get(name)
+            let suggestion: string | undefined
+            // ② 正規化一致
+            if (!hit) hit = byNorm.get(normalizeName(name))
+            // ③ あいまい一致（編集距離）
+            if (!hit && name && name !== '?') {
+                let best: string | null = null, bestD = Infinity
+                for (const mn of masterNames) {
+                    const d = levenshtein(normalizeName(name), normalizeName(mn))
+                    if (d < bestD) { bestD = d; best = mn }
+                }
+                if (best && bestD <= Math.max(1, Math.floor(normalizeName(best).length * 0.34))) {
+                    hit = byExact.get(best); suggestion = name
+                }
+            }
+            if (hit) {
+                return {
+                    name: hit.card_name, quantity: qty, imageUrl: hit.image_url,
+                    supertype: hit.supertype || 'Pokémon',
+                    subtypes: Array.isArray(hit.subtypes) ? hit.subtypes : [],
+                    matched: true, suggestion,
+                }
+            }
+            return { name, quantity: qty, imageUrl: null, supertype: 'Pokémon', subtypes: [], matched: false }
+        })
+
+        return { success: true as const, cards }
+    } catch (e) {
+        console.error('scanDeckImage error:', e)
+        return { success: false as const, error: '画像の解析に失敗しました', cards: [] }
     }
 }

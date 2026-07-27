@@ -49,7 +49,7 @@ async function verifySession(): Promise<{ userId: string; email: string } | null
 }
 
 // 管理者セッションを検証するヘルパー
-async function verifyAdminSession(): Promise<{ userId: string; email: string } | null> {
+export async function verifyAdminSession(): Promise<{ userId: string; email: string } | null> {
     const session = await verifySession()
     if (!session) return null
     if (!ADMIN_EMAILS.includes(session.email)) return null
