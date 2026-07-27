@@ -14,18 +14,36 @@ export default function DeckScanner() {
 
     const total = cards.reduce((s, c) => s + c.quantity, 0)
 
+    // 送信前に画像を縮小する。フルサイズのスマホ写真はサーバーアクションの
+    // サイズ上限(1MB)超過やタイムアウトの原因になるため、長辺1600pxのJPEGに落とす。
+    // カード名を読むにはこの解像度で十分。
+    const downscale = (file: File): Promise<{ dataUrl: string; base64: string }> =>
+        new Promise((resolve, reject) => {
+            const img = new window.Image()
+            const url = URL.createObjectURL(file)
+            img.onload = () => {
+                URL.revokeObjectURL(url)
+                const MAX = 1600
+                const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+                const w = Math.round(img.width * scale), h = Math.round(img.height * scale)
+                const canvas = document.createElement('canvas')
+                canvas.width = w; canvas.height = h
+                const ctx = canvas.getContext('2d')
+                if (!ctx) { reject(new Error('canvas')); return }
+                ctx.drawImage(img, 0, 0, w, h)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+                resolve({ dataUrl, base64: dataUrl.split(',')[1] })
+            }
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')) }
+            img.src = url
+        })
+
     const onFile = async (file: File) => {
         setError(''); setCards([]); setLoading(true)
         try {
-            const dataUrl: string = await new Promise((res, rej) => {
-                const r = new FileReader()
-                r.onload = () => res(r.result as string)
-                r.onerror = rej
-                r.readAsDataURL(file)
-            })
+            const { dataUrl, base64 } = await downscale(file)
             setPreview(dataUrl)
-            const base64 = dataUrl.split(',')[1]
-            const res = await scanDeckImageAction(base64, file.type || 'image/jpeg')
+            const res = await scanDeckImageAction(base64, 'image/jpeg')
             if (!res.success) { setError(res.error || '解析に失敗しました'); return }
             setCards(res.cards)
         } catch {

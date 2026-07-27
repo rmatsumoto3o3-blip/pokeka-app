@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // デッキ写真読み取りで画像base64を送るため、Server Actionの上限を引き上げ（既定1MB）
+  experimental: {
+    serverActions: { bodySizeLimit: '5mb' },
+  },
   images: {
     remotePatterns: [
       {

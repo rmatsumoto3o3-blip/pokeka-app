@@ -6,8 +6,9 @@ import { verifyAdminSession } from '@/app/actions'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '')
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-// 画像読み取りは精度検証で 2.5-flash が良好だったため専用に用意
-const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+// 画像読み取り用。速度優先で 2.0-flash（枚数は人が補正する前提）。
+// 精度が要る場合は 'gemini-2.5-flash' に戻す。
+const visionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
 export async function analyzeDeckDangerAction(
     myBoard: { battle: any; bench: any[]; handCount: number; prizeRemaining: number },
