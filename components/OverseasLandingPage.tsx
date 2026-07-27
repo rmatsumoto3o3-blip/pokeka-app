@@ -112,7 +112,6 @@ export default function OverseasLandingPage({ archetypes, stats, tournaments, re
 
                 <aside className="space-y-3">
                     <Link href="/overseas/decks" className="flex items-center justify-between rounded-lg bg-sky-600 px-4 py-3 text-sm font-semibold text-white"><span className="flex items-center gap-2"><Ico name="list" className="h-4 w-4" />大会・デッキ一覧</span><span>›</span></Link>
-                    <div className="rounded-lg border border-sky-200 bg-sky-50 p-3.5 text-[10px] leading-relaxed text-sky-800">カード名は英語を正として表示します。海外の大会データは <a href="https://limitlesstcg.com" target="_blank" rel="noopener noreferrer" className="font-semibold underline">Limitless TCG</a> を参照しています。</div>
                 </aside>
             </main>
         </>
