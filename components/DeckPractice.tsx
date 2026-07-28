@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { type Card, shuffle } from '@/lib/deckParser'
 import NumericalSidePrize from './NumericalSidePrize'
-import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
+import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isComboStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
 import {
     DndContext,
@@ -580,8 +580,10 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     useEffect(() => {
         // If we had a stadium and it changed (either replaced or removed)
         if (prevStadiumRef.current && prevStadiumRef.current !== externalStadium) {
-            // Add the OLD stadium to trash
-            setTrash(prev => [...prev, prevStadiumRef.current!])
+            // Add the OLD stadium to trash（結合スタジアムは2枚まとめてトラッシュ）
+            const old = prevStadiumRef.current
+            const pieces = old.comboPieces && old.comboPieces.length ? old.comboPieces : [old]
+            setTrash(prev => [...prev, ...pieces])
         }
         // Update ref to current
         prevStadiumRef.current = externalStadium || null
@@ -1262,12 +1264,29 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return
         }
 
-        if (onStadiumChange) {
-            onStadiumChange(card)
-            setHand(hand.filter((_, i) => i !== handIndex))
-        } else {
+        if (!onStadiumChange) {
             alert("スタジアムの設定ができません（Props未定義）")
+            return
         }
+
+        // 「伝説の海溝」等は同名2枚を組み合わせて1枚のスタジアムとして出す
+        if (isComboStadium(card)) {
+            const partnerIndex = hand.findIndex((c, i) => i !== handIndex && c.name === card.name)
+            if (partnerIndex === -1) {
+                alert(`「${card.name}」は2枚1組で出すカードです。手札にもう1枚必要です。`)
+                return
+            }
+            const partner = hand[partnerIndex]
+            // 表示・トラッシュ用に2枚を保持した結合スタジアムを作る
+            const combined: Card = { ...card, comboPieces: [card, partner] }
+            onStadiumChange(combined)
+            // 使った2枚を手札から取り除く
+            setHand(hand.filter((_, i) => i !== handIndex && i !== partnerIndex))
+            return
+        }
+
+        onStadiumChange(card)
+        setHand(hand.filter((_, i) => i !== handIndex))
     }
 
     const performSwapFromDnd = (sourceType: 'battle' | 'bench', sourceIndex: number, targetIndex: number) => {

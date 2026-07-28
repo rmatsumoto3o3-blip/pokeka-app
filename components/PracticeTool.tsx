@@ -443,14 +443,30 @@ export default function PracticeTool({
                                                     >
                                                         {(() => {
                                                             const activeStadium = stadium1 || stadium2;
+                                                            const comboPieces = activeStadium?.comboPieces && activeStadium.comboPieces.length === 2
+                                                                ? activeStadium.comboPieces : null;
                                                             return activeStadium ? (
                                                                 <>
-                                                                    <Image
-                                                                        src={activeStadium.imageUrl}
-                                                                        alt={activeStadium.name}
-                                                                        fill
-                                                                        className="rounded shadow-lg object-contain"
-                                                                    />
+                                                                    {comboPieces ? (
+                                                                        // 伝説の海溝等：2枚1組を左右に並べて結合表示
+                                                                        <div className="absolute inset-0 flex gap-px rounded overflow-hidden shadow-lg">
+                                                                            {comboPieces.map((p, i) => (
+                                                                                <img
+                                                                                    key={i}
+                                                                                    src={p.imageUrl}
+                                                                                    alt={p.name}
+                                                                                    className="w-1/2 h-full object-cover"
+                                                                                />
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Image
+                                                                            src={activeStadium.imageUrl}
+                                                                            alt={activeStadium.name}
+                                                                            fill
+                                                                            className="rounded shadow-lg object-contain"
+                                                                        />
+                                                                    )}
                                                                     {/* Keep X button as quick shortcut */}
                                                                     <button
                                                                         onClick={(e) => {

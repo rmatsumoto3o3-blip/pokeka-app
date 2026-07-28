@@ -18,6 +18,9 @@ export interface Card {
     types?: string[]
     hp?: number
     cardId?: number
+    // 「伝説の海溝」等、2枚1組で1枚のスタジアムとして出すカード。
+    // 場に出す際に組み合わせた2枚をここに保持し、表示・トラッシュを2枚まとめて扱う。
+    comboPieces?: Card[]
 }
 
 export async function fetchDeckData(deckCode: string): Promise<CardData[]> {
