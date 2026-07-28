@@ -323,23 +323,30 @@ export default function PracticeTool({
                 {/* Deck Code Input */}
                 {(!deck1.length || !deck2.length) && (
                     <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Deck 1 Input */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    デッキ1（自分）
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={deckCode1}
-                                        onChange={(e) => setDeckCode1(e.target.value)}
-                                        placeholder="デッキコードを入力"
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-sm"
-                                        disabled={loading}
-                                    />
+                        <div className={`grid grid-cols-1 ${deck1.length === 0 ? 'md:grid-cols-2' : ''} gap-4`}>
+                            {/* Deck 1 Input — 既にP1が読み込み済み（環境デッキから起動等）なら入力欄は出さない */}
+                            {deck1.length === 0 ? (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                        デッキ1（自分）
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={deckCode1}
+                                            onChange={(e) => setDeckCode1(e.target.value)}
+                                            placeholder="デッキコードを入力"
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-sm"
+                                            disabled={loading}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                    デッキ1（自分）読み込み済み — 相手のデッキコードを入れて開始
+                                </div>
+                            )}
 
                             {/* Deck 2 Input */}
                             <div>
