@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { fetchDeckData, buildDeck, shuffle, type Card } from '@/lib/deckParser'
+import { fetchDeckData, buildDeck, shuffle, type Card, type CardData } from '@/lib/deckParser'
 import { createStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from './DeckPractice'
 import CoinTossOverlay from './CoinTossOverlay'
@@ -26,11 +26,15 @@ import { CSS } from '@dnd-kit/utilities'
 export default function PracticeTool({
     initialCode1,
     initialCode2,
+    initialCards1,
     embedded = false,
     onClose,
 }: {
     initialCode1?: string
     initialCode2?: string
+    // デッキコードを渡さずに60枚を直接注入するための入口（環境デッキからの起動用）。
+    // これを使うとコードはクライアント（プロップ・URL・Network）に一切出ない。
+    initialCards1?: CardData[]
     embedded?: boolean
     onClose?: () => void
 }) {
@@ -143,9 +147,21 @@ export default function PracticeTool({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams])
 
-    // Auto-load if launched with explicit initial codes (embedded/modal mode)
+    // Auto-load if launched with explicit initial codes/cards (embedded/modal mode)
     useEffect(() => {
-        if (embedded && (initialCode1 || initialCode2)) {
+        if (!embedded) return
+        // カード配列で渡された場合はコードを使わず直接構築（コード非露出）
+        if (initialCards1 && initialCards1.length > 0) {
+            const fullDeck = buildDeck(initialCards1)
+            if (fullDeck.length === 60) {
+                setDeck1(shuffle(fullDeck))
+            } else {
+                setError(`デッキは60枚である必要があります（現在: ${fullDeck.length}枚）`)
+            }
+            if (initialCode2) loadDecks(undefined, initialCode2)
+            return
+        }
+        if (initialCode1 || initialCode2) {
             loadDecks(initialCode1, initialCode2)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps

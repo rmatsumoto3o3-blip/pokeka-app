@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const cleanLoc = cleanLocation(deck.event_location)
     const displayName = deck.event_date
         ? `${deck.event_date} ${cleanLoc} ${deck.event_rank || ''}`.replace(/\s+/g, ' ').trim()
-        : (deck.deck_code || archetype)
+        : archetype
     const imageUrl = (deck.deck_archetypes as any)?.cover_image_url as string | undefined
 
     return {
@@ -82,15 +82,12 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
     const archetype = (deck.deck_archetypes as any)?.name || 'Unknown'
     const imageUrl = (deck.deck_archetypes as any)?.cover_image_url as string | undefined
-    const deckUrl = deck.deck_code
-        ? `https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`
-        : undefined
     const cards = deck.cards as any[]
 
     const cleanLoc = cleanLocation(deck.event_location)
     const displayName = deck.event_date
         ? `${deck.event_date} ${cleanLoc}`.trim()
-        : (deck.deck_code || archetype)
+        : archetype
 
     const jsonLd = {
         "@context": "https://schema.org",
@@ -165,19 +162,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                                 {displayName}
                             </h1>
                             <div className="flex flex-wrap gap-2">
-                                {deckUrl && (
-                                    <a
-                                        href={deckUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition"
-                                    >
-                                        公式で見る
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                    </a>
-                                )}
-                                {deck.deck_code && (
-                                    <DeckPracticeLauncher deckCode={deck.deck_code} />
+                                {cards.length > 0 && (
+                                    <DeckPracticeLauncher cards={cards} />
                                 )}
                             </div>
                         </div>
@@ -221,17 +207,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                     </div>
                 ) : (
                     <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-300">
-                        <p className="text-gray-500">カードリストを取得できませんでした。</p>
-                        {deck.deck_code && (
-                            <a
-                                href={`https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 inline-block text-blue-500 hover:underline text-sm"
-                            >
-                                公式ページで確認する →
-                            </a>
-                        )}
+                        <p className="text-gray-500">カードリストを取得できませんでした。時間をおいて再度お試しください。</p>
                     </div>
                 )}
             </main>

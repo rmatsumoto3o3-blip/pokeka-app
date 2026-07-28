@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, Suspense } from 'react'
+import type { CardData } from '@/lib/deckParser'
 import PracticeTool from './PracticeTool'
 
-export default function DeckPracticeLauncher({ deckCode }: { deckCode: string }) {
+// デッキコードは受け取らない。サーバーで取得済みの60枚(cards)だけを受け取り、
+// 一人回しへ直接渡す。これによりコードはクライアント（プロップ・URL・Network）に出ない。
+export default function DeckPracticeLauncher({ cards }: { cards: CardData[] }) {
     const [isOpen, setIsOpen] = useState(false)
 
     return (
@@ -21,7 +24,7 @@ export default function DeckPracticeLauncher({ deckCode }: { deckCode: string })
                     <div className="w-full h-full sm:h-[90vh] sm:max-w-6xl bg-[#0a0a0c] sm:rounded-2xl overflow-hidden shadow-2xl">
                         <Suspense fallback={<div className="w-full h-full flex items-center justify-center text-white">読み込み中...</div>}>
                             <PracticeTool
-                                initialCode1={deckCode}
+                                initialCards1={cards}
                                 embedded
                                 onClose={() => setIsOpen(false)}
                             />

@@ -766,10 +766,38 @@ export async function getDeckRecordsByArchetypeAction(
         const { data, error } = await query
         if (error) throw error
 
-        return { success: true, data: data || [] }
+        // デッキコードはクライアントに一切渡さない（環境デッキのコードは非公開）。
+        // 展開可否の判定用に has_code(真偽) だけ返し、実コードはサーバー内に留める。
+        const sanitized = (data || []).map(({ deck_code, ...rest }) => ({
+            ...rest,
+            has_code: !!deck_code,
+        }))
+
+        return { success: true, data: sanitized }
     } catch (e) {
         console.error('getDeckRecordsByArchetypeAction error:', e)
         return { success: false, data: [] }
+    }
+}
+
+// 環境デッキの60枚を「内部ID」から取得する。
+// deck_code はサーバー内でのみ照会し、公式取得もサーバー側で行うため、
+// デッキコードはクライアント（URL・DOM・Network）に一切出ない。
+export async function getDeckCardsByIdAction(deckId: string) {
+    try {
+        if (!deckId) return { success: false as const, cards: [] as CardData[] }
+        const { data, error } = await getSupabaseAdmin()
+            .from('deck_records')
+            .select('deck_code')
+            .eq('id', deckId)
+            .single()
+        if (error || !data?.deck_code) return { success: false as const, cards: [] as CardData[] }
+
+        const cards = await fetchDeckData(data.deck_code)
+        return { success: true as const, cards }
+    } catch (e) {
+        console.error('getDeckCardsByIdAction error:', e)
+        return { success: false as const, cards: [] as CardData[] }
     }
 }
 

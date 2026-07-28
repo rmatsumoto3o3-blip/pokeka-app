@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchDeckData, type CardData } from '@/lib/deckParser'
+import { type CardData } from '@/lib/deckParser'
+import { getDeckCardsByIdAction } from '@/app/actions'
 import Image from 'next/image'
 
 interface DeckPreviewProps {
-    deckCode: string
+    // デッキコードではなく内部IDで受け取る。コード照会・公式取得はサーバー側で行い、
+    // コードはクライアント（URL・DOM・Network）に一切出さない。
+    deckId: string
 }
 
-export default function DeckPreview({ deckCode }: DeckPreviewProps) {
+export default function DeckPreview({ deckId }: DeckPreviewProps) {
     const [cards, setCards] = useState<CardData[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -19,9 +22,13 @@ export default function DeckPreview({ deckCode }: DeckPreviewProps) {
         const loadDeck = async () => {
             try {
                 setLoading(true)
-                const data = await fetchDeckData(deckCode)
+                const res = await getDeckCardsByIdAction(deckId)
                 if (mounted) {
-                    setCards(data)
+                    if (res.success && res.cards.length > 0) {
+                        setCards(res.cards)
+                    } else {
+                        setError('デッキ情報の取得に失敗しました')
+                    }
                 }
             } catch (err) {
                 console.error(err)
@@ -35,14 +42,14 @@ export default function DeckPreview({ deckCode }: DeckPreviewProps) {
             }
         }
 
-        if (deckCode) {
+        if (deckId) {
             loadDeck()
         }
 
         return () => {
             mounted = false
         }
-    }, [deckCode])
+    }, [deckId])
 
     if (loading) {
         return (
@@ -58,14 +65,6 @@ export default function DeckPreview({ deckCode }: DeckPreviewProps) {
         return (
             <div className="p-2.5 bg-red-50 text-red-600 rounded-lg text-sm text-center border border-red-100">
                 <p>⚠️ {error}</p>
-                <a
-                    href={`https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block text-blue-500 underline hover:text-blue-700"
-                >
-                    公式サイトで確認する
-                </a>
             </div>
         )
     }
@@ -101,17 +100,6 @@ export default function DeckPreview({ deckCode }: DeckPreviewProps) {
                         <PreviewGrid cards={energies} />
                     </div>
                 )}
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-gray-200 text-center">
-                <a
-                    href={`https://www.pokemon-card.com/deck/confirm.html/deckID/${deckCode}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-gray-400 hover:text-gray-600 hover:underline transition"
-                >
-                    公式サイトで詳細を見る
-                </a>
             </div>
         </div>
     )

@@ -68,6 +68,7 @@ export interface Match {
 export interface ReferenceDeck {
   id: string
   deck_code: string | null
+  has_code?: boolean // クライアントにはコード実体を渡さず、展開可否の判定にこれだけ使う
   event_rank: '優勝' | '準優勝' | 'TOP4' | 'TOP8' | null
   event_date: string | null
   event_location: string | null

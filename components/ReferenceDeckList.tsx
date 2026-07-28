@@ -141,7 +141,7 @@ export default function ReferenceDeckList({
     }
 
     const handleDeckClick = (deck: ReferenceDeck) => {
-        if (deck.deck_code) {
+        if (deck.has_code) {
             // Toggle expand if clicking the row
             setExpandedDeckIds(prev =>
                 prev.includes(deck.id)
@@ -305,7 +305,7 @@ export default function ReferenceDeckList({
                             const cleanLocation = (deck.event_location || '').replace(/^[\d０-９]{1,2}[/／][\d０-９]{1,2}\s*/, '').trim()
                             const displayName = deck.event_date && cleanLocation
                                 ? `${deck.event_date} ${cleanLocation}`
-                                : deck.event_date || cleanLocation || deck.deck_code
+                                : deck.event_date || cleanLocation || deck.deck_name || 'デッキ'
                             const dateLabel = deck.event_date || (deck.created_at
                                 ? new Date(deck.created_at).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
                                 : '')
@@ -318,7 +318,7 @@ export default function ReferenceDeckList({
                                 >
                                     {/* Expand Toggle Icon */}
                                     <div className="flex-shrink-0 text-gray-400">
-                                        {deck.deck_code ? (
+                                        {deck.has_code ? (
                                             <button
                                                 onClick={(e) => handleToggleExpand(e, deck.id)}
                                                 className={`p-1 rounded-full hover:bg-black/5 transition ${expandedDeckIds.includes(deck.id) ? 'text-blue-600 rotate-90 transform' : ''}`}
@@ -347,18 +347,12 @@ export default function ReferenceDeckList({
                                             </div>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                                            {deck.deck_code && (
-                                                <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex items-center border border-gray-200">
-                                                    <span className="text-[10px] mr-1 opacity-50">CODE:</span>
-                                                    {deck.deck_code}
-                                                </span>
-                                            )}
                                             {/* Mobile Date Badge */}
                                             {dateLabel && (
                                                 <span className="md:hidden text-[10px] opacity-70">{dateLabel}</span>
                                             )}
                                             {/* Fallback indicator if image only */}
-                                            {!deck.deck_code && deck.image_url && (
+                                            {!deck.has_code && deck.image_url && (
                                                 <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200">
                                                     画像あり
                                                 </span>
@@ -371,22 +365,6 @@ export default function ReferenceDeckList({
                                         {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
                                     </div>
 
-                                    {/* Desktop Code Copy */}
-                                    <div className="w-24 hidden md:flex items-center justify-center">
-                                        {deck.deck_code && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    navigator.clipboard.writeText(deck.deck_code || '')
-                                                    alert('コピーしました')
-                                                }}
-                                                className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition"
-                                                title="コードをコピー"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                                            </button>
-                                        )}
-                                    </div>
 
                                     {isAdmin && (
                                         <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
@@ -401,7 +379,7 @@ export default function ReferenceDeckList({
 
                                     {/* Mobile Chevron (Replaced with expansion indicator if code exists) */}
                                     <div className="md:hidden text-gray-300">
-                                        {deck.deck_code && (
+                                        {deck.has_code && (
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -414,9 +392,9 @@ export default function ReferenceDeckList({
                                 </div>
 
                                 {/* Expanded Deck Preview */}
-                                {isExpanded && deck.deck_code && (
+                                {isExpanded && deck.has_code && (
                                     <div className="border-t border-gray-100 bg-gray-50/50 p-2 md:p-2.5">
-                                        <DeckPreview deckCode={deck.deck_code} />
+                                        <DeckPreview deckId={deck.id} />
                                     </div>
                                 )}
                             </div>
