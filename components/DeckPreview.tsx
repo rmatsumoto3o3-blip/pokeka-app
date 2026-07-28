@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { type CardData } from '@/lib/deckParser'
 import { getDeckCardsByIdAction } from '@/app/actions'
+import DeckPracticeLauncher from './DeckPracticeLauncher'
 import Image from 'next/image'
 
 interface DeckPreviewProps {
@@ -100,6 +101,11 @@ export default function DeckPreview({ deckId }: DeckPreviewProps) {
                         <PreviewGrid cards={energies} />
                     </div>
                 )}
+            </div>
+
+            {/* このデッキで一人回し（コードは使わず、読み込み済みの60枚を直接渡す） */}
+            <div className="mt-4 pt-3 border-t border-gray-200 flex justify-center">
+                <DeckPracticeLauncher cards={cards} />
             </div>
         </div>
     )
