@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { type Card, shuffle } from '@/lib/deckParser'
 import NumericalSidePrize from './NumericalSidePrize'
-import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isComboStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
+import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
 import {
     DndContext,
@@ -580,10 +580,18 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     useEffect(() => {
         // If we had a stadium and it changed (either replaced or removed)
         if (prevStadiumRef.current && prevStadiumRef.current !== externalStadium) {
-            // Add the OLD stadium to trash（結合スタジアムは2枚まとめてトラッシュ）
             const old = prevStadiumRef.current
-            const pieces = old.comboPieces && old.comboPieces.length ? old.comboPieces : [old]
-            setTrash(prev => [...prev, ...pieces])
+            const oldPieces = old.comboPieces && old.comboPieces.length ? old.comboPieces : [old]
+            const next = externalStadium
+            const newPieces = next
+                ? (next.comboPieces && next.comboPieces.length ? next.comboPieces : [next])
+                : []
+            // 2枚目を足して結合しただけの場合（新スタジアムが古い駒をそのまま含む）はトラッシュしない。
+            // 差し替え・除去のときだけ、古いスタジアム（結合なら2枚とも）をトラッシュへ送る。
+            const isExtension = oldPieces.every(op => newPieces.includes(op))
+            if (!isExtension) {
+                setTrash(prev => [...prev, ...oldPieces])
+            }
         }
         // Update ref to current
         prevStadiumRef.current = externalStadium || null
@@ -1269,22 +1277,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             return
         }
 
-        // 「伝説の海溝」等は同名2枚を組み合わせて1枚のスタジアムとして出す
-        if (isComboStadium(card)) {
-            const partnerIndex = hand.findIndex((c, i) => i !== handIndex && c.name === card.name)
-            if (partnerIndex === -1) {
-                alert(`「${card.name}」は2枚1組で出すカードです。手札にもう1枚必要です。`)
-                return
-            }
-            const partner = hand[partnerIndex]
-            // 表示・トラッシュ用に2枚を保持した結合スタジアムを作る
-            const combined: Card = { ...card, comboPieces: [card, partner] }
+        // 現在場に出ているスタジアムの構成（結合済みなら2枚、通常は1枚、無ければ0枚）
+        const current = externalStadium
+        const currentPieces = current
+            ? (current.comboPieces && current.comboPieces.length ? current.comboPieces : [current])
+            : []
+
+        // 同名のスタジアムが1枚だけ場にある場合、もう1枚重ねて「2枚1組」の結合スタジアムにする。
+        // （「伝説の海溝」など2枚を組み合わせて出すカード用。別名なら下の通常処理で差し替え）
+        if (currentPieces.length === 1 && currentPieces[0].name === card.name) {
+            const combined: Card = { ...currentPieces[0], comboPieces: [currentPieces[0], card] }
             onStadiumChange(combined)
-            // 使った2枚を手札から取り除く
-            setHand(hand.filter((_, i) => i !== handIndex && i !== partnerIndex))
+            setHand(hand.filter((_, i) => i !== handIndex))
             return
         }
 
+        // それ以外（空 / 別名 / 既に2枚）は単独で置く（別名の場合は差し替え）
         onStadiumChange(card)
         setHand(hand.filter((_, i) => i !== handIndex))
     }

@@ -51,13 +51,6 @@ export function isStadium(card: Card): boolean {
     return card.subtypes?.includes('Stadium') || false
 }
 
-// 2枚1組で1枚のスタジアムとして出すカード名（同名2枚を手札から組み合わせて場に出す）。
-export const COMBO_STADIUM_NAMES = ['伝説の海溝', '伝説の山頂', '伝説の溶岩洞']
-
-export function isComboStadium(card: Card): boolean {
-    return isStadium(card) && COMBO_STADIUM_NAMES.includes(card.name)
-}
-
 export function isTrainer(card: Card): boolean {
     return card.supertype === 'Trainer' || isItem(card) || isSupporter(card) || isStadium(card)
 }
