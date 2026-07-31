@@ -74,8 +74,8 @@ export default function OverseasLandingPage({ archetypes, stats, tournaments, re
                                             <span className={`absolute left-0 top-0 rounded-br px-1.5 py-0.5 text-[9px] font-bold text-white ${index < 2 ? 'bg-red-600' : index < 4 ? 'bg-orange-500' : 'bg-lime-600'}`}>{index < 2 ? 'S' : index < 4 ? 'A' : 'B'}</span>
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="truncate text-xs font-semibold text-gray-900">{archetype.nameEn}</div>
-                                            {archetype.nameJa && <div className="truncate text-[10px] text-gray-400">{archetype.nameJa}</div>}
+                                            <div className="truncate text-xs font-semibold text-gray-900">{archetype.nameJa || archetype.nameEn}</div>
+                                            {archetype.nameJa && <div className="truncate text-[10px] text-gray-400">{archetype.nameEn}</div>}
                                             <div className="mt-2 flex gap-3 text-[10px]"><span className="font-semibold text-sky-700">{stat.share.toFixed(1)}%</span><span className="text-gray-400">{stat.deckCount} decks</span><span className="text-gray-400">{stat.wins} wins</span></div>
                                         </div>
                                     </Link>
@@ -100,7 +100,7 @@ export default function OverseasLandingPage({ archetypes, stats, tournaments, re
                                         <div className="mt-3 grid gap-2 sm:grid-cols-3">
                                             {topResults.map(result => {
                                                 const archetype = archetypeMap.get(result.archetypeId)
-                                                return <Link key={result.id} href={`/overseas/decks/${result.id}`} className="rounded-md bg-slate-50 px-3 py-2 text-xs hover:bg-sky-50"><span className="mr-2 font-bold text-sky-700">#{result.placing}</span>{archetype?.nameEn || 'Unknown'}</Link>
+                                                return <Link key={result.id} href={`/overseas/decks/${result.id}`} className="rounded-md bg-slate-50 px-3 py-2 text-xs hover:bg-sky-50"><span className="mr-2 font-bold text-sky-700">#{result.placing}</span>{archetype?.nameJa || archetype?.nameEn || 'Unknown'}</Link>
                                             })}
                                         </div>
                                     </div>

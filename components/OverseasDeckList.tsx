@@ -35,7 +35,7 @@ export default function OverseasDeckList({ archetypes, results, tournaments }: P
                 <Filter label="地域" value={region} onChange={setRegion} options={['All', ...regions]} />
                 <Filter label="大会" value={tournamentId} onChange={setTournamentId} options={['All', ...tournaments.map(item => item.id)]} labels={Object.fromEntries(tournaments.map(item => [item.id, item.shortName]))} />
                 <Filter label="順位" value={rank} onChange={setRank} options={['All', 'Winner', 'Runner-up', 'Top 4', 'Top 8']} />
-                <Filter label="デッキタイプ" value={archetypeId} onChange={setArchetypeId} options={['All', ...archetypes.map(item => item.id)]} labels={Object.fromEntries(archetypes.map(item => [item.id, item.nameEn]))} />
+                <Filter label="デッキタイプ" value={archetypeId} onChange={setArchetypeId} options={['All', ...archetypes.map(item => item.id)]} labels={Object.fromEntries(archetypes.map(item => [item.id, item.nameJa || item.nameEn]))} />
             </div>
             <div className="mb-3 text-xs text-gray-500">{visible.length} decks</div>
             {visible.length === 0 ? (
@@ -51,7 +51,7 @@ export default function OverseasDeckList({ archetypes, results, tournaments }: P
                                     {archetype?.coverImageUrl && <Image src={archetype.coverImageUrl} alt={archetype.nameEn} fill className="object-contain p-2" unoptimized />}
                                     <span className="absolute left-1 top-1 rounded bg-sky-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{result.rankLabel}</span>
                                 </div>
-                                <div className="p-2.5"><div className="truncate text-xs font-semibold text-gray-900">{archetype?.nameEn || 'Unknown'}</div><div className="mt-1 truncate text-[10px] text-gray-400">{tournament.shortName} · #{result.placing}</div><div className="truncate text-[10px] text-gray-400">{result.playerName} · {result.countryCode}</div></div>
+                                <div className="p-2.5"><div className="truncate text-xs font-semibold text-gray-900">{archetype?.nameJa || archetype?.nameEn || 'Unknown'}</div><div className="mt-1 truncate text-[10px] text-gray-400">{tournament.shortName} · #{result.placing}</div><div className="truncate text-[10px] text-gray-400">{result.playerName} · {result.countryCode}</div></div>
                             </Link>
                         )
                     })}

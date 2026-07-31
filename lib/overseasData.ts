@@ -1,6 +1,8 @@
 // 海外(PTCG)環境データ。GASウェブアプリが配信するJSONを読み、型へ変換する。
 // データ源: 海外用スプレッドシートの doGet（Limitless収集→自前集計）。Supabase不使用。
 // ※GASのデプロイを「更新」する限りURLは不変。新規デプロイすると変わるので、その時はここを差し替える。
+import { translateCardName, translateArchetypeName } from './overseasTranslations'
+
 const OVERSEAS_DATA_URL = 'https://script.google.com/macros/s/AKfycbw9sGZEPw0HnMfs_rB2JEMfeYhCd4z08LPuaD9VIYxH4vIWY0jKvO3uE6C00KO-e69lmA/exec'
 
 export type OverseasRegion = 'North America' | 'Europe' | 'Oceania' | 'Latin America' | 'Asia' | 'Other'
@@ -130,6 +132,7 @@ function toResult(d: RawDeck): OverseasResult {
         cards: (d.cards || []).map((c, i) => ({
             cardKey: d.deckCode + '-' + i + '-' + c.name,
             nameEn: c.name,
+            nameJa: translateCardName(c.name),
             setCode: '',
             collectorNumber: '',
             quantity: c.quantity,
@@ -141,7 +144,7 @@ function toResult(d: RawDeck): OverseasResult {
 
 export async function getOverseasArchetypes(): Promise<OverseasArchetype[]> {
     const data = await fetchOverseas()
-    return data.archetypes.map(a => ({ id: a.id, slug: a.id, nameEn: a.name, coverImageUrl: null }))
+    return data.archetypes.map(a => ({ id: a.id, slug: a.id, nameEn: a.name, nameJa: translateArchetypeName(a.name), coverImageUrl: null }))
 }
 
 export async function getOverseasArchetypeStats(): Promise<OverseasArchetypeStat[]> {
@@ -207,6 +210,6 @@ export async function getOverseasDeck(id: string): Promise<{ result: OverseasRes
             playerCount: 0, format: 'Standard', division: 'Masters',
             sourceUrl: 'https://play.limitlesstcg.com/tournament/' + deck.tournamentId + '/standings',
         },
-        archetype: arch ? { id: arch.id, slug: arch.id, nameEn: arch.name, coverImageUrl: null } : { id: deck.archetypeId, slug: deck.archetypeId, nameEn: deck.archetypeName, coverImageUrl: null },
+        archetype: arch ? { id: arch.id, slug: arch.id, nameEn: arch.name, nameJa: translateArchetypeName(arch.name), coverImageUrl: null } : { id: deck.archetypeId, slug: deck.archetypeId, nameEn: deck.archetypeName, nameJa: translateArchetypeName(deck.archetypeName), coverImageUrl: null },
     }
 }
