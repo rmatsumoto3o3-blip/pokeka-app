@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Footer from '@/components/Footer'
-import type { ReferenceDeck, DeckArchetype, Article } from '@/lib/supabase'
+import type { DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
@@ -13,12 +13,12 @@ import { Ico } from '@/components/Icons'
 import { POKEMON_ICONS } from '@/lib/constants'
 
 interface LandingPageProps {
-    decks: ReferenceDeck[]
     archetypes: DeckArchetype[]
     articles: Article[]
     analyticsData?: Record<string, any[]>
     recentArchetypeIds?: string[]
-    weeklyRanking?: Record<string, number>
+    weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（集計stats由来）
+    winCounts?: Record<string, number>       // アーキタイプ別優勝数（集計stats由来）
     featuredCards?: { card_name: string; current_adoption_rate: number }[]
 }
 
@@ -31,7 +31,7 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 // 環境デッキ分布ドーナツの配色（モックと同一）
 const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
 
-export default function LandingPage({ decks, archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, featuredCards = [] }: LandingPageProps) {
+export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, winCounts = {}, featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
 
     const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
@@ -48,26 +48,10 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
         { tier: 'B' as const, items: rankedArchetypes.slice(6, 10) },
     ].filter(b => b.items.length > 0)
 
-    // 環境・優勝デッキ集：直近の優勝デッキをアイコンで並べる（モック準拠）
-    const winnerDecks = decks
-        .filter(d => d.event_rank === '優勝' && d.archetype_id && archetypeMap.has(d.archetype_id))
-        .slice(0, 8)
-    const winnerDates = [...new Set(winnerDecks.map(d => d.event_date).filter(Boolean))] as string[]
-    const winnerCaption = winnerDates.length > 0
-        ? (winnerDates.length === 1 ? winnerDates[0] : `${winnerDates[winnerDates.length - 1]}〜${winnerDates[0]}`) + 'の優勝デッキ'
-        : ''
-
     // 注目カード採用率：運営がピックアップした注目カードの全体採用率（実データ）
     const visibleCards = showMoreAdoption ? featuredCards.slice(0, 10) : featuredCards.slice(0, 5)
 
-    // 環境デッキ分布：直近30日の優勝デッキをアーキタイプ別に集計（モック準拠のドーナツ）
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-    const winCounts: Record<string, number> = {}
-    decks.forEach(d => {
-        if (d.event_rank !== '優勝' || !d.archetype_id) return
-        if (d.created_at && new Date(d.created_at).getTime() < thirtyDaysAgo) return
-        winCounts[d.archetype_id] = (winCounts[d.archetype_id] || 0) + 1
-    })
+    // 環境デッキ分布：アーキタイプ別の優勝数（集計stats由来のwinCounts prop）
     const totalWins = Object.values(winCounts).reduce((a, b) => a + b, 0)
     const topWinEntries = Object.entries(winCounts)
         .sort((a, b) => b[1] - a[1])
@@ -145,11 +129,11 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                     {/* 環境Tier表 */}
                     <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（直近7日・${totalRecentDecks}件）`}</span>
+                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（${totalRecentDecks}件）`}</span>
                         </div>
                         <div className="p-2.5">
                             {tierBuckets.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-4">直近7日間のデッキデータがまだありません</p>
+                                <p className="text-sm text-gray-400 text-center py-4">デッキデータがまだありません</p>
                             ) : tierBuckets.map(({ tier, items }) => (
                                 <div key={tier} className="mb-4 last:mb-0">
                                     <div className="flex items-center gap-1.5 text-[11px] font-semibold mb-1.5">
@@ -217,10 +201,10 @@ export default function LandingPage({ decks, archetypes, articles, recentArchety
                     {/* 環境デッキ分布 ・ デッキ別 優勝数（直近30日） */}
                     <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center gap-1.5">
-                            <Ico name="pie" className="w-4 h-4 text-blue-600" />環境デッキ分布 ・ デッキ別 優勝数（直近30日）
+                            <Ico name="pie" className="w-4 h-4 text-blue-600" />環境デッキ分布 ・ デッキ別 優勝数
                         </div>
                         {totalWins === 0 ? (
-                            <p className="text-sm text-gray-400 text-center py-6">直近30日の優勝データがまだありません</p>
+                            <p className="text-sm text-gray-400 text-center py-6">優勝データがまだありません</p>
                         ) : (
                             <div className="flex flex-wrap items-center gap-4 p-2.5">
                                 <svg width="160" height="160" viewBox="0 0 160 160" className="shrink-0">

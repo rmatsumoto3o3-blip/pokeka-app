@@ -63,27 +63,37 @@ function mapCategory(supertype: string, subtypes?: string[]): string {
   return 'Goods'
 }
 
-// 直近7日間のアーキタイプ別デッキ数を集計（1時間キャッシュ）
-const getCachedWeeklyRanking = unstable_cache(
+// アーキタイプ別の「デッキ数(ALL)」と「優勝数(優勝)」を集計statsから取得。
+// 個別デッキ(deck_records)ではなく archetype_card_stats（匿名の集計）から数えるため、
+// 生データを削除してもランキング・分布は残る。total_decks はアーキタイプ+rankごとに
+// 全カード行へ同値で入っているので、アーキタイプ単位で最初の1件を採用する。
+const getCachedArchetypeStats = unstable_cache(
   async () => {
     const supabase = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const { data } = await supabase
-      .from('deck_records')
-      .select('archetype_id')
-      .gte('created_at', since)
-
-    const counts: Record<string, number> = {}
-    ;(data || []).forEach(r => {
-      if (r.archetype_id) counts[r.archetype_id] = (counts[r.archetype_id] || 0) + 1
-    })
-    return counts
+    const deckCounts: Record<string, number> = {}
+    const winCounts: Record<string, number> = {}
+    const ranks: [string, Record<string, number>][] = [['ALL', deckCounts], ['優勝', winCounts]]
+    for (const [rank, target] of ranks) {
+      for (let offset = 0; offset < 30000; offset += 1000) {
+        const { data } = await supabase
+          .from('archetype_card_stats')
+          .select('archetype_id,total_decks')
+          .eq('event_rank', rank)
+          .range(offset, offset + 999)
+        if (!data || data.length === 0) break
+        data.forEach(r => {
+          if (r.archetype_id && !(r.archetype_id in target)) target[r.archetype_id] = r.total_decks || 0
+        })
+        if (data.length < 1000) break
+      }
+    }
+    return { deckCounts, winCounts }
   },
-  ['weekly-ranking-v2'],
-  { revalidate: 3600 } // 1時間キャッシュ
+  ['archetype-counts-v1'],
+  { revalidate: 14400 }
 )
 
 // 直近2ヶ月の採用カードデータがあるアーキタイプID（リンク表示の404回避用、24時間キャッシュ）
@@ -108,26 +118,6 @@ const getCachedRecentArchetypeIds = unstable_cache(
   },
   ['recent-archetype-ids-v2'],
   { revalidate: 14400 }
-)
-
-// TOPの「環境・優勝デッキ集」と「環境デッキ分布(直近30日)」に使う直近デッキ一覧。
-// 大会データはGASが1日1回しか更新しないため、4時間キャッシュで十分。
-// これを毎リクエスト取得していたのがegress増加の主因だったため、必ずキャッシュを通す。
-const getCachedRecentDecks = unstable_cache(
-  async () => {
-    const supabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    const { data } = await supabase
-      .from('deck_records')
-      .select('id, deck_code, archetype_id, event_rank, event_date, event_location, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1000)
-    return data || []
-  },
-  ['recent-decks-top-v2'],
-  { revalidate: 14400 } // 4時間キャッシュ（GASは毎朝8時更新。障害復旧時に丸1日待たされないよう短めにする）
 )
 
 export const metadata: Metadata = {
@@ -162,22 +152,24 @@ export default async function Home() {
   const [
     { data: archetypes },
     { data: articles },
-    decks,
     analyticsData,
-    weeklyRanking,
+    archStats,
     recentArchetypeIds,
     featuredCards,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
-    getCachedRecentDecks(),
     getCachedAnalytics(),
-    getCachedWeeklyRanking(),
+    getCachedArchetypeStats(),
     getCachedRecentArchetypeIds(),
     getCachedFeaturedCards(),
   ])
 
-  // 直近7日間のデッキ数が多い順にアーキタイプをソート
+  // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
+  const weeklyRanking = archStats.deckCounts
+  const winCounts = archStats.winCounts
+
+  // デッキ数が多い順にアーキタイプをソート
   const sortedArchetypes = [...(archetypes || [])].sort(
     (a, b) => (weeklyRanking[b.id] || 0) - (weeklyRanking[a.id] || 0)
   )
@@ -200,12 +192,12 @@ export default async function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <LandingPage
-        decks={decks || []}
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}
         recentArchetypeIds={recentArchetypeIds}
         weeklyRanking={weeklyRanking}
+        winCounts={winCounts}
         featuredCards={featuredCards}
       />
     </>
