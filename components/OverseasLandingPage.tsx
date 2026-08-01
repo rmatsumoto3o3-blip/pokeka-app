@@ -44,7 +44,7 @@ export default function OverseasLandingPage({ archetypes, stats, tournaments, re
                             </div>
                         </div>
                         <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold">
-                            <Link href="/decks" className="rounded-md px-3 py-1.5 text-slate-500 hover:bg-white">国内環境</Link>
+                            <Link href="/" className="rounded-md px-3 py-1.5 text-slate-500 hover:bg-white">国内環境</Link>
                             <span className="rounded-md bg-sky-600 px-3 py-1.5 text-white">海外環境</span>
                         </div>
                     </div>

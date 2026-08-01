@@ -37,19 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
     }))
 
-    // Dynamic Routes: Public Decks (deck_records)
-    const { data: decks } = await supabase
-        .from('deck_records')
-        .select('id, created_at')
-        .order('created_at', { ascending: false })
-        .limit(200)
-
-    const deckRoutes = (decks || []).map((deck) => ({
-        url: `${baseUrl}/decks/${deck.id}`,
-        lastModified: new Date(deck.created_at),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-    }))
+    // 個別デッキページ(/decks/[id])は公開終了（TOPへリダイレクト）のためサイトマップから除外。
 
     // Dynamic Routes: Archetype pages (採用カード一覧)
     const { data: archetypes } = await supabase
@@ -63,5 +51,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
     }))
 
-    return [...routes, ...articleRoutes, ...deckRoutes, ...archetypeRoutes]
+    return [...routes, ...articleRoutes, ...archetypeRoutes]
 }

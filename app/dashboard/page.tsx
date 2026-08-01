@@ -8,7 +8,6 @@ import { getOrCreateProfileAction } from '@/app/actions'
 
 import AddDeckForm from '@/components/AddDeckForm'
 import DeckManager from '@/components/DeckManager'
-import ReferenceDeckList from '@/components/ReferenceDeckList'
 import AnalyticsManager from '@/components/AnalyticsManager'
 import EnvironmentManager from '@/components/EnvironmentManager'
 import ArticleManager from '@/components/ArticleManager'
@@ -327,15 +326,6 @@ export default function Dashboard() {
                                             </div>
                                         </>
                                     )}
-
-                                <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-200 shadow-sm">
-                                    <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4">参考デッキ一覧</h2>
-                                    <ReferenceDeckList
-                                        userId={userId}
-                                        userEmail={userEmail}
-                                        gridClassName="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4"
-                                    />
-                                </div>
 
                                 <div className="bg-white rounded-xl p-4 md:p-6 border-2 border-blue-100 shadow-sm">
                                     <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 flex items-center">
