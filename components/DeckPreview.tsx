@@ -113,7 +113,7 @@ export default function DeckPreview({ deckId }: DeckPreviewProps) {
 
 function PreviewGrid({ cards }: { cards: CardData[] }) {
     return (
-        <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-1.5 md:gap-2">
+        <div className="grid grid-cols-6 md:grid-cols-10 lg:grid-cols-12 gap-1 md:gap-1.5">
             {cards.map((card, i) => (
                 <div key={i} className="flex flex-col">
                     <div className="relative aspect-[73/102] rounded bg-white overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition">
