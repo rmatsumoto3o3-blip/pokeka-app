@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { fetchDeckData, buildDeck, shuffle, type Card, type CardData } from '@/lib/deckParser'
+import { fetchDeckData, buildDeck, shuffle, cropImageClass, type Card, type CardData } from '@/lib/deckParser'
 import { createStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from './DeckPractice'
 import CoinTossOverlay from './CoinTossOverlay'
@@ -455,7 +455,7 @@ export default function PracticeTool({
                                                                                     key={i}
                                                                                     src={p.imageUrl}
                                                                                     alt={p.name}
-                                                                                    className="w-1/2 h-full object-cover"
+                                                                                    className={`w-1/2 h-full ${cropImageClass(p) || 'object-cover'}`}
                                                                                 />
                                                                             ))}
                                                                         </div>

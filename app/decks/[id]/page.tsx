@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import DeckPracticeLauncher from '@/components/DeckPracticeLauncher'
-import { fetchDeckData } from '@/lib/deckParser'
+import { fetchDeckData, cropImageClass } from '@/lib/deckParser'
 
 export const revalidate = 3600
 export const dynamicParams = true
@@ -206,7 +206,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                                         <img
                                             src={card.imageUrl}
                                             alt={card.name}
-                                            className="w-full h-full object-cover rounded shadow-sm group-hover:shadow-md transition"
+                                            className={`w-full h-full rounded shadow-sm group-hover:shadow-md transition ${cropImageClass(card) || 'object-cover'}`}
                                             loading="lazy"
                                         />
                                     ) : (

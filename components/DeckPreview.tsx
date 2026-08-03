@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { type CardData } from '@/lib/deckParser'
+import { type CardData, cropImageClass } from '@/lib/deckParser'
 import { getFeaturedDeckCardsByIdAction } from '@/app/actions'
 import DeckPracticeLauncher from './DeckPracticeLauncher'
 import Image from 'next/image'
@@ -122,7 +122,7 @@ function PreviewGrid({ cards }: { cards: CardData[] }) {
                             src={card.imageUrl}
                             alt={card.name}
                             fill
-                            className="object-cover"
+                            className={cropImageClass(card) || 'object-cover'}
                             unoptimized
                             loading="lazy"
                         />

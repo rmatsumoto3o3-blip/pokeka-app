@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { type Card, shuffle } from '@/lib/deckParser'
+import { type Card, shuffle, cropImageClass } from '@/lib/deckParser'
 import NumericalSidePrize from './NumericalSidePrize'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
@@ -1283,10 +1283,16 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
             ? (current.comboPieces && current.comboPieces.length ? current.comboPieces : [current])
             : []
 
-        // 同名のスタジアムが1枚だけ場にある場合、もう1枚重ねて「2枚1組」の結合スタジアムにする。
-        // （「伝説の海溝」など2枚を組み合わせて出すカード用。別名なら下の通常処理で差し替え）
-        if (currentPieces.length === 1 && currentPieces[0].name === card.name) {
-            const combined: Card = { ...currentPieces[0], comboPieces: [currentPieces[0], card] }
+        // 2枚1組スタジアムの結合判定。
+        //  - 「伝説の溶岩洞（左）＋（右）」等：comboGroup が一致し crop が左右で異なるペア
+        //  - 旧来の同名2枚1組（comboGroup無し）：同名2枚
+        // 結合時は左→右の順に comboPieces へ入れてパノラマ表示にする。
+        const onField = currentPieces[0]
+        const isSplitPair = !!onField?.comboGroup && onField.comboGroup === card.comboGroup && onField.crop !== card.crop
+        const isSameNamePair = !onField?.comboGroup && !card.comboGroup && onField?.name === card.name
+        if (currentPieces.length === 1 && (isSplitPair || isSameNamePair)) {
+            const pieces = [onField, card].sort((a, b) => (a.crop === 'left' ? 0 : 1) - (b.crop === 'left' ? 0 : 1))
+            const combined: Card = { ...pieces[0], comboPieces: pieces }
             onStadiumChange(combined)
             setHand(hand.filter((_, i) => i !== handIndex))
             return
@@ -2083,7 +2089,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                                                 alt={card.name}
                                                 width={sizes.hand.w * 1.1}
                                                 height={sizes.hand.h * 1.1}
-                                                className="rounded-lg transition-opacity group-hover:opacity-100 opacity-95"
+                                                className={`w-full h-full rounded-lg transition-opacity group-hover:opacity-100 opacity-95 ${cropImageClass(card) || 'object-cover'}`}
                                                 unoptimized
                                             />
                                             {/* Subtle reflection/shine effect like PTCGL */}

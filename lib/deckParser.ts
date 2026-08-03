@@ -8,6 +8,9 @@ export interface CardData {
     collectorNumber?: string
     hp?: number
     cardId?: number
+    // 「伝説の溶岩洞」等、公式が横長パノラマ1枚で返す2枚1組スタジアムを左右に分割した際の情報。
+    crop?: 'left' | 'right'   // 横長画像のどちら半分を表示するか
+    comboGroup?: string       // 左右のペア判定用（元カード名）
 }
 
 export interface Card {
@@ -18,6 +21,9 @@ export interface Card {
     types?: string[]
     hp?: number
     cardId?: number
+    // 横長パノラマ1枚を左右分割した2枚1組スタジアムの表示情報。
+    crop?: 'left' | 'right'
+    comboGroup?: string
     // 「伝説の海溝」等、2枚1組で1枚のスタジアムとして出すカード。
     // 場に出す際に組み合わせた2枚をここに保持し、表示・トラッシュを2枚まとめて扱う。
     comboPieces?: Card[]
@@ -136,7 +142,25 @@ function extractCardsFromHtml(html: string): CardData[] {
         }
     })
 
-    return cards
+    return splitComboStadiums(cards)
+}
+
+// 公式が「横長パノラマ1枚 + 物理枚数」で返す2枚1組スタジアム。
+// これらを左右2枚の縦長カードに分割して表示・操作できるようにする。
+const SPLIT_STADIUM_NAMES = new Set(['伝説の溶岩洞', '伝説の海溝'])
+
+function splitComboStadiums(cards: CardData[]): CardData[] {
+    return cards.flatMap(card => {
+        if (!SPLIT_STADIUM_NAMES.has(card.name)) return [card]
+        // 物理枚数を左右で折半（奇数時は左を多めに）。合計枚数は不変＝60枚維持。
+        const leftQty = Math.ceil(card.quantity / 2)
+        const rightQty = Math.floor(card.quantity / 2)
+        const base = card.name
+        const out: CardData[] = []
+        if (leftQty > 0) out.push({ ...card, name: `${base}（左）`, quantity: leftQty, crop: 'left', comboGroup: base })
+        if (rightQty > 0) out.push({ ...card, name: `${base}（右）`, quantity: rightQty, crop: 'right', comboGroup: base })
+        return out
+    })
 }
 
 /**
@@ -194,15 +218,25 @@ export function parsePTCGLFormat(text: string): CardData[] {
 
 export function buildDeck(cards: CardData[]): Card[] {
     return cards.flatMap(card =>
-        Array(card.quantity).fill({
+        Array.from({ length: card.quantity }, () => ({
             name: card.name,
             imageUrl: card.imageUrl,
             supertype: card.supertype,
             subtypes: card.subtypes,
             hp: card.hp,
-            cardId: card.cardId
-        })
+            cardId: card.cardId,
+            crop: card.crop,
+            comboGroup: card.comboGroup,
+        }))
     )
+}
+
+// 2枚1組スタジアムの左右クロップ表示用クラス。
+// 横長パノラマ画像を縦長枠に object-cover で敷き、左右どちら半分を見せるか指定する。
+export function cropImageClass(card?: { crop?: 'left' | 'right' }): string {
+    if (card?.crop === 'left') return 'object-cover object-left'
+    if (card?.crop === 'right') return 'object-cover object-right'
+    return ''
 }
 
 export function shuffle<T>(array: T[]): T[] {
