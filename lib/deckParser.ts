@@ -147,11 +147,20 @@ function extractCardsFromHtml(html: string): CardData[] {
 
 // 公式が「横長パノラマ1枚 + 物理枚数」で返す2枚1組スタジアム。
 // これらを左右2枚の縦長カードに分割して表示・操作できるようにする。
-const SPLIT_STADIUM_NAMES = new Set(['伝説の溶岩洞', '伝説の海溝'])
+// 判定は画像ファイル名トークンで行う（カード名の表記揺れに強い）。
+const SPLIT_STADIUM_IMAGE_TOKENS = [
+    'DENSETSUNOYOUGANDOU',  // 伝説の溶岩洞
+    'DENSETSUNOKAIKOU',     // 伝説の海溝
+    'DENSETSUNOSANCHIXYOU', // 伝説の山頂
+]
+
+function isSplitStadium(card: CardData): boolean {
+    return SPLIT_STADIUM_IMAGE_TOKENS.some(token => card.imageUrl.includes(token))
+}
 
 function splitComboStadiums(cards: CardData[]): CardData[] {
     return cards.flatMap(card => {
-        if (!SPLIT_STADIUM_NAMES.has(card.name)) return [card]
+        if (!isSplitStadium(card)) return [card]
         // 物理枚数を左右で折半（奇数時は左を多めに）。合計枚数は不変＝60枚維持。
         const leftQty = Math.ceil(card.quantity / 2)
         const rightQty = Math.floor(card.quantity / 2)
