@@ -156,9 +156,12 @@ function splitComboStadiums(cards: CardData[]): CardData[] {
         const leftQty = Math.ceil(card.quantity / 2)
         const rightQty = Math.floor(card.quantity / 2)
         const base = card.name
+        // 公式はこれらを「グッズ枠(deck_gds)」で返すため subtype が Item になっている。
+        // 実際はスタジアムなので、スタジアムとして認識・操作できるよう上書きする。
+        const stadiumProps = { supertype: 'Trainer', subtypes: ['Stadium'] }
         const out: CardData[] = []
-        if (leftQty > 0) out.push({ ...card, name: `${base}（左）`, quantity: leftQty, crop: 'left', comboGroup: base })
-        if (rightQty > 0) out.push({ ...card, name: `${base}（右）`, quantity: rightQty, crop: 'right', comboGroup: base })
+        if (leftQty > 0) out.push({ ...card, ...stadiumProps, name: `${base}（左）`, quantity: leftQty, crop: 'left', comboGroup: base })
+        if (rightQty > 0) out.push({ ...card, ...stadiumProps, name: `${base}（右）`, quantity: rightQty, crop: 'right', comboGroup: base })
         return out
     })
 }
