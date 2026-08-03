@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { type CardData } from '@/lib/deckParser'
-import { getDeckCardsByIdAction } from '@/app/actions'
+import { getFeaturedDeckCardsByIdAction } from '@/app/actions'
 import DeckPracticeLauncher from './DeckPracticeLauncher'
 import Image from 'next/image'
 
@@ -23,7 +23,7 @@ export default function DeckPreview({ deckId }: DeckPreviewProps) {
         const loadDeck = async () => {
             try {
                 setLoading(true)
-                const res = await getDeckCardsByIdAction(deckId)
+                const res = await getFeaturedDeckCardsByIdAction(deckId)
                 if (mounted) {
                     if (res.success && res.cards.length > 0) {
                         setCards(res.cards)

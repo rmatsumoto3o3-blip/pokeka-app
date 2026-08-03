@@ -801,6 +801,81 @@ export async function getDeckCardsByIdAction(deckId: string) {
     }
 }
 
+// ============================================================
+// 環境デッキ表示（featured_decks）
+//   GASが月別シート "YYYY年M月" から同期する公開用デッキ。過去(deck_records)とは
+//   物理的に分離されており、過去のデッキコードは混入しない。ここでは月別キュレーション
+//   の公開が目的なので、deck_code はクライアントへ返す（＝サイト上で表示・コピー可）。
+// ============================================================
+
+// アーキタイプ別の featured デッキ件数（一覧グリッド・カウント用）
+export async function getFeaturedDeckCountsAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('featured_decks')
+            .select('archetype_id, event_rank')
+        if (error) throw error
+
+        const deckCounts: Record<string, number> = {}
+        const rankCounts: Record<string, Record<string, number>> = {}
+        ;(data || []).forEach((r: { archetype_id: string | null, event_rank: string | null }) => {
+            const aid = r.archetype_id
+            if (!aid) return
+            const rank = r.event_rank || 'ALL'
+            deckCounts[aid] = (deckCounts[aid] || 0) + 1
+            if (!rankCounts[aid]) rankCounts[aid] = {}
+            rankCounts[aid][rank] = (rankCounts[aid][rank] || 0) + 1
+        })
+        const globalTotal = Object.values(deckCounts).reduce((a, b) => a + b, 0)
+        return { success: true, deckCounts, rankCounts, globalTotal }
+    } catch (e) {
+        console.error('getFeaturedDeckCountsAction error:', e)
+        return { success: false, deckCounts: {}, rankCounts: {}, globalTotal: 0 }
+    }
+}
+
+// アーキタイプ別の featured デッキ一覧（deck_code を含めて返す＝公開）
+export async function getFeaturedDecksByArchetypeAction(archetypeId: string, eventRank?: string) {
+    try {
+        let query = getSupabaseAdmin()
+            .from('featured_decks')
+            .select('id, deck_code, event_rank, event_date, event_location, created_at')
+            .eq('archetype_id', archetypeId)
+            .order('created_at', { ascending: false })
+            .limit(500)
+
+        if (eventRank && eventRank !== 'All') query = query.eq('event_rank', eventRank)
+
+        const { data, error } = await query
+        if (error) throw error
+
+        const decks = (data || []).map((d: any) => ({ ...d, has_code: !!d.deck_code }))
+        return { success: true, data: decks }
+    } catch (e) {
+        console.error('getFeaturedDecksByArchetypeAction error:', e)
+        return { success: false, data: [] }
+    }
+}
+
+// featured デッキの60枚を内部IDから取得（deck_code→公式取得はサーバー側）
+export async function getFeaturedDeckCardsByIdAction(deckId: string) {
+    try {
+        if (!deckId) return { success: false as const, cards: [] as CardData[] }
+        const { data, error } = await getSupabaseAdmin()
+            .from('featured_decks')
+            .select('deck_code')
+            .eq('id', deckId)
+            .single()
+        if (error || !data?.deck_code) return { success: false as const, cards: [] as CardData[] }
+
+        const cards = await fetchDeckData(data.deck_code)
+        return { success: true as const, cards }
+    } catch (e) {
+        console.error('getFeaturedDeckCardsByIdAction error:', e)
+        return { success: false as const, cards: [] as CardData[] }
+    }
+}
+
 export async function updateAnalyzedDeckAction(
     deckCode: string,
     archetypeId: string,

@@ -7,7 +7,7 @@ import Image from 'next/image'
 import DeckViewerModal from './DeckViewerModal'
 import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
-import { getArchetypeDistributionStatsAction, getDeckRecordsByArchetypeAction } from '@/app/actions'
+import { getFeaturedDeckCountsAction, getFeaturedDecksByArchetypeAction } from '@/app/actions'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -99,8 +99,8 @@ export default function ReferenceDeckList({
         userEmail === 'admin@pokeka.local'
 
     useEffect(() => {
-        // GAS 集計データは常に取得
-        getArchetypeDistributionStatsAction().then(res => {
+        // featured_decks のアーキタイプ別件数を取得（一覧グリッド・カウント用）
+        getFeaturedDeckCountsAction().then(res => {
             if (res.success) {
                 setGasDeckCounts(res.deckCounts)
                 setGasRankCounts(res.rankCounts)
@@ -131,7 +131,7 @@ export default function ReferenceDeckList({
         if (!confirm('本当に削除しますか？')) return
 
         const { error } = await supabase
-            .from('deck_records')
+            .from('featured_decks')
             .delete()
             .eq('id', id)
 
@@ -394,6 +394,27 @@ export default function ReferenceDeckList({
                                 {/* Expanded Deck Preview */}
                                 {isExpanded && deck.has_code && (
                                     <div className="border-t border-gray-100 bg-gray-50/50 p-2 md:p-2.5">
+                                        {deck.deck_code && (
+                                            <div className="flex flex-wrap items-center gap-2 mb-2 text-xs">
+                                                <span className="font-bold text-gray-500">デッキコード</span>
+                                                <code className="px-2 py-1 bg-white border border-gray-200 rounded font-mono text-gray-700 select-all break-all">{deck.deck_code}</code>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(deck.deck_code) }}
+                                                    className="px-2 py-1 bg-white border border-gray-200 rounded text-gray-600 hover:bg-gray-50 transition"
+                                                >
+                                                    コピー
+                                                </button>
+                                                <a
+                                                    href={`https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="px-2 py-1 text-blue-600 hover:underline"
+                                                >
+                                                    公式で見る →
+                                                </a>
+                                            </div>
+                                        )}
                                         <DeckPreview deckId={deck.id} />
                                     </div>
                                 )}
@@ -493,7 +514,7 @@ export default function ReferenceDeckList({
                                     setSelectedRank('All')
                                     setDeckRecords([])
                                     setDeckRecordsLoading(true)
-                                    getDeckRecordsByArchetypeAction(archetypeId).then(res => {
+                                    getFeaturedDecksByArchetypeAction(archetypeId).then(res => {
                                         if (res.success) setDeckRecords(res.data)
                                         setDeckRecordsLoading(false)
                                     })
