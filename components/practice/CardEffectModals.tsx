@@ -308,7 +308,7 @@ export function CardEffectModals({
                                             })
                                         }}
                                     >
-                                        <div className="relative w-[80px] h-[112px] shrink-0 overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
+                                        <div className="relative w-full aspect-[5/7] overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
                                             <Image
                                                 src={card.imageUrl}
                                                 alt={card.name}
@@ -2301,7 +2301,7 @@ export function CardEffectModals({
                                             y: rect.bottom + window.scrollY
                                         })
                                     }}>
-                                        <div className="relative w-[80px] h-[112px] shrink-0 overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
+                                        <div className="relative w-full aspect-[5/7] overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
                                             <Image
                                                 src={card.imageUrl}
                                                 alt={card.name}
