@@ -3,7 +3,7 @@
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
 import { DragOverlay } from '@dnd-kit/core'
-import { type Card } from '@/lib/deckParser'
+import { type Card, cropImageClass } from '@/lib/deckParser'
 import { type CardStack, isEnergy, isPokemon, isSupporter, isTrainer, isRuleBox, getTopCard } from '@/lib/cardStack'
 import {
     type DeckMenuState,
@@ -313,7 +313,7 @@ export function CardEffectModals({
                                             alt={card.name}
                                             width={80}
                                             height={112}
-                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            className={`rounded shadow no-touch-menu no-select no-tap-highlight ${cropImageClass(card)}`}
                                             draggable={false}
                                             unoptimized
                                         />
@@ -2305,7 +2305,7 @@ export function CardEffectModals({
                                             alt={card.name}
                                             width={80}
                                             height={112}
-                                            className="rounded shadow no-touch-menu no-select no-tap-highlight"
+                                            className={`rounded shadow no-touch-menu no-select no-tap-highlight ${cropImageClass(card)}`}
                                             draggable={false}
                                             unoptimized
                                         />
