@@ -308,15 +308,16 @@ export function CardEffectModals({
                                             })
                                         }}
                                     >
-                                        <Image
-                                            src={card.imageUrl}
-                                            alt={card.name}
-                                            width={80}
-                                            height={112}
-                                            className={`rounded shadow no-touch-menu no-select no-tap-highlight ${cropImageClass(card)}`}
-                                            draggable={false}
-                                            unoptimized
-                                        />
+                                        <div className="relative w-[80px] h-[112px] shrink-0 overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
+                                            <Image
+                                                src={card.imageUrl}
+                                                alt={card.name}
+                                                fill
+                                                className={cropImageClass(card) || 'object-contain'}
+                                                draggable={false}
+                                                unoptimized
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -2300,15 +2301,16 @@ export function CardEffectModals({
                                             y: rect.bottom + window.scrollY
                                         })
                                     }}>
-                                        <Image
-                                            src={card.imageUrl}
-                                            alt={card.name}
-                                            width={80}
-                                            height={112}
-                                            className={`rounded shadow no-touch-menu no-select no-tap-highlight ${cropImageClass(card)}`}
-                                            draggable={false}
-                                            unoptimized
-                                        />
+                                        <div className="relative w-[80px] h-[112px] shrink-0 overflow-hidden rounded shadow no-touch-menu no-select no-tap-highlight">
+                                            <Image
+                                                src={card.imageUrl}
+                                                alt={card.name}
+                                                fill
+                                                className={cropImageClass(card) || 'object-contain'}
+                                                draggable={false}
+                                                unoptimized
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
