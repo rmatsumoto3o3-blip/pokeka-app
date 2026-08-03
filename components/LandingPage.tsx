@@ -19,6 +19,7 @@ interface LandingPageProps {
     recentArchetypeIds?: string[]
     weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（集計stats由来）
     winCounts?: Record<string, number>       // アーキタイプ別優勝数（集計stats由来）
+    winnerDecks?: { id: string; archetype_id: string | null; event_date: string | null }[]  // 直近優勝デッキ（featured_decks由来）
     featuredCards?: { card_name: string; current_adoption_rate: number }[]
 }
 
@@ -31,7 +32,7 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 // 環境デッキ分布ドーナツの配色（モックと同一）
 const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
 
-export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, winCounts = {}, featuredCards = [] }: LandingPageProps) {
+export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
 
     const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
@@ -47,6 +48,15 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
         { tier: 'A' as const, items: rankedArchetypes.slice(2, 6) },
         { tier: 'B' as const, items: rankedArchetypes.slice(6, 10) },
     ].filter(b => b.items.length > 0)
+
+    // 環境・優勝デッキ集：featured_decks の「優勝」デッキをアイコンで並べる
+    const validWinnerDecks = winnerDecks
+        .filter(d => d.archetype_id && archetypeMap.has(d.archetype_id))
+        .slice(0, 8)
+    const winnerDates = [...new Set(validWinnerDecks.map(d => d.event_date).filter(Boolean))] as string[]
+    const winnerCaption = winnerDates.length > 0
+        ? (winnerDates.length === 1 ? winnerDates[0] : `${winnerDates[winnerDates.length - 1]}〜${winnerDates[0]}`) + 'の優勝デッキ'
+        : ''
 
     // 注目カード採用率：運営がピックアップした注目カードの全体採用率（実データ）
     const visibleCards = showMoreAdoption ? featuredCards.slice(0, 10) : featuredCards.slice(0, 5)
@@ -162,6 +172,41 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* 環境・優勝デッキ集 */}
+                    <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
+                            <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
+                            <Link href="/decks" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                        </div>
+                        <div className="p-2.5">
+                            {validWinnerDecks.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">優勝デッキデータがまだありません</p>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                                        {validWinnerDecks.map(d => {
+                                            const arch = archetypeMap.get(d.archetype_id!)!
+                                            return (
+                                                <Link key={d.id} href={`/decks/${d.id}`} className="text-center">
+                                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                                        {arch.cover_image_url && (
+                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
+                                                        )}
+                                                        <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
+                                                    </div>
+                                                    <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
+                                                </Link>
+                                            )
+                                        })}
+                                    </div>
+                                    {winnerCaption && (
+                                        <div className="text-[10px] text-gray-400 mt-2 text-right">{winnerCaption}</div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
 

@@ -96,6 +96,25 @@ const getCachedArchetypeStats = unstable_cache(
   { revalidate: 14400 }
 )
 
+// TOPの「環境・優勝デッキ集」用：featured_decks の優勝デッキを新しい順に取得（1時間キャッシュ）
+const getCachedFeaturedWinnerDecks = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data } = await supabase
+      .from('featured_decks')
+      .select('id, archetype_id, event_date, created_at')
+      .eq('event_rank', '優勝')
+      .order('created_at', { ascending: false })
+      .limit(8)
+    return data || []
+  },
+  ['featured-winner-decks-v1'],
+  { revalidate: 3600 }
+)
+
 // 直近2ヶ月の採用カードデータがあるアーキタイプID（リンク表示の404回避用、24時間キャッシュ）
 const getCachedRecentArchetypeIds = unstable_cache(
   async () => {
@@ -156,6 +175,7 @@ export default async function Home() {
     archStats,
     recentArchetypeIds,
     featuredCards,
+    winnerDecks,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
@@ -163,6 +183,7 @@ export default async function Home() {
     getCachedArchetypeStats(),
     getCachedRecentArchetypeIds(),
     getCachedFeaturedCards(),
+    getCachedFeaturedWinnerDecks(),
   ])
 
   // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
@@ -198,6 +219,7 @@ export default async function Home() {
         recentArchetypeIds={recentArchetypeIds}
         weeklyRanking={weeklyRanking}
         winCounts={winCounts}
+        winnerDecks={winnerDecks}
         featuredCards={featuredCards}
       />
     </>
