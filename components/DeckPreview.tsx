@@ -115,8 +115,8 @@ function PreviewGrid({ cards }: { cards: CardData[] }) {
     return (
         <div className="grid grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-1.5 md:gap-2">
             {cards.map((card, i) => (
-                <div key={i} className="group relative">
-                    <div className="relative aspect-[73/102] rounded bg-white overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition cursor-help">
+                <div key={i} className="flex flex-col">
+                    <div className="relative aspect-[73/102] rounded bg-white overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition">
                         {/* Image */}
                         <Image
                             src={card.imageUrl}
@@ -131,10 +131,10 @@ function PreviewGrid({ cards }: { cards: CardData[] }) {
                             {card.quantity}
                         </div>
                     </div>
-                    {/* Tooltip */}
-                    <div className="opacity-0 group-hover:opacity-100 transition absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap z-10 pointer-events-none">
+                    {/* Card name caption (下に常時表示・省略) */}
+                    <p className="mt-0.5 px-0.5 text-[9px] leading-tight text-center text-gray-500 truncate" title={card.name}>
                         {card.name}
-                    </div>
+                    </p>
                 </div>
             ))}
         </div>
