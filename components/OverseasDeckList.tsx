@@ -9,13 +9,17 @@ interface Props {
     archetypes: OverseasArchetype[]
     results: OverseasResult[]
     tournaments: OverseasTournament[]
+    initialArchetypeId?: string
 }
 
-export default function OverseasDeckList({ archetypes, results, tournaments }: Props) {
+export default function OverseasDeckList({ archetypes, results, tournaments, initialArchetypeId }: Props) {
     const [region, setRegion] = useState('All')
     const [tournamentId, setTournamentId] = useState('All')
     const [rank, setRank] = useState('All')
-    const [archetypeId, setArchetypeId] = useState('All')
+    // ランキングから ?archetype=<id> で来た場合はそのデッキタイプで初期絞り込み
+    const [archetypeId, setArchetypeId] = useState(
+        initialArchetypeId && archetypes.some(a => a.id === initialArchetypeId) ? initialArchetypeId : 'All'
+    )
     const tournamentMap = new Map(tournaments.map(item => [item.id, item]))
     const archetypeMap = new Map(archetypes.map(item => [item.id, item]))
     const regions = Array.from(new Set(tournaments.map(item => item.region)))
