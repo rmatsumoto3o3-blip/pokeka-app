@@ -45,7 +45,7 @@ function mapCard(c: RawCard): GundamCard {
 // bandai-tcg-plus.com の公開API経由で実際のカードリストを取得する。
 // 1. deck_code -> url_code（エンコードされたカード列）
 // 2. url_code -> 実カードデータ（recipe展開）
-export async function fetchGundamDeckData(deckCode: string, gameTitleId = 9): Promise<GundamDeckData> {
+export async function fetchGundamDeckData(deckCode: string, gameTitleId = 15): Promise<GundamDeckData> {
     const urlCodeRes = await fetch(
         `https://api.bandai-tcg-plus.com/api/user/deck/url_code?${new URLSearchParams({ deck_code: deckCode })}`,
         { cache: 'no-store' }
