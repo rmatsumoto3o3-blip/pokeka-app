@@ -103,6 +103,28 @@ export interface UnionArenaDeckRecord {
   thumbnail_url: string | null
 }
 
+// ガンダムカードゲーム（gundam_* テーブル。ユニアリ/ポケカとは完全に独立。構造はユニアリと同一）
+export interface GundamDeckArchetype {
+  id: string
+  name: string
+  display_order: number | null
+  cover_image_url: string | null
+  created_at: string
+}
+
+export interface GundamDeckRecord {
+  id: string
+  deck_code: string | null
+  event_rank: string | null
+  event_date: string | null
+  event_location: string | null
+  archetype_id: string | null
+  created_at: string
+  color: string | null
+  deck_name: string | null
+  thumbnail_url: string | null
+}
+
 export interface AnalyzedDeck {
   id: string
   user_id: string

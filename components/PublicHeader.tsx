@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 
 interface PublicHeaderProps {
-    game?: 'pokemon' | 'overseas' | 'unionarena'
+    game?: 'pokemon' | 'overseas' | 'unionarena' | 'gundam'
 }
 
 export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
@@ -108,6 +108,12 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     >
                         ユニアリ
                     </Link>
+                    <Link
+                        href="/gundam"
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'gundam' ? 'text-white bg-amber-600' : 'text-white bg-amber-500 hover:bg-amber-600'}`}
+                    >
+                        ガンダム
+                    </Link>
                 </div>
             </div>
 
@@ -131,12 +137,20 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         <Link href="/" className="hover:text-blue-600 transition shrink-0">国内環境へ</Link>
                     </div>
                 </nav>
-            ) : (
+            ) : game === 'unionarena' ? (
                 <nav className="border-t border-rose-100 bg-white">
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
                         <Link href="/unionarena" className="text-rose-500 font-semibold shrink-0">TOP</Link>
                         <Link href="/unionarena/decks" className="hover:text-rose-500 transition shrink-0">環境デッキ</Link>
                         <Link href="/unionarena/titles" className="hover:text-rose-500 transition shrink-0">タイトル別デッキ</Link>
+                    </div>
+                </nav>
+            ) : (
+                <nav className="border-t border-amber-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/gundam" className="text-amber-600 font-semibold shrink-0">TOP</Link>
+                        <Link href="/gundam/decks" className="hover:text-amber-600 transition shrink-0">環境デッキ</Link>
+                        <Link href="/gundam/titles" className="hover:text-amber-600 transition shrink-0">タイトル別デッキ</Link>
                     </div>
                 </nav>
             )}

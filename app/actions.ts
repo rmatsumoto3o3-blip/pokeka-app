@@ -1532,3 +1532,92 @@ export async function getUnionArenaRecommendedDecksAction() {
         return { success: false, data: [] as any[] }
     }
 }
+
+// ==========================================================================
+// ガンダムカードゲーム（gundam_* テーブル。ユニアリ/ポケカとは完全に独立。構造はユニアリと同一）
+// ==========================================================================
+
+export async function getGundamArchetypesAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('gundam_deck_archetypes')
+            .select('*')
+            .order('display_order', { ascending: true })
+            .order('name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getGundamArchetypesAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+export async function getGundamDeckRecordsAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('gundam_deck_records')
+            .select('id, deck_code, archetype_id, event_rank, event_date, event_location, color, deck_name, thumbnail_url, created_at')
+            .order('created_at', { ascending: false })
+            .limit(1000)
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getGundamDeckRecordsAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+// 直近7日間のアーキタイプ別デッキ数（環境Tier表用）
+export async function getGundamWeeklyRankingAction() {
+    try {
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        const { data, error } = await getSupabaseAdmin()
+            .from('gundam_deck_records')
+            .select('archetype_id')
+            .gte('created_at', since)
+
+        if (error) throw error
+        const counts: Record<string, number> = {}
+        ;(data || []).forEach(r => {
+            if (r.archetype_id) counts[r.archetype_id] = (counts[r.archetype_id] || 0) + 1
+        })
+        return { success: true, data: counts }
+    } catch (e) {
+        console.error('getGundamWeeklyRankingAction error:', e)
+        return { success: false, data: {} as Record<string, number> }
+    }
+}
+
+// シリーズマスター（参加タイトル）一覧
+export async function getGundamSeriesAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('gundam_series')
+            .select('tag_code, name, logo_url')
+            .order('name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getGundamSeriesAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}
+
+// 公式おすすめデッキ（タイトル別）一覧
+export async function getGundamRecommendedDecksAction() {
+    try {
+        const { data, error } = await getSupabaseAdmin()
+            .from('gundam_recommended_decks')
+            .select('id, deck_code, tag_code, deck_name, image_url')
+            .order('deck_name', { ascending: true })
+
+        if (error) throw error
+        return { success: true, data: data || [] }
+    } catch (e) {
+        console.error('getGundamRecommendedDecksAction error:', e)
+        return { success: false, data: [] as any[] }
+    }
+}

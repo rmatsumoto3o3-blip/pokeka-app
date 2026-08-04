@@ -1,12 +1,13 @@
 import Link from 'next/link'
 
 interface FooterProps {
-    game?: 'pokemon' | 'unionarena'
+    game?: 'pokemon' | 'unionarena' | 'gundam'
 }
 
-const DISCLAIMER: Record<'pokemon' | 'unionarena', string> = {
+const DISCLAIMER: Record<'pokemon' | 'unionarena' | 'gundam', string> = {
     pokemon: '当サイトはファン有志による非公式サイトであり、株式会社ポケモン様、任天堂株式会社様とは一切関係ありません。',
     unionarena: '当サイトはファン有志による非公式サイトであり、株式会社バンダイ様とは一切関係ありません。',
+    gundam: '当サイトはファン有志による非公式サイトであり、株式会社バンダイ様、創通様、サンライズ様とは一切関係ありません。',
 }
 
 export default function Footer({ game = 'pokemon' }: FooterProps) {
