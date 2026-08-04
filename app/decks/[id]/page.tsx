@@ -14,10 +14,11 @@ function cleanLocation(location: string | null): string {
 }
 
 // featured_decks（月別シート由来の公開デッキ）から取得。過去の deck_records とは分離。
-async function getDeck(id: string) {
+// URL パラメータは deck_code（同期のたびに変わる id ではなく不変のコードで解決＝リンク切れ防止）。
+async function getDeck(deckCode: string) {
     const supabase = await createClient()
 
-    const { data: deck, error } = await supabase
+    const { data, error } = await supabase
         .from('featured_decks')
         .select(`
             id,
@@ -33,9 +34,11 @@ async function getDeck(id: string) {
                 cover_image_url
             )
         `)
-        .eq('id', id)
-        .single()
+        .eq('deck_code', deckCode)
+        .order('created_at', { ascending: false })
+        .limit(1)
 
+    const deck = data?.[0]
     if (error || !deck) return null
 
     // 公式デッキコードからカード一覧を取得（シミュレーターと同じ方式）

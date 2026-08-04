@@ -105,7 +105,7 @@ const getCachedFeaturedWinnerDecks = unstable_cache(
     )
     const { data } = await supabase
       .from('featured_decks')
-      .select('id, archetype_id, event_date, created_at')
+      .select('id, deck_code, archetype_id, event_date, created_at')
       .eq('event_rank', '優勝')
       .order('created_at', { ascending: false })
       .limit(8)

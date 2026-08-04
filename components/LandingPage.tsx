@@ -19,7 +19,7 @@ interface LandingPageProps {
     recentArchetypeIds?: string[]
     weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（集計stats由来）
     winCounts?: Record<string, number>       // アーキタイプ別優勝数（集計stats由来）
-    winnerDecks?: { id: string; archetype_id: string | null; event_date: string | null }[]  // 直近優勝デッキ（featured_decks由来）
+    winnerDecks?: { id: string; deck_code: string | null; archetype_id: string | null; event_date: string | null }[]  // 直近優勝デッキ（featured_decks由来）
     featuredCards?: { card_name: string; current_adoption_rate: number }[]
 }
 
@@ -51,7 +51,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
 
     // 環境・優勝デッキ集：featured_decks の「優勝」デッキをアイコンで並べる
     const validWinnerDecks = winnerDecks
-        .filter(d => d.archetype_id && archetypeMap.has(d.archetype_id))
+        .filter(d => d.deck_code && d.archetype_id && archetypeMap.has(d.archetype_id))
         .slice(0, 8)
     const winnerDates = [...new Set(validWinnerDecks.map(d => d.event_date).filter(Boolean))] as string[]
     const winnerCaption = winnerDates.length > 0
@@ -190,7 +190,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                                         {validWinnerDecks.map(d => {
                                             const arch = archetypeMap.get(d.archetype_id!)!
                                             return (
-                                                <Link key={d.id} href={`/decks/${d.id}`} className="text-center">
+                                                <Link key={d.id} href={`/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
                                                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
                                                         {arch.cover_image_url && (
                                                             <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
