@@ -202,6 +202,28 @@ export interface CyanoState {
     selectedIndices: number[]
 }
 
+// ぼうけんのランタン（グッズ）: 山札から基本炎・基本雷を1枚ずつ→手札→シャッフル
+export interface BoukenLanternState {
+    step: 'search'
+    candidates: Card[]
+    selectedIndices: number[]
+}
+
+// デリバード 特性エナジープレゼント: 山札上6枚→エネ1枚を手札→残りは下へ
+export interface DelibirdState {
+    step: 'select'
+    candidates: Card[]   // 山札上6枚
+    selectedIndex: number | null
+}
+
+// メガレックウザex 特性はしゃのほうこう: 山札上4枚→基本エネ1枚を自身につける→残りは下へ
+export interface MegaRayquazaEXState {
+    step: 'select'
+    candidates: Card[]   // 山札上4枚
+    selectedIndex: number | null
+    target: { type: 'battle' | 'bench'; index: number }  // つける先（出したこのポケモン）
+}
+
 export interface OgerponWellspringState {
     active: boolean
     step: 'select_cost'

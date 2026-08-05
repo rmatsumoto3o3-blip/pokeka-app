@@ -65,6 +65,8 @@ export interface MenuBuilderParams {
     useLunaCycle: (source: 'battle' | 'bench', index: number) => void
     useNPointUp: (handIndex: number) => void
     useCyano: (handIndex: number) => void
+    useBoukenLantern: (handIndex: number) => void
+    useDelibird: (source: 'battle' | 'bench', index: number) => void
     useOgerponWellspring: (source: 'battle' | 'bench', index: number) => void
     usePreciousCarrier: (handIndex: number) => void
     usePrimeCatcher: (handIndex: number) => void
@@ -130,6 +132,8 @@ export function useMenuBuilder(params: MenuBuilderParams) {
         useLunaCycle,
         useNPointUp,
         useCyano,
+        useBoukenLantern,
+        useDelibird,
         useOgerponWellspring,
         usePreciousCarrier,
         usePrimeCatcher,
@@ -756,6 +760,28 @@ export function useMenuBuilder(params: MenuBuilderParams) {
                     closeMenu()
                 },
                 color: 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+            })
+        }
+
+        if (name === 'ぼうけんのランタン' && source === 'hand') {
+            actions.push({
+                label: 'ぼうけんのランタンを使用',
+                action: () => {
+                    useBoukenLantern(index)
+                    closeMenu()
+                },
+                color: 'bg-orange-50 text-orange-700 hover:bg-orange-100'
+            })
+        }
+
+        if (name === 'デリバード' && source === 'battle') {
+            actions.push({
+                label: '特性: エナジープレゼント',
+                action: () => {
+                    useDelibird(source as 'battle' | 'bench', index)
+                    closeMenu()
+                },
+                color: 'bg-sky-50 text-sky-700 hover:bg-sky-100'
             })
         }
 

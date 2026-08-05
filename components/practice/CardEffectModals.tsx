@@ -23,6 +23,9 @@ import {
     type IronLeavesEXState,
     type NPointUpState,
     type CyanoState,
+    type BoukenLanternState,
+    type DelibirdState,
+    type MegaRayquazaEXState,
     type OgerponWellspringState,
     type BugCatchingSetState,
     type EnergySwitchState,
@@ -95,6 +98,9 @@ interface CardEffectModalsProps {
     nPointUpState: NPointUpState | null
     setNPointUpState: React.Dispatch<React.SetStateAction<NPointUpState | null>>
     cyanoState: CyanoState | null
+    boukenLanternState: BoukenLanternState | null
+    delibirdState: DelibirdState | null
+    megaRayquazaEXState: MegaRayquazaEXState | null
     ogerponWellspringState: OgerponWellspringState | null
     setOgerponWellspringState: React.Dispatch<React.SetStateAction<OgerponWellspringState | null>>
     bugCatchingSetState: BugCatchingSetState | null
@@ -169,6 +175,12 @@ interface CardEffectModalsProps {
     handleNPointUpConfirmEnergy: () => void
     handleCyanoSelect: (i: number) => void
     handleCyanoConfirm: () => void
+    handleBoukenLanternSelect: (i: number) => void
+    handleBoukenLanternConfirm: () => void
+    handleDelibirdSelect: (i: number) => void
+    handleDelibirdConfirm: () => void
+    handleMegaRayquazaEXSelect: (i: number) => void
+    handleMegaRayquazaEXConfirm: () => void
     handleOgerponWellspringSelectCost: (i: number) => void
     handleOgerponWellspringConfirmCost: () => void
     handleBugCatchingSetSelect: (i: number) => void
@@ -226,6 +238,9 @@ export function CardEffectModals({
     ironLeavesEXState, setIronLeavesEXState,
     nPointUpState, setNPointUpState,
     cyanoState,
+    boukenLanternState,
+    delibirdState,
+    megaRayquazaEXState,
     ogerponWellspringState, setOgerponWellspringState,
     bugCatchingSetState,
     energySwitchState, setEnergySwitchState,
@@ -260,6 +275,9 @@ export function CardEffectModals({
     handleMeowthEXSelect, handleMeowthEXConfirm,
     handleNPointUpSelectEnergy, handleNPointUpConfirmEnergy,
     handleCyanoSelect, handleCyanoConfirm,
+    handleBoukenLanternSelect, handleBoukenLanternConfirm,
+    handleDelibirdSelect, handleDelibirdConfirm,
+    handleMegaRayquazaEXSelect, handleMegaRayquazaEXConfirm,
     handleOgerponWellspringSelectCost, handleOgerponWellspringConfirmCost,
     handleBugCatchingSetSelect, handleBugCatchingSetConfirm,
     handleEnergySwitchSelectEnergy,
@@ -821,6 +839,73 @@ export function CardEffectModals({
                                 {cyanoState.selectedIndices.length > 0 ? `決定 (${cyanoState.selectedIndices.length}枚)` : '対象なし・戻す'}
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ぼうけんのランタン Modal */}
+            {boukenLanternState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold text-orange-600 text-center mb-2">ぼうけんのランタン</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札から「基本炎エネルギー」「基本雷エネルギー」を1枚ずつ選んでください。</p>
+                        <div className="grid grid-cols-4 md:grid-cols-7 justify-center gap-[5px] mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {boukenLanternState.candidates.map((card, i) => {
+                                const isTarget = card.supertype === 'Energy' && (card.name.includes('基本炎エネルギー') || card.name.includes('基本雷エネルギー'))
+                                const isSelected = boukenLanternState.selectedIndices.includes(i)
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-orange-500 scale-110 z-10' : 'ring-2 ring-orange-200 hover:ring-4 hover:ring-orange-400 hover:scale-105') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleBoukenLanternSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                        {isSelected && <div className="absolute -top-3 -right-3 bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-black shadow-lg border-2 border-white z-20 text-xs">{boukenLanternState.selectedIndices.indexOf(i) + 1}</div>}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center"><button onClick={handleBoukenLanternConfirm} className="bg-orange-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-orange-600">{boukenLanternState.selectedIndices.length > 0 ? `決定 (${boukenLanternState.selectedIndices.length}枚)` : '対象なし・戻す'}</button></div>
+                    </div>
+                </div>
+            )}
+
+            {/* デリバード エナジープレゼント Modal */}
+            {delibirdState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold text-sky-600 text-center mb-2">デリバード ・ エナジープレゼント</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札の上から6枚。エネルギーを1枚選んで手札に加えます（残りは山札の下へ）。</p>
+                        <div className="grid grid-cols-3 md:grid-cols-6 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {delibirdState.candidates.map((card, i) => {
+                                const isTarget = card.supertype === 'Energy'
+                                const isSelected = delibirdState.selectedIndex === i
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-sky-500 scale-110 z-10' : 'ring-2 ring-sky-200 hover:ring-4 hover:ring-sky-400 hover:scale-105') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleDelibirdSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center"><button onClick={handleDelibirdConfirm} className="bg-sky-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-sky-600">{delibirdState.selectedIndex !== null ? '決定' : '選ばない（下へ戻す）'}</button></div>
+                    </div>
+                </div>
+            )}
+
+            {/* メガレックウザex はしゃのほうこう Modal */}
+            {megaRayquazaEXState && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in-up">
+                        <h2 className="text-xl font-bold text-emerald-600 text-center mb-2">メガレックウザex ・ はしゃのほうこう</h2>
+                        <p className="text-gray-600 text-center mb-6 text-sm">山札の上から4枚。基本エネルギーを1枚選んでこのポケモンにつけます（残りは山札の下へ）。</p>
+                        <div className="grid grid-cols-4 justify-center gap-2 mb-8 p-4 bg-gray-50 rounded-inner shadow-inner">
+                            {megaRayquazaEXState.candidates.map((card, i) => {
+                                const isTarget = card.supertype === 'Energy' && card.name.includes('基本')
+                                const isSelected = megaRayquazaEXState.selectedIndex === i
+                                return (
+                                    <div key={i} className={`relative cursor-pointer transition-all rounded-lg w-fit mx-auto ${isTarget ? (isSelected ? 'ring-[6px] ring-emerald-500 scale-110 z-10' : 'ring-2 ring-emerald-200 hover:ring-4 hover:ring-emerald-400 hover:scale-105') : 'opacity-40 grayscale pointer-events-none'}`} onClick={() => isTarget && handleMegaRayquazaEXSelect(i)}>
+                                        <Image src={card.imageUrl} alt={card.name} width={85} height={119} className="rounded-lg shadow" unoptimized />
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex justify-center"><button onClick={handleMegaRayquazaEXConfirm} className="bg-emerald-500 text-white font-bold px-8 py-2 rounded-full shadow-lg hover:bg-emerald-600">{megaRayquazaEXState.selectedIndex !== null ? 'つける' : '選ばない（下へ戻す）'}</button></div>
                     </div>
                 </div>
             )}

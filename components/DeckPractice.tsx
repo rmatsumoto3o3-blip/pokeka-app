@@ -48,6 +48,9 @@ import {
     type IronLeavesEXState,
     type NPointUpState,
     type CyanoState,
+    type BoukenLanternState,
+    type DelibirdState,
+    type MegaRayquazaEXState,
     type OgerponWellspringState,
     type BugCatchingSetState,
     type EnergySwitchState,
@@ -229,6 +232,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // シアノ State
     const [cyanoState, setCyanoState] = useState<CyanoState | null>(null)
+    const [boukenLanternState, setBoukenLanternState] = useState<BoukenLanternState | null>(null)
+    const [delibirdState, setDelibirdState] = useState<DelibirdState | null>(null)
+    const [megaRayquazaEXState, setMegaRayquazaEXState] = useState<MegaRayquazaEXState | null>(null)
 
     const [ogerponWellspringState, setOgerponWellspringState] = useState<OgerponWellspringState | null>(null)
 
@@ -859,6 +865,14 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
         setHand(prev => prev.filter((_, i) => i !== handIndex))
         closeMenu()
+
+        // メガレックウザex 特性「はしゃのほうこう」：手札からベンチに出したとき発火
+        if (card.name.includes('メガレックウザex')) {
+            const benchIdx = targetIndex !== undefined ? targetIndex : bench.findIndex((s, i) => i < benchSize && s === null)
+            if (benchIdx !== undefined && benchIdx !== -1) {
+                setTimeout(() => useMegaRayquazaEX(benchIdx), 0)
+            }
+        }
     }
 
     const trashFromHand = (index: number) => {
@@ -1105,6 +1119,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         nPointUpState, setNPointUpState,
         blazikenEXState, setBlazikenEXState,
         cyanoState, setCyanoState,
+        boukenLanternState, setBoukenLanternState,
+        delibirdState, setDelibirdState,
+        megaRayquazaEXState, setMegaRayquazaEXState,
         ogerponWellspringState, setOgerponWellspringState,
         bugCatchingSetState, setBugCatchingSetState,
         energySwitchState, setEnergySwitchState,
@@ -1160,6 +1177,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useIronLeavesEX, handleIronLeavesEXClickPokemon,
         useNPointUp, handleNPointUpSelectEnergy, handleNPointUpConfirmEnergy, handleNPointUpClickPokemon,
         useCyano, handleCyanoSelect, handleCyanoConfirm,
+        useBoukenLantern, handleBoukenLanternSelect, handleBoukenLanternConfirm,
+        useDelibird, handleDelibirdSelect, handleDelibirdConfirm,
+        useMegaRayquazaEX, handleMegaRayquazaEXSelect, handleMegaRayquazaEXConfirm,
         useOgerponWellspring, handleOgerponWellspringSelectCost, handleOgerponWellspringConfirmCost,
         useBugCatchingSet, handleBugCatchingSetSelect, handleBugCatchingSetConfirm,
         useEnergySwitch, handleEnergySwitchClickPokemon, handleEnergySwitchSelectEnergy,
@@ -1230,6 +1250,8 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useLunaCycle,
         useNPointUp,
         useCyano,
+        useBoukenLantern,
+        useDelibird,
         useOgerponWellspring,
         usePreciousCarrier,
         usePrimeCatcher,
@@ -2158,6 +2180,15 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 nPointUpState={nPointUpState}
                 setNPointUpState={setNPointUpState}
                 cyanoState={cyanoState}
+                boukenLanternState={boukenLanternState}
+                handleBoukenLanternSelect={handleBoukenLanternSelect}
+                handleBoukenLanternConfirm={handleBoukenLanternConfirm}
+                delibirdState={delibirdState}
+                handleDelibirdSelect={handleDelibirdSelect}
+                handleDelibirdConfirm={handleDelibirdConfirm}
+                megaRayquazaEXState={megaRayquazaEXState}
+                handleMegaRayquazaEXSelect={handleMegaRayquazaEXSelect}
+                handleMegaRayquazaEXConfirm={handleMegaRayquazaEXConfirm}
                 ogerponWellspringState={ogerponWellspringState}
                 setOgerponWellspringState={setOgerponWellspringState}
                 bugCatchingSetState={bugCatchingSetState}

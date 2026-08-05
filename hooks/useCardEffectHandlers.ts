@@ -17,6 +17,9 @@ import {
     type IronLeavesEXState,
     type NPointUpState,
     type CyanoState,
+    type BoukenLanternState,
+    type DelibirdState,
+    type MegaRayquazaEXState,
     type OgerponWellspringState,
     type BugCatchingSetState,
     type EnergySwitchState,
@@ -86,6 +89,12 @@ export interface CardEffectHandlerParams {
     setNPointUpState: Dispatch<SetStateAction<NPointUpState | null>>
     cyanoState: CyanoState | null
     setCyanoState: Dispatch<SetStateAction<CyanoState | null>>
+    boukenLanternState: BoukenLanternState | null
+    setBoukenLanternState: Dispatch<SetStateAction<BoukenLanternState | null>>
+    delibirdState: DelibirdState | null
+    setDelibirdState: Dispatch<SetStateAction<DelibirdState | null>>
+    megaRayquazaEXState: MegaRayquazaEXState | null
+    setMegaRayquazaEXState: Dispatch<SetStateAction<MegaRayquazaEXState | null>>
     ogerponWellspringState: OgerponWellspringState | null
     setOgerponWellspringState: Dispatch<SetStateAction<OgerponWellspringState | null>>
     bugCatchingSetState: BugCatchingSetState | null
@@ -188,6 +197,9 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         ironLeavesEXState, setIronLeavesEXState,
         nPointUpState, setNPointUpState,
         cyanoState, setCyanoState,
+        boukenLanternState, setBoukenLanternState,
+        delibirdState, setDelibirdState,
+        megaRayquazaEXState, setMegaRayquazaEXState,
         ogerponWellspringState, setOgerponWellspringState,
         bugCatchingSetState, setBugCatchingSetState,
         energySwitchState, setEnergySwitchState,
@@ -1214,6 +1226,110 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         setRemaining(newDeck)
         setCyanoState(null)
         showToast(`シアノ: ${selectedCards.length}枚を手札に加え、山札をシャッフルしました`)
+    }
+
+    // --- ぼうけんのランタン (グッズ): 山札から基本炎・基本雷を1枚ずつ→手札→シャッフル ---
+    const useBoukenLantern = (handIndex: number) => {
+        const card = hand[handIndex]
+        if (!card) return
+        setHand(prev => prev.filter((_, i) => i !== handIndex))
+        setTrash(prev => [...prev, card])
+        setBoukenLanternState({ step: 'search', candidates: [...remaining], selectedIndices: [] })
+    }
+    const handleBoukenLanternSelect = (index: number) => {
+        if (!boukenLanternState) return
+        const card = remaining[index]
+        const isFire = isEnergy(card) && card.name.includes('基本炎エネルギー')
+        const isLightning = isEnergy(card) && card.name.includes('基本雷エネルギー')
+        if (!isFire && !isLightning) { alert('「基本炎エネルギー」または「基本雷エネルギー」を選んでください'); return }
+        setBoukenLanternState(prev => {
+            if (!prev) return null
+            const current = [...prev.selectedIndices]
+            const found = current.indexOf(index)
+            if (found !== -1) { current.splice(found, 1); return { ...prev, selectedIndices: current } }
+            const sameTypeAlready = current.some(ci => {
+                const c = remaining[ci]
+                return isFire ? c.name.includes('基本炎エネルギー') : c.name.includes('基本雷エネルギー')
+            })
+            if (sameTypeAlready) { alert('炎・雷それぞれ1枚までです'); return prev }
+            current.push(index)
+            return { ...prev, selectedIndices: current }
+        })
+    }
+    const handleBoukenLanternConfirm = () => {
+        if (!boukenLanternState) return
+        const selected = boukenLanternState.selectedIndices.map(i => remaining[i])
+        setHand(prev => [...prev, ...selected])
+        const newDeck = remaining.filter((_, i) => !boukenLanternState.selectedIndices.includes(i)).sort(() => Math.random() - 0.5)
+        setRemaining(newDeck)
+        setBoukenLanternState(null)
+        showToast(`ぼうけんのランタン: ${selected.length}枚を手札に加えました`)
+    }
+
+    // --- デリバード 特性エナジープレゼント: バトル場で 山札上6枚→エネ1枚を手札→残りは下へ ---
+    const useDelibird = (source: 'battle' | 'bench', _index: number) => {
+        if (source !== 'battle') { alert('この特性はバトル場にいるときしか使えません'); return }
+        if (remaining.length === 0) { alert('山札がありません'); return }
+        setDelibirdState({ step: 'select', candidates: remaining.slice(0, 6), selectedIndex: null })
+    }
+    const handleDelibirdSelect = (index: number) => {
+        if (!delibirdState) return
+        const card = delibirdState.candidates[index]
+        if (!isEnergy(card)) { alert('エネルギーを選んでください'); return }
+        setDelibirdState(prev => prev ? { ...prev, selectedIndex: prev.selectedIndex === index ? null : index } : null)
+    }
+    const handleDelibirdConfirm = () => {
+        if (!delibirdState) return
+        const look = delibirdState.candidates.length
+        const rest = remaining.slice(look)
+        if (delibirdState.selectedIndex === null) {
+            const bottom = delibirdState.candidates.slice().sort(() => Math.random() - 0.5)
+            setRemaining([...rest, ...bottom])
+            setDelibirdState(null)
+            showToast('デリバード: 選ばず山札の下に戻しました')
+            return
+        }
+        const chosen = delibirdState.candidates[delibirdState.selectedIndex]
+        setHand(prev => [...prev, chosen])
+        const bottom = delibirdState.candidates.filter((_, i) => i !== delibirdState.selectedIndex).sort(() => Math.random() - 0.5)
+        setRemaining([...rest, ...bottom])
+        setDelibirdState(null)
+        showToast(`デリバード: ${chosen.name}を手札に加えました`)
+    }
+
+    // --- メガレックウザex 特性はしゃのほうこう: ベンチ出し時 山札上4枚→基本エネ1枚を自身につける→残りは下へ ---
+    const useMegaRayquazaEX = (benchIndex: number) => {
+        if (remaining.length === 0) return
+        setMegaRayquazaEXState({ step: 'select', candidates: remaining.slice(0, 4), selectedIndex: null, target: { type: 'bench', index: benchIndex } })
+    }
+    const handleMegaRayquazaEXSelect = (index: number) => {
+        if (!megaRayquazaEXState) return
+        const card = megaRayquazaEXState.candidates[index]
+        if (!(isEnergy(card) && card.name.includes('基本'))) { alert('基本エネルギーを選んでください'); return }
+        setMegaRayquazaEXState(prev => prev ? { ...prev, selectedIndex: prev.selectedIndex === index ? null : index } : null)
+    }
+    const handleMegaRayquazaEXConfirm = () => {
+        if (!megaRayquazaEXState) return
+        const look = megaRayquazaEXState.candidates.length
+        const rest = remaining.slice(look)
+        if (megaRayquazaEXState.selectedIndex !== null) {
+            const energyCard = megaRayquazaEXState.candidates[megaRayquazaEXState.selectedIndex]
+            const tgtIndex = megaRayquazaEXState.target.index
+            setBench(prev => {
+                const next = [...prev]
+                const stack = next[tgtIndex]
+                if (stack) next[tgtIndex] = { ...stack, cards: [...stack.cards, energyCard], energyCount: stack.energyCount + 1 }
+                return next
+            })
+            const bottom = megaRayquazaEXState.candidates.filter((_, i) => i !== megaRayquazaEXState.selectedIndex).sort(() => Math.random() - 0.5)
+            setRemaining([...rest, ...bottom])
+            showToast(`メガレックウザex: ${energyCard.name}をつけました`)
+        } else {
+            const bottom = megaRayquazaEXState.candidates.slice().sort(() => Math.random() - 0.5)
+            setRemaining([...rest, ...bottom])
+            showToast('メガレックウザex: 選ばず山札の下に戻しました')
+        }
+        setMegaRayquazaEXState(null)
     }
 
     // --- オーガポン いどのめんex (Ogerpon Wellspring Mask ex) Logic ---
@@ -2787,6 +2903,15 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         useCyano,
         handleCyanoSelect,
         handleCyanoConfirm,
+        useBoukenLantern,
+        handleBoukenLanternSelect,
+        handleBoukenLanternConfirm,
+        useDelibird,
+        handleDelibirdSelect,
+        handleDelibirdConfirm,
+        useMegaRayquazaEX,
+        handleMegaRayquazaEXSelect,
+        handleMegaRayquazaEXConfirm,
         useOgerponWellspring,
         handleOgerponWellspringSelectCost,
         handleOgerponWellspringConfirmCost,
