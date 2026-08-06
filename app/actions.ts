@@ -1258,19 +1258,39 @@ export async function getWeeklyReportAction(
 
         const fmt = (d: Date) => d.toISOString()
 
-        // 環境デッキ（featured_decks）の 優勝/準優勝 を「大会日(event_date)」基準で集計する。
-        // Python停止で deck_records が7/31凍結のため、月別シートからライブ更新される
-        // featured_decks を源にする。event_date は年なし "M/D" のため created_at から年を推定。
-        const { data: rawRecords, error: rErr } = await supabaseAdmin
+        // 優勝/準優勝を「大会日(event_date)」基準で集計する。
+        // 過去は deck_records（〜7/31・historyは event_date が null の行あり）、
+        // 現在は月別シートからライブ更新される featured_decks の両方を源にする。
+        // event_date があればそれ、無ければ created_at にフォールバックして年を推定
+        // （eventDateSortKey が両対応）。deck_records は created_at で概ね絞ってから
+        // 大会日で精密にバケットする（同期は大会後なので上側に十分マージンを取る）。
+        const marginLo = new Date(lastWeekFrom); marginLo.setDate(marginLo.getDate() - 3)
+        const marginHi = new Date(thisWeekTo);   marginHi.setDate(marginHi.getDate() + 21)
+
+        const histRows: { archetype_id: string; event_rank: string; event_date: string | null; created_at: string; deck_code: string }[] = []
+        for (let offset = 0; ; offset += 1000) {
+            const { data, error } = await supabaseAdmin
+                .from('deck_records')
+                .select('archetype_id, event_rank, event_date, created_at, deck_code')
+                .in('event_rank', ['優勝', '準優勝'])
+                .gte('created_at', marginLo.toISOString())
+                .lte('created_at', marginHi.toISOString())
+                .range(offset, offset + 999)
+            if (error) throw error
+            if (!data || data.length === 0) break
+            histRows.push(...(data as typeof histRows))
+            if (data.length < 1000) break
+        }
+
+        const { data: featRows, error: rErr } = await supabaseAdmin
             .from('featured_decks')
             .select('archetype_id, event_rank, event_date, created_at, deck_code')
             .in('event_rank', ['優勝', '準優勝'])
-
         if (rErr) throw rErr
 
-        // deck_code+順位 で重複排除し、大会日タイムスタンプを付与
+        // deck_code+順位 で重複排除し、大会日タイムスタンプを付与（過去→現在の順で優先）
         const seenDeck = new Set<string>()
-        const records = (rawRecords || [])
+        const records = [...histRows, ...((featRows || []) as typeof histRows)]
             .filter(r => {
                 if (!r.archetype_id) return false
                 const key = `${r.deck_code}__${r.event_rank}`
