@@ -82,8 +82,29 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: `${displayName}（${archetype}）| ガンダム デッキレシピ`,
+        image: imageUrl ? [imageUrl] : [],
+        author: { '@type': 'Organization', name: 'PokéLix' },
+        publisher: { '@type': 'Organization', name: 'PokéLix', logo: { '@type': 'ImageObject', url: 'https://pokelix.jp/icon.png' } },
+        datePublished: (deck as any).created_at,
+        description: `ガンダムカードゲーム ${archetype}デッキ「${displayName}」の大会結果とデッキレシピ。`,
+        mainEntity: {
+            '@type': 'ItemList',
+            name: 'Deck List',
+            itemListElement: mainDeck.map((c, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                item: { '@type': 'Thing', name: `${c.name} x${c.quantity}` },
+            })),
+        },
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <PublicHeader game="gundam" />
 
             <main className="max-w-4xl mx-auto px-4 py-8">

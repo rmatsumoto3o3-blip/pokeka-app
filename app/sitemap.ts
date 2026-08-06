@@ -13,6 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '/decks',            priority: 0.85, freq: 'daily'  },
         { path: '/archetypes',       priority: 0.85, freq: 'daily'  },
         { path: '/articles',         priority: 0.85, freq: 'daily'  },
+        { path: '/unionarena',        priority: 0.8,  freq: 'daily'  },
+        { path: '/unionarena/decks',  priority: 0.75, freq: 'daily'  },
+        { path: '/unionarena/titles', priority: 0.7,  freq: 'weekly' },
+        { path: '/gundam',            priority: 0.8,  freq: 'daily'  },
+        { path: '/gundam/decks',      priority: 0.75, freq: 'daily'  },
+        { path: '/gundam/titles',     priority: 0.7,  freq: 'weekly' },
         { path: '/guide',            priority: 0.8,  freq: 'weekly' },
         { path: '/about',            priority: 0.6,  freq: 'weekly' },
         { path: '/contact',          priority: 0.5,  freq: 'weekly' },
@@ -53,5 +59,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
     }))
 
-    return [...routes, ...articleRoutes, ...archetypeRoutes]
+    // Dynamic Routes: ユニアリ / ガンダムのデッキ詳細・タイトル別デッキ詳細
+    // 各テーブルは RLS で公開読み取り可。id を URL に採用。
+    async function idRoutes(table: string, prefix: string, priority: number) {
+        const { data } = await supabase.from(table).select('id, created_at')
+        return (data || []).map((r: { id: string | number; created_at?: string }) => ({
+            url: `${baseUrl}${prefix}/${r.id}`,
+            lastModified: r.created_at ? new Date(r.created_at) : new Date(),
+            changeFrequency: 'weekly' as const,
+            priority,
+        }))
+    }
+
+    const [uaDeckRoutes, uaTitleRoutes, gdDeckRoutes, gdTitleRoutes] = await Promise.all([
+        idRoutes('unionarena_deck_records', '/unionarena/decks', 0.6),
+        idRoutes('unionarena_recommended_decks', '/unionarena/titles', 0.6),
+        idRoutes('gundam_deck_records', '/gundam/decks', 0.6),
+        idRoutes('gundam_recommended_decks', '/gundam/titles', 0.6),
+    ])
+
+    return [
+        ...routes,
+        ...articleRoutes,
+        ...archetypeRoutes,
+        ...uaDeckRoutes,
+        ...uaTitleRoutes,
+        ...gdDeckRoutes,
+        ...gdTitleRoutes,
+    ]
 }

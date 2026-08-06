@@ -8,6 +8,8 @@ import { getUnionArenaArchetypesAction, getUnionArenaDeckRecordsAction } from '@
 export const metadata: Metadata = {
     title: 'ユニアリ 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
     description: '大会で結果を残したユニアリ（ユニオンアリーナ）のデッキをアーキタイプ別にまとめています。',
+    keywords: ['ユニアリ 環境', 'ユニオンアリーナ 優勝デッキ', 'ユニアリ デッキレシピ', 'ユニアリ 環境デッキ', 'ユニオンアリーナ デッキ'],
+    alternates: { canonical: 'https://pokelix.jp/unionarena/decks' },
 }
 
 export const revalidate = 60
