@@ -71,7 +71,7 @@ export default async function GundamDecksPage() {
                                                 </div>
                                                 <div className="px-2.5 py-2">
                                                     <p className="text-xs font-medium text-gray-800 truncate">{d.event_location || d.deck_code}</p>
-                                                    <p className="text-[11px] text-gray-400">{d.event_date}</p>
+                                                    <p className="text-[11px] text-gray-400">{d.event_date && d.event_date.length <= 10 ? d.event_date : ''}</p>
                                                 </div>
                                             </Link>
                                         ))}

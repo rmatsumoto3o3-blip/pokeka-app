@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (!deck) return { title: 'Deck Not Found' }
 
     const archetype = (deck.gundam_deck_archetypes as any)?.name || 'ガンダム'
-    const displayName = deck.event_date ? `${deck.event_date} ${deck.event_location || ''}`.trim() : (deck.deck_code || archetype)
+    const displayName = deck.event_location || deck.deck_code || archetype
 
     return {
         title: `${displayName} (${archetype}) | ポケリス`,
@@ -78,7 +78,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
     const archetype = (deck.gundam_deck_archetypes as any)?.name || 'Unknown'
     const imageUrl = (deck.thumbnail_url || (deck.gundam_deck_archetypes as any)?.cover_image_url) as string | undefined
-    const displayName = deck.event_date ? `${deck.event_date} ${deck.event_location || ''}`.trim() : (deck.deck_code || archetype)
+    const displayName = deck.event_location || deck.deck_code || archetype
     const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
 
