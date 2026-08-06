@@ -1,6 +1,7 @@
 'use server'
 
 import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser'
+import { eventDateSortKey } from '@/lib/eventDate'
 
 export async function getDeckDataAction(deckCode: string): Promise<{ success: boolean, data?: CardData[], error?: string }> {
     try {
@@ -1257,15 +1258,31 @@ export async function getWeeklyReportAction(
 
         const fmt = (d: Date) => d.toISOString()
 
-        // deck_records: 優勝/準優勝 の対象2週分を取得
-        const { data: records, error: rErr } = await supabaseAdmin
-            .from('deck_records')
-            .select('archetype_id, event_rank, created_at')
+        // 環境デッキ（featured_decks）の 優勝/準優勝 を「大会日(event_date)」基準で集計する。
+        // Python停止で deck_records が7/31凍結のため、月別シートからライブ更新される
+        // featured_decks を源にする。event_date は年なし "M/D" のため created_at から年を推定。
+        const { data: rawRecords, error: rErr } = await supabaseAdmin
+            .from('featured_decks')
+            .select('archetype_id, event_rank, event_date, created_at, deck_code')
             .in('event_rank', ['優勝', '準優勝'])
-            .gte('created_at', fmt(lastWeekFrom))
-            .lte('created_at', fmt(thisWeekTo))
 
         if (rErr) throw rErr
+
+        // deck_code+順位 で重複排除し、大会日タイムスタンプを付与
+        const seenDeck = new Set<string>()
+        const records = (rawRecords || [])
+            .filter(r => {
+                if (!r.archetype_id) return false
+                const key = `${r.deck_code}__${r.event_rank}`
+                if (seenDeck.has(key)) return false
+                seenDeck.add(key)
+                return true
+            })
+            .map(r => ({
+                archetype_id: r.archetype_id as string,
+                event_rank: r.event_rank as string,
+                recordDate: new Date(eventDateSortKey(r.event_date, r.created_at)),
+            }))
 
         // アーキタイプ名を取得
         const { data: archetypes } = await supabaseAdmin
@@ -1274,13 +1291,14 @@ export async function getWeeklyReportAction(
 
         const nameMap = new Map(archetypes?.map(a => [a.id, a.name]) || [])
 
-        // 今週/先週でカウント
+        // 今週/先週でカウント（大会日基準。全件取得のため両ウィンドウを明示的に判定）
         const thisWeekCounts: Record<string, number> = {}
         const lastWeekCounts: Record<string, number> = {}
 
-        for (const r of records || []) {
-            const createdAt = new Date(r.created_at)
-            const isThisWeek = createdAt >= thisWeekFrom && createdAt <= thisWeekTo
+        for (const r of records) {
+            const isThisWeek = r.recordDate >= thisWeekFrom && r.recordDate <= thisWeekTo
+            const isLastWeek = r.recordDate >= lastWeekFrom && r.recordDate < thisWeekFrom
+            if (!isThisWeek && !isLastWeek) continue
             const map = isThisWeek ? thisWeekCounts : lastWeekCounts
             map[r.archetype_id] = (map[r.archetype_id] || 0) + 1
         }
@@ -1288,9 +1306,8 @@ export async function getWeeklyReportAction(
         // 今週の優勝・準優勝ランキング（全アーキタイプ）
         const thisWeekWins: Record<string, number> = {}
         const thisWeekRunnerUps: Record<string, number> = {}
-        for (const r of records || []) {
-            const createdAt = new Date(r.created_at)
-            if (createdAt >= thisWeekFrom && createdAt <= thisWeekTo) {
+        for (const r of records) {
+            if (r.recordDate >= thisWeekFrom && r.recordDate <= thisWeekTo) {
                 if (r.event_rank === '優勝') thisWeekWins[r.archetype_id] = (thisWeekWins[r.archetype_id] || 0) + 1
                 if (r.event_rank === '準優勝') thisWeekRunnerUps[r.archetype_id] = (thisWeekRunnerUps[r.archetype_id] || 0) + 1
             }
