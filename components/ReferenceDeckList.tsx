@@ -288,8 +288,6 @@ export default function ReferenceDeckList({
                     {/* Header Row */}
                     <div className="bg-gray-50 px-2.5 py-2 border-b border-gray-100 flex text-xs font-bold text-gray-500">
                         <div className="flex-1">デッキ</div>
-                        <div className="w-24 hidden md:block text-center">日付</div>
-                        <div className="w-24 hidden md:block text-center">CODE</div>
                     </div>
 
                     {deckRecordsLoading ? (
@@ -361,12 +359,6 @@ export default function ReferenceDeckList({
                                             )}
                                         </div>
                                     </div>
-
-                                    {/* Desktop Date */}
-                                    <div className="w-24 hidden md:flex items-center justify-center text-[10px] text-gray-500 font-medium">
-                                        {deck.created_at && new Date(deck.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit' })}
-                                    </div>
-
 
                                     {isAdmin && (
                                         <div className="w-20 flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
