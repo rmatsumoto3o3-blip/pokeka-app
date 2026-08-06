@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import DeckPracticeLauncher from '@/components/DeckPracticeLauncher'
@@ -77,11 +77,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     }
 }
 
+// 旧デッキ詳細は UUID をURLに使っていたが、現在は deck_code 基準に移行済み。
+// 検索にインデックス済みの旧 /decks/{uuid} が 404 化するのを防ぎ、公開デッキ一覧へ 301 転送する。
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const deck = await getDeck(id)
 
-    if (!deck) notFound()
+    if (!deck) {
+        if (UUID_RE.test(id)) permanentRedirect('/decks')
+        notFound()
+    }
 
     const archetype = (deck.deck_archetypes as any)?.name || 'Unknown'
     const imageUrl = (deck.deck_archetypes as any)?.cover_image_url as string | undefined
