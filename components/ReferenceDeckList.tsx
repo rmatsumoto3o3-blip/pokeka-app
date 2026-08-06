@@ -8,6 +8,7 @@ import DeckViewerModal from './DeckViewerModal'
 import DeckPreview from './DeckPreview'
 import KeyCardAdoptionDrawer from './KeyCardAdoptionDrawer' // [NEW]
 import { getFeaturedDeckCountsAction, getFeaturedDecksByArchetypeAction } from '@/app/actions'
+import { byEventDateDesc } from '@/lib/eventDate'
 
 // Helper Component for Auto-Scaling Text
 function AutoFitText({ text, className = "" }: { text: string, className?: string }) {
@@ -200,10 +201,11 @@ export default function ReferenceDeckList({
         const displayName = currentArchetype?.name || 'その他'
         const totalDeckCount = gasDeckCounts[selectedArchetypeId] || deckRecords.length
 
-        // ランクフィルタ
-        const filteredByRank = selectedRank === 'All'
+        // ランクフィルタ（大会日の新しい順に並べる）
+        const filteredByRank = (selectedRank === 'All'
             ? deckRecords
             : deckRecords.filter(d => d.event_rank === selectedRank)
+        ).slice().sort(byEventDateDesc)
 
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
         const paginatedDecks = filteredByRank.slice(startIndex, startIndex + ITEMS_PER_PAGE)

@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction } from '@/app/actions'
+import { byEventDateDesc } from '@/lib/eventDate'
 
 // 注目カード採用率（1時間キャッシュ）
 const getCachedFeaturedCards = unstable_cache(
@@ -108,8 +109,9 @@ const getCachedFeaturedWinnerDecks = unstable_cache(
       .select('id, deck_code, archetype_id, event_date, created_at')
       .eq('event_rank', '優勝')
       .order('created_at', { ascending: false })
-      .limit(8)
-    return data || []
+      .limit(40)
+    // 大会日(event_date)の新しい順に並べ替えてから上位8件（年なし文字列を created_at 基準で年推定）
+    return (data || []).slice().sort(byEventDateDesc).slice(0, 8)
   },
   ['featured-winner-decks-v1'],
   { revalidate: 3600 }

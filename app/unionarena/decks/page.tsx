@@ -4,6 +4,7 @@ import Image from 'next/image'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import { getUnionArenaArchetypesAction, getUnionArenaDeckRecordsAction } from '@/app/actions'
+import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 
 export const metadata: Metadata = {
     title: 'ユニアリ 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -29,6 +30,13 @@ export default async function UnionArenaDecksPage() {
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(d)
     })
+    // 各グループ内を大会日の新しい順に、さらにグループ自体も最新デッキが上に来るよう並べる
+    Object.values(grouped).forEach(list => list.sort(byEventDateDesc))
+    const groupOrder = Object.keys(grouped).sort((a, b) => {
+        const ka = grouped[a][0] ? eventDateSortKey(grouped[a][0].event_date, grouped[a][0].created_at) : 0
+        const kb = grouped[b][0] ? eventDateSortKey(grouped[b][0].event_date, grouped[b][0].created_at) : 0
+        return kb - ka
+    })
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -46,7 +54,8 @@ export default async function UnionArenaDecksPage() {
                             <p className="text-gray-500">大会デッキデータはまだありません。データ収集が始まり次第、順次表示されます。</p>
                         </div>
                     ) : (
-                        Object.entries(grouped).map(([archId, archDecks]) => {
+                        groupOrder.map((archId) => {
+                            const archDecks = grouped[archId]
                             const arch = archId === 'others' ? { name: 'その他', cover_image_url: null } : archetypeMap.get(archId)
                             return (
                                 <section key={archId} id={`arch-${archId}`} className="mb-8 scroll-mt-24">
