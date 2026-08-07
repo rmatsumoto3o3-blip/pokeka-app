@@ -5,6 +5,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import SimulatorManager from '@/components/SimulatorManager'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import RelatedTools from '@/components/RelatedTools'
 
 export default function SimulatorPage() {
     const searchParams = useSearchParams()
@@ -92,6 +93,8 @@ export default function SimulatorPage() {
                         </div>
                     </div>
                 </div>
+
+                <RelatedTools exclude="/simulator" />
             </main>
 
             <Footer />

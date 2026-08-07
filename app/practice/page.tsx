@@ -24,6 +24,8 @@ import { snapCenterToCursor } from '@dnd-kit/modifiers'
 import { CSS } from '@dnd-kit/utilities'
 import { VIRTUAL_PRACTICE_DECKS, type VirtualPracticeDeckCard } from '@/lib/practiceVirtualDecks'
 import { CABT_CARD_CATALOG, type CabtCardCatalogEntry } from '@/lib/cabtCardCatalog'
+import AdPlaceholder from '@/components/AdPlaceholder'
+import RelatedTools from '@/components/RelatedTools'
 
 type CabtCard = {
     cardId?: number
@@ -1618,6 +1620,11 @@ function PracticeContent() {
                 )
                 }
 
+                {/* ツール下（ファーストビュー外）の本文内広告。固定枠なので CLS を出さない */}
+                <div className="max-w-4xl mx-auto px-4 mt-12">
+                    <AdPlaceholder slot="2515406718" format="auto" />
+                </div>
+
                 {/* Content description for SEO/AdSense (Value) */}
                 <div className="mt-16 mb-8 max-w-4xl mx-auto px-4">
                     <div className="bg-white rounded-xl p-6 md:p-10 shadow-sm border border-gray-100">
@@ -1667,6 +1674,8 @@ function PracticeContent() {
                         </div>
                     </div>
                 </div>
+
+                <RelatedTools exclude="/practice" />
 
                 {/* Coin Toss 3D Animation Overlay */}
                 {isFlipping && (
