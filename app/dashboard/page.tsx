@@ -14,6 +14,7 @@ import ArticleManager from '@/components/ArticleManager'
 import UserList from '@/components/UserList'
 import WeeklyReport from '@/components/WeeklyReport'
 import DeckScanner from '@/components/DeckScanner'
+import GundamIconManager from '@/components/GundamIconManager'
 import SideArticleList from '@/components/SideArticleList'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
@@ -196,6 +197,7 @@ export default function Dashboard() {
                         {isAdmin && <button onClick={() => setActiveTab('users')} className={tabClass('users')}>ユーザー一覧</button>}
                         {isAdmin && <button onClick={() => setActiveTab('weekly-report')} className={tabClass('weekly-report')}>環境レポート</button>}
                         {isAdmin && <button onClick={() => setActiveTab('deck-scanner')} className={tabClass('deck-scanner')}>デッキ写真読み取り</button>}
+                        {isAdmin && <button onClick={() => setActiveTab('gundam-icons')} className={tabClass('gundam-icons')}>ガンダムアイコン</button>}
                     </div>
                     <div className="flex items-center gap-2 py-2 shrink-0">
                         <Link
@@ -384,6 +386,12 @@ export default function Dashboard() {
                                 <h2 className="text-xl font-bold text-gray-900">デッキ写真読み取り</h2>
                                 <p className="text-sm text-gray-600">デッキを並べた写真から、カード名・枚数を読み取ってリスト化し、そのまま一人回しで使えます。</p>
                                 <DeckScanner />
+                            </div>
+                        )}
+
+                        {activeTab === 'gundam-icons' && isAdmin && (
+                            <div className="space-y-4">
+                                <GundamIconManager />
                             </div>
                         )}
 
