@@ -2,6 +2,7 @@
 
 import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser'
 import { eventDateSortKey } from '@/lib/eventDate'
+import { unstable_cache } from 'next/cache'
 
 export async function getDeckDataAction(deckCode: string): Promise<{ success: boolean, data?: CardData[], error?: string }> {
     try {
@@ -1245,6 +1246,17 @@ export async function getWeeklyReportAction(
     thisWeekToStr?: string    // "YYYY-MM-DD" 今週終了日
 ): Promise<{ success: boolean; data?: WeeklyReportData; error?: string }> {
     try {
+        const data = await getWeeklyReportCached(thisWeekFromStr, thisWeekToStr)
+        return { success: true, data }
+    } catch (error) {
+        return { success: false, error: (error as Error).message }
+    }
+}
+
+// レポート本体。(from,to) をキーに 1時間キャッシュし、公開ページ(/weekly-report)の
+// 都度DB走査を回避する（同一期間の再アクセスはキャッシュヒット＝Supabase負荷/egress削減）。
+const getWeeklyReportCached = unstable_cache(
+    async (thisWeekFromStr?: string, thisWeekToStr?: string): Promise<WeeklyReportData> => {
         const supabaseAdmin = getSupabaseAdmin()
         const now = new Date()
 
@@ -1398,20 +1410,17 @@ export async function getWeeklyReportAction(
         const fmtDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
 
         return {
-            success: true,
-            data: {
-                thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(thisWeekTo) },
-                lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
-                archetypes: archetypeStats,
-                topArchetypes,
-                featuredCards,
-                totalDecksThisWeek,
-            }
+            thisWeekRange: { from: fmtDate(thisWeekFrom), to: fmtDate(thisWeekTo) },
+            lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
+            archetypes: archetypeStats,
+            topArchetypes,
+            featuredCards,
+            totalDecksThisWeek,
         }
-    } catch (error) {
-        return { success: false, error: (error as Error).message }
-    }
-}
+    },
+    ['weekly-report-v1'],
+    { revalidate: 3600 }
+)
 
 // ============================================================
 // 記事管理アクション（サービスロールキーで RLS をバイパス）
