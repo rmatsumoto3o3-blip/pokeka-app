@@ -158,11 +158,12 @@ export async function scanDeckImageAction(imageBase64: string, mimeType: string)
     }
 
     try {
-        const prompt = `この画像はポケモンカードゲームのデッキ（合計60枚）を並べたものです。
-同名カードは重ねて置かれ、重なり枚数=採用枚数です。基本エネルギーも1種類にまとめて数えてください。
-写っているカードを読み取りJSONで出力:
+        const prompt = `この画像にはポケモンカードゲームのカードが並んでいます（デッキ全体ではなく一部＝分割撮影の場合もあります）。
+各カードの「上部に印刷されたカード名」を最優先で読み取ってください。イラストではなく上端の名前の文字列で判断します。
+同名カードが重ねて置かれている場合、その重なり枚数＝枚数です。基本エネルギーは1種類にまとめて数えます。
+JSONで出力:
 {"cards":[{"name":"日本語カード名","count":枚数}]}
-- 同じnameは1エントリに合算。読めないものは"?"。JSONのみ出力。`
+- 同じnameは1エントリに合算。名前が読み取れないカードは name を "?" にする（省略しない）。JSONのみ出力。`
 
         const result = await visionModel.generateContent({
             contents: [{ role: 'user', parts: [
