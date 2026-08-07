@@ -28,6 +28,7 @@ export default function GundamIconManager() {
     const [cards, setCards] = useState<{ name: string; imageUrl: string }[]>([])
     const [cardsLoading, setCardsLoading] = useState(false)
     const [picked, setPicked] = useState<string[]>([])
+    const [zoomCard, setZoomCard] = useState<{ name: string; imageUrl: string } | null>(null)
     const [saving, setSaving] = useState(false)
     const [msg, setMsg] = useState('')
 
@@ -165,20 +166,34 @@ export default function GundamIconManager() {
                                         const on = picked.includes(c.imageUrl)
                                         const order = picked.indexOf(c.imageUrl)
                                         return (
-                                            <button
+                                            <div
                                                 key={c.imageUrl}
-                                                onClick={() => togglePick(c.imageUrl)}
                                                 title={c.name}
                                                 className={`relative aspect-[3/4] rounded overflow-hidden border-2 transition ${on ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-gray-300'}`}
                                             >
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover" loading="lazy" />
+                                                <img
+                                                    src={c.imageUrl}
+                                                    alt={c.name}
+                                                    onClick={() => togglePick(c.imageUrl)}
+                                                    className="w-full h-full object-cover cursor-pointer"
+                                                    loading="lazy"
+                                                />
                                                 {on && (
-                                                    <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
+                                                    <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center pointer-events-none">
                                                         {order + 1}
                                                     </span>
                                                 )}
-                                            </button>
+                                                {/* 拡大ボタン（選択とは別操作） */}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setZoomCard(c)}
+                                                    title="拡大"
+                                                    className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 hover:bg-black/80 text-white text-[11px] flex items-center justify-center"
+                                                >
+                                                    🔍
+                                                </button>
+                                            </div>
                                         )
                                     })}
                                 </div>
@@ -187,6 +202,34 @@ export default function GundamIconManager() {
                     )}
                 </div>
             </div>
+
+            {/* 拡大モーダル（大きく見て、その場で選択も可能） */}
+            {zoomCard && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+                    onClick={() => setZoomCard(null)}
+                >
+                    <div className="relative max-w-xs w-full" onClick={e => e.stopPropagation()}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={zoomCard.imageUrl} alt={zoomCard.name} className="w-full rounded-lg shadow-2xl" />
+                        <p className="text-white text-center text-sm mt-2">{zoomCard.name}</p>
+                        <div className="flex justify-center gap-2 mt-3">
+                            <button
+                                onClick={() => togglePick(zoomCard.imageUrl)}
+                                className={`px-4 py-2 rounded-lg font-bold text-sm transition ${picked.includes(zoomCard.imageUrl) ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                            >
+                                {picked.includes(zoomCard.imageUrl) ? '選択を外す' : 'このカードを選択'}
+                            </button>
+                            <button
+                                onClick={() => setZoomCard(null)}
+                                className="px-4 py-2 rounded-lg font-bold text-sm bg-white/10 text-white hover:bg-white/20 transition"
+                            >
+                                閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
