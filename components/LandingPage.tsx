@@ -17,7 +17,8 @@ interface LandingPageProps {
     articles: Article[]
     analyticsData?: Record<string, any[]>
     recentArchetypeIds?: string[]
-    weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（集計stats由来）
+    weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（全期間・集計stats由来）
+    recentRanking?: Record<string, number>  // アーキタイプ別デッキ数（直近2週間・大会日基準）
     winCounts?: Record<string, number>       // アーキタイプ別優勝数（集計stats由来）
     winnerDecks?: { id: string; deck_code: string | null; archetype_id: string | null; event_date: string | null }[]  // 直近優勝デッキ（featured_decks由来）
     featuredCards?: { card_name: string; current_adoption_rate: number }[]
@@ -32,16 +33,21 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 // 環境デッキ分布ドーナツの配色（モックと同一）
 const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
 
-export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
+export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
+    // 直近2週間（大会日基準）を初期表示。全期間の集計へも切替可。
+    const hasRecent = Object.keys(recentRanking).length > 0
+    const [tierMode, setTierMode] = useState<'recent' | 'all'>(hasRecent ? 'recent' : 'all')
 
     const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
 
-    // 直近7日間の実デッキ数（weeklyRanking）に基づく環境Tier表。データが無いアーキタイプは除外。
-    const rankedArchetypes = archetypes
-        .filter(a => (weeklyRanking[a.id] || 0) > 0)
+    // 選択中のランキング（直近2週間 or 全期間）でTier表を組む。データが無いアーキタイプは除外。
+    const activeRanking = tierMode === 'recent' ? recentRanking : weeklyRanking
+    const rankedArchetypes = [...archetypes]
+        .filter(a => (activeRanking[a.id] || 0) > 0)
+        .sort((a, b) => (activeRanking[b.id] || 0) - (activeRanking[a.id] || 0))
         .slice(0, 10)
-    const totalRecentDecks = Object.values(weeklyRanking).reduce((a, b) => a + b, 0)
+    const totalRecentDecks = Object.values(activeRanking).reduce((a, b) => a + b, 0)
 
     const tierBuckets: { tier: 'S' | 'A' | 'B'; items: DeckArchetype[] }[] = [
         { tier: 'S' as const, items: rankedArchetypes.slice(0, 2) },
@@ -138,8 +144,20 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
 
                     {/* 環境Tier表 */}
                     <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
-                        <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between">
+                        <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（${totalRecentDecks}件）`}</span>
+                            {hasRecent && (
+                                <div className="flex items-center rounded-full bg-white/15 p-0.5 text-[11px] font-bold shrink-0">
+                                    <button
+                                        onClick={() => setTierMode('recent')}
+                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'recent' ? 'bg-white text-blue-700' : 'text-white/90'}`}
+                                    >直近2週間</button>
+                                    <button
+                                        onClick={() => setTierMode('all')}
+                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'all' ? 'bg-white text-blue-700' : 'text-white/90'}`}
+                                    >全期間</button>
+                                </div>
+                            )}
                         </div>
                         <div className="p-2.5">
                             {tierBuckets.length === 0 ? (
@@ -152,7 +170,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                         {items.map(a => {
-                                            const share = totalRecentDecks > 0 ? ((weeklyRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
+                                            const share = totalRecentDecks > 0 ? ((activeRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
                                             return (
                                                 <Link
                                                     key={a.id}

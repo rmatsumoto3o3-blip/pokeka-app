@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction } from '@/app/actions'
-import { byEventDateDesc } from '@/lib/eventDate'
+import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 
 // 注目カード採用率（1時間キャッシュ）
 const getCachedFeaturedCards = unstable_cache(
@@ -97,6 +97,53 @@ const getCachedArchetypeStats = unstable_cache(
   { revalidate: 14400 }
 )
 
+// 直近2週間の環境Tier用：deck_records（過去）＋featured_decks（現在）を大会日(event_date)基準で
+// 数え、アーキタイプ別デッキ数を返す。集計stats（7/31凍結）ではなくライブな大会日で現環境を映す。
+const getCachedRecentTier = unstable_cache(
+  async () => {
+    const supabase = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const now = Date.now()
+    const from = now - 14 * 24 * 60 * 60 * 1000
+    // deck_records は created_at で粗く絞る（同期は大会後なので上側にマージン）
+    const lo = new Date(from - 3 * 24 * 60 * 60 * 1000).toISOString()
+    const hi = new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString()
+
+    const counts: Record<string, number> = {}
+    const seen = new Set<string>()
+    const bump = (aid?: string | null, ed?: string | null, ca?: string | null, code?: string | null) => {
+      if (!aid) return
+      const key = `${code || ''}__${aid}`
+      if (seen.has(key)) return
+      const t = eventDateSortKey(ed, ca)
+      if (t < from || t > now) return
+      seen.add(key)
+      counts[aid] = (counts[aid] || 0) + 1
+    }
+
+    for (let off = 0; off < 30000; off += 1000) {
+      const { data } = await supabase
+        .from('deck_records')
+        .select('archetype_id, event_date, created_at, deck_code')
+        .gte('created_at', lo).lte('created_at', hi)
+        .range(off, off + 999)
+      if (!data || data.length === 0) break
+      data.forEach(r => bump(r.archetype_id, r.event_date, r.created_at, r.deck_code))
+      if (data.length < 1000) break
+    }
+    const { data: feat } = await supabase
+      .from('featured_decks')
+      .select('archetype_id, event_date, created_at, deck_code')
+    ;(feat || []).forEach(r => bump(r.archetype_id, r.event_date, r.created_at, r.deck_code))
+
+    return counts
+  },
+  ['recent-tier-14d-v1'],
+  { revalidate: 3600 }
+)
+
 // TOPの「環境・優勝デッキ集」用：featured_decks の優勝デッキを新しい順に取得（1時間キャッシュ）
 const getCachedFeaturedWinnerDecks = unstable_cache(
   async () => {
@@ -178,6 +225,7 @@ export default async function Home() {
     recentArchetypeIds,
     featuredCards,
     winnerDecks,
+    recentRanking,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
@@ -186,6 +234,7 @@ export default async function Home() {
     getCachedRecentArchetypeIds(),
     getCachedFeaturedCards(),
     getCachedFeaturedWinnerDecks(),
+    getCachedRecentTier(),
   ])
 
   // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
@@ -220,6 +269,7 @@ export default async function Home() {
         analyticsData={analyticsData}
         recentArchetypeIds={recentArchetypeIds}
         weeklyRanking={weeklyRanking}
+        recentRanking={recentRanking}
         winCounts={winCounts}
         winnerDecks={winnerDecks}
         featuredCards={featuredCards}
