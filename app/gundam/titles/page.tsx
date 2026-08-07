@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'ガンダム タイトル別おすすめデッキ | PokéLix（ポケリス）',
     description: 'ガンダムカードゲームの参加タイトル（アニメ・ゲーム作品）ごとの公式おすすめデッキ一覧。',
     keywords: ['ガンダムカードゲーム おすすめデッキ', 'ガンダム 構築済みデッキ', 'GCG タイトル別', 'ガンダム 初心者 デッキ'],
-    alternates: { canonical: 'https://pokelix.jp/gundam/titles' },
+    alternates: { canonical: 'https://www.pokelix.jp/gundam/titles' },
 }
 
 export const revalidate = 3600

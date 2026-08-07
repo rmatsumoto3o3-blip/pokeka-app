@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'ユニアリ タイトル別おすすめデッキ | PokéLix（ポケリス）',
     description: 'ユニオンアリーナの参加タイトル（アニメ・ゲーム作品）ごとの公式おすすめデッキ一覧。',
     keywords: ['ユニアリ おすすめデッキ', 'ユニオンアリーナ 構築済み', 'ユニアリ タイトル別', 'ユニアリ 初心者 デッキ'],
-    alternates: { canonical: 'https://pokelix.jp/unionarena/titles' },
+    alternates: { canonical: 'https://www.pokelix.jp/unionarena/titles' },
 }
 
 export const revalidate = 3600

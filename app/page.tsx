@@ -195,7 +195,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'PokéLix（ポケリス）| ポケカ デッキシミュレーター・初手確率',
     description: 'ポケモンカードのデッキシミュレーター。環境デッキ採用率・初手確率・一人回し練習が無料で使えるサイト。',
-    url: 'https://pokelix.jp',
+    url: 'https://www.pokelix.jp',
     siteName: 'PokéLix（ポケリス）',
     locale: 'ja_JP',
     type: 'website',
@@ -206,7 +206,7 @@ export const metadata: Metadata = {
     description: 'ポケモンカードの環境デッキ採用率・初手確率シミュレーター・一人回し練習が無料で使えるサイト。',
   },
   alternates: {
-    canonical: 'https://pokelix.jp',
+    canonical: 'https://www.pokelix.jp',
   },
 }
 

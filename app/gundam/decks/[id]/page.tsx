@@ -88,7 +88,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         headline: `${displayName}（${archetype}）| ガンダム デッキレシピ`,
         image: imageUrl ? [imageUrl] : [],
         author: { '@type': 'Organization', name: 'PokéLix' },
-        publisher: { '@type': 'Organization', name: 'PokéLix', logo: { '@type': 'ImageObject', url: 'https://pokelix.jp/icon.png' } },
+        publisher: { '@type': 'Organization', name: 'PokéLix', logo: { '@type': 'ImageObject', url: 'https://www.pokelix.jp/icon.png' } },
         datePublished: (deck as any).created_at,
         description: `ガンダムカードゲーム ${archetype}デッキ「${displayName}」の大会結果とデッキレシピ。`,
         mainEntity: {

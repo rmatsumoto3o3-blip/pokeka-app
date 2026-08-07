@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     images: ['/api/og?title=初手確率シミュレーター&desc=デッキコードを入力するだけで初手確率・サイド落ちリスクを即計算'],
   },
   alternates: {
-    canonical: 'https://pokelix.jp/simulator',
+    canonical: 'https://www.pokelix.jp/simulator',
   },
 }
 
@@ -30,7 +30,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'ポケカ デッキシミュレーター | PokéLix',
-  url: 'https://pokelix.jp/simulator',
+  url: 'https://www.pokelix.jp/simulator',
   description: 'ポケモンカードの初手確率・サイド落ちリスクをモンテカルロ法で計算する無料デッキシミュレーター。デッキコードを入力するだけで即計算。',
   applicationCategory: 'GameApplication',
   operatingSystem: 'Web',

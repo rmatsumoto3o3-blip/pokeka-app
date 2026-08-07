@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: 'ガンダム 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
     description: '大会で結果を残したガンダム（ガンダムカードゲーム）のデッキをアーキタイプ別にまとめています。',
     keywords: ['ガンダムカードゲーム 環境', 'ガンダム 優勝デッキ', 'ガンダム デッキレシピ', 'GCG 環境', 'ガンダムカード デッキ'],
-    alternates: { canonical: 'https://pokelix.jp/gundam/decks' },
+    alternates: { canonical: 'https://www.pokelix.jp/gundam/decks' },
 }
 
 export const revalidate = 60

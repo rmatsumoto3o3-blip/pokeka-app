@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     title: 'ユニアリ環境デッキ・Tier表 | PokéLix（ポケリス）',
     description: 'ユニアリ（ユニオンアリーナ）の大会入賞デッキデータをもとにした環境Tier表・優勝デッキ集。',
     alternates: {
-        canonical: 'https://pokelix.jp/unionarena',
+        canonical: 'https://www.pokelix.jp/unionarena',
     },
 }
 

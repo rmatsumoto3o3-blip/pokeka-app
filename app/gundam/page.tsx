@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     title: 'ガンダム環境デッキ・Tier表 | PokéLix（ポケリス）',
     description: 'ガンダム（ガンダムカードゲーム）の大会入賞デッキデータをもとにした環境Tier表・優勝デッキ集。',
     alternates: {
-        canonical: 'https://pokelix.jp/gundam',
+        canonical: 'https://www.pokelix.jp/gundam',
     },
 }
 

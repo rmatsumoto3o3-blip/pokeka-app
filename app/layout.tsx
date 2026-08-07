@@ -30,7 +30,7 @@ import AdSenseScript from "@/components/AdSenseScript";
 import NoticeBanner from "@/components/NoticeBanner";
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://pokelix.jp'),
+  metadataBase: new URL('https://www.pokelix.jp'),
   title: {
     default: 'PokéLix（ポケリス）| ポケカ環境分析・確率シミュレーター',
     template: '%s | PokéLix（ポケリス）',

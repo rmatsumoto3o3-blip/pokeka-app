@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 
-export const baseUrl = 'https://pokelix.jp' // Primary Domain
+export const baseUrl = 'https://www.pokelix.jp' // Primary Domain
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Static Routes（priority 高い順）

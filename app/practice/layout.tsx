@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     images: ['/api/og?title=ポケカ一人回し練習&desc=デッキコードを入力して実戦形式で練習できる無料シミュレーター'],
   },
   alternates: {
-    canonical: 'https://pokelix.jp/practice',
+    canonical: 'https://www.pokelix.jp/practice',
   },
 }
 
@@ -28,7 +28,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'ポケカ一人回し練習シミュレーター | PokéLix',
-  url: 'https://pokelix.jp/practice',
+  url: 'https://www.pokelix.jp/practice',
   description: 'ポケモンカードの一人回し・デッキ練習が無料でできるシミュレーター。デッキコードを入力してドロー・バトル展開を実戦形式で再現。',
   applicationCategory: 'GameApplication',
   operatingSystem: 'Web',

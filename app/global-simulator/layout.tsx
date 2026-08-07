@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Global Deck Simulator (PTCGL) | PokéLix',
     description: 'Analyze your Pokémon TCG deck\'s opening hand probability and prize card risk. Free PTCGL format simulator.',
-    url: 'https://pokelix.jp/global-simulator',
+    url: 'https://www.pokelix.jp/global-simulator',
     siteName: 'PokéLix（ポケリス）',
     locale: 'en_US',
     type: 'website',
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     description: 'Analyze your Pokémon TCG deck\'s opening hand probability and prize card risk. Free PTCGL format simulator.',
   },
   alternates: {
-    canonical: 'https://pokelix.jp/global-simulator',
+    canonical: 'https://www.pokelix.jp/global-simulator',
   },
 }
 
@@ -26,7 +26,7 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'Pokémon TCG Global Deck Simulator | PokéLix',
-  url: 'https://pokelix.jp/global-simulator',
+  url: 'https://www.pokelix.jp/global-simulator',
   description: 'Free Pokémon TCG opening hand probability and prize card risk simulator. Paste your PTCGL deck list and get instant Monte Carlo analysis.',
   applicationCategory: 'GameApplication',
   operatingSystem: 'Web',

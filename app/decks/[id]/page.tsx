@@ -111,7 +111,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         "publisher": {
             "@type": "Organization",
             "name": "Pokelix",
-            "logo": { "@type": "ImageObject", "url": "https://pokelix.jp/icon.png" }
+            "logo": { "@type": "ImageObject", "url": "https://www.pokelix.jp/icon.png" }
         },
         "datePublished": deck.created_at,
         "description": `${archetype}デッキの紹介。`,
