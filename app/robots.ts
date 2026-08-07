@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: '/admin/', // Hide admin from crawlers
+            // 管理・認証ページはインデックス不要（インデックス汚染・重複回避）
+            disallow: ['/admin/', '/dashboard', '/auth', '/auth/'],
         },
         sitemap: `${baseUrl}/sitemap.xml`,
     }

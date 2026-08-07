@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '/gundam/decks',      priority: 0.75, freq: 'daily'  },
         { path: '/gundam/titles',     priority: 0.7,  freq: 'weekly' },
         { path: '/guide',            priority: 0.8,  freq: 'weekly' },
+        { path: '/kids',             priority: 0.5,  freq: 'weekly' },
         { path: '/about',            priority: 0.6,  freq: 'weekly' },
         { path: '/contact',          priority: 0.5,  freq: 'weekly' },
         { path: '/privacy',          priority: 0.3,  freq: 'weekly' },

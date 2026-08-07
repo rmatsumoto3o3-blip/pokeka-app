@@ -94,6 +94,11 @@ export default function SimulatorPage() {
                     </div>
                 </div>
 
+                {/* 本文下（FV外）の広告。固定枠でCLSを出さない */}
+                <div className="max-w-4xl mx-auto px-4 mt-10">
+                    <AdPlaceholder slot="2515406718" format="auto" />
+                </div>
+
                 <RelatedTools exclude="/simulator" />
             </main>
 

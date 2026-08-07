@@ -1,6 +1,19 @@
+import type { Metadata } from 'next'
 import MathLearningTool from '@/components/MathLearningTool'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
+
+export const metadata: Metadata = {
+    title: 'ポケカで算数 | 子ども向け計算学習 | PokéLix（ポケリス）',
+    description: 'ポケモンカードを使って楽しく算数（たし算・ひき算・かけ算）を学べる無料の学習ツール。お子さんの計算練習に。',
+    keywords: ['ポケカ 算数', 'ポケモンカード 算数', '子ども 計算 学習', 'ポケカ 勉強'],
+    alternates: { canonical: 'https://www.pokelix.jp/kids' },
+    openGraph: {
+        title: 'ポケカで算数 | PokéLix（ポケリス）',
+        description: 'ポケモンカードで楽しく算数を学べる無料ツール。',
+        url: 'https://www.pokelix.jp/kids',
+    },
+}
 
 export default function KidsPage() {
     return (
