@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 export const revalidate = 86400 // 24時間（GASが毎日更新）
 // generateStaticParams に無いアーキタイプ名は404を返す（ソフト404を防ぐ）
@@ -172,6 +173,9 @@ export default async function ArchetypePage({ params }: Props) {
                             </div>
                         </section>
                     ))}
+
+                    {/* 本文下（FV外）の広告。固定枠でCLSを出さない */}
+                    <AdPlaceholder slot="7230736252" format="auto" className="my-8" />
 
                     {/* Simulator CTA */}
                     <div className="mt-10 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white text-center">
