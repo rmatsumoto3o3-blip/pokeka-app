@@ -8,6 +8,7 @@ import type { GundamDeckRecord, GundamDeckArchetype } from '@/lib/supabase'
 import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
+import GundamColorIcon from '@/components/GundamColorIcon'
 import { Ico } from '@/components/Icons'
 
 interface GundamSeries {
@@ -125,7 +126,7 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                     {/* 環境Tier表 */}
                     <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（直近7日・${totalRecentDecks}件）`}</span>
+                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表</span>
                         </div>
                         <div className="p-2.5">
                             {tierBuckets.length === 0 ? (
@@ -145,11 +146,7 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                                                     href={`/gundam/decks#arch-${a.id}`}
                                                     className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white hover:border-blue-300 hover:shadow-sm transition"
                                                 >
-                                                    <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
-                                                        {a.cover_image_url && (
-                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-contain p-0.5" unoptimized />
-                                                        )}
-                                                    </div>
+                                                    <GundamColorIcon name={a.name} fallbackUrl={a.cover_image_url} className="w-[34px] h-[34px] rounded-md shrink-0 border border-gray-200" />
                                                     <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
                                                     <span className="text-xs font-semibold text-blue-700">{share}%</span>
                                                 </Link>
