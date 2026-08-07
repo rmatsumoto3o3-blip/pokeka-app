@@ -123,6 +123,7 @@ export interface GundamDeckRecord {
   color: string | null
   deck_name: string | null
   thumbnail_url: string | null
+  icon_urls?: string[] | null
 }
 
 export interface AnalyzedDeck {

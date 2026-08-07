@@ -9,6 +9,7 @@ import PublicHeader from '@/components/PublicHeader'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
 import GundamColorIcon from '@/components/GundamColorIcon'
+import GundamDeckIcon from '@/components/GundamDeckIcon'
 import { Ico } from '@/components/Icons'
 
 interface GundamSeries {
@@ -175,11 +176,13 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                                             return (
                                                 <Link key={d.id} href={`/gundam/decks/${d.id}`} className="text-center">
                                                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                                        {d.thumbnail_url ? (
+                                                        {Array.isArray(d.icon_urls) && d.icon_urls.filter(Boolean).length >= 2 ? (
+                                                            <GundamDeckIcon iconUrls={d.icon_urls} alt={d.deck_name || arch.name} />
+                                                        ) : d.thumbnail_url ? (
                                                             <Image src={d.thumbnail_url} alt={d.deck_name || arch.name} fill className="object-contain" unoptimized />
-                                                        ) : arch.cover_image_url ? (
-                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-contain p-2" unoptimized />
-                                                        ) : null}
+                                                        ) : (
+                                                            <GundamColorIcon name={arch.name} fallbackUrl={arch.cover_image_url} className="absolute inset-0 w-full h-full" />
+                                                        )}
                                                         <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
                                                     </div>
                                                     <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
