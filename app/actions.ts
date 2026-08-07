@@ -1591,18 +1591,54 @@ export async function getGundamArchetypesAction() {
 }
 
 export async function getGundamDeckRecordsAction() {
+    // icon_urls 列が未追加でも動くよう、列ありで試して失敗したら列なしにフォールバック
+    const base = 'id, deck_code, archetype_id, event_rank, event_date, event_location, color, deck_name, thumbnail_url, created_at'
+    const run = (cols: string) => getSupabaseAdmin()
+        .from('gundam_deck_records')
+        .select(cols)
+        .order('created_at', { ascending: false })
+        .limit(1000)
     try {
-        const { data, error } = await getSupabaseAdmin()
-            .from('gundam_deck_records')
-            .select('id, deck_code, archetype_id, event_rank, event_date, event_location, color, deck_name, thumbnail_url, created_at')
-            .order('created_at', { ascending: false })
-            .limit(1000)
-
-        if (error) throw error
+        let { data, error } = await run(base + ', icon_urls')
+        if (error) {
+            ({ data, error } = await run(base))
+            if (error) throw error
+        }
         return { success: true, data: data || [] }
     } catch (e) {
         console.error('getGundamDeckRecordsAction error:', e)
         return { success: false, data: [] as any[] }
+    }
+}
+
+// 管理用：デッキコードからカード一覧をライブ取得（アイコン選択ピッカー用）
+export async function getGundamDeckCardsAction(deckCode: string): Promise<{ success: boolean; cards: { name: string; imageUrl: string }[] }> {
+    try {
+        const { fetchGundamDeckData } = await import('@/lib/gundamDeckParser')
+        const data = await fetchGundamDeckData(deckCode)
+        const cards = (data.mainDeck || []).map(c => ({ name: c.name, imageUrl: c.imageUrl }))
+        return { success: true, cards }
+    } catch (e) {
+        console.error('getGundamDeckCardsAction error:', e)
+        return { success: false, cards: [] }
+    }
+}
+
+// 管理用：デッキのアイコン（カード画像URL 最大2枚）を保存。管理者のみ。
+export async function updateGundamDeckIconAction(deckId: string, iconUrls: string[]): Promise<{ success: boolean; error?: string }> {
+    try {
+        const admin = await verifyAdminSession()
+        if (!admin) return { success: false, error: '権限がありません' }
+        const urls = (iconUrls || []).filter(u => typeof u === 'string' && u).slice(0, 2)
+        const { error } = await getSupabaseAdmin()
+            .from('gundam_deck_records')
+            .update({ icon_urls: urls.length > 0 ? urls : null })
+            .eq('id', deckId)
+        if (error) throw error
+        return { success: true }
+    } catch (e) {
+        console.error('updateGundamDeckIconAction error:', e)
+        return { success: false, error: (e as Error).message }
     }
 }
 

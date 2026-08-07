@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import { getGundamArchetypesAction, getGundamDeckRecordsAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
+import GundamDeckIcon from '@/components/GundamDeckIcon'
 
 export const metadata: Metadata = {
     title: 'ガンダム 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -68,11 +68,12 @@ export default async function GundamDecksPage() {
                                         {archDecks.map((d: any) => (
                                             <Link key={d.id} href={`/gundam/decks/${d.id}`} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
                                                 <div className="relative aspect-square bg-gray-100">
-                                                    {d.thumbnail_url ? (
-                                                        <Image src={d.thumbnail_url} alt={d.deck_name || arch?.name || ''} fill className="object-contain" unoptimized />
-                                                    ) : arch?.cover_image_url ? (
-                                                        <Image src={arch.cover_image_url} alt={arch.name} fill className="object-contain p-2" unoptimized />
-                                                    ) : null}
+                                                    <GundamDeckIcon
+                                                        iconUrls={d.icon_urls}
+                                                        thumbnailUrl={d.thumbnail_url}
+                                                        fallbackUrl={arch?.cover_image_url}
+                                                        alt={d.deck_name || arch?.name || ''}
+                                                    />
                                                     {d.event_rank && (
                                                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">{d.event_rank}</span>
                                                     )}
