@@ -15,6 +15,7 @@ import UserList from '@/components/UserList'
 import WeeklyReport from '@/components/WeeklyReport'
 import DeckScanner from '@/components/DeckScanner'
 import GundamIconManager from '@/components/GundamIconManager'
+import GundamCommunityPoster from '@/components/GundamCommunityPoster'
 import SideArticleList from '@/components/SideArticleList'
 import Footer from '@/components/Footer'
 import MatchAnalytics from '@/components/MatchAnalytics'
@@ -198,6 +199,7 @@ export default function Dashboard() {
                         {isAdmin && <button onClick={() => setActiveTab('weekly-report')} className={tabClass('weekly-report')}>環境レポート</button>}
                         {isAdmin && <button onClick={() => setActiveTab('deck-scanner')} className={tabClass('deck-scanner')}>デッキ写真読み取り</button>}
                         {isAdmin && <button onClick={() => setActiveTab('gundam-icons')} className={tabClass('gundam-icons')}>ガンダムアイコン</button>}
+                        {isAdmin && <button onClick={() => setActiveTab('gundam-community')} className={tabClass('gundam-community')}>みんなのデッキ投稿</button>}
                     </div>
                     <div className="flex items-center gap-2 py-2 shrink-0">
                         <Link
@@ -392,6 +394,12 @@ export default function Dashboard() {
                         {activeTab === 'gundam-icons' && isAdmin && (
                             <div className="space-y-4">
                                 <GundamIconManager />
+                            </div>
+                        )}
+
+                        {activeTab === 'gundam-community' && isAdmin && (
+                            <div className="space-y-4">
+                                <GundamCommunityPoster />
                             </div>
                         )}
 

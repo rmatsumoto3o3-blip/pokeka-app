@@ -1703,3 +1703,76 @@ export async function getGundamRecommendedDecksAction() {
         return { success: false, data: [] as any[] }
     }
 }
+
+// 管理用：みんなのデッキ投稿。deck_codeからカードを取得し、
+//  ① gundam_cards（カード辞書）に card_number で upsert（レアリティ無視・重複ゼロ）
+//  ② gundam_recommended_decks（みんなのデッキに転用）へ軽量 card_list=[{n,q}] で保存
+// 画像やカード名はデッキ側に重複保存しない＝DB圧迫を避ける。
+export async function postGundamCommunityDeckAction(
+    deckCode: string,
+    deckName: string,
+    comment?: string
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const admin = await verifyAdminSession()
+        if (!admin) return { success: false, error: '権限がありません' }
+        const code = (deckCode || '').trim()
+        if (!code) return { success: false, error: 'デッキコードが空です' }
+
+        const { fetchGundamDeckData } = await import('@/lib/gundamDeckParser')
+        const data = await fetchGundamDeckData(code)
+        const cards = data.mainDeck || []
+        if (cards.length === 0) return { success: false, error: 'カードを取得できませんでした（コード失効の可能性）' }
+
+        const supabase = getSupabaseAdmin()
+
+        // ① カード辞書へ upsert（card_number でユニーク化）
+        const dict = new Map<string, any>()
+        cards.forEach(c => {
+            if (c.cardNumber && !dict.has(c.cardNumber)) dict.set(c.cardNumber, {
+                card_number: c.cardNumber,
+                card_name: c.name || null,
+                image_url: c.imageUrl || null,
+                color: c.color || null,
+                cost: c.cost || null,
+                card_type: c.type || null,
+            })
+        })
+        if (dict.size > 0) {
+            const { error: cErr } = await supabase.from('gundam_cards').upsert(Array.from(dict.values()), { onConflict: 'card_number' })
+            if (cErr) throw cErr
+        }
+
+        // ② 軽量 card_list（番号+枚数。同番号は合算）
+        const qmap = new Map<string, number>()
+        cards.forEach(c => { if (c.cardNumber) qmap.set(c.cardNumber, (qmap.get(c.cardNumber) || 0) + (c.quantity || 0)) })
+        const compact = Array.from(qmap.entries()).map(([n, q]) => ({ n, q }))
+
+        const { error: dErr } = await supabase.from('gundam_recommended_decks').insert({
+            deck_code: code,
+            deck_name: (deckName || '').trim() || null,
+            tag_code: (comment || '').trim() || null, // コメント/タグに転用
+            image_url: cards[0]?.imageUrl || null,     // 代表画像（辞書にもある）
+            card_list: compact,
+        })
+        if (dErr) throw dErr
+        return { success: true }
+    } catch (e) {
+        console.error('postGundamCommunityDeckAction error:', e)
+        return { success: false, error: (e as Error).message }
+    }
+}
+
+// 管理用：みんなのデッキ削除
+export async function deleteGundamCommunityDeckAction(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const admin = await verifyAdminSession()
+        if (!admin) return { success: false, error: '権限がありません' }
+        const { error } = await getSupabaseAdmin().from('gundam_recommended_decks').delete().eq('id', id)
+        if (error) throw error
+        return { success: true }
+    } catch (e) {
+        console.error('deleteGundamCommunityDeckAction error:', e)
+        return { success: false, error: (e as Error).message }
+    }
+}

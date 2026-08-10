@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import GundamDeckCardGrid from '@/components/GundamDeckCardGrid'
+import GundamDeckIcon from '@/components/GundamDeckIcon'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
 
 export const revalidate = 3600
@@ -22,6 +23,7 @@ async function getDeck(id: string) {
             color,
             deck_name,
             thumbnail_url,
+            icon_urls,
             created_at,
             gundam_deck_archetypes (
                 id,
@@ -111,8 +113,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                     <div className="md:flex">
                         <div className="md:w-1/3 bg-gray-100 relative aspect-[4/3] md:aspect-auto">
-                            {imageUrl ? (
-                                <img src={imageUrl} alt={displayName} className="absolute inset-0 w-full h-full object-contain" />
+                            {(Array.isArray(deck.icon_urls) && deck.icon_urls.filter(Boolean).length > 0) || deck.thumbnail_url || imageUrl ? (
+                                <GundamDeckIcon
+                                    iconUrls={deck.icon_urls}
+                                    thumbnailUrl={deck.thumbnail_url}
+                                    fallbackUrl={(deck.gundam_deck_archetypes as any)?.cover_image_url}
+                                    alt={displayName}
+                                />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-4xl">🃏</div>
                             )}
