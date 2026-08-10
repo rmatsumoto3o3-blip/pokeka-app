@@ -43,15 +43,6 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {}, series = [], recommendedDecks = [] }: GundamLandingPageProps) {
     const archetypeMap = new Map(archetypes.map(a => [a.id, a]))
 
-    // タイトル別デッキ：シリーズごとに公式おすすめデッキをグループ化（デッキがあるシリーズのみ）
-    const decksBySeries = new Map<string, GundamRecommendedDeck[]>()
-    recommendedDecks.forEach(d => {
-        if (!d.tag_code) return
-        if (!decksBySeries.has(d.tag_code)) decksBySeries.set(d.tag_code, [])
-        decksBySeries.get(d.tag_code)!.push(d)
-    })
-    const seriesWithDecks = series.filter(s => (decksBySeries.get(s.tag_code) || []).length > 0)
-
     // 直近7日間の実デッキ数（weeklyRanking）に基づく環境Tier表。データが無いアーキタイプは除外。
     const rankedArchetypes = archetypes
         .filter(a => (weeklyRanking[a.id] || 0) > 0)
@@ -107,8 +98,8 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                     </Link>
                     <Link href="/gundam/titles" className="bg-white border border-[#e2e8f0] rounded-lg text-center py-2.5 px-1.5">
                         <Ico name="cards" className="w-7 h-7 mx-auto text-blue-600" />
-                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">タイトル別デッキ</div>
-                        <div className="text-[11px] text-gray-500">公式おすすめ</div>
+                        <div className="text-[15px] font-semibold text-gray-900 mt-1.5">みんなのデッキ</div>
+                        <div className="text-[11px] text-gray-500">投稿デッキ集</div>
                     </Link>
                 </div>
             </section>
@@ -198,42 +189,24 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                         </div>
                     </div>
 
-                    {/* タイトル別デッキ */}
-                    {seriesWithDecks.length > 0 && (
+                    {/* みんなのデッキ */}
+                    {recommendedDecks.length > 0 && (
                         <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                             <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
-                                <span className="flex items-center gap-1.5"><Ico name="cards" className="w-4 h-4 text-blue-600" />タイトル別デッキ（公式おすすめ）</span>
+                                <span className="flex items-center gap-1.5"><Ico name="cards" className="w-4 h-4 text-blue-600" />みんなのデッキ</span>
                                 <Link href="/gundam/titles" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
                             </div>
-                            <div className="p-2.5 flex flex-col gap-4">
-                                {seriesWithDecks.map(s => {
-                                    const sDecks = decksBySeries.get(s.tag_code) || []
-                                    return (
-                                        <div key={s.tag_code}>
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                                {s.logo_url && (
-                                                    <div className="relative w-12 h-6 shrink-0">
-                                                        <Image src={s.logo_url} alt={s.name} fill className="object-contain" unoptimized />
-                                                    </div>
-                                                )}
-                                                <span className="text-xs font-semibold text-gray-800">{s.name}</span>
-                                                <span className="text-[10px] text-gray-400">{sDecks.length}件</span>
-                                            </div>
-                                            <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                                                {sDecks.map(d => (
-                                                    <Link key={d.id} href={`/gundam/titles/${d.id}`} className="text-center">
-                                                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                                            {d.image_url && (
-                                                                <Image src={d.image_url} alt={d.deck_name || s.name} fill className="object-contain" unoptimized />
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{d.deck_name || s.name}</div>
-                                                    </Link>
-                                                ))}
-                                            </div>
+                            <div className="p-2.5 grid grid-cols-4 md:grid-cols-8 gap-2">
+                                {recommendedDecks.slice(0, 8).map((d: any) => (
+                                    <Link key={d.id} href={`/gundam/titles/${d.id}`} className="text-center">
+                                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                            {d.image_url && (
+                                                <Image src={d.image_url} alt={d.deck_name || 'デッキ'} fill className="object-cover object-top" unoptimized />
+                                            )}
                                         </div>
-                                    )
-                                })}
+                                        <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{d.deck_name || '無題'}</div>
+                                    </Link>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -250,7 +223,7 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                             {[
                                 { href: '/gundam/decks', icon: 'list', label: 'デッキ一覧' },
                                 { href: '#tier', icon: 'trophy', label: '環境Tier表' },
-                                { href: '/gundam/titles', icon: 'cards', label: 'タイトル別デッキ' },
+                                { href: '/gundam/titles', icon: 'cards', label: 'みんなのデッキ' },
                             ].map(t => (
                                 <Link
                                     key={t.label}

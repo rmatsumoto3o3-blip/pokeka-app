@@ -30,21 +30,39 @@ async function getRecommendedDeck(id: string) {
 
     if (error || !deck) return null
 
-    // DBに保存済みのカード構成があればそれを使う（公式API非依存）。無ければAPIから取得。
+    // 保存済みカード構成を使う（公式API非依存）。軽量形式 [{n,q}] は gundam_cards 辞書で解決。
     let mainDeck: GundamCard[] = []
     const { data: stored } = await supabase
         .from('gundam_recommended_decks')
         .select('card_list')
         .eq('id', id)
         .single()
-    if (stored?.card_list && Array.isArray(stored.card_list) && stored.card_list.length > 0) {
-        mainDeck = stored.card_list as GundamCard[]
+    const cl: any = stored?.card_list
+    if (Array.isArray(cl) && cl.length > 0) {
+        if (cl[0] && typeof cl[0] === 'object' && 'n' in cl[0]) {
+            // 軽量形式：番号→辞書で名前・画像を復元
+            const numbers = cl.map((x: any) => x.n).filter(Boolean)
+            const { data: dict } = await supabase
+                .from('gundam_cards')
+                .select('card_number, card_name, image_url, color, cost, card_type')
+                .in('card_number', numbers)
+            const dmap = new Map((dict || []).map((c: any) => [c.card_number, c]))
+            mainDeck = cl.map((x: any, i: number) => {
+                const c: any = dmap.get(x.n) || {}
+                return {
+                    id: i, code: x.n, cardNumber: x.n,
+                    name: c.card_name || x.n, quantity: x.q || 1,
+                    imageUrl: c.image_url || '', cost: c.cost || '', color: c.color || '', type: c.card_type || '',
+                } as GundamCard
+            })
+        } else {
+            mainDeck = cl as GundamCard[] // 旧フル形式
+        }
     } else if (deck.deck_code) {
         try {
-            const deckData = await fetchGundamDeckData(deck.deck_code)
-            mainDeck = deckData.mainDeck
+            mainDeck = (await fetchGundamDeckData(deck.deck_code)).mainDeck
         } catch (e) {
-            console.error('Failed to fetch Union Arena recommended deck recipe:', e)
+            console.error('Failed to fetch gundam deck recipe:', e)
         }
     }
 

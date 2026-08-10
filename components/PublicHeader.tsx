@@ -151,7 +151,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
                         <Link href="/gundam" className="text-amber-600 font-semibold shrink-0">TOP</Link>
                         <Link href="/gundam/decks" className="hover:text-amber-600 transition shrink-0">環境デッキ</Link>
-                        <Link href="/gundam/titles" className="hover:text-amber-600 transition shrink-0">タイトル別デッキ</Link>
+                        <Link href="/gundam/titles" className="hover:text-amber-600 transition shrink-0">みんなのデッキ</Link>
                     </div>
                 </nav>
             )}
