@@ -14,18 +14,7 @@ async function getRecommendedDeck(id: string) {
     const supabase = await createClient()
     const { data: deck, error } = await supabase
         .from('gundam_recommended_decks')
-        .select(`
-            id,
-            deck_code,
-            tag_code,
-            deck_name,
-            image_url,
-            gundam_series (
-                tag_code,
-                name,
-                logo_url
-            )
-        `)
+        .select('id, deck_code, tag_code, deck_name, image_url')
         .eq('id', id)
         .single()
 
@@ -79,12 +68,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const deck = await getRecommendedDeck(id)
     if (!deck) return { title: 'Deck Not Found' }
 
-    const seriesName = (deck.gundam_series as any)?.name || 'ガンダム'
-    const deckName = deck.deck_name || seriesName
+    const deckName = deck.deck_name || 'ガンダム デッキ'
 
     return {
-        title: `${deckName} 公式おすすめデッキ | ポケリス`,
-        description: `【ガンダム】${seriesName}の公式おすすめデッキ「${deckName}」のデッキレシピ。`,
+        title: `${deckName} | ガンダム みんなのデッキ | ポケリス`,
+        description: `【ガンダム】投稿デッキ「${deckName}」のデッキレシピ・採用カード一覧。`,
     }
 }
 
@@ -93,9 +81,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const deck = await getRecommendedDeck(id)
     if (!deck) notFound()
 
-    const seriesName = (deck.gundam_series as any)?.name || 'Unknown'
-    const deckName = deck.deck_name || seriesName
-    const imageUrl = deck.image_url || (deck.gundam_series as any)?.logo_url
+    const deckName = deck.deck_name || 'ガンダム デッキ'
+    const comment = deck.tag_code as string | null
+    const imageUrl = deck.image_url
     const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
 
@@ -115,8 +103,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                         </div>
                         <div className="p-6 md:w-2/3 flex flex-col justify-center">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">{seriesName}</span>
-                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">公式おすすめ</span>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">みんなのデッキ</span>
+                                {comment && <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">{comment}</span>}
                             </div>
                             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">{deckName}</h1>
                             {deck.deck_code && (
