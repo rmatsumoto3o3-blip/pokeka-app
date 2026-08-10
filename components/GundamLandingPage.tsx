@@ -24,6 +24,7 @@ interface GundamRecommendedDeck {
     tag_code: string | null
     deck_name: string | null
     image_url: string | null
+    icon_urls?: string[] | null
 }
 
 interface GundamLandingPageProps {
@@ -200,9 +201,7 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                                 {recommendedDecks.slice(0, 8).map((d: any) => (
                                     <Link key={d.id} href={`/gundam/titles/${d.id}`} className="text-center">
                                         <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                            {d.image_url && (
-                                                <Image src={d.image_url} alt={d.deck_name || 'デッキ'} fill className="object-cover object-top" unoptimized />
-                                            )}
+                                            <GundamDeckIcon iconUrls={d.icon_urls} thumbnailUrl={d.image_url} alt={d.deck_name || 'デッキ'} />
                                         </div>
                                         <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{d.deck_name || '無題'}</div>
                                     </Link>

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
+import GundamDeckIcon from '@/components/GundamDeckIcon'
 import { getGundamRecommendedDecksAction } from '@/app/actions'
 
 export const metadata: Metadata = {
@@ -42,9 +42,7 @@ export default async function GundamCommunityDecksPage() {
                                     className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition"
                                 >
                                     <div className="relative aspect-square bg-gray-100">
-                                        {d.image_url && (
-                                            <Image src={d.image_url} alt={d.deck_name || 'デッキ'} fill className="object-cover object-top" unoptimized />
-                                        )}
+                                        <GundamDeckIcon iconUrls={d.icon_urls} thumbnailUrl={d.image_url} alt={d.deck_name || 'デッキ'} />
                                     </div>
                                     <div className="px-2.5 py-2">
                                         <p className="text-xs font-bold text-gray-800 truncate">{d.deck_name || '無題のデッキ'}</p>

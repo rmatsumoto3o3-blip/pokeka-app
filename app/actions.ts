@@ -1688,15 +1688,19 @@ export async function getGundamSeriesAction() {
     }
 }
 
-// 公式おすすめデッキ（タイトル別）一覧
+// みんなのデッキ一覧（旧タイトル別を転用）。icon_urls 列が未追加でも動くようフォールバック。
 export async function getGundamRecommendedDecksAction() {
+    const base = 'id, deck_code, tag_code, deck_name, image_url'
+    const run = (cols: string) => getSupabaseAdmin()
+        .from('gundam_recommended_decks')
+        .select(cols)
+        .order('created_at', { ascending: false })
     try {
-        const { data, error } = await getSupabaseAdmin()
-            .from('gundam_recommended_decks')
-            .select('id, deck_code, tag_code, deck_name, image_url')
-            .order('deck_name', { ascending: true })
-
-        if (error) throw error
+        let { data, error } = await run(base + ', icon_urls')
+        if (error) {
+            ({ data, error } = await run(base))
+            if (error) throw error
+        }
         return { success: true, data: data || [] }
     } catch (e) {
         console.error('getGundamRecommendedDecksAction error:', e)
@@ -1711,7 +1715,8 @@ export async function getGundamRecommendedDecksAction() {
 export async function postGundamCommunityDeckAction(
     deckCode: string,
     deckName: string,
-    comment?: string
+    comment?: string,
+    iconUrls?: string[]
 ): Promise<{ success: boolean; error?: string }> {
     try {
         const admin = await verifyAdminSession()
@@ -1748,13 +1753,19 @@ export async function postGundamCommunityDeckAction(
         cards.forEach(c => { if (c.cardNumber) qmap.set(c.cardNumber, (qmap.get(c.cardNumber) || 0) + (c.quantity || 0)) })
         const compact = Array.from(qmap.entries()).map(([n, q]) => ({ n, q }))
 
-        const { error: dErr } = await supabase.from('gundam_recommended_decks').insert({
+        const icons = (iconUrls || []).filter(u => typeof u === 'string' && u).slice(0, 2)
+        const baseRecord: Record<string, any> = {
             deck_code: code,
             deck_name: (deckName || '').trim() || null,
             tag_code: (comment || '').trim() || null, // コメント/タグに転用
-            image_url: cards[0]?.imageUrl || null,     // 代表画像（辞書にもある）
+            image_url: icons[0] || cards[0]?.imageUrl || null, // 代表画像
             card_list: compact,
-        })
+        }
+        // icon_urls 列が未追加でも投稿できるよう、失敗したら icon_urls 抜きで再挿入
+        let { error: dErr } = await supabase.from('gundam_recommended_decks').insert({ ...baseRecord, icon_urls: icons.length ? icons : null })
+        if (dErr) {
+            ({ error: dErr } = await supabase.from('gundam_recommended_decks').insert(baseRecord))
+        }
         if (dErr) throw dErr
         return { success: true }
     } catch (e) {

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import GundamDeckCardGrid from '@/components/GundamDeckCardGrid'
+import GundamDeckIcon from '@/components/GundamDeckIcon'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
 
@@ -66,7 +67,11 @@ async function getRecommendedDeck(id: string) {
         }
     }
 
-    return { ...deck, mainDeck }
+    // アイコン（icon_urls）は別クエリで安全に取得（列未追加でも壊れない）
+    const { data: ic } = await supabase.from('gundam_recommended_decks').select('icon_urls').eq('id', id).single()
+    const iconUrls = (ic as any)?.icon_urls ?? null
+
+    return { ...deck, mainDeck, iconUrls }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -102,8 +107,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                     <div className="md:flex">
                         <div className="md:w-1/3 bg-gray-100 relative aspect-[4/3] md:aspect-auto">
-                            {imageUrl ? (
-                                <img src={imageUrl} alt={deckName} className="absolute inset-0 w-full h-full object-contain" />
+                            {(Array.isArray(deck.iconUrls) && deck.iconUrls.filter(Boolean).length > 0) || imageUrl ? (
+                                <GundamDeckIcon iconUrls={deck.iconUrls} thumbnailUrl={imageUrl} alt={deckName} />
                             ) : (
                                 <div className="absolute inset-0 flex items-center justify-center text-4xl">🃏</div>
                             )}

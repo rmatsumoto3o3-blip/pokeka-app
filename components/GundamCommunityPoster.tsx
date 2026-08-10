@@ -15,6 +15,7 @@ export default function GundamCommunityPoster() {
     const [deckName, setDeckName] = useState('')
     const [comment, setComment] = useState('')
     const [cards, setCards] = useState<{ name: string; imageUrl: string }[]>([])
+    const [icons, setIcons] = useState<string[]>([]) // アイコン用に選んだ最大2枚
     const [previewing, setPreviewing] = useState(false)
     const [posting, setPosting] = useState(false)
     const [msg, setMsg] = useState('')
@@ -31,16 +32,21 @@ export default function GundamCommunityPoster() {
         // 画像URLで重複排除
         const seen = new Set<string>()
         setCards(res.cards.filter(c => (seen.has(c.imageUrl) ? false : (seen.add(c.imageUrl), true))))
+        setIcons([])
+    }
+
+    const toggleIcon = (url: string) => {
+        setIcons(prev => prev.includes(url) ? prev.filter(u => u !== url) : (prev.length >= 2 ? [prev[1], url] : [...prev, url]))
     }
 
     const post = async () => {
         if (!deckCode.trim()) { setMsg('デッキコードを入力してください'); return }
         setPosting(true); setMsg('')
-        const res = await postGundamCommunityDeckAction(deckCode.trim(), deckName, comment)
+        const res = await postGundamCommunityDeckAction(deckCode.trim(), deckName, comment, icons)
         setPosting(false)
         if (res.success) {
             setMsg('✅ 投稿しました')
-            setDeckCode(''); setDeckName(''); setComment(''); setCards([])
+            setDeckCode(''); setDeckName(''); setComment(''); setCards([]); setIcons([])
             loadList()
         } else {
             setMsg('❌ ' + (res.error || '投稿に失敗'))
@@ -90,12 +96,38 @@ export default function GundamCommunityPoster() {
 
                 {cards.length > 0 && (
                     <div className="pt-2">
-                        <p className="text-xs text-gray-400 mb-2">プレビュー（{cards.length}種）</p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs text-gray-400">プレビュー（{cards.length}種）／カードをクリックでアイコンに2枚選択（{icons.length}/2）</p>
+                            {/* アイコンプレビュー */}
+                            {icons.length > 0 && (
+                                <div className="w-9 h-9 rounded border border-gray-200 flex overflow-hidden shrink-0">
+                                    {icons.map((u, i) => (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img key={i} src={u} alt="" className={`h-full object-cover object-top ${icons.length === 2 ? 'w-1/2' : 'w-full'}`} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                         <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
-                            {cards.map(c => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img key={c.imageUrl} src={c.imageUrl} alt={c.name} title={c.name} className="w-full aspect-[3/4] object-cover rounded" loading="lazy" />
-                            ))}
+                            {cards.map(c => {
+                                const on = icons.includes(c.imageUrl)
+                                const order = icons.indexOf(c.imageUrl)
+                                return (
+                                    <button
+                                        key={c.imageUrl}
+                                        type="button"
+                                        onClick={() => toggleIcon(c.imageUrl)}
+                                        title={c.name}
+                                        className={`relative rounded overflow-hidden border-2 transition ${on ? 'border-blue-500 ring-2 ring-blue-300' : 'border-transparent hover:border-gray-300'}`}
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={c.imageUrl} alt={c.name} className="w-full aspect-[3/4] object-cover" loading="lazy" />
+                                        {on && (
+                                            <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">{order + 1}</span>
+                                        )}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
                 )}
