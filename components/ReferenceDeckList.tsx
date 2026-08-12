@@ -522,7 +522,6 @@ export default function ReferenceDeckList({
                                             alt={displayName}
                                             fill
                                             className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-500"
-                                            unoptimized
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">

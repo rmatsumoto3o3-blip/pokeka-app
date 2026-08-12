@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { unstable_cache } from 'next/cache'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import PublicHeader from '@/components/PublicHeader'
@@ -126,10 +127,9 @@ export default async function ArchetypesHubPage() {
                                 }`}>
                                     {i + 1}
                                 </span>
-                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center relative">
                                     {a.cover_image_url ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img src={a.cover_image_url} alt={a.name} className="w-full h-full object-cover" loading="lazy" />
+                                        <Image src={a.cover_image_url} alt={a.name} fill sizes="48px" className="object-cover" />
                                     ) : (
                                         <span className="text-xl">⚡️</span>
                                     )}
