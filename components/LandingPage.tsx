@@ -179,7 +179,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                                                 >
                                                     <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
                                                         {a.cover_image_url && (
-                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" unoptimized />
+                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" />
                                                         )}
                                                     </div>
                                                     <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
@@ -211,7 +211,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                                                 <Link key={d.id} href={`/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
                                                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
                                                         {arch.cover_image_url && (
-                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" unoptimized />
+                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" />
                                                         )}
                                                         <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
                                                     </div>
