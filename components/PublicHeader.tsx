@@ -36,11 +36,13 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
         <header className="border-b border-[#e5e9f0] bg-white/90 backdrop-blur-lg sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 py-2.5 md:py-2.5">
                 <div className="flex justify-between items-center">
-                    <Link href="/" className="flex items-baseline gap-2">
-                        <span className="text-[23px] font-semibold text-gray-800 whitespace-nowrap">
+                    <Link href="/" className="flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/pokelix-icon.svg" alt="PokéLix" width={30} height={30} className="w-[30px] h-[30px] rounded-lg shrink-0" />
+                        <span className="text-[23px] font-semibold text-gray-800 whitespace-nowrap leading-none">
                             Poké<span className="text-blue-600">Lix</span>
                         </span>
-                        <span className="hidden sm:inline text-[11px] text-gray-400">Pocket analytics</span>
+                        <span className="hidden sm:inline text-[11px] text-gray-400 self-end mb-0.5">Pocket analytics</span>
                     </Link>
 
                     <div className="flex gap-2 md:gap-3 items-center flex-1 justify-end min-w-0">
