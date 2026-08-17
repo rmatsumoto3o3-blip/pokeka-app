@@ -218,11 +218,12 @@ export default function GundamLandingPage({ decks, archetypes, weeklyRanking = {
                     {/* 無料ツール */}
                     <div>
                         <div className="text-sm font-semibold text-gray-900 mb-2.5 pl-2.5 border-l-[3px] border-blue-600">無料ツール</div>
-                        <div className="grid grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2.5">
                             {[
                                 { href: '/gundam/decks', icon: 'list', label: 'デッキ一覧' },
                                 { href: '#tier', icon: 'trophy', label: '環境Tier表' },
                                 { href: '/gundam/titles', icon: 'cards', label: 'みんなのデッキ' },
+                                { href: '/gundam/practice', icon: 'dice', label: '一人回し' },
                             ].map(t => (
                                 <Link
                                     key={t.label}
