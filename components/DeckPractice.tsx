@@ -769,14 +769,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const card = hand[handIndex]
         if (!card) return
 
-        // 1. エネルギー手ばり制限
-        if (isEnergy(card)) {
-            if (energyAttachedThisTurn) {
-                alert("エネルギーは自分の番に1枚しかつけられません")
-                return
-            }
-        }
-
         if (battleField) {
             if (canStack(card, battleField)) {
                 // 進化やアタッチ
@@ -813,14 +805,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const playToBench = (handIndex: number, targetIndex?: number) => {
         const card = hand[handIndex]
         if (!card) return
-
-        // 1. エネルギー手ばり制限
-        if (isEnergy(card)) {
-            if (energyAttachedThisTurn) {
-                alert("エネルギーは自分の番に1枚しかつけられません")
-                return
-            }
-        }
 
         if (targetIndex !== undefined) {
             setBench(currentBench => {
