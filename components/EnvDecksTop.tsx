@@ -46,7 +46,7 @@ export default function EnvDecksTop({ decks }: { decks: EnvDeck[] }) {
                                         </div>
                                         <div className="flex gap-2">
                                             <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-xs font-bold text-gray-800 border border-gray-300 rounded-md py-1.5 hover:bg-gray-50">デッキを見る</Link>
-                                            <Link href={`/practice?deckCode=${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-md py-1.5 hover:bg-blue-100">▶ 一人回し</Link>
+                                            <Link href={`/practice?code1=${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-md py-1.5 hover:bg-blue-100">▶ 一人回し</Link>
                                         </div>
                                     </div>
                                 ))}

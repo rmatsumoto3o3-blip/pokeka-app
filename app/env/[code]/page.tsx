@@ -40,7 +40,7 @@ export default async function EnvDeckDetailPage({ params }: { params: Promise<{ 
     } catch { /* コード展開失敗時は空 */ }
 
     const total = cards.reduce((acc, c) => acc + (c.quantity || 0), 0)
-    const practiceHref = `/practice?deckCode=${encodeURIComponent(code)}`
+    const practiceHref = `/practice?code1=${encodeURIComponent(code)}`
 
     return (
         <div className="min-h-screen bg-[#f5f7fa]">

@@ -225,7 +225,7 @@ export const metadata: Metadata = {
 
 // Incremental Static Regeneration (ISR)
 // Revalidate this page content at most once every 60 seconds
-export const revalidate = 60
+export const revalidate = 3600
 
 export default async function Home() {
   const supabase = await createClient()
