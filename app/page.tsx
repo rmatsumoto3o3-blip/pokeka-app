@@ -22,30 +22,40 @@ async function getEnvDecksForTop(): Promise<EnvDeckTop[]> {
 // 使用率ランキング：deckArchive(全履歴)をアーキタイプ別に集計（Supabase不使用）。
 // 24時間キャッシュ。archetype/eventRank だけ射影して軽く読む。
 type UsageRow = { archetype: string; total: number; win: number }
+type UsageRankingResult = { r2w: UsageRow[]; r2m: UsageRow[]; total2w: number; total2m: number }
+const dstr = (d: Date) => d.toISOString().slice(0, 10) // yyyy-MM-dd（createdAtの日付前方一致で窓を切る）
+const sortRows = (m: Map<string, { total: number; win: number }>): UsageRow[] =>
+  Array.from(m.entries()).map(([archetype, v]) => ({ archetype, total: v.total, win: v.win })).sort((a, b) => b.total - a.total)
+const bump = (m: Map<string, { total: number; win: number }>, a: string, win: boolean) => {
+  const cur = m.get(a) || { total: 0, win: 0 }; cur.total += 1; if (win) cur.win += 1; m.set(a, cur)
+}
+// 使用率ランキング：直近2週間／2ヶ月の時間窓で集計（"今の環境"を反映）。createdAt で絞って軽く読む。
 const getUsageRankingCached = unstable_cache(
-  async (): Promise<{ ranking: UsageRow[]; totalDecks: number }> => {
+  async (): Promise<UsageRankingResult> => {
     const db = getFirebaseDb()
-    if (!db) return { ranking: [], totalDecks: 0 }
+    if (!db) return { r2w: [], r2m: [], total2w: 0, total2m: 0 }
     try {
-      const snap = await db.collection('deckArchive').doc('pokemon').collection('decks').select('archetype', 'eventRank').get()
-      const map = new Map<string, { total: number; win: number }>()
+      const now = Date.now()
+      const cutoff2m = dstr(new Date(now - 60 * 864e5))
+      const cutoff2w = dstr(new Date(now - 14 * 864e5))
+      // 直近2ヶ月ぶんだけ読む（createdAt は "yyyy-MM-dd..." 前方一致で日付比較できる）
+      const snap = await db.collection('deckArchive').doc('pokemon').collection('decks')
+        .where('createdAt', '>=', cutoff2m).select('archetype', 'eventRank', 'createdAt').get()
+      const m2 = new Map<string, { total: number; win: number }>()
+      const w2 = new Map<string, { total: number; win: number }>()
+      let total2w = 0
       for (const doc of snap.docs) {
-        const d = doc.data() as { archetype?: string; eventRank?: string }
+        const d = doc.data() as { archetype?: string; eventRank?: string; createdAt?: string }
         const a = (d.archetype || '').trim()
         if (!a) continue
-        const cur = map.get(a) || { total: 0, win: 0 }
-        cur.total += 1
-        if (d.eventRank === '優勝') cur.win += 1
-        map.set(a, cur)
+        const win = d.eventRank === '優勝'
+        bump(m2, a, win)
+        if (String(d.createdAt || '') >= cutoff2w) { bump(w2, a, win); total2w += 1 }
       }
-      const ranking = Array.from(map.entries())
-        .map(([archetype, v]) => ({ archetype, total: v.total, win: v.win }))
-        .sort((x, y) => y.total - x.total)
-      const totalDecks = snap.size
-      return { ranking, totalDecks }
-    } catch { return { ranking: [], totalDecks: 0 } }
+      return { r2w: sortRows(w2), r2m: sortRows(m2), total2w, total2m: snap.size }
+    } catch { return { r2w: [], r2m: [], total2w: 0, total2m: 0 } }
   },
-  ['usage-ranking-pokemon'],
+  ['usage-ranking-pokemon-windowed'],
   { revalidate: 86400 },
 )
 
@@ -311,8 +321,10 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <LandingPage
         envDecks={envDecks}
-        usageRanking={usage.ranking}
-        usageTotalDecks={usage.totalDecks}
+        usage2w={usage.r2w}
+        usage2m={usage.r2m}
+        usageTotal2w={usage.total2w}
+        usageTotal2m={usage.total2m}
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}

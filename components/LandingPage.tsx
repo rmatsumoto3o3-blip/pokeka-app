@@ -16,8 +16,10 @@ import { POKEMON_ICONS } from '@/lib/constants'
 
 interface LandingPageProps {
     envDecks?: { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }[]
-    usageRanking?: { archetype: string; total: number; win: number }[]
-    usageTotalDecks?: number
+    usage2w?: { archetype: string; total: number; win: number }[]
+    usage2m?: { archetype: string; total: number; win: number }[]
+    usageTotal2w?: number
+    usageTotal2m?: number
     archetypes: DeckArchetype[]
     articles: Article[]
     analyticsData?: Record<string, any[]>
@@ -38,7 +40,7 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 // 環境デッキ分布ドーナツの配色（モックと同一）
 const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
 
-export default function LandingPage({ envDecks = [], usageRanking = [], usageTotalDecks = 0, archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
+export default function LandingPage({ envDecks = [], usage2w = [], usage2m = [], usageTotal2w = 0, usageTotal2m = 0, archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
     // 直近2週間（大会日基準）を初期表示。全期間の集計へも切替可。
     const hasRecent = Object.keys(recentRanking).length > 0
@@ -97,8 +99,8 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
             {/* 環境デッキ（Firebase由来・トップ最上部） */}
             <EnvDecksTop decks={envDecks} />
 
-            {/* 使用率ランキング（deckArchive集計・Supabase不使用） */}
-            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} />
+            {/* 使用率ランキング（deckArchive集計・直近2週間/2ヶ月切替・Supabase不使用） */}
+            <UsageRankingTop r2w={usage2w} r2m={usage2m} total2w={usageTotal2w} total2m={usageTotal2m} />
 
             {/* Hero */}
             <section className="bg-white border-b border-[#eef1f6]">
