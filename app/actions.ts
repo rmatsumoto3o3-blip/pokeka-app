@@ -4,9 +4,17 @@ import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
 
+// デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
+// キャッシュヒット時は fetchDeckData を呼ばない＝公式サイトを叩かない。
+const fetchDeckDataCached = unstable_cache(
+    async (deckCode: string) => fetchDeckData(deckCode),
+    ['deck-data-by-code'],
+    { revalidate: 60 * 60 * 24 * 30 }, // 30日（デッキコードは不変）
+)
+
 export async function getDeckDataAction(deckCode: string): Promise<{ success: boolean, data?: CardData[], error?: string }> {
     try {
-        const data = await fetchDeckData(deckCode)
+        const data = await fetchDeckDataCached(deckCode)
         return { success: true, data }
     } catch (error) {
         console.error('Server Action Error:', error)

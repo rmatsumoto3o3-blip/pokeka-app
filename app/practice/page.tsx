@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { fetchDeckData, buildDeck, shuffle, type Card } from '@/lib/deckParser'
+import { buildDeck, shuffle, type Card } from '@/lib/deckParser'
+import { getDeckDataAction } from '@/app/actions'
 import { createStack, type CardStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from '../../components/DeckPractice'
 import CoinTossOverlay from '../../components/CoinTossOverlay'
@@ -856,7 +857,9 @@ function PracticeContent() {
 
         try {
             if (targetCode1) {
-                const cards1 = await fetchDeckData(targetCode1)
+                const res1 = await getDeckDataAction(targetCode1) // キャッシュ済みサーバー経由（公式サイト負荷を削減）
+                if (!res1.success || !res1.data) throw new Error(res1.error || 'デッキ1の取得に失敗しました')
+                const cards1 = res1.data
                 const fullDeck1 = buildDeck(cards1)
                 if (fullDeck1.length !== 60) {
                     throw new Error(`デッキ1は60枚である必要があります（現在: ${fullDeck1.length}枚）`)
@@ -865,7 +868,9 @@ function PracticeContent() {
             }
 
             if (targetCode2 && !targetCode2IsCpu) {
-                const cards2 = await fetchDeckData(targetCode2)
+                const res2 = await getDeckDataAction(targetCode2) // キャッシュ済みサーバー経由
+                if (!res2.success || !res2.data) throw new Error(res2.error || 'デッキ2の取得に失敗しました')
+                const cards2 = res2.data
                 const fullDeck2 = buildDeck(cards2)
                 if (fullDeck2.length !== 60) {
                     throw new Error(`デッキ2は60枚である必要があります（現在: ${fullDeck2.length}枚）`)

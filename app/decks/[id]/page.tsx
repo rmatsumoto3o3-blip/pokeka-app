@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import DeckPracticeLauncher from '@/components/DeckPracticeLauncher'
 import { fetchDeckData, cropImageClass } from '@/lib/deckParser'
+import { getDeckDataAction } from '@/app/actions'
 
 export const revalidate = 3600
 export const dynamicParams = true
@@ -45,7 +46,8 @@ async function getDeck(deckCode: string) {
     let cards: Awaited<ReturnType<typeof fetchDeckData>> = []
     if (deck.deck_code) {
         try {
-            cards = await fetchDeckData(deck.deck_code)
+            const res = await getDeckDataAction(deck.deck_code) // 長期キャッシュ経由（公式サイト負荷を削減）
+            if (res.success && res.data) cards = res.data
         } catch (e) {
             console.error('Failed to fetch deck card list:', e)
         }
