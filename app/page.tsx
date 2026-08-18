@@ -19,6 +19,36 @@ async function getEnvDecksForTop(): Promise<EnvDeckTop[]> {
   } catch { return [] }
 }
 
+// 使用率ランキング：deckArchive(全履歴)をアーキタイプ別に集計（Supabase不使用）。
+// 24時間キャッシュ。archetype/eventRank だけ射影して軽く読む。
+type UsageRow = { archetype: string; total: number; win: number }
+const getUsageRankingCached = unstable_cache(
+  async (): Promise<{ ranking: UsageRow[]; totalDecks: number }> => {
+    const db = getFirebaseDb()
+    if (!db) return { ranking: [], totalDecks: 0 }
+    try {
+      const snap = await db.collection('deckArchive').doc('pokemon').collection('decks').select('archetype', 'eventRank').get()
+      const map = new Map<string, { total: number; win: number }>()
+      for (const doc of snap.docs) {
+        const d = doc.data() as { archetype?: string; eventRank?: string }
+        const a = (d.archetype || '').trim()
+        if (!a) continue
+        const cur = map.get(a) || { total: 0, win: 0 }
+        cur.total += 1
+        if (d.eventRank === '優勝') cur.win += 1
+        map.set(a, cur)
+      }
+      const ranking = Array.from(map.entries())
+        .map(([archetype, v]) => ({ archetype, total: v.total, win: v.win }))
+        .sort((x, y) => y.total - x.total)
+      const totalDecks = snap.size
+      return { ranking, totalDecks }
+    } catch { return { ranking: [], totalDecks: 0 } }
+  },
+  ['usage-ranking-pokemon'],
+  { revalidate: 86400 },
+)
+
 // 注目カード採用率（1時間キャッシュ）
 const getCachedFeaturedCards = unstable_cache(
   async () => {
@@ -251,6 +281,7 @@ export default async function Home() {
   ])
 
   const envDecks = await getEnvDecksForTop()
+  const usage = await getUsageRankingCached()
 
   // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
   const weeklyRanking = archStats.deckCounts
@@ -280,6 +311,8 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <LandingPage
         envDecks={envDecks}
+        usageRanking={usage.ranking}
+        usageTotalDecks={usage.totalDecks}
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}
