@@ -5,6 +5,19 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
+import { getFirebaseDb } from '@/lib/firebase/admin'
+
+// 環境デッキ（Firebase・トップ最上部用）。Supabaseを使わずに常時表示。
+type EnvDeckTop = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
+async function getEnvDecksForTop(): Promise<EnvDeckTop[]> {
+  const db = getFirebaseDb()
+  if (!db) return []
+  try {
+    const snap = await db.collection('environmentDecks').doc('pokemon').get()
+    const data = snap.exists ? snap.data() : null
+    return Array.isArray(data?.decks) ? (data!.decks as EnvDeckTop[]) : []
+  } catch { return [] }
+}
 
 // 注目カード採用率（1時間キャッシュ）
 const getCachedFeaturedCards = unstable_cache(
@@ -237,6 +250,8 @@ export default async function Home() {
     getCachedRecentTier(),
   ])
 
+  const envDecks = await getEnvDecksForTop()
+
   // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
   const weeklyRanking = archStats.deckCounts
   const winCounts = archStats.winCounts
@@ -264,6 +279,7 @@ export default async function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <LandingPage
+        envDecks={envDecks}
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}

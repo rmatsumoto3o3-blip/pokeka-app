@@ -30,7 +30,7 @@ export default function NoticeBanner() {
                 <svg className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
                 <p className="flex-1 text-[12px] md:text-[13px] text-amber-800 leading-relaxed">
                     現在サーバーの都合により、<Link href="/" className="underline font-semibold">環境Tier表</Link>・
-                    <Link href="/decks" className="underline font-semibold">環境デッキ</Link>・
+                    <Link href="/env" className="underline font-semibold">環境デッキ</Link>・
                     <Link href="/archetypes" className="underline font-semibold">採用率</Link>
                     などのデータ表示が一時的にご利用いただけません。順次復旧いたします。
                     <Link href="/practice" className="underline font-semibold">一人回し</Link>・

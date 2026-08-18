@@ -123,7 +123,7 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                 <nav className="border-t border-blue-100 bg-white">
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
                         <Link href="/" className="text-blue-600 font-semibold shrink-0">TOP</Link>
-                        <Link href="/decks" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
+                        <Link href="/env" className="hover:text-blue-600 transition shrink-0">環境デッキ</Link>
                         <Link href="/archetypes" className="hover:text-blue-600 transition shrink-0">採用率</Link>
                         <Link href="/overseas" className="hover:text-blue-600 transition shrink-0">海外環境</Link>
                         <Link href="/practice" className="hover:text-blue-600 transition shrink-0">一人回し</Link>

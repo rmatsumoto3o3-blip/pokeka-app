@@ -7,12 +7,14 @@ import Footer from '@/components/Footer'
 import type { DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
+import EnvDecksTop from '@/components/EnvDecksTop'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
 import { Ico } from '@/components/Icons'
 import { POKEMON_ICONS } from '@/lib/constants'
 
 interface LandingPageProps {
+    envDecks?: { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }[]
     archetypes: DeckArchetype[]
     articles: Article[]
     analyticsData?: Record<string, any[]>
@@ -33,7 +35,7 @@ const TIER_STYLE: Record<string, { badge: string; label: string; text: string }>
 // 環境デッキ分布ドーナツの配色（モックと同一）
 const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0891b2', '#cbd5e1']
 
-export default function LandingPage({ archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
+export default function LandingPage({ envDecks = [], archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
     // 直近2週間（大会日基準）を初期表示。全期間の集計へも切替可。
     const hasRecent = Object.keys(recentRanking).length > 0
@@ -88,6 +90,9 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
     return (
         <div className="min-h-screen bg-[#f4f6fa] text-gray-900">
             <PublicHeader />
+
+            {/* 環境デッキ（Firebase由来・トップ最上部） */}
+            <EnvDecksTop decks={envDecks} />
 
             {/* Hero */}
             <section className="bg-white border-b border-[#eef1f6]">
@@ -197,7 +202,7 @@ export default function LandingPage({ archetypes, articles, recentArchetypeIds =
                     <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
                             <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
-                            <Link href="/decks" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                            <Link href="/env" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
                         </div>
                         <div className="p-2.5">
                             {validWinnerDecks.length === 0 ? (
