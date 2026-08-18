@@ -16,9 +16,9 @@ export default function UsageRankingTop({ ranking, totalDecks }: { ranking: Rank
                     <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                         <span className="w-1.5 h-5 bg-blue-500 rounded-full" />使用率ランキング
                     </h2>
-                    <span className="text-[11px] text-gray-400">全{totalDecks.toLocaleString()}デッキ集計</span>
+                    <span className="text-[11px] text-gray-400">直近の大会 {totalDecks.toLocaleString()}デッキ</span>
                 </div>
-                <p className="text-[11px] text-gray-500 mb-3">大会入賞デッキ全体での使用数（多い順）。数字はデッキ数／うち優勝数。</p>
+                <p className="text-[11px] text-gray-500 mb-3">直近の大会入賞デッキでの使用数（多い順）。数字はデッキ数／うち優勝数。</p>
 
                 <div className="space-y-1.5">
                     {top.map((r, i) => {
