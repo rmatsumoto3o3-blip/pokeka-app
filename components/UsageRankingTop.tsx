@@ -28,7 +28,7 @@ export default function UsageRankingTop({ ranking, totalDecks }: { ranking: Rank
                                 <span className={`w-6 text-right text-sm font-black ${i < 3 ? 'text-blue-600' : 'text-gray-400'}`}>{i + 1}</span>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="text-sm font-bold text-gray-900 truncate">{r.archetype}</span>
+                                        <Link href={`/archetypes/${encodeURIComponent(r.archetype)}`} className="text-sm font-bold text-gray-900 truncate hover:text-blue-600 hover:underline">{r.archetype}</Link>
                                         <span className="text-xs text-gray-500 shrink-0">
                                             {r.total.toLocaleString()}件<span className="text-gray-300"> / </span><span className="text-amber-600 font-bold">優勝{r.win}</span>
                                         </span>
