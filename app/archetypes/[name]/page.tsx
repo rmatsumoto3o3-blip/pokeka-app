@@ -1,20 +1,20 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 import { getDeckDataAction } from '@/app/actions'
+import type { CardData } from '@/lib/deckParser'
 
-// 採用率（アーキタイプ別カード採用率）。deckArchive を集計、画像は代表デッキの展開で補完。
-// Supabase不使用。カード表示UIは従来どおり。
+// 採用率（アーキタイプ別カード採用率）。現環境デッキ(environmentDecks)のデッキコードを展開して集計。
+// カード画像もコード展開由来。Supabase不使用。UIは従来どおり。
 
 export const revalidate = 86400
 export const dynamicParams = true
 
-interface Props {
-    params: Promise<{ name: string }>
-}
+interface Props { params: Promise<{ name: string }> }
 
 interface AggCard {
     card_name: string
@@ -39,7 +39,6 @@ function categoryOf(supertype: string | null, subtypes: string[] | null): string
     if (s === 'Pokémon Tool') return 'Tool'
     return 'Goods'
 }
-
 function safeDecodeName(raw: string): string {
     let d = raw
     try { d = decodeURIComponent(raw) } catch { return raw }
@@ -47,57 +46,78 @@ function safeDecodeName(raw: string): string {
     return d
 }
 
-type ArchiveCard = { name?: string; quantity?: number; supertype?: string; subtypes?: string[] }
-
-async function getArchetypeAdoption(name: string): Promise<AggCard[]> {
-  try {
-    const db = getFirebaseDb()
-    if (!db) return []
-    const snap = await db.collection('deckArchive').doc('pokemon').collection('decks')
-        .where('archetype', '==', name).limit(1000).get()
-    if (snap.empty) return []
-    const totalDecks = snap.size
-
-    const agg = new Map<string, { supertype?: string; subtypes?: string[]; qty: number; count: number }>()
-    const deckCodes: string[] = []
-    for (const doc of snap.docs) {
-        const d = doc.data() as { deckCode?: string; cards?: ArchiveCard[] }
-        if (d.deckCode) deckCodes.push(d.deckCode)
-        for (const c of (d.cards || [])) {
-            const nm = (c.name || '').trim()
-            if (!nm) continue
-            const cur = agg.get(nm) || { supertype: c.supertype, subtypes: c.subtypes, qty: 0, count: 0 }
-            cur.qty += (c.quantity || 0)
-            cur.count += 1 // cards_json は1デッキ1カード1エントリ＝採用デッキ数
-            agg.set(nm, cur)
-        }
-    }
-
-    // 画像マップ：代表デッキを数個だけ展開して name→imageUrl（getDeckDataActionはキャッシュ済み）
-    const imgMap = new Map<string, string>()
-    for (const code of deckCodes.slice(0, 5)) {
-        try {
-            const res = await getDeckDataAction(code)
-            if (res.success && res.data) for (const c of res.data) if (c.name && c.imageUrl && !imgMap.has(c.name)) imgMap.set(c.name, c.imageUrl)
-        } catch { /* skip */ }
-    }
-
-    return Array.from(agg.entries())
-        .map(([card_name, v]) => ({
-            card_name, image_url: imgMap.get(card_name) || null,
-            supertype: v.supertype || null, subtypes: v.subtypes || null,
-            total_qty: v.qty, adoption_count: v.count, total_decks: totalDecks,
-        }))
-        .sort((a, b) => b.adoption_count - a.adoption_count)
-  } catch { return [] }
+// 同時実行数を絞って公式サイトへの一斉アクセスを避ける
+async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+    const out: R[] = new Array(items.length)
+    let i = 0
+    async function worker() { while (i < items.length) { const idx = i++; out[idx] = await fn(items[idx]) } }
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+    return out
 }
+
+type Adoption = Record<string, { totalDecks: number; cards: AggCard[] }>
+
+// 現環境デッキを全部展開し、アーキタイプ別のカード採用率を一括算出（24hキャッシュ・全ページ共有）。
+const getCurrentAdoptionCached = unstable_cache(
+    async (): Promise<Adoption> => {
+        try {
+            const db = getFirebaseDb()
+            if (!db) return {}
+            const snap = await db.collection('environmentDecks').doc('pokemon').get()
+            const decks = (snap.exists ? (snap.data()?.decks) : []) as { deckCode?: string; archetype?: string }[] || []
+            const targets = decks.filter(d => d.deckCode && (d.archetype || '').trim())
+
+            const expanded = await mapLimit(targets, 6, async (d): Promise<{ archetype: string; cards: CardData[] }> => {
+                const archetype = (d.archetype || '').trim()
+                try {
+                    const res = await getDeckDataAction(d.deckCode as string)
+                    return { archetype, cards: (res.success && res.data) ? res.data : [] }
+                } catch { return { archetype, cards: [] } }
+            })
+
+            type Acc = { supertype?: string; subtypes?: string[]; qty: number; count: number; img?: string }
+            const byArch = new Map<string, { total: number; agg: Map<string, Acc> }>()
+            for (const e of expanded) {
+                if (!e.archetype || !e.cards || e.cards.length === 0) continue
+                let g = byArch.get(e.archetype)
+                if (!g) { g = { total: 0, agg: new Map() }; byArch.set(e.archetype, g) }
+                g.total += 1
+                for (const c of e.cards) {
+                    const nm = (c.name || '').trim()
+                    if (!nm) continue
+                    const cur = g.agg.get(nm) || { supertype: c.supertype, subtypes: c.subtypes, qty: 0, count: 0, img: c.imageUrl }
+                    cur.qty += (c.quantity || 0)
+                    cur.count += 1
+                    if (!cur.img && c.imageUrl) cur.img = c.imageUrl
+                    g.agg.set(nm, cur)
+                }
+            }
+
+            const out: Adoption = {}
+            for (const [archetype, g] of byArch) {
+                out[archetype] = {
+                    totalDecks: g.total,
+                    cards: Array.from(g.agg.entries())
+                        .map(([card_name, v]) => ({
+                            card_name, image_url: v.img || null, supertype: v.supertype || null, subtypes: v.subtypes || null,
+                            total_qty: v.qty, adoption_count: v.count, total_decks: g.total,
+                        }))
+                        .sort((a, b) => b.adoption_count - a.adoption_count),
+                }
+            }
+            return out
+        } catch { return {} }
+    },
+    ['current-adoption-pokemon'],
+    { revalidate: 86400 },
+)
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { name } = await params
     const decoded = safeDecodeName(name)
     const encoded = encodeURIComponent(decoded)
     const title = `${decoded}デッキの採用カード・採用率`
-    const description = `ポケカ「${decoded}」デッキの採用カード一覧と採用率。大会データから集計したリアルな構築をカードごとの採用率・平均枚数で確認できます。`
+    const description = `ポケカ「${decoded}」デッキの採用カード一覧と採用率。大会入賞デッキから集計したリアルな構築をカードごとの採用率・平均枚数で確認できます。`
     return {
         title, description,
         keywords: [`${decoded} デッキ`, `${decoded} デッキレシピ`, `${decoded} 採用率`, `${decoded} 構築`, 'ポケカ', 'ポケモンカード'],
@@ -110,10 +130,12 @@ export default async function ArchetypePage({ params }: Props) {
     const { name } = await params
     const decoded = safeDecodeName(name)
 
-    const list = await getArchetypeAdoption(decoded)
-    if (list.length === 0) notFound()
+    const all = await getCurrentAdoptionCached()
+    const data = all[decoded]
+    if (!data || data.cards.length === 0) notFound()
 
-    const totalDecks = list[0].total_decks
+    const list = data.cards
+    const totalDecks = data.totalDecks
     const byCategory: Record<string, AggCard[]> = {}
     list.forEach((c) => {
         const cat = categoryOf(c.supertype, c.subtypes)
@@ -133,7 +155,7 @@ export default async function ArchetypePage({ params }: Props) {
                             {decoded}デッキの採用カード一覧
                         </h1>
                         <p className="text-gray-600 text-sm md:text-base">
-                            大会入賞デッキ（{totalDecks}件）から集計した、{decoded}デッキの採用カードと採用率です。
+                            直近の大会入賞デッキ（{totalDecks}件）から集計した、{decoded}デッキの採用カードと採用率です。
                         </p>
                     </div>
 
@@ -182,7 +204,7 @@ export default async function ArchetypePage({ params }: Props) {
                     </div>
 
                     <p className="mt-6 text-xs text-gray-400 text-center">
-                        ※採用率は大会入賞デッキを集計したものです。カード画像は公式デッキから取得しています。
+                        ※採用率は直近の大会入賞デッキを集計したものです。カード画像は公式デッキから取得しています。
                     </p>
                 </div>
             </main>
