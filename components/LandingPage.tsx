@@ -9,7 +9,6 @@ import type { DeckArchetype, Article } from '@/lib/supabase'
 import PublicHeader from '@/components/PublicHeader'
 import EnvDecksTop from '@/components/EnvDecksTop'
 import UsageRankingTop from '@/components/UsageRankingTop'
-import TierTable from '@/components/TierTable'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
 import { Ico } from '@/components/Icons'
@@ -96,11 +95,8 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
         <div className="min-h-screen bg-[#f4f6fa] text-gray-900">
             <PublicHeader />
 
-            {/* 環境Tier表（S〜B・代表カード画像・Firebase由来） */}
-            <TierTable metas={tierMetas} />
-
-            {/* 使用率ランキング（環境デッキ集計・Supabase不使用）→ 環境デッキの上に */}
-            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} />
+            {/* 使用率ランキング（左＝環境Tier画像／右＝ランキング）・環境デッキの上 */}
+            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} />
 
             {/* 環境デッキ（Firebase由来） */}
             <EnvDecksTop decks={envDecks} />

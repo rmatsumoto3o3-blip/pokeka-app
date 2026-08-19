@@ -64,8 +64,13 @@ const getTierMetasCached = unstable_cache(
         try {
           const res = await getDeckDataAction(v.code)
           if (res.success && res.data) {
-            const poke = res.data.find(c => c.supertype === 'Pokémon' && c.imageUrl) || res.data.find(c => c.imageUrl)
-            image = poke?.imageUrl || null
+            // アーキタイプ名の主役カードを優先（"ガルーラBOX"→"ガルーラ" 等、接尾辞を落として部分一致）
+            const core = archetype.replace(/BOX|ＢＯＸ|デッキ|ex|EX|\s+/gi, '').trim()
+            const pick =
+              (core ? res.data.find(c => c.imageUrl && c.supertype === 'Pokémon' && c.name.includes(core)) : undefined)
+              || res.data.find(c => c.imageUrl && c.supertype === 'Pokémon')
+              || res.data.find(c => c.imageUrl)
+            image = pick?.imageUrl || null
           }
         } catch { /* skip */ }
         return { archetype, deckCount: v.deckCount, winCount: v.winCount, share: (v.deckCount / total) * 100, image }
