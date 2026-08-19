@@ -8,13 +8,17 @@ import Link from 'next/link'
 type RankRow = { archetype: string; total: number; win: number }
 type TierMeta = { archetype: string; deckCount: number; winCount: number; share: number; image: string | null }
 
-const tierOf = (i: number) => (i < 2 ? { label: 'S', c: 'bg-red-500' } : i < 6 ? { label: 'A', c: 'bg-orange-500' } : { label: 'B', c: 'bg-lime-600' })
+const TIER_ROWS = [
+    { label: 'S', c: 'bg-red-500', from: 0, to: 2 },
+    { label: 'A', c: 'bg-orange-500', from: 2, to: 6 },
+    { label: 'B', c: 'bg-lime-600', from: 6, to: 12 },
+] as const
 
 export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }: { ranking: RankRow[]; totalDecks: number; tierMetas?: TierMeta[] }) {
     if (!ranking || ranking.length === 0) return null
     const top = ranking.slice(0, 12)
     const max = top[0]?.total || 1
-    const tiles = tierMetas.slice(0, 10)
+    const tiles = tierMetas.slice(0, 12)
 
     return (
         <section className="bg-white border-b border-[#eef1f6]">
@@ -27,34 +31,36 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-5">
-                    {/* 左：環境Tier（代表カード画像グリッド） */}
+                    {/* 左：環境Tier（代表カードのアプリアイコン風・S/A/B行・文字なし・上寄せトリミング） */}
                     {tiles.length > 0 && (
-                        <div className="md:w-[264px] md:shrink-0">
+                        <div className="md:w-[196px] md:shrink-0">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold text-gray-600">環境Tier</span>
                                 <Link href="/archetypes" className="text-[11px] text-blue-600 font-semibold">採用率 ›</Link>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                {tiles.map((m, i) => {
-                                    const t = tierOf(i)
+                            <div className="space-y-2">
+                                {TIER_ROWS.map(t => {
+                                    const items = tiles.slice(t.from, t.to)
+                                    if (items.length === 0) return null
                                     return (
-                                        <Link
-                                            key={m.archetype}
-                                            href={`/archetypes/${encodeURIComponent(m.archetype)}`}
-                                            className="rounded-lg border border-gray-200 overflow-hidden bg-white hover:border-blue-400 hover:shadow-sm transition"
-                                        >
-                                            <div className="relative aspect-[63/40] bg-gray-100">
-                                                {m.image && (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img src={m.image} alt={m.archetype} className="w-full h-full object-cover" loading="lazy" />
-                                                )}
-                                                <span className={`absolute top-0 left-0 ${t.c} text-white text-[10px] font-black px-1.5 py-0.5 rounded-br-md`}>{t.label}</span>
+                                        <div key={t.label} className="flex items-start gap-2">
+                                            <span className={`w-5 h-5 shrink-0 rounded ${t.c} text-white text-[11px] font-black flex items-center justify-center mt-0.5`}>{t.label}</span>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {items.map(m => (
+                                                    <Link
+                                                        key={m.archetype}
+                                                        href={`/archetypes/${encodeURIComponent(m.archetype)}`}
+                                                        title={`${m.archetype} ${m.share.toFixed(1)}%${m.winCount > 0 ? ` / 優勝${m.winCount}` : ''}`}
+                                                        className="block w-11 h-11 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-blue-400 transition"
+                                                    >
+                                                        {m.image && (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img src={m.image} alt={m.archetype} className="w-full h-full object-cover object-top" loading="lazy" />
+                                                        )}
+                                                    </Link>
+                                                ))}
                                             </div>
-                                            <div className="px-1.5 py-1">
-                                                <div className="text-[11px] font-bold text-gray-900 truncate">{m.archetype}</div>
-                                                <div className="text-[10px] text-gray-400">{m.share.toFixed(1)}%{m.winCount > 0 ? ` ・優勝${m.winCount}` : ''}</div>
-                                            </div>
-                                        </Link>
+                                        </div>
                                     )
                                 })}
                             </div>
