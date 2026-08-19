@@ -33,7 +33,7 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                 <div className="flex flex-col md:flex-row gap-5">
                     {/* 左：環境Tier（代表カードのアプリアイコン風・S/A/B行・文字なし・上寄せトリミング） */}
                     {tiles.length > 0 && (
-                        <div className="md:w-[196px] md:shrink-0">
+                        <div className="md:w-[150px] md:shrink-0">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold text-gray-600">環境Tier</span>
                                 <Link href="/archetypes" className="text-[11px] text-blue-600 font-semibold">採用率 ›</Link>
@@ -45,7 +45,7 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                                     return (
                                         <div key={t.label} className="flex items-start gap-2">
                                             <span className={`w-5 h-5 shrink-0 rounded ${t.c} text-white text-[11px] font-black flex items-center justify-center mt-0.5`}>{t.label}</span>
-                                            <div className="flex flex-wrap gap-1.5">
+                                            <div className="grid grid-cols-2 gap-1.5">
                                                 {items.map(m => (
                                                     <Link
                                                         key={m.archetype}
@@ -82,8 +82,8 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                                                     {r.total.toLocaleString()}件<span className="text-gray-300"> / </span><span className="text-amber-600 font-bold">優勝{r.win}</span>
                                                 </span>
                                             </div>
-                                            <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(2, (r.total / max) * 100)}%` }} />
+                                            <div className="mt-1 h-1 rounded-full bg-gray-100 overflow-hidden max-w-[180px]">
+                                                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(3, (r.total / max) * 100)}%` }} />
                                             </div>
                                         </div>
                                         <span className="w-12 text-right text-[11px] text-gray-400 shrink-0">{rate.toFixed(1)}%</span>
