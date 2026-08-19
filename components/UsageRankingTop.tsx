@@ -45,13 +45,14 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                                     return (
                                         <div key={t.label} className="flex items-start gap-2">
                                             <span className={`w-5 h-5 shrink-0 rounded ${t.c} text-white text-[11px] font-black flex items-center justify-center mt-0.5`}>{t.label}</span>
-                                            <div className="grid grid-cols-2 gap-1.5">
+                                            {/* モバイル=横スクロール1行 / md+=2列グリッド */}
+                                            <div className="flex gap-1.5 overflow-x-auto pb-1 md:grid md:grid-cols-2 md:w-[100px] md:overflow-visible md:pb-0">
                                                 {items.map(m => (
                                                     <Link
                                                         key={m.archetype}
                                                         href={`/archetypes/${encodeURIComponent(m.archetype)}`}
                                                         title={`${m.archetype} ${m.share.toFixed(1)}%${m.winCount > 0 ? ` / 優勝${m.winCount}` : ''}`}
-                                                        className="block w-11 h-11 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-blue-400 transition"
+                                                        className="block w-11 h-11 shrink-0 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 hover:ring-2 hover:ring-blue-400 transition"
                                                     >
                                                         {m.image && (
                                                             // eslint-disable-next-line @next/next/no-img-element
