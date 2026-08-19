@@ -3,7 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
-import { getFeaturedCardsWithStatsAction } from '@/app/actions'
+import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 
@@ -36,6 +36,45 @@ function buildUsageRanking(decks: EnvDeckTop[]): UsageRow[] {
     .map(([archetype, v]) => ({ archetype, total: v.total, win: v.win }))
     .sort((x, y) => y.total - x.total)
 }
+
+// 環境Tier表用：使用率上位アーキタイプに代表カード画像を付ける（環境デッキのコードを展開）。
+// 上位14件だけ・1アーキタイプ1デッキ展開（キャッシュ済み）・24hキャッシュで軽量。
+export type TierMeta = { archetype: string; deckCount: number; winCount: number; share: number; image: string | null }
+const getTierMetasCached = unstable_cache(
+  async (): Promise<TierMeta[]> => {
+    try {
+      const db = getFirebaseDb()
+      if (!db) return []
+      const snap = await db.collection('environmentDecks').doc('pokemon').get()
+      const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as EnvDeckTop[]) : []
+      const total = decks.length || 1
+      const g = new Map<string, { deckCount: number; winCount: number; code: string }>()
+      for (const d of decks) {
+        const a = (d.archetype || '').trim()
+        if (!a) continue
+        const cur = g.get(a) || { deckCount: 0, winCount: 0, code: '' }
+        cur.deckCount += 1
+        if (d.rank === '優勝') cur.winCount += 1
+        if (!cur.code && d.deckCode) cur.code = d.deckCode
+        g.set(a, cur)
+      }
+      const top = Array.from(g.entries()).sort((x, y) => y[1].deckCount - x[1].deckCount).slice(0, 14)
+      return await Promise.all(top.map(async ([archetype, v]): Promise<TierMeta> => {
+        let image: string | null = null
+        try {
+          const res = await getDeckDataAction(v.code)
+          if (res.success && res.data) {
+            const poke = res.data.find(c => c.supertype === 'Pokémon' && c.imageUrl) || res.data.find(c => c.imageUrl)
+            image = poke?.imageUrl || null
+          }
+        } catch { /* skip */ }
+        return { archetype, deckCount: v.deckCount, winCount: v.winCount, share: (v.deckCount / total) * 100, image }
+      }))
+    } catch { return [] }
+  },
+  ['tier-metas-pokemon-v1'],
+  { revalidate: 3600 },
+)
 
 // 注目カード採用率（1時間キャッシュ）
 const getCachedFeaturedCards = unstable_cache(
@@ -270,6 +309,7 @@ export default async function Home() {
 
   const envDecks = await getEnvDecksForTop()
   const usageRanking = buildUsageRanking(envDecks)
+  const tierMetas = await getTierMetasCached()
 
   // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
   const weeklyRanking = archStats.deckCounts
@@ -301,6 +341,7 @@ export default async function Home() {
         envDecks={envDecks}
         usageRanking={usageRanking}
         usageTotalDecks={envDecks.length}
+        tierMetas={tierMetas}
         archetypes={sortedArchetypes}
         articles={articles || []}
         analyticsData={analyticsData}
