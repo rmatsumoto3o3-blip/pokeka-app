@@ -1,92 +1,63 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import { unstable_cache } from 'next/cache'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import PublicHeader from '@/components/PublicHeader'
+import { getFirebaseDb } from '@/lib/firebase/admin'
 
-export const revalidate = 14400
+// 採用率・使用率ランキング一覧。環境デッキ(environmentDecks)由来・Supabase不使用。
+// トップの使用率ランキング／採用率詳細と同じ源なので数字が一致し、詳細も404にならない。
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
-    title: 'ポケカ 環境デッキ採用率・使用率ランキング【直近2ヶ月】| PokéLix（ポケリス）',
-    description: 'ポケモンカードの環境デッキを大会データから集計した採用率（使用率）ランキング。各アーキタイプのデッキ数・優勝数・シェアを一覧で比較。気になるデッキの採用カード・構築もチェックできます。',
+    title: 'ポケカ 環境デッキ採用率・使用率ランキング | PokéLix（ポケリス）',
+    description: 'ポケモンカードの環境デッキを大会データから集計した使用率ランキング。各アーキタイプのデッキ数・優勝数・シェアを一覧で比較。気になるデッキの採用カード・構築もチェックできます。',
     keywords: ['ポケカ 採用率', 'ポケカ 使用率', 'ポケカ シェア率', 'ポケカ 環境', 'ポケカ 環境デッキ', 'ポケカ ランキング', 'ポケモンカード 環境', 'ポケカ tier'],
     alternates: { canonical: 'https://www.pokelix.jp/archetypes' },
     openGraph: {
         title: 'ポケカ 環境デッキ採用率・使用率ランキング | PokéLix（ポケリス）',
-        description: '大会データから集計したポケカ環境デッキの採用率ランキング。',
+        description: '大会データから集計したポケカ環境デッキの使用率ランキング。',
     },
 }
 
-// アーキタイプ別「デッキ数(ALL)」「優勝数(優勝)」を集計statsから取得（TOPと同一ロジック）。
-// 個別デッキを削除しても匿名集計 archetype_card_stats は残るためランキングは維持される。
-const getCachedArchetypeStats = unstable_cache(
-    async () => {
-        const supabase = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
-        const deckCounts: Record<string, number> = {}
-        const winCounts: Record<string, number> = {}
-        const ranks: [string, Record<string, number>][] = [['ALL', deckCounts], ['優勝', winCounts]]
-        for (const [rank, target] of ranks) {
-            for (let offset = 0; offset < 30000; offset += 1000) {
-                const { data } = await supabase
-                    .from('archetype_card_stats')
-                    .select('archetype_id,total_decks')
-                    .eq('event_rank', rank)
-                    .range(offset, offset + 999)
-                if (!data || data.length === 0) break
-                data.forEach(r => {
-                    if (r.archetype_id && !(r.archetype_id in target)) target[r.archetype_id] = r.total_decks || 0
-                })
-                if (data.length < 1000) break
-            }
-        }
-        return { deckCounts, winCounts }
-    },
-    ['archetype-counts-hub-v1'],
-    { revalidate: 14400 }
-)
+type EnvDeck = { archetype?: string; rank?: string }
+type Ranked = { name: string; deckCount: number; winCount: number; share: number }
 
-const getCachedArchetypes = unstable_cache(
-    async () => {
-        const supabase = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        )
-        const { data } = await supabase
-            .from('deck_archetypes')
-            .select('id, name, cover_image_url')
-        return data || []
+const getRankingCached = unstable_cache(
+    async (): Promise<{ ranked: Ranked[]; totalDecks: number }> => {
+        try {
+            const db = getFirebaseDb()
+            if (!db) return { ranked: [], totalDecks: 0 }
+            const snap = await db.collection('environmentDecks').doc('pokemon').get()
+            const decks = (snap.exists ? (snap.data()?.decks) : []) as EnvDeck[] || []
+            const map = new Map<string, { deckCount: number; winCount: number }>()
+            for (const d of decks) {
+                const a = (d.archetype || '').trim()
+                if (!a) continue
+                const cur = map.get(a) || { deckCount: 0, winCount: 0 }
+                cur.deckCount += 1
+                if (d.rank === '優勝') cur.winCount += 1
+                map.set(a, cur)
+            }
+            const totalDecks = decks.length
+            const denom = totalDecks || 1
+            const ranked = Array.from(map.entries())
+                .map(([name, v]) => ({ name, deckCount: v.deckCount, winCount: v.winCount, share: (v.deckCount / denom) * 100 }))
+                .sort((a, b) => b.deckCount - a.deckCount)
+            return { ranked, totalDecks }
+        } catch { return { ranked: [], totalDecks: 0 } }
     },
-    ['archetypes-list-hub-v1'],
-    { revalidate: 14400 }
+    ['archetypes-hub-env-v1'],
+    { revalidate: 3600 },
 )
 
 export default async function ArchetypesHubPage() {
-    const [archetypes, stats] = await Promise.all([
-        getCachedArchetypes(),
-        getCachedArchetypeStats(),
-    ])
-    const { deckCounts, winCounts } = stats
-
-    const totalDecks = Object.values(deckCounts).reduce((a, b) => a + b, 0) || 1
-
-    const ranked = archetypes
-        .map((a: any) => ({
-            ...a,
-            deckCount: deckCounts[a.id] || 0,
-            winCount: winCounts[a.id] || 0,
-            share: ((deckCounts[a.id] || 0) / totalDecks) * 100,
-        }))
-        .filter(a => a.deckCount > 0)
-        .sort((a, b) => b.deckCount - a.deckCount)
+    const { ranked, totalDecks } = await getRankingCached()
 
     const jsonLd = {
         '@context': 'https://schema.org',
         '@type': 'ItemList',
-        name: 'ポケカ 環境デッキ採用率ランキング',
+        name: 'ポケカ 環境デッキ採用率・使用率ランキング',
         itemListElement: ranked.slice(0, 30).map((a, i) => ({
             '@type': 'ListItem',
             position: i + 1,
@@ -106,19 +77,19 @@ export default async function ArchetypesHubPage() {
                         ポケカ 環境デッキ 採用率・使用率ランキング
                     </h1>
                     <p className="text-gray-600 text-sm md:text-base">
-                        直近2ヶ月の全国の大会入賞デッキ（{totalDecks.toLocaleString()}件）から集計した、環境デッキのシェア（使用率）と優勝数のランキングです。各デッキの採用カード・構築も確認できます。
+                        直近の全国の大会入賞デッキ（{totalDecks.toLocaleString()}件）から集計した、環境デッキのシェア（使用率）と優勝数のランキングです。各デッキ名から採用カード・構築（採用率）も確認できます。
                     </p>
                 </div>
 
                 {ranked.length === 0 ? (
                     <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
-                        <p className="text-gray-500">集計データを準備中です。</p>
+                        <p className="text-gray-500">現在表示できるデータがありません。少し時間をおいて再度お試しください。</p>
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
                         {ranked.map((a, i) => (
                             <Link
-                                key={a.id}
+                                key={a.name}
                                 href={`/archetypes/${encodeURIComponent(a.name)}`}
                                 className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50/50 transition"
                             >
@@ -127,13 +98,6 @@ export default async function ArchetypesHubPage() {
                                 }`}>
                                     {i + 1}
                                 </span>
-                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center relative">
-                                    {a.cover_image_url ? (
-                                        <Image src={a.cover_image_url} alt={a.name} fill sizes="48px" className="object-cover" />
-                                    ) : (
-                                        <span className="text-xl">⚡️</span>
-                                    )}
-                                </div>
                                 <div className="flex-grow min-w-0">
                                     <p className="font-bold text-gray-900 truncate">{a.name}</p>
                                     <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -152,7 +116,7 @@ export default async function ArchetypesHubPage() {
                 )}
 
                 <p className="mt-4 text-xs text-gray-400">
-                    ※使用率は直近2ヶ月の大会入賞デッキに占める各アーキタイプの割合です。データは毎日更新されます。
+                    ※使用率は直近の大会入賞デッキに占める各アーキタイプの割合です。データは毎日更新されます。
                 </p>
             </main>
         </div>
