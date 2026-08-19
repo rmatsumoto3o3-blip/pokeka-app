@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 // お知らせバナー。数日掲示したら NOTICE_ENABLED を false にして再デプロイし、消すこと。
 // メッセージを変えたら NOTICE_VERSION も上げると、閉じたユーザーにも再表示される。
-const NOTICE_ENABLED = true
+const NOTICE_ENABLED = false
 const NOTICE_VERSION = '2026-08-17-outage'
 
 export default function NoticeBanner() {
