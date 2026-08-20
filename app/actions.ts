@@ -3,6 +3,27 @@
 import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser'
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
+import { getFirebaseDb } from '@/lib/firebase/admin'
+
+// みんなのデッキ(gundam)を Firebase(recommendedDecks/gundam) の decks 配列に追加/削除（deckCode で重複排除）。
+type GundamRecDeck = { deckCode: string; tagCode: string | null; deckName: string | null; imageUrl: string | null; iconUrls: string[] | null }
+async function gundamRecommendedUpsertFirebase(rec: GundamRecDeck): Promise<void> {
+    const db = getFirebaseDb()
+    if (!db) throw new Error('Firebase未設定のため保存できません')
+    const ref = db.collection('recommendedDecks').doc('gundam')
+    const snap = await ref.get()
+    const cur = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as GundamRecDeck[]) : []
+    const next = [rec, ...cur.filter(d => d.deckCode !== rec.deckCode)]
+    await ref.set({ decks: next }, { merge: true })
+}
+async function gundamRecommendedRemoveFirebase(deckCode: string): Promise<void> {
+    const db = getFirebaseDb()
+    if (!db) return
+    const ref = db.collection('recommendedDecks').doc('gundam')
+    const snap = await ref.get()
+    const cur = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as GundamRecDeck[]) : []
+    await ref.set({ decks: cur.filter(d => d.deckCode !== deckCode) }, { merge: true })
+}
 
 // デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
 // キャッシュヒット時は fetchDeckData を呼ばない＝公式サイトを叩かない。
@@ -1697,19 +1718,22 @@ export async function getGundamSeriesAction() {
 }
 
 // みんなのデッキ一覧（旧タイトル別を転用）。icon_urls 列が未追加でも動くようフォールバック。
+// みんなのデッキ（gundam）は管理者投稿。Supabase制限中でも動くよう Firebase(recommendedDecks/gundam) を正とする。
 export async function getGundamRecommendedDecksAction() {
-    const base = 'id, deck_code, tag_code, deck_name, image_url'
-    const run = (cols: string) => getSupabaseAdmin()
-        .from('gundam_recommended_decks')
-        .select(cols)
-        .order('created_at', { ascending: false })
     try {
-        let { data, error } = await run(base + ', icon_urls')
-        if (error) {
-            ({ data, error } = await run(base))
-            if (error) throw error
-        }
-        return { success: true, data: data || [] }
+        const db = getFirebaseDb()
+        if (!db) return { success: true, data: [] as any[] }
+        const snap = await db.collection('recommendedDecks').doc('gundam').get()
+        const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as any[]) : []
+        const data = decks.map(d => ({
+            id: d.deckCode,
+            deck_code: d.deckCode,
+            tag_code: d.tagCode || null,
+            deck_name: d.deckName || null,
+            image_url: d.imageUrl || null,
+            icon_urls: Array.isArray(d.iconUrls) ? d.iconUrls : null,
+        }))
+        return { success: true, data }
     } catch (e) {
         console.error('getGundamRecommendedDecksAction error:', e)
         return { success: false, data: [] as any[] }
@@ -1737,44 +1761,52 @@ export async function postGundamCommunityDeckAction(
         const cards = data.mainDeck || []
         if (cards.length === 0) return { success: false, error: 'カードを取得できませんでした（コード失効の可能性）' }
 
-        const supabase = getSupabaseAdmin()
-
-        // ① カード辞書へ upsert（card_number でユニーク化）
-        const dict = new Map<string, any>()
-        cards.forEach(c => {
-            if (c.cardNumber && !dict.has(c.cardNumber)) dict.set(c.cardNumber, {
-                card_number: c.cardNumber,
-                card_name: c.name || null,
-                image_url: c.imageUrl || null,
-                color: c.color || null,
-                cost: c.cost || null,
-                card_type: c.type || null,
-            })
-        })
-        if (dict.size > 0) {
-            const { error: cErr } = await supabase.from('gundam_cards').upsert(Array.from(dict.values()), { onConflict: 'card_number' })
-            if (cErr) throw cErr
-        }
-
-        // ② 軽量 card_list（番号+枚数。同番号は合算）
-        const qmap = new Map<string, number>()
-        cards.forEach(c => { if (c.cardNumber) qmap.set(c.cardNumber, (qmap.get(c.cardNumber) || 0) + (c.quantity || 0)) })
-        const compact = Array.from(qmap.entries()).map(([n, q]) => ({ n, q }))
-
         const icons = (iconUrls || []).filter(u => typeof u === 'string' && u).slice(0, 2)
-        const baseRecord: Record<string, any> = {
-            deck_code: code,
-            deck_name: (deckName || '').trim() || null,
-            tag_code: (comment || '').trim() || null, // コメント/タグに転用
-            image_url: icons[0] || cards[0]?.imageUrl || null, // 代表画像
-            card_list: compact,
+
+        // ① Firebase を正として保存（Supabase制限中でも成功させる）。表示は recommendedDecks/gundam を読む。
+        await gundamRecommendedUpsertFirebase({
+            deckCode: code,
+            deckName: (deckName || '').trim() || null,
+            tagCode: (comment || '').trim() || null,
+            imageUrl: icons[0] || cards[0]?.imageUrl || null,
+            iconUrls: icons.length ? icons : null,
+        })
+
+        // ② Supabase はベストエフォート（復旧時のためにも書くが、失敗しても投稿は成功扱い）
+        try {
+            const supabase = getSupabaseAdmin()
+            const dict = new Map<string, any>()
+            cards.forEach(c => {
+                if (c.cardNumber && !dict.has(c.cardNumber)) dict.set(c.cardNumber, {
+                    card_number: c.cardNumber,
+                    card_name: c.name || null,
+                    image_url: c.imageUrl || null,
+                    color: c.color || null,
+                    cost: c.cost || null,
+                    card_type: c.type || null,
+                })
+            })
+            if (dict.size > 0) {
+                await supabase.from('gundam_cards').upsert(Array.from(dict.values()), { onConflict: 'card_number' })
+            }
+            const qmap = new Map<string, number>()
+            cards.forEach(c => { if (c.cardNumber) qmap.set(c.cardNumber, (qmap.get(c.cardNumber) || 0) + (c.quantity || 0)) })
+            const compact = Array.from(qmap.entries()).map(([n, q]) => ({ n, q }))
+            const baseRecord: Record<string, any> = {
+                deck_code: code,
+                deck_name: (deckName || '').trim() || null,
+                tag_code: (comment || '').trim() || null,
+                image_url: icons[0] || cards[0]?.imageUrl || null,
+                card_list: compact,
+            }
+            let { error: dErr } = await supabase.from('gundam_recommended_decks').insert({ ...baseRecord, icon_urls: icons.length ? icons : null })
+            if (dErr) {
+                await supabase.from('gundam_recommended_decks').insert(baseRecord)
+            }
+        } catch (e) {
+            console.warn('postGundamCommunityDeckAction: Supabase書き込みskip（Firebaseには保存済み）:', (e as Error).message)
         }
-        // icon_urls 列が未追加でも投稿できるよう、失敗したら icon_urls 抜きで再挿入
-        let { error: dErr } = await supabase.from('gundam_recommended_decks').insert({ ...baseRecord, icon_urls: icons.length ? icons : null })
-        if (dErr) {
-            ({ error: dErr } = await supabase.from('gundam_recommended_decks').insert(baseRecord))
-        }
-        if (dErr) throw dErr
+
         return { success: true }
     } catch (e) {
         console.error('postGundamCommunityDeckAction error:', e)
@@ -1787,8 +1819,14 @@ export async function deleteGundamCommunityDeckAction(id: string): Promise<{ suc
     try {
         const admin = await verifyAdminSession()
         if (!admin) return { success: false, error: '権限がありません' }
-        const { error } = await getSupabaseAdmin().from('gundam_recommended_decks').delete().eq('id', id)
-        if (error) throw error
+        // Firebase の id は deckCode。まず Firebase から削除（正）。
+        await gundamRecommendedRemoveFirebase(id)
+        // Supabase はベストエフォート（deck_code でも id でも消せるよう両対応）
+        try {
+            await getSupabaseAdmin().from('gundam_recommended_decks').delete().or(`id.eq.${id},deck_code.eq.${id}`)
+        } catch (e) {
+            console.warn('deleteGundamCommunityDeckAction: Supabase削除skip:', (e as Error).message)
+        }
         return { success: true }
     } catch (e) {
         console.error('deleteGundamCommunityDeckAction error:', e)
