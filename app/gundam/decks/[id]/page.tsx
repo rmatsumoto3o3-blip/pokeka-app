@@ -5,9 +5,39 @@ import PublicHeader from '@/components/PublicHeader'
 import GundamDeckCardGrid from '@/components/GundamDeckCardGrid'
 import GundamDeckIcon from '@/components/GundamDeckIcon'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
+import { getFirebaseDb } from '@/lib/firebase/admin'
 
 export const revalidate = 3600
 export const dynamicParams = true
+
+// Supabase制限中でも詳細を出せるよう、id を deckCode とみなして Firebase（environmentDecks/gundam）から引く。
+async function getDeckFromFirebase(code: string) {
+    const db = getFirebaseDb()
+    if (!db) return null
+    try {
+        const snap = await db.collection('environmentDecks').doc('gundam').get()
+        const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as any[]) : []
+        const meta = decks.find(d => d.deckCode === code)
+        if (!meta) return null
+        let mainDeck: GundamCard[] = []
+        try { mainDeck = (await fetchGundamDeckData(code)).mainDeck } catch { /* 展開失敗は空 */ }
+        return {
+            id: code,
+            deck_code: code,
+            event_rank: meta.rank || null,
+            event_date: meta.eventDate || null,
+            event_location: meta.eventName || null,
+            archetype_id: meta.archetype || null,
+            color: meta.archetype || null,
+            deck_name: meta.archetype || null,
+            thumbnail_url: null,
+            icon_urls: null,
+            created_at: '',
+            gundam_deck_archetypes: { id: meta.archetype, name: meta.archetype, cover_image_url: null },
+            mainDeck,
+        }
+    } catch { return null }
+}
 
 async function getDeck(id: string) {
     const supabase = await createClient()
@@ -34,7 +64,7 @@ async function getDeck(id: string) {
         .eq('id', id)
         .single()
 
-    if (error || !deck) return null
+    if (error || !deck) return await getDeckFromFirebase(id)
 
     // 1. DBに保存済みのカード構成があればそれを使う（公式API非依存・deck_code失効に耐える）
     //    card_list列が未作成でもクエリ失敗を握りつぶして従来動作にフォールバックする
