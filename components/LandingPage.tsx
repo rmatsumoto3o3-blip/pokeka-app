@@ -98,6 +98,13 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
             {/* 使用率ランキング（左＝環境Tier画像／右＝ランキング）・環境デッキの上 */}
             <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} />
 
+            {/* 広告（使用率ランキングと環境デッキの間・728x50 ほそめ） */}
+            <section className="bg-[#f4f6fa]">
+                <div className="max-w-[1080px] mx-auto px-5 py-4">
+                    <AdPlaceholder slot="2670584261" format="leaderboard-slim" className="mx-auto" />
+                </div>
+            </section>
+
             {/* 環境デッキ（Firebase由来） */}
             <EnvDecksTop decks={envDecks} />
 
