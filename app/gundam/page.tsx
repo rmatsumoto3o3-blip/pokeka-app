@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import GundamLandingPage from '@/components/GundamLandingPage'
 import { getGundamSeriesAction, getGundamRecommendedDecksAction } from '@/app/actions'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { getGundamEnvDecks, getGundamDeckImages } from '@/lib/gundamEnv'
 import type { GundamDeckRecord, GundamDeckArchetype } from '@/lib/supabase'
 
 export const metadata: Metadata = {
@@ -14,23 +14,10 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600
 
-// Firebase（environmentDecks/gundam）由来。Supabase制限中でも表示できる。
-// ガンダムのアーキタイプは色（例: 白 / 白緑）で、GundamColorIcon が name から描画する。
-type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
-
-async function getGundamEnvDecks(): Promise<EnvDeck[]> {
-    const db = getFirebaseDb()
-    if (!db) return []
-    try {
-        const snap = await db.collection('environmentDecks').doc('gundam').get()
-        const data = snap.exists ? snap.data() : null
-        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
-    } catch { return [] }
-}
-
 export default async function GundamPage() {
     const envDecks = await getGundamEnvDecks()
-    const [seriesRes, recommendedRes] = await Promise.all([
+    const [images, seriesRes, recommendedRes] = await Promise.all([
+        getGundamDeckImages(),
         getGundamSeriesAction(),
         getGundamRecommendedDecksAction(),
     ])
@@ -59,7 +46,7 @@ export default async function GundamPage() {
             archetype_id: arch,
             color: arch,
             deck_name: arch,
-            thumbnail_url: null,
+            thumbnail_url: images[d.deckCode] || null,
             icon_urls: null,
             created_at: '',
         }

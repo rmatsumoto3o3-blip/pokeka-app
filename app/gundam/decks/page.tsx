@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
+import Image from 'next/image'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 import GundamColorIcon from '@/components/GundamColorIcon'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { getGundamEnvDecks, getGundamDeckImages } from '@/lib/gundamEnv'
 
 export const metadata: Metadata = {
     title: 'ガンダム 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -15,21 +16,8 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600
 
-// Firebase（environmentDecks/gundam）由来。Supabase制限中でも表示できる。アーキタイプは色。
-type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
-
-async function getGundamEnvDecks(): Promise<EnvDeck[]> {
-    const db = getFirebaseDb()
-    if (!db) return []
-    try {
-        const snap = await db.collection('environmentDecks').doc('gundam').get()
-        const data = snap.exists ? snap.data() : null
-        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
-    } catch { return [] }
-}
-
 export default async function GundamDecksPage() {
-    const envDecks = await getGundamEnvDecks()
+    const [envDecks, images] = await Promise.all([getGundamEnvDecks(), getGundamDeckImages()])
 
     const decks = envDecks.map(d => {
         const arch = (d.archetype || '').trim() || 'その他'
@@ -42,6 +30,7 @@ export default async function GundamDecksPage() {
             archetype_id: arch,
             color: null as string | null,
             deck_name: arch,
+            thumbnail_url: images[d.deckCode] || null,
             created_at: '',
         }
     })
@@ -89,7 +78,11 @@ export default async function GundamDecksPage() {
                                         {archDecks.map((d: any) => (
                                             <Link key={d.id} href={`/gundam/decks/${d.id}`} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
                                                 <div className="relative aspect-square bg-gray-100">
-                                                    <GundamColorIcon name={arch?.name || ''} className="absolute inset-0 w-full h-full" />
+                                                    {d.thumbnail_url ? (
+                                                        <Image src={d.thumbnail_url} alt={d.deck_name || arch?.name || ''} fill className="object-contain" unoptimized />
+                                                    ) : (
+                                                        <GundamColorIcon name={arch?.name || ''} className="absolute inset-0 w-full h-full" />
+                                                    )}
                                                     {d.event_rank && (
                                                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">{d.event_rank}</span>
                                                     )}
