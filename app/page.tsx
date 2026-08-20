@@ -77,7 +77,7 @@ const getTierMetasCached = unstable_cache(
       }))
     } catch { return [] }
   },
-  ['tier-metas-pokemon-v1'],
+  ['tier-metas-pokemon-v2'],
   { revalidate: 3600 },
 )
 
