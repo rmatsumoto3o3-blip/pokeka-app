@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import { getGundamArchetypesAction, getGundamDeckRecordsAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
-import GundamDeckIcon from '@/components/GundamDeckIcon'
+import GundamColorIcon from '@/components/GundamColorIcon'
+import { getFirebaseDb } from '@/lib/firebase/admin'
 
 export const metadata: Metadata = {
     title: 'ガンダム 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -13,24 +13,45 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/gundam/decks' },
 }
 
-export const revalidate = 60
+export const revalidate = 3600
+
+// Firebase（environmentDecks/gundam）由来。Supabase制限中でも表示できる。アーキタイプは色。
+type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
+
+async function getGundamEnvDecks(): Promise<EnvDeck[]> {
+    const db = getFirebaseDb()
+    if (!db) return []
+    try {
+        const snap = await db.collection('environmentDecks').doc('gundam').get()
+        const data = snap.exists ? snap.data() : null
+        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
+    } catch { return [] }
+}
 
 export default async function GundamDecksPage() {
-    const [archetypesRes, decksRes] = await Promise.all([
-        getGundamArchetypesAction(),
-        getGundamDeckRecordsAction(),
-    ])
-    const archetypes = archetypesRes.data || []
-    const decks = decksRes.data || []
-    const archetypeMap = new Map(archetypes.map((a: any) => [a.id, a]))
+    const envDecks = await getGundamEnvDecks()
+
+    const decks = envDecks.map(d => {
+        const arch = (d.archetype || '').trim() || 'その他'
+        return {
+            id: d.deckCode,
+            deck_code: d.deckCode,
+            event_rank: d.rank || null,
+            event_date: d.eventDate || null,
+            event_location: d.eventName || null,
+            archetype_id: arch,
+            color: null as string | null,
+            deck_name: arch,
+            created_at: '',
+        }
+    })
 
     const grouped: Record<string, any[]> = {}
-    decks.forEach((d: any) => {
-        const key = d.archetype_id && archetypeMap.has(d.archetype_id) ? d.archetype_id : 'others'
+    decks.forEach((d) => {
+        const key = d.archetype_id || 'others'
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(d)
     })
-    // 各グループ内を大会日の新しい順に、さらにグループ自体も最新デッキが上に来るよう並べる
     Object.values(grouped).forEach(list => list.sort(byEventDateDesc))
     const groupOrder = Object.keys(grouped).sort((a, b) => {
         const ka = grouped[a][0] ? eventDateSortKey(grouped[a][0].event_date, grouped[a][0].created_at) : 0
@@ -56,7 +77,7 @@ export default async function GundamDecksPage() {
                     ) : (
                         groupOrder.map((archId) => {
                             const archDecks = grouped[archId]
-                            const arch = archId === 'others' ? { name: 'その他', cover_image_url: null } : archetypeMap.get(archId)
+                            const arch = archId === 'others' ? { name: 'その他' } : { name: archId }
                             return (
                                 <section key={archId} id={`arch-${archId}`} className="mb-8 scroll-mt-24">
                                     <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -68,17 +89,9 @@ export default async function GundamDecksPage() {
                                         {archDecks.map((d: any) => (
                                             <Link key={d.id} href={`/gundam/decks/${d.id}`} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
                                                 <div className="relative aspect-square bg-gray-100">
-                                                    <GundamDeckIcon
-                                                        iconUrls={d.icon_urls}
-                                                        thumbnailUrl={d.thumbnail_url}
-                                                        fallbackUrl={arch?.cover_image_url}
-                                                        alt={d.deck_name || arch?.name || ''}
-                                                    />
+                                                    <GundamColorIcon name={arch?.name || ''} className="absolute inset-0 w-full h-full" />
                                                     {d.event_rank && (
                                                         <span className="absolute top-1 left-1 text-[10px] font-bold text-white bg-red-600 px-1.5 py-0.5 rounded">{d.event_rank}</span>
-                                                    )}
-                                                    {d.color && (
-                                                        <span className="absolute top-1 right-1 text-[10px] font-bold text-white bg-purple-600 px-1.5 py-0.5 rounded">{d.color}</span>
                                                     )}
                                                 </div>
                                                 <div className="px-2.5 py-2">

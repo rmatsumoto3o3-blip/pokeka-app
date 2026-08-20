@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { unstable_cache } from 'next/cache'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import { getUnionArenaArchetypesAction, getUnionArenaDeckRecordsAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
+import { getFirebaseDb } from '@/lib/firebase/admin'
+import { fetchUnionArenaDeckData } from '@/lib/unionArenaDeckParser'
 
 export const metadata: Metadata = {
     title: 'ユニアリ 環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -13,24 +15,75 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/unionarena/decks' },
 }
 
-export const revalidate = 60
+export const revalidate = 3600
+
+// Firebase（environmentDecks/unionarena）由来。Supabase制限中でも表示できる。
+type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
+
+async function getUnionEnvDecks(): Promise<EnvDeck[]> {
+    const db = getFirebaseDb()
+    if (!db) return []
+    try {
+        const snap = await db.collection('environmentDecks').doc('unionarena').get()
+        const data = snap.exists ? snap.data() : null
+        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
+    } catch { return [] }
+}
+
+// アーキタイプ代表画像（/unionarena と同じキャッシュキーを共有）。24hキャッシュ。
+const getUnionArchetypeImages = unstable_cache(
+    async (): Promise<Record<string, string>> => {
+        const decks = await getUnionEnvDecks()
+        const repByArch = new Map<string, string>()
+        for (const d of decks) {
+            const a = (d.archetype || '').trim()
+            if (a && !repByArch.has(a) && d.deckCode) repByArch.set(a, d.deckCode)
+        }
+        const out: Record<string, string> = {}
+        await Promise.all([...repByArch.entries()].map(async ([arch, code]) => {
+            try {
+                const data = await fetchUnionArenaDeckData(code)
+                const img = (data.mainDeck || []).find(c => c.imageUrl)?.imageUrl
+                if (img) out[arch] = img
+            } catch { /* 展開失敗はスキップ */ }
+        }))
+        return out
+    },
+    ['union-archetype-images-v1'],
+    { revalidate: 86400 },
+)
 
 export default async function UnionArenaDecksPage() {
-    const [archetypesRes, decksRes] = await Promise.all([
-        getUnionArenaArchetypesAction(),
-        getUnionArenaDeckRecordsAction(),
-    ])
-    const archetypes = archetypesRes.data || []
-    const decks = decksRes.data || []
-    const archetypeMap = new Map(archetypes.map((a: any) => [a.id, a]))
+    const envDecks = await getUnionEnvDecks()
+    const images = await getUnionArchetypeImages()
+
+    // env decks → 表示用（既存UIの形に合わせる。id=deckCode で詳細へ）
+    const decks = envDecks.map(d => {
+        const arch = (d.archetype || '').trim() || 'その他'
+        return {
+            id: d.deckCode,
+            deck_code: d.deckCode,
+            event_rank: d.rank || null,
+            event_date: d.eventDate || null,
+            event_location: d.eventName || null,
+            archetype_id: arch,
+            color: null as string | null,
+            deck_name: arch,
+            thumbnail_url: images[arch] || null,
+            created_at: '',
+        }
+    })
+    const archetypeMap = new Map<string, { name: string; cover_image_url: string | null }>()
+    for (const d of decks) {
+        if (!archetypeMap.has(d.archetype_id)) archetypeMap.set(d.archetype_id, { name: d.archetype_id, cover_image_url: images[d.archetype_id] || null })
+    }
 
     const grouped: Record<string, any[]> = {}
-    decks.forEach((d: any) => {
+    decks.forEach((d) => {
         const key = d.archetype_id && archetypeMap.has(d.archetype_id) ? d.archetype_id : 'others'
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(d)
     })
-    // 各グループ内を大会日の新しい順に、さらにグループ自体も最新デッキが上に来るよう並べる
     Object.values(grouped).forEach(list => list.sort(byEventDateDesc))
     const groupOrder = Object.keys(grouped).sort((a, b) => {
         const ka = grouped[a][0] ? eventDateSortKey(grouped[a][0].event_date, grouped[a][0].created_at) : 0
