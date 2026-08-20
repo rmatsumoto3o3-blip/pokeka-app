@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { buildDeck, shuffle, type Card } from '@/lib/deckParser'
-import { getDeckDataAction } from '@/app/actions'
+import { getDeckDataAction, getEnvDecksForPractice, type PracticeEnvDeck } from '@/app/actions'
 import { createStack, type CardStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from '../../components/DeckPractice'
 import CoinTossOverlay from '../../components/CoinTossOverlay'
@@ -494,6 +494,16 @@ function PracticeContent() {
     const [isFlipping, setIsFlipping] = useState(false)
     const [activeDragId, setActiveDragId] = useState<string | null>(null)
     const [activeDragData, setActiveDragData] = useState<ActiveDragData | null>(null)
+
+    // 環境（優勝/入賞）デッキから選ぶ：アーキタイプ→デッキ→自分/相手に読み込み
+    const [envPickerDecks, setEnvPickerDecks] = useState<PracticeEnvDeck[]>([])
+    const [selectedEnvArchetype, setSelectedEnvArchetype] = useState('')
+    const [envPickerOpen, setEnvPickerOpen] = useState(false)
+    useEffect(() => {
+        let alive = true
+        getEnvDecksForPractice('pokemon').then(decks => { if (alive) setEnvPickerDecks(decks) }).catch(() => {})
+        return () => { alive = false }
+    }, [])
     const [loadCounter, setLoadCounter] = useState(0)
     const [cpuUnlocked, setCpuUnlocked] = useState(false)
     const [activePlayer, setActivePlayer] = useState<'player1' | 'player2'>('player1')
@@ -903,6 +913,27 @@ function PracticeContent() {
         }
     }
 
+    // 環境デッキ：アーキタイプ別グループ（デッキ数が多い順）
+    const envArchetypeGroups = useMemo(() => {
+        const map = new Map<string, PracticeEnvDeck[]>()
+        for (const d of envPickerDecks) {
+            const a = (d.archetype || '').trim() || 'その他'
+            if (!map.has(a)) map.set(a, [])
+            map.get(a)!.push(d)
+        }
+        return Array.from(map.entries())
+            .map(([archetype, decks]) => ({ archetype, decks }))
+            .sort((x, y) => y.decks.length - x.decks.length)
+    }, [envPickerDecks])
+    const selectedEnvDecks = envArchetypeGroups.find(g => g.archetype === selectedEnvArchetype)?.decks ?? []
+
+    // 選んだ環境デッキ(デッキコード)を自分/相手として読み込む（既存のデッキコード経路に乗せる＝挙動は完全一致）
+    const useEnvDeck = (code: string, player: 'player1' | 'player2') => {
+        if (player === 'player1') { setDeckCode1(code); loadDecks(code, deckCode2) }
+        else { setDeckCode2(code); loadDecks(deckCode1, code) }
+        setEnvPickerOpen(false)
+    }
+
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event
         setActiveDragId(active.id as string)
@@ -1106,6 +1137,68 @@ function PracticeContent() {
                         {error && (
                             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                                 {error}
+                            </div>
+                        )}
+
+                        {envArchetypeGroups.length > 0 && (
+                            <div className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setEnvPickerOpen(true)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-left transition hover:bg-blue-50"
+                                >
+                                    <div>
+                                        <div className="text-sm font-black text-gray-900">🏆 環境・優勝デッキから選ぶ</div>
+                                        <div className="mt-1 text-xs font-bold text-gray-500">アーキタイプ→デッキを選んで自分／相手に読み込み</div>
+                                    </div>
+                                    <span className="shrink-0 rounded-lg bg-blue-500 px-3 py-2 text-xs font-black text-white">選ぶ</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {envPickerOpen && (
+                            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setEnvPickerOpen(false)}>
+                                <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                        <h2 className="text-base font-black text-gray-900">🏆 環境・優勝デッキから選ぶ</h2>
+                                        <button type="button" onClick={() => setEnvPickerOpen(false)} className="rounded-lg px-2 py-1 text-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">✕</button>
+                                    </div>
+                                    <div className="border-b border-gray-100 px-4 py-3">
+                                        <select
+                                            value={selectedEnvArchetype}
+                                            onChange={(e) => setSelectedEnvArchetype(e.target.value)}
+                                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-400"
+                                        >
+                                            <option value="">アーキタイプを選択…</option>
+                                            {envArchetypeGroups.map(g => (
+                                                <option key={g.archetype} value={g.archetype}>{g.archetype}（{g.decks.length}）</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto px-4 py-3">
+                                        {selectedEnvDecks.length === 0 ? (
+                                            <p className="py-10 text-center text-sm text-gray-400">上のメニューからアーキタイプを選んでください。</p>
+                                        ) : (
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                {selectedEnvDecks.map(d => (
+                                                    <div key={d.deckCode} className="rounded-lg border border-gray-200 bg-white p-2.5">
+                                                        <div className="mb-1.5 flex items-center gap-2">
+                                                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${d.rank === '優勝' ? 'bg-amber-100 text-amber-800' : d.rank === '準優勝' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'}`}>{d.rank || '—'}</span>
+                                                            <span className="truncate text-sm font-bold text-gray-800">{d.eventName || '大会'}</span>
+                                                            <span className="ml-auto shrink-0 text-xs text-gray-400">{d.eventDate}</span>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <button type="button" onClick={() => useEnvDeck(d.deckCode, 'player1')} className="flex-1 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-600">自分で使う</button>
+                                                            {!isCpuModeRequested && (
+                                                                <button type="button" onClick={() => useEnvDeck(d.deckCode, 'player2')} className="flex-1 rounded-md bg-slate-700 px-3 py-1.5 text-xs font-black text-white transition hover:bg-slate-600">相手で使う</button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
 

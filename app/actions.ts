@@ -1833,3 +1833,27 @@ export async function deleteGundamCommunityDeckAction(id: string): Promise<{ suc
         return { success: false, error: (e as Error).message }
     }
 }
+
+// 一人回しの「環境デッキから選ぶ」用。Firebase(environmentDecks/{game})を読み、
+// ローカル等でFirebase未設定/空なら本番の公開APIにサーバ間フォールバック（CORS不要）。
+export type PracticeEnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
+export async function getEnvDecksForPractice(game: string = 'pokemon'): Promise<PracticeEnvDeck[]> {
+    try {
+        const db = getFirebaseDb()
+        if (db) {
+            const snap = await db.collection('environmentDecks').doc(game).get()
+            const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as PracticeEnvDeck[]) : []
+            if (decks.length) return decks
+        }
+    } catch (e) {
+        console.error('getEnvDecksForPractice firebase error:', e)
+    }
+    try {
+        const res = await fetch(`https://www.pokelix.jp/api/env-decks?game=${encodeURIComponent(game)}`, { next: { revalidate: 3600 } })
+        const json = await res.json().catch(() => ({}))
+        return Array.isArray(json?.decks) ? (json.decks as PracticeEnvDeck[]) : []
+    } catch (e) {
+        console.error('getEnvDecksForPractice fallback error:', e)
+        return []
+    }
+}
