@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import { getUnionArenaSeriesAction, getUnionArenaRecommendedDecksAction } from '@/app/actions'
+import { getUnionRecommended } from '@/lib/unionArenaTitles'
 
 export const metadata: Metadata = {
     title: 'ユニアリ タイトル別おすすめデッキ | PokéLix（ポケリス）',
@@ -15,12 +15,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function UnionArenaTitlesPage() {
-    const [seriesRes, decksRes] = await Promise.all([
-        getUnionArenaSeriesAction(),
-        getUnionArenaRecommendedDecksAction(),
-    ])
-    const seriesList = seriesRes.data || []
-    const decks = decksRes.data || []
+    const { recommendedDecks: decks, series: seriesList } = await getUnionRecommended()
 
     const grouped: Record<string, any[]> = {}
     decks.forEach((d: any) => {

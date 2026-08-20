@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { unstable_cache } from 'next/cache'
 import UnionArenaLandingPage from '@/components/UnionArenaLandingPage'
-import { getUnionArenaSeriesAction, getUnionArenaRecommendedDecksAction } from '@/app/actions'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 import { fetchUnionArenaDeckData } from '@/lib/unionArenaDeckParser'
+import { getUnionRecommended } from '@/lib/unionArenaTitles'
 import type { UnionArenaDeckRecord, UnionArenaDeckArchetype } from '@/lib/supabase'
 
 export const metadata: Metadata = {
@@ -54,10 +54,9 @@ const getUnionArchetypeImages = unstable_cache(
 
 export default async function UnionArenaPage() {
     const envDecks = await getUnionEnvDecks()
-    const [images, seriesRes, recommendedRes] = await Promise.all([
+    const [images, recommended] = await Promise.all([
         getUnionArchetypeImages(),
-        getUnionArenaSeriesAction(),
-        getUnionArenaRecommendedDecksAction(),
+        getUnionRecommended(),
     ])
 
     // アーキタイプ別デッキ数（＝環境Tier / weeklyRanking のソース）
@@ -95,8 +94,8 @@ export default async function UnionArenaPage() {
             archetypes={archetypes}
             decks={decks}
             weeklyRanking={weeklyRanking}
-            series={seriesRes.data || []}
-            recommendedDecks={recommendedRes.data || []}
+            series={recommended.series}
+            recommendedDecks={recommended.recommendedDecks}
         />
     )
 }

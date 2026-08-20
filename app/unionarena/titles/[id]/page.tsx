@@ -5,9 +5,36 @@ import PublicHeader from '@/components/PublicHeader'
 import UnionArenaDeckCardGrid from '@/components/UnionArenaDeckCardGrid'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchUnionArenaDeckData, type UnionArenaCard } from '@/lib/unionArenaDeckParser'
+import { getFirebaseDb } from '@/lib/firebase/admin'
 
 export const revalidate = 3600
 export const dynamicParams = true
+
+// Supabase制限中でも詳細を出せるよう、id を deckCode とみなして Firebase（recommendedDecks/unionarena）から引く。
+async function getRecommendedDeckFromFirebase(code: string) {
+    const db = getFirebaseDb()
+    if (!db) return null
+    try {
+        const snap = await db.collection('recommendedDecks').doc('unionarena').get()
+        const data = snap.exists ? snap.data() : null
+        const decks = Array.isArray(data?.decks) ? (data!.decks as any[]) : []
+        const series = Array.isArray(data?.series) ? (data!.series as any[]) : []
+        const meta = decks.find(d => d.deckCode === code)
+        if (!meta) return null
+        const s = series.find(x => x.tagCode === meta.tagCode)
+        let mainDeck: UnionArenaCard[] = []
+        try { mainDeck = (await fetchUnionArenaDeckData(code)).mainDeck } catch { /* 展開失敗は空 */ }
+        return {
+            id: code,
+            deck_code: code,
+            tag_code: meta.tagCode || null,
+            deck_name: meta.deckName || null,
+            image_url: meta.imageUrl || null,
+            unionarena_series: s ? { tag_code: s.tagCode, name: s.name, logo_url: s.logoUrl } : null,
+            mainDeck,
+        }
+    } catch { return null }
+}
 
 async function getRecommendedDeck(id: string) {
     const supabase = await createClient()
@@ -28,7 +55,7 @@ async function getRecommendedDeck(id: string) {
         .eq('id', id)
         .single()
 
-    if (error || !deck) return null
+    if (error || !deck) return await getRecommendedDeckFromFirebase(id)
 
     // DBに保存済みのカード構成があればそれを使う（公式API非依存）。無ければAPIから取得。
     let mainDeck: UnionArenaCard[] = []
