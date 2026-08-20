@@ -140,10 +140,14 @@ const cabtCardNameById = (cardId: number): string | undefined => {
     return cabtMetaById(cardId)?.name
 }
 
+// ビルダー(カタログ)の名前は「基本【炎】エネルギー」等の【】表記。盤面のグッズ効果は公式名
+// （「基本炎エネルギー」）で name 照合するため、【】を外して一致させる（該当はエネルギー系のみ）。
+const normalizePracticeCardName = (name: string): string => name.replace(/【([^】]*)】/g, '$1')
+
 const savedDeckToCards = (deck: SavedPracticeDeck): Card[] => {
     return deck.cards.flatMap(line => {
         const meta = cabtMetaById(line.cardId)
-        const name = meta?.name ?? `カード #${line.cardId}`
+        const name = normalizePracticeCardName(meta?.name ?? `カード #${line.cardId}`)
         return Array.from({ length: line.quantity }, () => ({
             name,
             imageUrl: meta?.imageUrl ?? cabtPlaceholderImage(name, line.cardId),
@@ -333,7 +337,7 @@ function cabtPlaceholderImage(name: string, id: number): string {
 function cabtCardToUiCard(card?: CabtCard | null): Card {
     const cardId = card?.cardId ?? 0
     const meta = cabtMetaById(cardId)
-    const name = meta?.name ?? `カード #${cardId || '?'}`
+    const name = normalizePracticeCardName(meta?.name ?? `カード #${cardId || '?'}`)
     return {
         name,
         imageUrl: meta?.imageUrl || cabtPlaceholderImage(name, cardId),
