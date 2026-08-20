@@ -98,8 +98,9 @@ export async function POST(request: NextRequest) {
     const decks = sanitizeDecks(body.decks)
     const series = sanitizeSeries(body.series)
 
-    // series が未指定(undefined)なら既存を保持、指定時のみ洗い替え
-    const payload: Record<string, unknown> = { decks, updatedAt: FieldValue.serverTimestamp() }
+    // decks / series は「指定された方だけ」洗い替え。未指定側は既存を保持（別々の関数から送れる）。
+    const payload: Record<string, unknown> = { updatedAt: FieldValue.serverTimestamp() }
+    if (Array.isArray(body.decks)) payload.decks = decks
     if (Array.isArray(body.series)) payload.series = series
 
     await ref.set(payload, { merge: true })

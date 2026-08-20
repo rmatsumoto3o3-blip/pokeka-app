@@ -18,6 +18,7 @@
 // Firebase（environmentDecks/{game}）同期。Supabase制限中でもサイト表示を維持するための二重化。
 // ====================================================================
 const ENV_DECKS_ENDPOINT = 'https://www.pokelix.jp/api/env-decks';
+const RECOMMENDED_DECKS_ENDPOINT = 'https://www.pokelix.jp/api/recommended-decks';
 
 // game = 'unionarena' | 'gundam'。decks = [{deckCode, archetype, eventName, eventDate, rank}]（全件洗い替え）
 function _pushEnvDecksToFirebase_(game, decks) {
@@ -35,6 +36,26 @@ function _pushEnvDecksToFirebase_(game, decks) {
         Logger.log('Firebase同期(' + game + '): HTTP ' + res.getResponseCode() + ' ' + res.getContentText());
     } catch (e) {
         Logger.log('Firebase同期失敗(' + game + '): ' + e);
+    }
+}
+
+// タイトル別/おすすめデッキを Firebase(recommendedDecks/{game}) へ。
+// payload は { decks: [...] } / { series: [...] } / 両方。指定した方だけ洗い替え。
+function _pushRecommendedToFirebase_(game, payload) {
+    const secret = PropertiesService.getScriptProperties().getProperty('ENV_DECKS_SYNC_SECRET');
+    if (!secret) { Logger.log('ENV_DECKS_SYNC_SECRET 未設定のため タイトル別同期をスキップ (' + game + ')'); return; }
+    try {
+        const body = Object.assign({ game: game }, payload || {});
+        const res = UrlFetchApp.fetch(RECOMMENDED_DECKS_ENDPOINT, {
+            method: 'post',
+            contentType: 'application/json',
+            headers: { 'x-env-decks-secret': secret },
+            payload: JSON.stringify(body),
+            muteHttpExceptions: true,
+        });
+        Logger.log('タイトル別同期(' + game + '): HTTP ' + res.getResponseCode() + ' ' + res.getContentText());
+    } catch (e) {
+        Logger.log('タイトル別同期失敗(' + game + '): ' + e);
     }
 }
 
@@ -313,6 +334,13 @@ function syncUnionArenaSeries() {
 
     Logger.log('検出したシリーズ数: ' + seriesList.length);
 
+    // Firebase（recommendedDecks/unionarena）へシリーズ（タイトル）を洗い替え（Supabaseと独立）
+    _pushRecommendedToFirebase_('unionarena', {
+        series: seriesList.map(function (s) {
+            return { tagCode: s.tagCode, name: s.name, logoUrl: s.logoUrl };
+        }),
+    });
+
     const headers = supabaseHeaders_(serviceKey);
     seriesList.forEach(function (s) {
         UrlFetchApp.fetch(supabaseUrl + '/rest/v1/unionarena_series', {
@@ -371,6 +399,13 @@ function syncUnionArenaRecommendedDecks() {
     const html = fetchHtml_(UNIONARENA_TITLES_URL);
     const decks = parseRecommendedDeckEntries_(html);
     Logger.log('検出したおすすめデッキ数: ' + decks.length);
+
+    // Firebase（recommendedDecks/unionarena）へおすすめデッキを洗い替え（Supabaseと独立）
+    _pushRecommendedToFirebase_('unionarena', {
+        decks: decks.map(function (d) {
+            return { deckCode: d.deckCode, tagCode: d.tagCode, deckName: d.deckName, imageUrl: d.imageUrl };
+        }),
+    });
 
     const headers = supabaseHeaders_(serviceKey);
     let inserted = 0;
