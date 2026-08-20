@@ -1090,6 +1090,206 @@ function PracticeContent() {
                                 {error}
                             </div>
                         )}
+
+                        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <div className="text-sm font-black text-gray-900">デッキ作成</div>
+                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500">
+                                        <span>カードを検索して60枚デッキを保存できます。</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setDeckBuilderOpen(value => !value)}
+                                    className="rounded-lg bg-gray-900 px-3 py-2 text-xs font-black text-white transition hover:bg-gray-700"
+                                >
+                                    {deckBuilderOpen ? '閉じる' : 'デッキを組む'}
+                                </button>
+                            </div>
+
+                            {savedPracticeDecks.length > 0 && (
+                                <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
+                                    <select
+                                        value={selectedSavedDeckId}
+                                        onChange={(event) => setSelectedSavedDeckId(event.target.value)}
+                                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-400"
+                                    >
+                                        {savedPracticeDecks.map(deck => (
+                                            <option key={deck.id} value={deck.id}>
+                                                {deck.name} / {deck.cards.reduce((sum, line) => sum + line.quantity, 0)}枚
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        disabled={!selectedSavedDeck}
+                                        onClick={() => selectedSavedDeck && loadSavedDeckIntoBuilder(selectedSavedDeck)}
+                                        className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-black text-gray-700 transition hover:border-blue-300 hover:text-blue-700 disabled:opacity-40"
+                                    >
+                                        編集
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={!selectedSavedDeck}
+                                        onClick={() => selectedSavedDeck && loadSavedDeckToPlayer(selectedSavedDeck, 'player1')}
+                                        className="rounded-lg bg-blue-500 px-3 py-2 text-xs font-black text-white transition hover:bg-blue-600 disabled:opacity-40"
+                                    >
+                                        自分で使う
+                                    </button>
+                                    {!isCpuModeRequested && (
+                                        <button
+                                            type="button"
+                                            disabled={!selectedSavedDeck}
+                                            onClick={() => selectedSavedDeck && loadSavedDeckToPlayer(selectedSavedDeck, 'player2')}
+                                            className="rounded-lg bg-slate-700 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-600 disabled:opacity-40"
+                                        >
+                                            相手に使う
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {deckBuilderOpen && (
+                                <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+                                    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-3">
+                                        <div className="grid gap-2 md:grid-cols-[1fr_220px]">
+                                            <input
+                                                type="search"
+                                                value={deckBuilderSearch}
+                                                onChange={(event) => setDeckBuilderSearch(event.target.value)}
+                                                placeholder="カード名またはIDで検索"
+                                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-400"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={deckBuilderName}
+                                                onChange={(event) => setDeckBuilderName(event.target.value)}
+                                                placeholder="デッキ名"
+                                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-blue-400"
+                                            />
+                                        </div>
+
+                                        <div className="mt-3 grid max-h-[520px] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+                                            {deckBuilderResults.map(card => {
+                                                const quantity = deckBuilderCards[card.cardId ?? 0] ?? 0
+                                                return (
+                                                    <div key={`builder-card-${card.cardId}`} className="rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                                        <Image
+                                                            src={card.imageUrl}
+                                                            alt={card.name}
+                                                            width={120}
+                                                            height={168}
+                                                            className="mx-auto aspect-[5/7] w-full max-w-[96px] rounded bg-white object-contain shadow"
+                                                            unoptimized
+                                                        />
+                                                        <div className="mt-1 line-clamp-2 min-h-[28px] text-center text-[11px] font-black leading-tight text-gray-900">
+                                                            {card.name}
+                                                        </div>
+                                                        <div className="mt-1 text-center text-[10px] font-bold text-gray-500">
+                                                            #{card.cardId} / {card.supertype}
+                                                        </div>
+                                                        <div className="mt-2 flex items-center justify-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setBuilderCardQuantity(card.cardId ?? 0, quantity - 1)}
+                                                                className="flex h-7 w-7 items-center justify-center rounded bg-gray-200 text-sm font-black text-gray-800 transition hover:bg-gray-300"
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <div className="w-8 text-center text-sm font-black text-gray-900">{quantity}</div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setBuilderCardQuantity(card.cardId ?? 0, quantity + 1)}
+                                                                className="flex h-7 w-7 items-center justify-center rounded bg-blue-500 text-sm font-black text-white transition hover:bg-blue-600"
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-xl border border-gray-200 bg-white p-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="text-sm font-black text-gray-900">作成中デッキ</div>
+                                            <div className={`rounded-full px-3 py-1 text-xs font-black ${builderTotal === 60 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {builderTotal}/60
+                                            </div>
+                                        </div>
+                                        <div className="mt-2 grid gap-1 text-[11px] font-bold">
+                                            {builderAceSpecCount > 1 && (
+                                                <div className="rounded bg-red-50 px-2 py-1 text-red-700">ACE SPECが{builderAceSpecCount}枚あります。</div>
+                                            )}
+                                            {builderOverLimitEntries.map(item => (
+                                                <div key={`limit-${item.cardId}`} className="rounded bg-red-50 px-2 py-1 text-red-700">
+                                                    {item.entry?.name} が{item.quantity}枚あります。
+                                                </div>
+                                            ))}
+                                            {builderTotal !== 60 && (
+                                                <div className="rounded bg-amber-50 px-2 py-1 text-amber-700">60枚にすると保存できます。</div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-3 max-h-[390px] overflow-y-auto pr-1">
+                                            {builderEntries.length === 0 ? (
+                                                <div className="rounded-lg border border-dashed border-gray-300 px-3 py-8 text-center text-xs font-bold text-gray-400">
+                                                    左の検索からカードを追加
+                                                </div>
+                                            ) : (
+                                                <div className="grid gap-1">
+                                                    {builderEntries.map(item => (
+                                                        <div key={`builder-line-${item.cardId}`} className="grid grid-cols-[1fr_auto] items-center gap-2 rounded-lg bg-gray-50 px-2 py-1.5">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate text-xs font-black text-gray-900">{item.entry?.name}</div>
+                                                                <div className="text-[10px] font-bold text-gray-500">#{item.cardId} / {item.entry?.supertype}</div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setBuilderCardQuantity(item.cardId, item.quantity - 1)}
+                                                                    className="h-7 w-7 rounded bg-gray-200 text-xs font-black text-gray-800"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <div className="w-7 text-center text-xs font-black text-gray-900">{item.quantity}</div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setBuilderCardQuantity(item.cardId, item.quantity + 1)}
+                                                                    className="h-7 w-7 rounded bg-blue-500 text-xs font-black text-white"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-3 grid gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={saveBuilderDeck}
+                                                disabled={!builderIsValid}
+                                                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-black text-white transition hover:bg-gray-700 disabled:opacity-40"
+                                            >
+                                                このデッキを保存
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDeckBuilderCards({})}
+                                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"
+                                            >
+                                                作成中を空にする
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
