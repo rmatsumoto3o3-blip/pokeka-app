@@ -144,15 +144,28 @@ const cabtCardNameById = (cardId: number): string | undefined => {
 // （「基本炎エネルギー」）で name 照合するため、【】を外して一致させる（該当はエネルギー系のみ）。
 const normalizePracticeCardName = (name: string): string => name.replace(/【([^】]*)】/g, '$1')
 
+// カタログはポケモンを supertype:"Trainer" ＋ subtypes:["ポケモン/たね"] で持つ(公式=デッキコード版と表記が違う)。
+// 盤面ロジック(isPokemon 等 = supertype==='Pokémon')に合わせて公式形へ補正する。これでビルダー製デッキも
+// デッキコード版と同じ挙動(ベンチ配置・ドラッグ)になる。
+const TRAINER_SUBTYPES = ['Item', 'Supporter', 'Stadium', 'Pokémon Tool', 'Technical Machine']
+const catalogCardType = (meta?: { supertype?: string; subtypes?: string[]; hp?: number }): { supertype: string; subtypes: string[] | undefined } => {
+    const subs = meta?.subtypes
+    const isPokemon = Boolean(subs?.some(s => s.includes('ポケモン/')))
+        || (typeof meta?.hp === 'number' && meta?.supertype !== 'Energy' && !subs?.some(s => TRAINER_SUBTYPES.includes(s)))
+    if (isPokemon) return { supertype: 'Pokémon', subtypes: undefined } // デッキコード版のポケモンに合わせ subtypes は持たせない
+    return { supertype: meta?.supertype ?? 'Pokémon', subtypes: subs ? [...subs] : undefined }
+}
+
 const savedDeckToCards = (deck: SavedPracticeDeck): Card[] => {
     return deck.cards.flatMap(line => {
         const meta = cabtMetaById(line.cardId)
         const name = normalizePracticeCardName(meta?.name ?? `カード #${line.cardId}`)
+        const { supertype, subtypes } = catalogCardType(meta)
         return Array.from({ length: line.quantity }, () => ({
             name,
             imageUrl: meta?.imageUrl ?? cabtPlaceholderImage(name, line.cardId),
-            supertype: meta?.supertype ?? 'Pokémon',
-            subtypes: meta?.subtypes ? [...meta.subtypes] : undefined,
+            supertype,
+            subtypes,
             hp: typeof meta?.hp === 'number' ? meta.hp : undefined,
             cardId: line.cardId,
         }))
@@ -338,11 +351,12 @@ function cabtCardToUiCard(card?: CabtCard | null): Card {
     const cardId = card?.cardId ?? 0
     const meta = cabtMetaById(cardId)
     const name = normalizePracticeCardName(meta?.name ?? `カード #${cardId || '?'}`)
+    const { supertype, subtypes } = catalogCardType(meta)
     return {
         name,
         imageUrl: meta?.imageUrl || cabtPlaceholderImage(name, cardId),
-        supertype: meta?.supertype ?? 'Pokémon',
-        subtypes: meta?.subtypes ? [...meta.subtypes] : undefined,
+        supertype,
+        subtypes,
         hp: typeof card?.maxHp === 'number' ? card.maxHp : meta?.hp,
         cardId,
     }
