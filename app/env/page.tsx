@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import { getFirebaseDb } from '@/lib/firebase/admin'
+import { eventDateSortKey } from '@/lib/eventDate'
 
 // 環境デッキ一覧（Firebase由来・画像なし・Supabase不使用）。
 // 月別シート→GAS→Firestore(environmentDecks/pokemon) のデータを、アーキタイプ別に表示。
@@ -47,7 +48,8 @@ export default async function EnvDecksPage() {
     const groups = Array.from(groupsMap.entries())
         .map(([archetype, list]) => ({
             archetype,
-            list: list.slice().sort((a, b) => rankKey(a.rank) - rankKey(b.rank)),
+            // 日付の新しい順（同日は順位順）
+            list: list.slice().sort((a, b) => eventDateSortKey(b.eventDate) - eventDateSortKey(a.eventDate) || rankKey(a.rank) - rankKey(b.rank)),
         }))
         .sort((a, b) => b.list.length - a.list.length)
 

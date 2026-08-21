@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { buildDeck, shuffle, type Card } from '@/lib/deckParser'
+import { eventDateSortKey } from '@/lib/eventDate'
 import { getDeckDataAction, getEnvDecksForPractice, type PracticeEnvDeck } from '@/app/actions'
 import { createStack, type CardStack } from '@/lib/cardStack'
 import DeckPractice, { type DeckPracticeRef, CascadingStack } from '../../components/DeckPractice'
@@ -923,7 +924,7 @@ function PracticeContent() {
             map.get(a)!.push(d)
         }
         return Array.from(map.entries())
-            .map(([archetype, decks]) => ({ archetype, decks }))
+            .map(([archetype, decks]) => ({ archetype, decks: decks.slice().sort((a, b) => eventDateSortKey(b.eventDate) - eventDateSortKey(a.eventDate)) }))
             .sort((x, y) => y.decks.length - x.decks.length)
     }, [envPickerDecks])
     const selectedEnvDecks = envArchetypeGroups.find(g => g.archetype === selectedEnvArchetype)?.decks ?? []

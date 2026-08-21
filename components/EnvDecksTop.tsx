@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { eventDateSortKey } from '@/lib/eventDate'
 
 // トップに出す環境デッキ（Firebase由来）。decks は page.tsx がサーバー側で渡す（SSR）。
 
@@ -17,7 +18,7 @@ export default function EnvDecksTop({ decks }: { decks: EnvDeck[] }) {
         map.get(k)!.push(d)
     }
     const groups = Array.from(map.entries())
-        .map(([archetype, list]) => ({ archetype, list }))
+        .map(([archetype, list]) => ({ archetype, list: list.slice().sort((a, b) => eventDateSortKey(b.eventDate) - eventDateSortKey(a.eventDate)) }))
         .sort((a, b) => b.list.length - a.list.length)
         .slice(0, 6)
 
