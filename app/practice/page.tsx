@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { buildDeck, shuffle, type Card } from '@/lib/deckParser'
 import { getDeckDataAction, getEnvDecksForPractice, type PracticeEnvDeck } from '@/app/actions'
 import { createStack, type CardStack } from '@/lib/cardStack'
@@ -1053,6 +1054,25 @@ function PracticeContent() {
           }}
         >
             <div className="max-w-[1800px] mx-auto w-full relative z-10">
+                {/* TOPへ戻る導線（全デバイス表示。ヘッダーはmd以上でしか出ないため常時表示にする） */}
+                <div className="mb-2 flex items-center justify-between">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80 transition hover:bg-white/20 hover:text-white"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+                        TOPへ戻る
+                    </Link>
+                    {/* モバイル用リセット（ヘッダーが隠れる md 未満でも全リセットできるように） */}
+                    <button
+                        onClick={handleReset}
+                        className="md:hidden rounded-lg bg-white/10 p-1.5 text-white/70 transition hover:bg-red-500/20 hover:text-red-400"
+                        title="全てをリセット"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    </button>
+                </div>
+
                 {/* Header - Hidden on mobile for space */}
                 <div className="mb-2 md:mb-4 flex justify-between items-center hidden md:flex">
                     <div>
