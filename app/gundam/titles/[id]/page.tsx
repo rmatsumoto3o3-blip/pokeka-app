@@ -6,33 +6,9 @@ import GundamDeckCardGrid from '@/components/GundamDeckCardGrid'
 import GundamDeckIcon from '@/components/GundamDeckIcon'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
-import { getFirebaseDb } from '@/lib/firebase/admin'
 
 export const revalidate = 3600
 export const dynamicParams = true
-
-// Supabase制限中でも詳細を出せるよう、id を deckCode とみなして Firebase（recommendedDecks/gundam）から引く。
-async function getRecommendedDeckFromFirebase(code: string) {
-    const db = getFirebaseDb()
-    if (!db) return null
-    try {
-        const snap = await db.collection('recommendedDecks').doc('gundam').get()
-        const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as any[]) : []
-        const meta = decks.find(d => d.deckCode === code)
-        if (!meta) return null
-        let mainDeck: GundamCard[] = []
-        try { mainDeck = (await fetchGundamDeckData(code)).mainDeck } catch { /* 展開失敗は空 */ }
-        return {
-            id: code,
-            deck_code: code,
-            tag_code: meta.tagCode || null,
-            deck_name: meta.deckName || null,
-            image_url: meta.imageUrl || null,
-            mainDeck,
-            iconUrls: Array.isArray(meta.iconUrls) ? meta.iconUrls : null,
-        }
-    } catch { return null }
-}
 
 async function getRecommendedDeck(id: string) {
     const supabase = await createClient()
@@ -42,7 +18,7 @@ async function getRecommendedDeck(id: string) {
         .eq('id', id)
         .single()
 
-    if (error || !deck) return await getRecommendedDeckFromFirebase(id)
+    if (error || !deck) return null
 
     // 保存済みカード構成を使う（公式API非依存）。軽量形式 [{n,q}] は gundam_cards 辞書で解決。
     let mainDeck: GundamCard[] = []
