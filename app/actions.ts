@@ -3,6 +3,7 @@
 import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser'
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
+import { getFirebaseDb } from '@/lib/firebase/admin'
 
 // デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
 // キャッシュヒット時は fetchDeckData を呼ばない＝公式サイトを叩かない。
