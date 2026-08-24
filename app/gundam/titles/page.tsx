@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/gundam/titles' },
 }
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function GundamCommunityDecksPage() {
     const decksRes = await getGundamRecommendedDecksAction()
@@ -31,7 +31,7 @@ export default async function GundamCommunityDecksPage() {
 
                     {decks.length === 0 ? (
                         <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">
-                            <p className="text-gray-500">まだデッキがありません。順次追加していきます。</p>
+                            <p className="text-gray-500">まだデッキがありません（診断v2）。</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
