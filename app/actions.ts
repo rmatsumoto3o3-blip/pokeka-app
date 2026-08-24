@@ -1698,12 +1698,15 @@ export async function getGundamSeriesAction() {
 
 // みんなのデッキ一覧（旧タイトル別を転用）。icon_urls 列が未追加でも動くようフォールバック。
 export async function getGundamRecommendedDecksAction() {
+    // 公開読み取りは anon(RLS) 経由に統一（詳細ページと同じ実績のある経路。service roleキー未設定でも動く）
     const base = 'id, deck_code, tag_code, deck_name, image_url'
-    const run = (cols: string) => getSupabaseAdmin()
-        .from('gundam_recommended_decks')
-        .select(cols)
-        .order('created_at', { ascending: false })
     try {
+        const { createClient: createServerClient } = await import('@/utils/supabase/server')
+        const supabase = await createServerClient()
+        const run = (cols: string) => supabase
+            .from('gundam_recommended_decks')
+            .select(cols)
+            .order('created_at', { ascending: false })
         let { data, error } = await run(base + ', icon_urls')
         if (error) {
             ({ data, error } = await run(base))
