@@ -10,7 +10,7 @@ import { getFirebaseDb } from '@/lib/firebase/admin'
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-    title: 'ポケカ 環境デッキ採用率・使用率ランキング | PokéLix（ポケリス）',
+    title: 'ポケカ 採用率・使用率ランキング（環境デッキ）',
     description: 'ポケモンカードの環境デッキを大会データから集計した使用率ランキング。各アーキタイプのデッキ数・優勝数・シェアを一覧で比較。気になるデッキの採用カード・構築もチェックできます。',
     keywords: ['ポケカ 採用率', 'ポケカ 使用率', 'ポケカ シェア率', 'ポケカ 環境', 'ポケカ 環境デッキ', 'ポケカ ランキング', 'ポケモンカード 環境', 'ポケカ tier'],
     alternates: { canonical: 'https://www.pokelix.jp/archetypes' },

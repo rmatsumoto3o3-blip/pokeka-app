@@ -5,8 +5,8 @@ import { getGundamEnvDecks, getGundamDeckImages } from '@/lib/gundamEnv'
 import type { GundamDeckRecord, GundamDeckArchetype } from '@/lib/supabase'
 
 export const metadata: Metadata = {
-    title: 'ガンダム環境デッキ・Tier表 | PokéLix（ポケリス）',
-    description: 'ガンダム（ガンダムカードゲーム）の大会入賞デッキデータをもとにした環境Tier表・優勝デッキ集。',
+    title: 'ガンダムカード 環境・Tier表【最新】',
+    description: 'ガンダムカードゲーム（GCG）の最新環境Tier表。大会入賞デッキデータをもとにしたTierランキング・優勝デッキ集を無料で確認できます。',
     alternates: {
         canonical: 'https://www.pokelix.jp/gundam',
     },

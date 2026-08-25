@@ -7,8 +7,8 @@ import { getUnionRecommended } from '@/lib/unionArenaTitles'
 import type { UnionArenaDeckRecord, UnionArenaDeckArchetype } from '@/lib/supabase'
 
 export const metadata: Metadata = {
-    title: 'ユニアリ環境デッキ・Tier表 | PokéLix（ポケリス）',
-    description: 'ユニアリ（ユニオンアリーナ）の大会入賞デッキデータをもとにした環境Tier表・優勝デッキ集。',
+    title: 'ユニアリ Tier表・環境デッキ【最新】',
+    description: 'ユニアリ（ユニオンアリーナ）の最新Tier表。大会入賞デッキデータをもとにした環境ランキング・優勝デッキ集を無料で確認できます。',
     alternates: {
         canonical: 'https://www.pokelix.jp/unionarena',
     },

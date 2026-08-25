@@ -10,8 +10,8 @@ import { eventDateSortKey } from '@/lib/eventDate'
 
 export const revalidate = 3600
 export const metadata: Metadata = {
-    title: '環境デッキ一覧 | PokéLix（ポケリス）',
-    description: '大会の優勝・入賞デッキを一覧で。デッキコードからそのまま一人回し（ソリティア）で回せます。',
+    title: 'ポケカ 環境デッキ一覧（大会入賞）',
+    description: 'ポケカの大会優勝・入賞デッキを一覧で。デッキコードからそのまま一人回し（ソリティア）で回せます。',
 }
 
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
