@@ -145,7 +145,8 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                         <button type="button" onClick={() => setTopTab('decks')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'decks' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境・優勝デッキ</button>
                         <button type="button" onClick={() => setTopTab('env')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'env' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境デッキ</button>
                     </div>
-                    {topTab === 'tier' ? (
+                    {/* 全パネルをHTMLに出しCSSで表示切替（内部リンクをクロール可能に保つ＝SEO） */}
+                    <div className={topTab === 'tier' ? '' : 'hidden'}>
                         <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（${totalRecentDecks}件）`}</span>
@@ -195,7 +196,8 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                             ))}
                         </div>
                     </div>
-                    ) : topTab === 'decks' ? (
+                    </div>
+                    <div className={topTab === 'decks' ? '' : 'hidden'}>
                         <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
                             <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
@@ -229,7 +231,8 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                             )}
                         </div>
                     </div>
-                    ) : (
+                    </div>
+                    <div className={topTab === 'env' ? '' : 'hidden'}>
                         <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                             <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
                                 <span className="flex items-center gap-1.5"><Ico name="cards" className="w-4 h-4 text-blue-600" />環境デッキ（そのまま一人回し）</span>
@@ -260,7 +263,7 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                                 ))}
                             </div>
                         </div>
-                    )}
+                    </div>
                 </div>
             </section>
 
