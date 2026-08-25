@@ -143,8 +143,32 @@ export default async function ArchetypePage({ params }: Props) {
         byCategory[cat].push(c)
     })
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'Article',
+                headline: `${decoded}デッキの採用カード・採用率`,
+                description: `${decoded}デッキで採用されているカードと採用率。直近の大会${totalDecks}デッキをもとに集計。`,
+                inLanguage: 'ja',
+                author: { '@type': 'Organization', name: 'PokéLix' },
+                publisher: { '@type': 'Organization', name: 'PokéLix', logo: { '@type': 'ImageObject', url: 'https://www.pokelix.jp/icon.png' } },
+                mainEntity: { '@type': 'ItemList', numberOfItems: list.length, itemListElement: list.slice(0, 20).map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.card_name })) },
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: 'ホーム', item: 'https://www.pokelix.jp' },
+                    { '@type': 'ListItem', position: 2, name: '採用率', item: 'https://www.pokelix.jp/archetypes' },
+                    { '@type': 'ListItem', position: 3, name: decoded, item: `https://www.pokelix.jp/archetypes/${encodeURIComponent(decoded)}` },
+                ],
+            },
+        ],
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <PublicHeader />
 
             <main className="flex-grow pt-24 pb-12 px-4 sm:px-6 lg:px-8">

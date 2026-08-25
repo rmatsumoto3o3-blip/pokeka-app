@@ -42,8 +42,32 @@ export default async function EnvDeckDetailPage({ params }: { params: Promise<{ 
     const total = cards.reduce((acc, c) => acc + (c.quantity || 0), 0)
     const practiceHref = `/practice?code1=${encodeURIComponent(code)}`
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'Article',
+                headline: `${meta?.archetype ?? 'ポケカ環境デッキ'}${meta?.eventName ? `（${meta.eventName}）` : ''}のデッキリスト`,
+                description: `${meta?.archetype ?? 'ポケカ環境デッキ'}のデッキレシピ。デッキコードからそのまま一人回し（ソリティア）で回せます。`,
+                inLanguage: 'ja',
+                author: { '@type': 'Organization', name: 'PokéLix' },
+                publisher: { '@type': 'Organization', name: 'PokéLix', logo: { '@type': 'ImageObject', url: 'https://www.pokelix.jp/icon.png' } },
+                ...(cards.length > 0 ? { mainEntity: { '@type': 'ItemList', numberOfItems: cards.length, itemListElement: cards.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: `${c.name} x${c.quantity}` })) } } : {}),
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: 'ホーム', item: 'https://www.pokelix.jp' },
+                    { '@type': 'ListItem', position: 2, name: '環境デッキ', item: 'https://www.pokelix.jp/env' },
+                    { '@type': 'ListItem', position: 3, name: meta?.archetype ?? 'デッキ', item: `https://www.pokelix.jp/env/${encodeURIComponent(code)}` },
+                ],
+            },
+        ],
+    }
+
     return (
         <div className="min-h-screen bg-[#f5f7fa]">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <PublicHeader game="pokemon" />
 
             <main className="max-w-5xl mx-auto px-4 py-6">
