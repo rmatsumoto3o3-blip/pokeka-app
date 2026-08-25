@@ -12,6 +12,7 @@ import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
 import { Ico } from '@/components/Icons'
 import { POKEMON_ICONS } from '@/lib/constants'
+import { eventDateSortKey } from '@/lib/eventDate'
 
 interface LandingPageProps {
     envDecks?: { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }[]
@@ -40,7 +41,7 @@ const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0
 
 export default function LandingPage({ envDecks = [], usageRanking = [], usageTotalDecks = 0, tierMetas = [], archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
-    const [topTab, setTopTab] = useState<'tier' | 'decks'>('tier')
+    const [topTab, setTopTab] = useState<'tier' | 'decks' | 'env'>('tier')
     // 直近2週間（大会日基準）を初期表示。全期間の集計へも切替可。
     const hasRecent = Object.keys(recentRanking).length > 0
     const [tierMode, setTierMode] = useState<'recent' | 'all'>(hasRecent ? 'recent' : 'all')
@@ -69,6 +70,20 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
     const winnerCaption = winnerDates.length > 0
         ? (winnerDates.length === 1 ? winnerDates[0] : `${winnerDates[winnerDates.length - 1]}〜${winnerDates[0]}`) + 'の優勝デッキ'
         : ''
+
+    // 環境デッキ（Firebase由来・一人回しへ直行できるデッキ）をアーキタイプ別・日付新しい順にグループ化
+    const envGroups = (() => {
+        const map = new Map<string, typeof envDecks>()
+        for (const d of envDecks) {
+            const k = d.archetype || 'その他'
+            if (!map.has(k)) map.set(k, [])
+            map.get(k)!.push(d)
+        }
+        return Array.from(map.entries())
+            .map(([archetype, list]) => ({ archetype, list: list.slice().sort((a, b) => eventDateSortKey(b.eventDate) - eventDateSortKey(a.eventDate)) }))
+            .sort((a, b) => b.list.length - a.list.length)
+            .slice(0, 6)
+    })()
 
     // 注目カード採用率：運営がピックアップした注目カードの全体採用率（実データ）
     const visibleCards = showMoreAdoption ? featuredCards.slice(0, 10) : featuredCards.slice(0, 5)
@@ -125,9 +140,10 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
             {/* 環境Tier表 ⇄ 環境・優勝デッキ（タブ切替） */}
             <section className="bg-white border-b border-[#eef1f6]">
                 <div className="max-w-[1080px] mx-auto px-5 py-5">
-                    <div className="flex items-center gap-2 mb-4 max-w-md">
-                        <button type="button" onClick={() => setTopTab('tier')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${topTab === 'tier' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境Tier表</button>
-                        <button type="button" onClick={() => setTopTab('decks')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${topTab === 'decks' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境・優勝デッキ</button>
+                    <div className="flex items-center gap-2 mb-4 max-w-2xl">
+                        <button type="button" onClick={() => setTopTab('tier')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'tier' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境Tier表</button>
+                        <button type="button" onClick={() => setTopTab('decks')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'decks' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境・優勝デッキ</button>
+                        <button type="button" onClick={() => setTopTab('env')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'env' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境デッキ</button>
                     </div>
                     {topTab === 'tier' ? (
                         <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
@@ -179,7 +195,7 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                             ))}
                         </div>
                     </div>
-                    ) : (
+                    ) : topTab === 'decks' ? (
                         <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
                         <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
                             <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
@@ -213,6 +229,37 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                             )}
                         </div>
                     </div>
+                    ) : (
+                        <div className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                            <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
+                                <span className="flex items-center gap-1.5"><Ico name="cards" className="w-4 h-4 text-blue-600" />環境デッキ（そのまま一人回し）</span>
+                                <Link href="/env" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                            </div>
+                            <div className="p-2.5 space-y-4">
+                                {envGroups.length === 0 ? (
+                                    <p className="text-sm text-gray-400 text-center py-4">環境デッキがまだありません</p>
+                                ) : envGroups.map(g => (
+                                    <div key={g.archetype}>
+                                        <div className="text-sm font-bold text-gray-800 mb-1.5">{g.archetype} <span className="text-xs font-normal text-gray-400">{g.list.length}件</span></div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {g.list.slice(0, 4).map(d => (
+                                                <div key={d.deckCode} className="rounded-lg border border-gray-200 p-2.5">
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${d.rank === '優勝' ? 'bg-amber-100 text-amber-800' : d.rank === '準優勝' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'}`}>{d.rank || '—'}</span>
+                                                        <span className="text-sm text-gray-800 font-bold truncate">{d.eventName || '大会'}</span>
+                                                        <span className="text-xs text-gray-400 ml-auto shrink-0">{d.eventDate}</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-xs font-bold text-gray-800 border border-gray-300 rounded-md py-1.5 hover:bg-gray-50">デッキを見る</Link>
+                                                        <Link href={`/practice?code1=${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-md py-1.5 hover:bg-blue-100">▶ 一人回し</Link>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
             </section>
