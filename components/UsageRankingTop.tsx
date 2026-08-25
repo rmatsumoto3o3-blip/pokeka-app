@@ -14,11 +14,11 @@ const TIER_ROWS = [
     { label: 'B', c: 'bg-lime-600', from: 6, to: 12 },
 ] as const
 
-export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }: { ranking: RankRow[]; totalDecks: number; tierMetas?: TierMeta[] }) {
+export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [], hideTier = false }: { ranking: RankRow[]; totalDecks: number; tierMetas?: TierMeta[]; hideTier?: boolean }) {
     if (!ranking || ranking.length === 0) return null
     const top = ranking.slice(0, 12)
     const max = top[0]?.total || 1
-    const tiles = tierMetas.slice(0, 12)
+    const tiles = hideTier ? [] : tierMetas.slice(0, 12)
 
     return (
         <section className="bg-white border-b border-[#eef1f6]">
@@ -95,7 +95,7 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [] }:
                     </div>
                 </div>
 
-                <p className="mt-3 text-[11px] text-gray-500">直近の大会入賞デッキでの使用数（多い順）。左は代表カードのTier表。数字はデッキ数／うち優勝数。</p>
+                <p className="mt-3 text-[11px] text-gray-500">直近の大会入賞デッキでの使用数（多い順）。数字はデッキ数／うち優勝数。</p>
             </div>
         </section>
     )

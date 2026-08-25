@@ -7,7 +7,6 @@ import Footer from '@/components/Footer'
 import type { DeckArchetype, Article } from '@/lib/supabase'
 
 import PublicHeader from '@/components/PublicHeader'
-import EnvDecksTop from '@/components/EnvDecksTop'
 import UsageRankingTop from '@/components/UsageRankingTop'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import ToygerPromo from '@/components/ToygerPromo'
@@ -41,6 +40,7 @@ const DONUT_COLORS = ['#2563eb', '#16a34a', '#ef9f27', '#dc2626', '#7c3aed', '#0
 
 export default function LandingPage({ envDecks = [], usageRanking = [], usageTotalDecks = 0, tierMetas = [], archetypes, articles, recentArchetypeIds = [], weeklyRanking = {}, recentRanking = {}, winCounts = {}, winnerDecks = [], featuredCards = [] }: LandingPageProps) {
     const [showMoreAdoption, setShowMoreAdoption] = useState(false)
+    const [topTab, setTopTab] = useState<'tier' | 'decks'>('tier')
     // 直近2週間（大会日基準）を初期表示。全期間の集計へも切替可。
     const hasRecent = Object.keys(recentRanking).length > 0
     const [tierMode, setTierMode] = useState<'recent' | 'all'>(hasRecent ? 'recent' : 'all')
@@ -95,18 +95,134 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
         <div className="min-h-screen bg-[#f4f6fa] text-gray-900">
             <PublicHeader />
 
-            {/* 使用率ランキング（左＝環境Tier画像／右＝ランキング）・環境デッキの上 */}
-            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} />
+            {/* 無料ツール（最上部） */}
+            <section className="bg-white border-b border-[#eef1f6]">
+                <div className="max-w-[1080px] mx-auto px-5 py-4">
+                    <div className="text-sm font-bold text-gray-900 mb-2.5 flex items-center gap-2">
+                        <span className="w-1.5 h-5 bg-blue-500 rounded-full" />無料ツール
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {[
+                            { href: '/practice', icon: 'cards', label: '一人回し練習' },
+                            { href: '/simulator', icon: 'dice', label: '初手確率シミュ' },
+                            { href: '/practice/prize-trainer', icon: 'eye', label: 'サイド推論' },
+                            { href: '/global-simulator', icon: 'world', label: 'グローバルシミュ' },
+                        ].map(t => (
+                            <Link key={t.label} href={t.href} className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden hover:border-blue-300 hover:shadow-sm transition">
+                                <div className="h-16 bg-blue-100 flex items-center justify-center">
+                                    <Ico name={t.icon} className="w-7 h-7 text-blue-600" />
+                                </div>
+                                <div className="px-2.5 py-2 text-xs font-semibold text-gray-800">{t.label}</div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
 
-            {/* 広告（使用率ランキングと環境デッキの間・728x50 ほそめ） */}
+            {/* 使用率ランキング（ランキングのみ・Tierは下の切替へ） */}
+            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} hideTier />
+
+            {/* 環境Tier表 ⇄ 環境・優勝デッキ（タブ切替） */}
+            <section className="bg-white border-b border-[#eef1f6]">
+                <div className="max-w-[1080px] mx-auto px-5 py-5">
+                    <div className="flex items-center gap-2 mb-4 max-w-md">
+                        <button type="button" onClick={() => setTopTab('tier')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${topTab === 'tier' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境Tier表</button>
+                        <button type="button" onClick={() => setTopTab('decks')} className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold transition ${topTab === 'decks' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境・優勝デッキ</button>
+                    </div>
+                    {topTab === 'tier' ? (
+                        <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（${totalRecentDecks}件）`}</span>
+                            {hasRecent && (
+                                <div className="flex items-center rounded-full bg-white/15 p-0.5 text-[11px] font-bold shrink-0">
+                                    <button
+                                        onClick={() => setTierMode('recent')}
+                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'recent' ? 'bg-white text-blue-700' : 'text-white/90'}`}
+                                    >直近2週間</button>
+                                    <button
+                                        onClick={() => setTierMode('all')}
+                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'all' ? 'bg-white text-blue-700' : 'text-white/90'}`}
+                                    >全期間</button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-2.5">
+                            {tierBuckets.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">デッキデータがまだありません</p>
+                            ) : tierBuckets.map(({ tier, items }) => (
+                                <div key={tier} className="mb-4 last:mb-0">
+                                    <div className="flex items-center gap-1.5 text-[11px] font-semibold mb-1.5">
+                                        <span className={`text-white text-xs font-semibold px-2.5 py-0.5 rounded ${TIER_STYLE[tier].badge}`}>{tier}</span>
+                                        <span className={TIER_STYLE[tier].text}>{TIER_STYLE[tier].label}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                        {items.map(a => {
+                                            const share = totalRecentDecks > 0 ? ((activeRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
+                                            return (
+                                                <Link
+                                                    key={a.id}
+                                                    href={`/archetypes/${encodeURIComponent(a.name)}`}
+                                                    className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white hover:border-blue-300 transition"
+                                                >
+                                                    <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
+                                                        {a.cover_image_url && (
+                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" />
+                                                        )}
+                                                    </div>
+                                                    <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
+                                                    <span className="text-xs font-semibold text-blue-700">{share}%</span>
+                                                </Link>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    ) : (
+                        <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
+                            <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
+                            <Link href="/env" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
+                        </div>
+                        <div className="p-2.5">
+                            {validWinnerDecks.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">優勝デッキデータがまだありません</p>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                                        {validWinnerDecks.map(d => {
+                                            const arch = archetypeMap.get(d.archetype_id!)!
+                                            return (
+                                                <Link key={d.id} href={`/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
+                                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                                        {arch.cover_image_url && (
+                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" />
+                                                        )}
+                                                        <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
+                                                    </div>
+                                                    <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
+                                                </Link>
+                                            )
+                                        })}
+                                    </div>
+                                    {winnerCaption && (
+                                        <div className="text-[10px] text-gray-400 mt-2 text-right">{winnerCaption}</div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    )}
+                </div>
+            </section>
+
+            {/* 広告（728x50 ほそめ） */}
             <section className="bg-[#f4f6fa]">
                 <div className="max-w-[1080px] mx-auto px-5 py-4">
                     <AdPlaceholder slot="2670584261" format="leaderboard-slim" className="mx-auto" />
                 </div>
             </section>
-
-            {/* 環境デッキ（Firebase由来） */}
-            <EnvDecksTop decks={envDecks} />
 
             {/* Hero */}
             <section className="bg-white border-b border-[#eef1f6]">
@@ -160,92 +276,6 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
             <div className="max-w-[1080px] mx-auto grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4 px-1.5 py-2.5">
 
                 <main className="flex flex-col gap-4 min-w-0">
-
-                    {/* 環境Tier表 */}
-                    <div id="tier" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
-                        <div className="bg-blue-600 text-white text-sm font-semibold px-3.5 py-2.5 flex items-center justify-between gap-2">
-                            <span className="flex items-center gap-1.5"><Ico name="trophy" className="w-4 h-4" />環境Tier表{totalRecentDecks > 0 && `（${totalRecentDecks}件）`}</span>
-                            {hasRecent && (
-                                <div className="flex items-center rounded-full bg-white/15 p-0.5 text-[11px] font-bold shrink-0">
-                                    <button
-                                        onClick={() => setTierMode('recent')}
-                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'recent' ? 'bg-white text-blue-700' : 'text-white/90'}`}
-                                    >直近2週間</button>
-                                    <button
-                                        onClick={() => setTierMode('all')}
-                                        className={`px-2.5 py-0.5 rounded-full transition ${tierMode === 'all' ? 'bg-white text-blue-700' : 'text-white/90'}`}
-                                    >全期間</button>
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-2.5">
-                            {tierBuckets.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-4">デッキデータがまだありません</p>
-                            ) : tierBuckets.map(({ tier, items }) => (
-                                <div key={tier} className="mb-4 last:mb-0">
-                                    <div className="flex items-center gap-1.5 text-[11px] font-semibold mb-1.5">
-                                        <span className={`text-white text-xs font-semibold px-2.5 py-0.5 rounded ${TIER_STYLE[tier].badge}`}>{tier}</span>
-                                        <span className={TIER_STYLE[tier].text}>{TIER_STYLE[tier].label}</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                                        {items.map(a => {
-                                            const share = totalRecentDecks > 0 ? ((activeRanking[a.id] || 0) / totalRecentDecks * 100).toFixed(1) : '0.0'
-                                            return (
-                                                <Link
-                                                    key={a.id}
-                                                    href={`/archetypes/${encodeURIComponent(a.name)}`}
-                                                    className="flex items-center gap-2 border border-[#e2e8f0] rounded-lg px-2.5 py-1.5 bg-white hover:border-blue-300 transition"
-                                                >
-                                                    <div className="w-[34px] h-[34px] rounded-md overflow-hidden bg-gray-100 shrink-0 relative">
-                                                        {a.cover_image_url && (
-                                                            <Image src={a.cover_image_url} alt={a.name} fill className="object-cover" />
-                                                        )}
-                                                    </div>
-                                                    <span className="flex-1 min-w-0 text-xs font-semibold text-gray-800 truncate">{a.name}</span>
-                                                    <span className="text-xs font-semibold text-blue-700">{share}%</span>
-                                                </Link>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 環境・優勝デッキ集 */}
-                    <div id="reference-decks" className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden">
-                        <div className="text-sm font-semibold text-gray-900 px-3.5 py-2.5 border-b border-[#eef1f6] flex items-center justify-between">
-                            <span className="flex items-center gap-1.5"><Ico name="list" className="w-4 h-4 text-blue-600" />環境・優勝デッキ集</span>
-                            <Link href="/env" className="text-[11px] text-blue-600 font-semibold">すべて見る ›</Link>
-                        </div>
-                        <div className="p-2.5">
-                            {validWinnerDecks.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-4">優勝デッキデータがまだありません</p>
-                            ) : (
-                                <>
-                                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                                        {validWinnerDecks.map(d => {
-                                            const arch = archetypeMap.get(d.archetype_id!)!
-                                            return (
-                                                <Link key={d.id} href={`/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
-                                                    <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                                                        {arch.cover_image_url && (
-                                                            <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" />
-                                                        )}
-                                                        <span className="absolute top-0.5 left-0.5 text-[10px] font-semibold text-white bg-red-600 px-1.5 py-0.5 rounded">優勝</span>
-                                                    </div>
-                                                    <div className="text-[11px] font-semibold text-gray-800 mt-1 truncate">{arch.name}</div>
-                                                </Link>
-                                            )
-                                        })}
-                                    </div>
-                                    {winnerCaption && (
-                                        <div className="text-[10px] text-gray-400 mt-2 text-right">{winnerCaption}</div>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </div>
 
                     {/* Ad (in-content) */}
                     <div className="bg-white border border-[#e2e8f0] rounded-lg py-2.5">
