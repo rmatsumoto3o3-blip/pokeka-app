@@ -18,6 +18,7 @@ export default async function AdminLayout({
 
     const navItems = [
         { href: '/admin', label: 'ダッシュボード' },
+        { href: '/admin/users', label: '在席状況' },
         { href: '/admin/deck-scanner', label: 'デッキ写真読み取り' },
         { href: '/admin/gundam-icons', label: 'ガンダムアイコン' },
         { href: '/admin/weekly-report', label: '週間レポート' },

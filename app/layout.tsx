@@ -27,6 +27,7 @@ const dotGothic16 = DotGothic16({
 });
 
 import AdSenseScript from "@/components/AdSenseScript";
+import Heartbeat from "@/components/Heartbeat";
 import NoticeBanner from "@/components/NoticeBanner";
 
 export const metadata: Metadata = {
@@ -109,6 +110,7 @@ export default function RootLayout({
           `}
         </Script>
         <NoticeBanner />
+        <Heartbeat />
         {children}
       </body>
     </html>
