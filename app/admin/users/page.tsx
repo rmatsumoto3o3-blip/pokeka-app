@@ -3,7 +3,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 export const dynamic = 'force-dynamic'
 
 // 在席判定のしきい値（分）: この時間内に last_seen が更新されていればオンライン
-const ONLINE_THRESHOLD_MIN = 5
+// ハートビートが1時間間隔のため、少し余裕を持たせて65分に設定
+const ONLINE_THRESHOLD_MIN = 65
 
 type UserRow = {
     id: string
@@ -80,7 +81,7 @@ export default async function AdminUsersPage() {
                         ユーザー在席状況
                     </h2>
                     <p className="mt-1 text-sm text-gray-500">
-                        直近{ONLINE_THRESHOLD_MIN}分以内にアクセスがあれば「オンライン」。この画面は管理者のみ閲覧できます。
+                        直近1時間以内にアクセスがあれば「オンライン」（負荷軽減のため在席の更新は1時間間隔）。この画面は管理者のみ閲覧できます。
                     </p>
                 </div>
             </div>
