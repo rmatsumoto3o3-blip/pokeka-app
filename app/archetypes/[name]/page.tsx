@@ -112,6 +112,29 @@ const getCurrentAdoptionCached = unstable_cache(
     { revalidate: 86400 },
 )
 
+type ArchDeck = { deckCode: string; eventName: string; eventDate: string; rank: string }
+
+// アーキタイプ別の入賞デッキ一覧（内部リンク用・Firebase生データ）。
+const getArchetypeDecksCached = unstable_cache(
+    async (): Promise<Record<string, ArchDeck[]>> => {
+        try {
+            const db = getFirebaseDb()
+            if (!db) return {}
+            const snap = await db.collection('environmentDecks').doc('pokemon').get()
+            const decks = (snap.exists ? (snap.data()?.decks) : []) as { deckCode?: string; archetype?: string; eventName?: string; eventDate?: string; rank?: string }[] || []
+            const out: Record<string, ArchDeck[]> = {}
+            for (const d of decks) {
+                const arch = (d.archetype || '').trim()
+                if (!arch || !d.deckCode) continue
+                    ; (out[arch] ||= []).push({ deckCode: d.deckCode, eventName: d.eventName || '', eventDate: d.eventDate || '', rank: d.rank || '' })
+            }
+            return out
+        } catch { return {} }
+    },
+    ['archetype-decks-pokemon'],
+    { revalidate: 86400 },
+)
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { name } = await params
     const decoded = safeDecodeName(name)
@@ -136,6 +159,11 @@ export default async function ArchetypePage({ params }: Props) {
 
     const list = data.cards
     const totalDecks = data.totalDecks
+
+    // 内部リンク用：このアーキの入賞デッキ一覧（最大12件）
+    const archDecksMap = await getArchetypeDecksCached()
+    const archDecks = (archDecksMap[decoded] || []).slice(0, 12)
+
     const byCategory: Record<string, AggCard[]> = {}
     list.forEach((c) => {
         const cat = categoryOf(c.supertype, c.subtypes)
@@ -182,6 +210,31 @@ export default async function ArchetypePage({ params }: Props) {
                             直近の大会入賞デッキ（{totalDecks}件）から集計した、{decoded}デッキの採用カードと採用率です。
                         </p>
                     </div>
+
+                    {/* 内部リンク：このアーキの入賞デッキ（各デッキ詳細＝一人回しへ） */}
+                    {archDecks.length > 0 && (
+                        <section className="mb-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
+                            <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                <span className="w-1.5 h-5 bg-gradient-to-b from-amber-400 to-orange-500 rounded-full"></span>
+                                {decoded}の入賞デッキ一覧
+                                <span className="text-sm font-normal text-gray-400">{archDecks.length}件</span>
+                            </h2>
+                            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1">
+                                {archDecks.map((d) => (
+                                    <li key={d.deckCode} className="border-b border-gray-50">
+                                        <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex items-center justify-between py-2.5 hover:text-blue-600">
+                                            <span className="text-sm text-gray-700 truncate">
+                                                {d.eventName || '大会デッキ'}
+                                                {d.eventDate && <span className="text-gray-400"> ・ {d.eventDate}</span>}
+                                            </span>
+                                            {d.rank && <span className="text-xs font-bold text-amber-700 shrink-0 ml-2">{d.rank}</span>}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                            <p className="mt-3 text-xs text-gray-500">各デッキをタップすると、デッキリストの確認とそのまま「一人回し」ができます。</p>
+                        </section>
+                    )}
 
                     {CATEGORY_ORDER.filter((cat) => byCategory[cat]?.length).map((cat) => (
                         <section key={cat} className="mb-8">

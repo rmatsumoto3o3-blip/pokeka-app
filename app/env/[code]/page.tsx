@@ -12,12 +12,18 @@ export const dynamicParams = true
 
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
 
-async function getMeta(code: string): Promise<EnvDeck | null> {
+async function getAllDecks(): Promise<EnvDeck[]> {
     const db = getFirebaseDb()
-    if (!db) return null
-    const snap = await db.collection('environmentDecks').doc('pokemon').get()
-    const data = snap.exists ? snap.data() : null
-    const decks = Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
+    if (!db) return []
+    try {
+        const snap = await db.collection('environmentDecks').doc('pokemon').get()
+        const data = snap.exists ? snap.data() : null
+        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
+    } catch { return [] }
+}
+
+async function getMeta(code: string): Promise<EnvDeck | null> {
+    const decks = await getAllDecks()
     return decks.find(d => d.deckCode === code) || null
 }
 
@@ -31,7 +37,13 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
 export default async function EnvDeckDetailPage({ params }: { params: Promise<{ code: string }> }) {
     const { code: raw } = await params
     const code = decodeURIComponent(raw)
-    const meta = await getMeta(code)
+    const allDecks = await getAllDecks()
+    const meta = allDecks.find(d => d.deckCode === code) || null
+
+    // 内部リンク用：同じアーキタイプの他の入賞デッキ（自分を除く・最大8件）
+    const siblings = meta
+        ? allDecks.filter(d => d.archetype === meta.archetype && d.deckCode !== code).slice(0, 8)
+        : []
 
     let cards: { name: string; imageUrl: string; quantity: number }[] = []
     try {
@@ -91,6 +103,16 @@ export default async function EnvDeckDetailPage({ params }: { params: Promise<{ 
                     <a href={`https://www.pokemon-card.com/deck/confirm.html/deckID/${encodeURIComponent(code)}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-sm font-bold text-gray-800 border border-gray-300 rounded-xl py-3 hover:bg-gray-50">公式で開く</a>
                 </div>
 
+                {/* アーキタイプの採用率ページへ内部リンク */}
+                {meta?.archetype && (
+                    <Link href={`/archetypes/${encodeURIComponent(meta.archetype)}`} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 mb-5 hover:border-blue-300 hover:bg-blue-50/40 transition">
+                        <span className="text-sm text-gray-700">
+                            <span className="font-bold text-gray-900">{meta.archetype}</span> の採用カード・採用率を見る
+                        </span>
+                        <span className="text-blue-600 text-sm font-bold">採用率を見る →</span>
+                    </Link>
+                )}
+
                 {cards.length > 0 ? (
                     <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6">
                         <h2 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -114,6 +136,32 @@ export default async function EnvDeckDetailPage({ params }: { params: Promise<{ 
                     <div className="text-center text-gray-400 py-16 bg-white rounded-xl border border-dashed">
                         デッキリストを表示できませんでした。「公式で開く」からご確認ください。
                     </div>
+                )}
+
+                {/* 内部リンク：同じアーキタイプの他の入賞デッキ */}
+                {siblings.length > 0 && (
+                    <section className="mt-6 bg-white rounded-2xl border border-gray-100 p-4 sm:p-6">
+                        <h2 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-5 bg-amber-500 rounded-full" />
+                            同じ「{meta?.archetype}」の他の入賞デッキ
+                        </h2>
+                        <ul className="divide-y divide-gray-100">
+                            {siblings.map((d) => (
+                                <li key={d.deckCode}>
+                                    <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex items-center justify-between py-2.5 hover:text-blue-600">
+                                        <span className="text-sm text-gray-700">
+                                            {d.eventName || '大会デッキ'}
+                                            {d.eventDate && <span className="text-gray-400"> ・ {d.eventDate}</span>}
+                                        </span>
+                                        {d.rank && <span className="text-xs font-bold text-amber-700 shrink-0 ml-2">{d.rank}</span>}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                        <Link href={`/archetypes/${encodeURIComponent(meta!.archetype)}`} className="inline-block mt-3 text-sm font-bold text-blue-600 hover:underline">
+                            {meta?.archetype}のデッキをもっと見る →
+                        </Link>
+                    </section>
                 )}
             </main>
         </div>
