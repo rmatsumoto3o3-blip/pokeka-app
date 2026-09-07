@@ -89,6 +89,23 @@ async function getDeck(id: string) {
     return { ...deck, mainDeck }
 }
 
+type SiblingDeck = { deckCode: string; eventName: string; eventDate: string; rank: string }
+
+// 内部リンク用：同じアーキタイプの他の入賞デッキ（Firebase environmentDecks/gundam）。
+async function getSiblingDecks(archetype: string, excludeCode: string | null): Promise<SiblingDeck[]> {
+    if (!archetype) return []
+    const db = getFirebaseDb()
+    if (!db) return []
+    try {
+        const snap = await db.collection('environmentDecks').doc('gundam').get()
+        const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as any[]) : []
+        return decks
+            .filter(d => d.deckCode && (d.archetype || '').trim() === archetype && d.deckCode !== excludeCode)
+            .slice(0, 8)
+            .map(d => ({ deckCode: d.deckCode, eventName: d.eventName || '', eventDate: d.eventDate || '', rank: d.rank || '' }))
+    } catch { return [] }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
     const { id } = await params
     const deck = await getDeck(id)
@@ -113,6 +130,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     const displayName = deck.event_location || deck.deck_code || archetype
     const mainDeck = deck.mainDeck || []
     const totalCards = mainDeck.reduce((acc, c) => acc + c.quantity, 0)
+    const siblings = await getSiblingDecks(archetype !== 'Unknown' ? archetype : '', deck.deck_code || null)
 
     const jsonLd = {
         '@context': 'https://schema.org',
@@ -208,6 +226,29 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                             </a>
                         )}
                     </div>
+                )}
+
+                {/* 内部リンク：同じアーキタイプの他の入賞デッキ */}
+                {siblings.length > 0 && (
+                    <section className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-amber-500 rounded-full"></span>
+                            同じ「{archetype}」の他の入賞デッキ
+                        </h2>
+                        <ul className="divide-y divide-gray-100">
+                            {siblings.map((d) => (
+                                <li key={d.deckCode}>
+                                    <a href={`/gundam/decks/${encodeURIComponent(d.deckCode)}`} className="flex items-center justify-between py-2.5 hover:text-blue-600">
+                                        <span className="text-sm text-gray-700 truncate">
+                                            {d.eventName || '大会デッキ'}
+                                            {d.eventDate && <span className="text-gray-400"> ・ {d.eventDate}</span>}
+                                        </span>
+                                        {d.rank && <span className="text-xs font-bold text-amber-700 shrink-0 ml-2">{d.rank}</span>}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
                 )}
             </main>
         </div>
