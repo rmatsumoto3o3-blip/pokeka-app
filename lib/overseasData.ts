@@ -2,6 +2,24 @@
 // データ源: 海外用スプレッドシートの doGet（Limitless収集→自前集計）。Supabase不使用。
 // ※GASのデプロイを「更新」する限りURLは不変。新規デプロイすると変わるので、その時はここを差し替える。
 import { translateCardName, translateArchetypeName } from './overseasTranslations'
+import { getFirebaseDb } from '@/lib/firebase/admin'
+
+// 英語カード名→画像URLのキャッシュ（Firebase overseasMeta/cardImages）を読む。
+// 画像はGASデータに含まれないため、別途解決済みのマップをここで重ねる。障害時は空マップ（名前表示にフォールバック）。
+let _imgCache: { at: number; map: Record<string, string> } | null = null
+async function getCardImageMap(): Promise<Record<string, string>> {
+    if (_imgCache && Date.now() - _imgCache.at < 3600_000) return _imgCache.map
+    try {
+        const db = getFirebaseDb()
+        if (!db) return _imgCache?.map ?? {}
+        const snap = await db.collection('overseasMeta').doc('cardImages').get()
+        const map = (snap.exists ? (snap.data()?.images as Record<string, string>) : {}) || {}
+        _imgCache = { at: Date.now(), map }
+        return map
+    } catch {
+        return _imgCache?.map ?? {}
+    }
+}
 
 const OVERSEAS_DATA_URL = 'https://script.google.com/macros/s/AKfycbw9sGZEPw0HnMfs_rB2JEMfeYhCd4z08LPuaD9VIYxH4vIWY0jKvO3uE6C00KO-e69lmA/exec'
 
@@ -201,8 +219,12 @@ export async function getOverseasDeck(id: string): Promise<{ result: OverseasRes
     if (!deck) return null
     const { name, country } = splitLocation(deck.location)
     const arch = data.archetypes.find(a => a.id === deck.archetypeId)
+    const imgMap = await getCardImageMap()
+    const result = toResult(deck)
+    // 英語名で画像を重ねる（見つからなければ null のまま＝名前表示）
+    result.cards = result.cards.map(c => ({ ...c, imageUrl: imgMap[c.nameEn] || c.imageUrl }))
     return {
-        result: toResult(deck),
+        result,
         tournament: {
             id: deck.tournamentId, source: 'limitless_play', sourceTournamentId: deck.tournamentId,
             name, shortName: name.length > 40 ? name.slice(0, 40) + '…' : name,
