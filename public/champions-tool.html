@@ -214,6 +214,10 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
       <div class="toggle" id="sortToggle"><button data-sort="cover" class="on">補完力順</button><button data-sort="usage">使用率順</button></div>
     </div>
     <div class="list" id="suggest"></div>
+
+    <div class="subhead"><h2 class="disp">OFFENSE <span class="jp">／ 攻めの補完</span></h2></div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 12px;line-height:1.6">パーティが<b>タイプ一致技で効果抜群を取りにくい相手タイプ</b>と、それを突ける<b>攻撃タイプ候補</b>を表示します。技のサブウェポン選びの目安に（タイプ一致技ベースの概算）。</p>
+    <div id="offense"></div>
   </div>
 
   <div id="view-calc" hidden>
@@ -837,6 +841,41 @@ function renderSuggest(){
     </div>`;
   }).join("");
   $("#suggest").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const i=builds().indexOf(null);if(i>=0){builds()[i]=defaultBuild(+b.dataset.add);save();renderAll();}});
+}
+// ===== 攻めの補完（攻撃タイプ候補） =====
+function offenseAnalyze(ids){
+  // パーティがタイプ一致技で出せる攻撃タイプ
+  const atk=new Set(); ids.forEach(id=>MONS[id].types.forEach(a=>atk.add(a)));
+  // 相手1体を、いずれかの味方のタイプ一致技で抜群(>1)に取れるか
+  const canHit=D=>[...atk].some(a=>takes(MONS[D].types,a)>1);
+  const all=MONS.map(m=>m.id);
+  const inTeam=new Set(ids);
+  const blindMons=all.filter(id=>!inTeam.has(id)&&!canHit(id));
+  // タイプ単位の穴（どの一致技でも抜群にできない18タイプ）
+  const hitType=new Set(); atk.forEach(a=>TYPES.forEach(d=>{if(single(a,d)===2)hitType.add(d);}));
+  const blindTypes=TYPES.filter(t=>!hitType.has(t));
+  // 攻撃タイプ候補：未所持タイプが、今抜群を取れていない相手を何体突けるか
+  const cand=TYPES.filter(a=>!atk.has(a)).map(a=>({
+    a,
+    gain:blindMons.filter(id=>takes(MONS[id].types,a)>1).length,
+    typeCov:blindTypes.filter(d=>single(a,d)===2)
+  })).filter(c=>c.gain>0).sort((x,y)=>y.gain-x.gain||y.typeCov.length-x.typeCov.length);
+  return {blindTypes,blindN:blindMons.length,cand};
+}
+function renderOffense(){
+  const ids=teamIds();
+  if(ids.length===0){$("#offense").innerHTML=`<div class="holerow"><span class="lbl">ポケモンを追加すると、攻めの補完候補が出ます。</span></div>`;return;}
+  const {blindTypes,blindN,cand}=offenseAnalyze(ids);
+  const verdict = blindTypes.length
+    ? `<div class="verdict bad"><b>△ タイプ一致技で抜群を取りにくい相手タイプ</b>：${blindTypes.map(t=>`<span class="pill" style="background:var(${TCOLOR[t]})">${t}</span>`).join('')}。これらを突ける攻撃タイプを技に入れると刺さります。</div>`
+    : `<div class="verdict good"><b>◎ タイプ一致技だけで攻撃範囲が広い</b>：18タイプすべてに抜群を取れる相手がいます。サブウェポンは数値・耐久対策で選びましょう。</div>`;
+  const rows = cand.slice(0,6).map(c=>`
+    <div class="wkrow">
+      <span class="pill" style="background:var(${TCOLOR[c.a]})">${c.a}</span>
+      <span class="wkc">今取れていない相手に <b>+${c.gain}体</b> 抜群</span>
+      ${c.typeCov.length?`<span class="wkok">✓ ${c.typeCov.slice(0,5).join('・')}${c.typeCov.length>5?' 他':''} に有効</span>`:''}
+    </div>`).join('');
+  $("#offense").innerHTML = verdict + (cand.length?`<div class="holerow"><span class="lbl">技に入れると良い攻撃タイプ（効果の大きい順）</span></div><div class="wklist">${rows}</div>`:'');
 }
 function autoFill(){
   let base=teamIds();

@@ -122,7 +122,6 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                             { href: '/simulator', icon: 'dice', label: '初手確率シミュ' },
                             { href: '/practice/prize-trainer', icon: 'eye', label: 'サイド推論' },
                             { href: '/global-simulator', icon: 'world', label: 'グローバルシミュ' },
-                            { href: '/champions', icon: 'fire', label: 'ポケチャン構築' },
                         ].map(t => (
                             <Link key={t.label} href={t.href} className="bg-white border border-[#e2e8f0] rounded-lg overflow-hidden hover:border-blue-300 hover:shadow-sm transition">
                                 <div className="h-16 bg-blue-100 flex items-center justify-center">
@@ -427,7 +426,6 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                                 { href: '/#reference-decks', icon: 'pie', label: '環境デッキ分布' },
                                 { href: '#tier', icon: 'chart', label: '注目カード採用率' },
                                 { href: '/kids', icon: 'calc', label: 'ポケカで算数' },
-                                { href: '/champions', icon: 'fire', label: 'ポケチャン構築' },
                                 { href: 'https://otcg.pokelix.jp/', icon: 'phone', label: 'O-TCG Pocket', external: true },
                             ].map(t => (
                                 <Link

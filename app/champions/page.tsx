@@ -42,7 +42,7 @@ export default function ChampionsPage() {
     return (
         <div className="min-h-screen bg-slate-50">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-            <PublicHeader />
+            <PublicHeader game="champions" />
             <main className="mx-auto max-w-6xl px-4 py-6">
                 <div className="mb-4 text-xs text-gray-400">
                     <Link href="/" className="text-sky-600">ホーム</Link> › ポケモンチャンピオンズ ツール

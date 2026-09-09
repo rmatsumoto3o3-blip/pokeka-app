@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 
 interface PublicHeaderProps {
-    game?: 'pokemon' | 'overseas' | 'unionarena' | 'gundam'
+    game?: 'pokemon' | 'overseas' | 'unionarena' | 'gundam' | 'champions'
 }
 
 export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
@@ -105,6 +105,12 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         ポケカ
                     </Link>
                     <Link
+                        href="/champions"
+                        className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'champions' ? 'text-white bg-emerald-600' : 'text-white bg-emerald-500 hover:bg-emerald-600'}`}
+                    >
+                        ポケチャン
+                    </Link>
+                    <Link
                         href="/unionarena"
                         className={`text-[13px] font-semibold px-4 py-2.5 shrink-0 transition ${game === 'unionarena' ? 'text-white bg-rose-600' : 'text-white bg-rose-500 hover:bg-rose-600'}`}
                     >
@@ -138,6 +144,13 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
                         <Link href="/overseas" className="text-blue-600 font-semibold shrink-0">海外TOP</Link>
                         <Link href="/overseas/decks" className="hover:text-blue-600 transition shrink-0">大会・デッキ一覧</Link>
                         <Link href="/" className="hover:text-blue-600 transition shrink-0">国内環境へ</Link>
+                    </div>
+                </nav>
+            ) : game === 'champions' ? (
+                <nav className="border-t border-emerald-100 bg-white">
+                    <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
+                        <Link href="/champions" className="text-emerald-600 font-semibold shrink-0">TOP</Link>
+                        <span className="text-gray-400 shrink-0">構築 / ダメージ計算 / 逆算 / 選出</span>
                     </div>
                 </nav>
             ) : game === 'unionarena' ? (
