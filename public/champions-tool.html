@@ -677,6 +677,7 @@ const ATK_ABIL={
  'ちからもち':{atkx:mv=>mv.c==='ph'?2:1},'ヨガパワー':{atkx:mv=>mv.c==='ph'?2:1},
  'はりきり':{mul:mv=>mv.c==='ph'?1.5:1},
  'かたやぶり':{mold:true},'ターボブレイズ':{mold:true},'テラボルテージ':{mold:true},
+ 'きれあじ':{slice:true}, // 切る技×1.5（メガアブソルZ等）
  // ピンチ特性（HP1/3以下で発動＝計算タブの「ピンチ」ON時のみ）
  'もうか':{pinch:'ほのお'},'げきりゅう':{pinch:'みず'},'しんりょく':{pinch:'くさ'},'むしのしらせ':{pinch:'むし'},
 };
@@ -691,6 +692,8 @@ const DEF_ABIL={
  'マルチスケイル':{fullHP:0.5},'ファントムガード':{fullHP:0.5},
  'こおりのりんぷん':{spHalf:0.5},
 };
+// 切る技（きれあじ対象・チャンピオンズ収録分）
+const SLICING=new Set(["つばめがえし","エアカッター","エアスラッシュ","アクアカッター","むねんのつるぎ","ひけん・ちえなみ","クロスポイズン","ドゲザン","リーフブレード","つじぎり","ネズミざん","サイコカッター","シェルブレード","せいなるつるぎ","ソーラーブレード","がんせきアックス","シザークロス"]);
 const STLABEL=["H","A","B","C","D","S"];
 const LV=50;
 const MOVEBYNAME={}; MOVES.forEach((m,i)=>MOVEBYNAME[m.n]=i);
@@ -888,6 +891,7 @@ function damageRolls(A, mv, D, opt){
   const drr=dItem.drr?dItem.drr(mv,eff):1;
   const atkAbil=aAb.mul?aAb.mul(mv):1;
   const pinchMul=(opt.pinch&&aAb.pinch===mv.t)?1.5:1;
+  const sliceMul=(aAb.slice&&SLICING.has(mv.n))?1.5:1;
   let defAbil=1, abilImmune=false;
   if(!mold){
     if(dAb.immune===mv.t) abilImmune=true;
@@ -909,10 +913,10 @@ function damageRolls(A, mv, D, opt){
   if(!opt.crit){ if(opt.wall==='reflect')wallMul=isPh?0.5:1; else if(opt.wall==='light')wallMul=isPh?1:0.5; else if(opt.wall==='veil')wallMul=0.5; }
   const burnMul=(opt.burn&&isPh)?0.5:1;
   const critMul=opt.crit?1.5:1;
-  const mult=abilImmune?0:stabF*eff*itemMod*drr*atkAbil*defAbil*pinchMul*weatherMul*terrainMul*wallMul*burnMul*critMul;
+  const mult=abilImmune?0:stabF*eff*itemMod*drr*atkAbil*defAbil*pinchMul*sliceMul*weatherMul*terrainMul*wallMul*burnMul*critMul;
   const baseDmg=Math.floor(Math.floor((2*LV/5+2)*mv.p*Aatk/Ddef)/50)+2;
   const rolls=[];for(let r=85;r<=100;r++)rolls.push(Math.floor(Math.floor(baseDmg*r/100)*mult));
-  return {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,abilImmune,aItem,dItem,aAb,dAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul};
+  return {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,sliceMul,abilImmune,aItem,dItem,aAb,dAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul};
 }
 function runCalc(){
   const refs=allBuildRefs();
@@ -927,14 +931,14 @@ function runCalc(){
     burn:$("#f-burn").checked, crit:$("#f-crit").checked
   };
   const R=damageRolls(A,mv,D,opt);
-  const {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,abilImmune,aItem,dItem,aAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul}=R;
+  const {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,sliceMul,abilImmune,aItem,dItem,aAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul}=R;
   const min=rolls[0],max=rolls[15];const pMin=min/dHP*100,pMax=max/dHP*100;
   let ko;
   if(abilImmune)ko={t:`${D.abil} で無効`,k:'k0'};
   else if(max<=0)ko={t:'効果がない',k:'k0'};
   else{const g=Math.ceil(dHP/min),p=Math.ceil(dHP/max);ko=g===p?{t:`確定${g}発`,k:g===1?'k1':'k0'}:{t:`乱数${p}〜${g}発`,k:p===1?'k1':'k0'};}
   if(dItem.sash && max>=dHP && max>0 && !abilImmune) ko={t:'きあいのタスキで耐える（満HP時・残り1）',k:'k0'};
-  const abilNotes=[]; if(stab&&aAb.stab)abilNotes.push('適応力'); if(atkAbil!==1)abilNotes.push(`${A.abil}×${atkAbil}`); if(aAb.atkx&&aAb.atkx(mv)!==1)abilNotes.push(`${A.abil}(攻撃2倍)`); if(!abilImmune&&defAbil!==1)abilNotes.push(`${D.abil}×${defAbil}`); if(pinchMul!==1)abilNotes.push(`${A.abil}(ピンチ×1.5)`); if(mold)abilNotes.push('かたやぶり(相手特性無視)');
+  const abilNotes=[]; if(stab&&aAb.stab)abilNotes.push('適応力'); if(atkAbil!==1)abilNotes.push(`${A.abil}×${atkAbil}`); if(aAb.atkx&&aAb.atkx(mv)!==1)abilNotes.push(`${A.abil}(攻撃2倍)`); if(!abilImmune&&defAbil!==1)abilNotes.push(`${D.abil}×${defAbil}`); if(pinchMul!==1)abilNotes.push(`${A.abil}(ピンチ×1.5)`); if(sliceMul!==1)abilNotes.push('きれあじ(切る技×1.5)'); if(mold)abilNotes.push('かたやぶり(相手特性無視)');
   if(weatherMul!==1)abilNotes.push(`天候×${weatherMul}`); if(terrainMul!==1)abilNotes.push(`フィールド×${terrainMul}`); if(wallMul!==1)abilNotes.push(`壁×${wallMul}`); if(burnMul!==1)abilNotes.push('やけど×0.5'); if(critMul!==1)abilNotes.push('急所×1.5');
   const arank=+$("#f-arank").value||0, drank=+$("#f-drank").value||0;
   if(arank)abilNotes.push(`攻撃ランク${arank>0?'+':''}${arank}`); if(drank)abilNotes.push(`防御ランク${drank>0?'+':''}${drank}`);
@@ -1053,6 +1057,7 @@ function init(){
 }
 init();
 </script>
+
 
 <script>
 (function(){function postH(){try{parent.postMessage({champHeight:Math.ceil(document.documentElement.scrollHeight)},'*');}catch(e){}}window.addEventListener('load',postH);if(window.ResizeObserver){new ResizeObserver(postH).observe(document.body);}setInterval(postH,800);})();
