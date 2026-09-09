@@ -60,6 +60,13 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);ou
 .bhd{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .bhd .bnm{font-weight:900;font-size:15px;flex:1;min-width:0}
 .bhd .types{display:flex;gap:4px}
+details.bdetail{border-top:1px solid var(--line);margin-top:2px}
+details.bdetail>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 2px 2px;font-size:12px;font-weight:700;color:var(--ink2);user-select:none}
+details.bdetail>summary::-webkit-details-marker{display:none}
+details.bdetail>summary::before{content:"▸";font-size:10px;color:var(--accent);transition:transform .15s}
+details.bdetail[open]>summary::before{transform:rotate(90deg)}
+details.bdetail>summary .bsum{margin-left:auto;font-weight:500;font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%;text-align:right}
+details.bdetail[open]>summary .bsum{display:none}
 .tp{font-size:10px;font-weight:700;color:#fff;padding:2px 7px;border-radius:5px;text-shadow:0 1px 1px rgba(0,0,0,.25);white-space:nowrap}
 .bx{border:none;background:none;color:var(--ink2);font-size:17px;line-height:1;cursor:pointer;padding:2px 4px}
 .bx:hover{color:var(--accent)}
@@ -757,31 +764,40 @@ function moveSel(b,slot,k){
   const opts=`<option value="">技${k+1}を選択</option>`+groups;
   return `<select data-f="mv" data-k="${k}" data-slot="${slot}">${opts}</select>`;
 }
+const openDetails=new Set(); // 詳細を開いているカード（active-slotキー・再描画をまたいで保持）
 function renderCards(){
   $("#cards").innerHTML=builds().map((b,slot)=>{
     if(!b) return `<section class="card slot empty"><button type="button" class="addbtn" data-slot="${slot}">＋ ポケモンを追加</button></section>`;
     const mon=MONS[b.sp];
     const evTotal=b.evs.reduce((a,c)=>a+c,0);
     const stats=[0,1,2,3,4,5].map(i=>statAt(b,i));
+    const open=openDetails.has(`${DB.active}-${slot}`);
+    const abilNow=(ABIL[b.sp]&&ABIL[b.sp].length)?b.abil:'';
+    const nMoves=b.moves.filter(Boolean).length;
+    const preview=`${NATURES[b.nat].n}${abilNow?' / '+abilNow:''}${nMoves?' / 技'+nMoves:''}`;
     return `<section class="card slot" data-slot="${slot}">
       <div class="bhd"><span class="bnm">${mon.name}</span><span class="types">${mon.types.map(tpChip).join("")}</span><button class="bx" data-rm="${slot}" title="外す">×</button></div>
-      <div class="brow">
-        <select data-f="nat" data-slot="${slot}">${NATURES.map((n,i)=>`<option value="${i}"${i===b.nat?' selected':''}>${n.n}${n.u?`(${STLABEL[n.u]}↑${STLABEL[n.d]}↓)`:'(無)'}</option>`).join("")}</select>
-        <select data-f="item" data-slot="${slot}">${ITEMS.map((it,i)=>`<option value="${i}"${i===b.item?' selected':''}>${it.n}</option>`).join("")}</select>
-      </div>
-      <div class="blab">特性</div>
-      <select data-f="abil" data-slot="${slot}">${(ABIL[b.sp]&&ABIL[b.sp].length?ABIL[b.sp]:['（データなし）']).map(a=>`<option value="${a}"${a===b.abil?' selected':''}>${a}</option>`).join("")}</select>
-      <div class="blab">技（このポケモンが使える技のみ）</div>
-      <div class="moves">${[0,1,2,3].map(k=>moveSel(b,slot,k)).join("")}</div>
-      <div class="blab">能力ポイント（合計 <span class="evsum">${evTotal}</span>/66・1ヶ所32まで）</div>
-      <div class="evgrid">${[0,1,2,3,4,5].map(i=>`<div class="cell"><label>${STLABEL[i]}</label><input data-f="ev" data-i="${i}" data-slot="${slot}" type="number" min="0" max="32" step="1" value="${b.evs[i]}"></div>`).join("")}</div>
-      <div class="evtotal ${evTotal>PT_TOTAL?'over':''}">${evTotal>PT_TOTAL?'⚠ 合計が66を超えています':''}</div>
-      <div class="statline">${stats.map((v,i)=>`<div class="s"><div class="k">${STLABEL[i]}</div><div class="v">${v}</div></div>`).join("")}</div>
+      <details class="bdetail"${open?' open':''} data-slot="${slot}">
+        <summary><span class="bsumlab">詳細を編集</span><span class="bsum">${preview}</span></summary>
+        <div class="brow">
+          <select data-f="nat" data-slot="${slot}">${NATURES.map((n,i)=>`<option value="${i}"${i===b.nat?' selected':''}>${n.n}${n.u?`(${STLABEL[n.u]}↑${STLABEL[n.d]}↓)`:'(無)'}</option>`).join("")}</select>
+          <select data-f="item" data-slot="${slot}">${ITEMS.map((it,i)=>`<option value="${i}"${i===b.item?' selected':''}>${it.n}</option>`).join("")}</select>
+        </div>
+        <div class="blab">特性</div>
+        <select data-f="abil" data-slot="${slot}">${(ABIL[b.sp]&&ABIL[b.sp].length?ABIL[b.sp]:['（データなし）']).map(a=>`<option value="${a}"${a===b.abil?' selected':''}>${a}</option>`).join("")}</select>
+        <div class="blab">技（このポケモンが使える技のみ）</div>
+        <div class="moves">${[0,1,2,3].map(k=>moveSel(b,slot,k)).join("")}</div>
+        <div class="blab">能力ポイント（合計 <span class="evsum">${evTotal}</span>/66・1ヶ所32まで）</div>
+        <div class="evgrid">${[0,1,2,3,4,5].map(i=>`<div class="cell"><label>${STLABEL[i]}</label><input data-f="ev" data-i="${i}" data-slot="${slot}" type="number" min="0" max="32" step="1" value="${b.evs[i]}"></div>`).join("")}</div>
+        <div class="evtotal ${evTotal>PT_TOTAL?'over':''}">${evTotal>PT_TOTAL?'⚠ 合計が66を超えています':''}</div>
+        <div class="statline">${stats.map((v,i)=>`<div class="s"><div class="k">${STLABEL[i]}</div><div class="v">${v}</div></div>`).join("")}</div>
+      </details>
     </section>`;
   }).join("");
   // wire
   $("#cards").querySelectorAll(".addbtn").forEach(bt=>bt.onclick=()=>openPicker(id=>{builds()[+bt.dataset.slot]=defaultBuild(id);save();renderAll();}));
-  $("#cards").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{builds()[+b.dataset.rm]=null;save();renderAll();});
+  $("#cards").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{openDetails.delete(`${DB.active}-${+b.dataset.rm}`);builds()[+b.dataset.rm]=null;save();renderAll();});
+  $("#cards").querySelectorAll("details.bdetail").forEach(d=>d.addEventListener("toggle",()=>{const key=`${DB.active}-${d.dataset.slot}`;if(d.open)openDetails.add(key);else openDetails.delete(key);}));
   $("#cards").querySelectorAll("[data-f]").forEach(el=>{
     el.addEventListener(el.type==='number'?'input':'change',()=>{
       const slot=+el.dataset.slot; const b=builds()[slot]; if(!b)return; const f=el.dataset.f;
