@@ -244,6 +244,10 @@ export default function Dashboard() {
                                         <div className="font-bold text-gray-900 mb-1">サイド落ち推論トレーニング</div>
                                         <div className="text-sm text-gray-500">サイド落ちを読む力を鍛える</div>
                                     </Link>
+                                    <Link href="/champions" className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                        <div className="font-bold text-gray-900 mb-1">ポケチャン構築＆ダメージ計算</div>
+                                        <div className="text-sm text-gray-500">ポケモンチャンピオンズのパーティ構築・ダメ計</div>
+                                    </Link>
                                 </div>
                             </div>
                         )}
