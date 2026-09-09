@@ -1,0 +1,1034 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポケチャン構築＆ダメージ計算</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --bg:#e9ecf1; --surface:#ffffff; --surface2:#f3f5f9; --ink:#1a1d25; --ink2:#59606f;
+  --line:#d7dce4; --accent:#d8322f; --accent-ink:#fff;
+  --weak2:#e8664f; --weak4:#c62f28; --res:#3aa96b; --res4:#1f7a49; --immune:#5566c9; --wtr:#4D90D5;
+  --shadow:0 1px 2px rgba(20,24,35,.06),0 6px 20px rgba(20,24,35,.06);
+  --nrm:#9099A1;--fir:#FF9C54;--wtrc:#4D90D5;--elc:#F3D23B;--grs:#63BB5B;--ice:#74CEC0;--fig:#CE4069;--poi:#AB6AC8;--grd:#D97746;--fly:#8FA8DD;--psy:#F97176;--bug:#90C12C;--rck:#C7B78B;--gho:#5269AC;--drg:#0A6DC4;--drk:#5A5366;--stl:#5A8EA1;--fai:#EC8FE6;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1218; --surface:#181c24; --surface2:#20252f; --ink:#e9ecf3; --ink2:#98a1b2; --line:#2a313d; --accent:#ff574c; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  --bg:#0f1218; --surface:#181c24; --surface2:#20252f; --ink:#e9ecf3; --ink2:#98a1b2; --line:#2a313d; --accent:#ff574c; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.tnum{font-variant-numeric:tabular-nums}
+.disp{font-family:"Rajdhani",sans-serif;font-weight:700}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;margin-bottom:4px}
+header h1{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:28px}
+header .jp{font-weight:900;font-size:20px}
+.tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:3px 9px}
+.lead{color:var(--ink2);font-size:13px;margin:2px 0 14px;max-width:70ch}
+.samplebar{font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;margin-bottom:16px}
+.samplebar b{color:var(--ink)}
+.tabs{display:inline-flex;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:16px}
+.tab{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:15px;color:var(--ink2);background:none;border:none;border-radius:8px;padding:8px 18px;cursor:pointer}
+.tab.on{background:var(--accent);color:var(--accent-ink)}
+select,input,button{font-family:inherit}
+select,input[type=search],input[type=text]{width:100%;font-size:14px;font-weight:500;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;appearance:none}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* party bar */
+.pbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.pchip{font-family:"Rajdhani";font-weight:700;font-size:14px;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;cursor:pointer}
+.pchip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pchip .c{opacity:.7;font-size:12px;margin-left:5px}
+.presetbtn{margin-left:auto;font-weight:600;font-size:12.5px;color:var(--ink2);background:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer}
+.presetbtn:hover{color:var(--accent);border-color:var(--accent)}
+.autobtn{font-family:inherit;font-weight:700;font-size:12.5px;color:var(--accent-ink);background:var(--accent);border:none;border-radius:9px;padding:8px 12px;cursor:pointer}
+
+/* build cards */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.cards{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px}
+.slot.empty{display:flex;align-items:center;justify-content:center;min-height:120px;border:1.5px dashed var(--line);background:var(--surface2)}
+.slot.empty .addbox{width:100%}
+.slot.empty .addbox .lab{font-size:12px;color:var(--ink2);margin-bottom:6px;text-align:center}
+.bhd{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.bhd .bnm{font-weight:900;font-size:15px;flex:1;min-width:0}
+.bhd .types{display:flex;gap:4px}
+.tp{font-size:10px;font-weight:700;color:#fff;padding:2px 7px;border-radius:5px;text-shadow:0 1px 1px rgba(0,0,0,.25);white-space:nowrap}
+.bx{border:none;background:none;color:var(--ink2);font-size:17px;line-height:1;cursor:pointer;padding:2px 4px}
+.bx:hover{color:var(--accent)}
+.brow{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px}
+.brow.one{grid-template-columns:1fr}
+.blab{font-size:10.5px;color:var(--ink2);margin:6px 0 2px;font-weight:600}
+.moves{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.evgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:3px}
+.evgrid .cell{text-align:center}
+.evgrid .cell label{display:block;font-size:9.5px;color:var(--ink2);font-weight:700;margin-bottom:2px}
+.evgrid .cell input{padding:5px 2px;text-align:center;font-size:12px}
+.evtotal{font-size:11px;color:var(--ink2);text-align:right;margin-top:3px}
+.evtotal.over{color:var(--accent);font-weight:700}
+details.ivs{margin-top:7px}
+details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:600}
+.statline{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.statline .s{text-align:center}
+.statline .s .k{font-size:9px;color:var(--ink2);font-weight:700}
+.statline .s .v{font-family:"Rajdhani";font-weight:700;font-size:15px;line-height:1}
+
+/* analysis / suggest */
+.subhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 12px;flex-wrap:wrap}
+.subhead h2{font-family:"Rajdhani";font-weight:700;font-size:19px}
+.subhead .jp{font-family:"Zen Kaku Gothic New";font-weight:900;font-size:16px}
+.toggle{display:inline-flex;background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:3px}
+.toggle button{font-weight:700;font-size:12px;color:var(--ink2);background:none;border:none;border-radius:7px;padding:6px 11px;cursor:pointer}
+.toggle button.on{background:var(--accent);color:var(--accent-ink)}
+.anzsum{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.anzsum .tile{flex:1;min-width:92px;background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:9px 11px;text-align:center}
+.anzsum .tile.ok{border-color:color-mix(in srgb,var(--res) 45%,var(--line))}
+.anzsum .tile.bad{border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.anzsum .tn{font-family:"Rajdhani";font-weight:700;font-size:24px;line-height:1}
+.anzsum .tile.ok .tn{color:var(--res)}.anzsum .tile.bad .tn{color:var(--accent)}
+.anzsum .tl{font-size:10.5px;color:var(--ink);font-weight:700;margin-top:2px}
+.anzsum .ts{font-size:9px;color:var(--ink2);line-height:1.25;margin-top:1px}
+.verdict{border-radius:11px;padding:11px 13px;font-size:13px;line-height:1.7;margin-bottom:10px}
+.verdict.bad{background:color-mix(in srgb,var(--accent) 9%,var(--surface2));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line))}
+.verdict.good{background:color-mix(in srgb,var(--res) 9%,var(--surface2));border:1px solid color-mix(in srgb,var(--res) 40%,var(--line))}
+.verdict .pill{margin:0 2px}
+.wklist{display:flex;flex-direction:column;gap:6px}
+.wkrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.wkrow.hole{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.wkrow .wkc{font-size:12px;color:var(--ink2)}
+.wkrow .wkbad{font-size:12.5px;font-weight:700;color:var(--accent);margin-left:auto}
+.wkrow .wkok{font-size:12px;font-weight:700;color:var(--res);margin-left:auto}
+.pill{font-size:11px;font-weight:700;color:#fff;padding:2px 9px;border-radius:999px;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+.holerow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px}
+.holerow .lbl{font-size:11.5px;color:var(--ink2);font-weight:500}
+.okmsg{color:var(--res);font-weight:700;font-size:12.5px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
+.row .use{text-align:center}.row .use .pct{font-family:"Rajdhani";font-weight:700;font-size:18px;line-height:1}.row .use .cap{font-size:9px;color:var(--ink2);text-transform:uppercase}
+.row .nm{font-weight:700;font-size:14px}.row .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.row .clabel{font-size:11px;color:var(--ink2)}
+.row .add{font-weight:700;font-size:12.5px;color:var(--accent);background:var(--surface2);border:1.5px solid var(--accent);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.row .add:hover{background:var(--accent);color:var(--accent-ink)}
+.row .add:disabled{opacity:.4;border-color:var(--line);color:var(--ink2)}
+.row.dim{opacity:.55}
+.score{font-family:"Rajdhani";font-weight:700;font-size:12px;color:var(--res);border:1px solid var(--res);border-radius:5px;padding:0 6px}
+
+/* calc */
+.calc-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.calc-panels{grid-template-columns:1fr}}
+.cph{font-family:"Rajdhani";font-weight:700;font-size:17px;margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+.cpanel.atk .cph{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.cpanel.def .cph{color:var(--wtr);border-color:color-mix(in srgb,var(--wtr) 45%,var(--line))}
+.crow{display:flex;align-items:center;gap:9px;margin-top:8px}
+.crow>label{font-size:12px;color:var(--ink2);width:70px;flex-shrink:0}
+.cstat{margin-top:11px;font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.fldgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px 12px}
+@media(max-width:600px){.fldgrid{grid-template-columns:repeat(2,1fr)}}
+.fldgrid label{font-size:11px;color:var(--ink2);display:flex;flex-direction:column;gap:3px}
+.fldgrid label.fchk{flex-direction:row;align-items:center;gap:6px;font-size:12.5px;color:var(--ink);align-self:end;padding-bottom:8px}
+.fldgrid .fchk input{width:auto;flex:none}
+.cstat b{color:var(--ink);font-family:"Rajdhani"}
+.calc-result{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:16px}
+.calc-result .rtitle{font-size:12px;color:var(--ink2);margin-bottom:5px}
+.calc-result .rdmg{font-family:"Rajdhani";font-weight:700;font-size:28px;font-variant-numeric:tabular-nums}
+.calc-result .rpct{font-family:"Rajdhani";font-weight:700;font-size:19px;color:var(--accent);margin-left:6px}
+.calc-result .rko{display:inline-block;margin-top:9px;font-weight:700;font-size:14px;padding:5px 12px;border-radius:8px}
+.calc-result .rko.k1{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line))}
+.calc-result .rko.k0{background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+.calc-result .rbar{margin-top:11px;height:12px;background:var(--surface2);border:1px solid var(--line);border-radius:7px;overflow:hidden;position:relative}
+.calc-result .rbar .fmin{position:absolute;inset:0 auto 0 0;background:color-mix(in srgb,var(--accent) 32%,var(--surface2))}
+.calc-result .rbar .fmax{position:absolute;inset:0 auto 0 0;background:var(--accent);opacity:.5}
+.calc-result .rmeta{margin-top:9px;font-size:12px;color:var(--ink2)}
+.empty-msg{color:var(--ink2);font-size:13px;padding:14px;text-align:center;background:var(--surface2);border:1px dashed var(--line);border-radius:11px}
+.oppgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+@media(max-width:600px){.oppgrid{grid-template-columns:repeat(3,1fr)}}
+.oppslot{position:relative;min-height:64px;border:1.5px dashed var(--line);border-radius:11px;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 6px;text-align:center;cursor:pointer}
+.oppslot.filled{border-style:solid;cursor:default}
+.oppslot .on{font-weight:700;font-size:11.5px;line-height:1.2}
+.oppslot .ot{display:flex;gap:3px;flex-wrap:wrap;justify-content:center}
+.oppslot .ot .tp{font-size:9px;padding:1px 5px}
+.oppslot .ox{position:absolute;top:2px;right:5px;border:none;background:none;color:var(--ink2);font-size:14px;cursor:pointer;line-height:1}
+.oppslot .oadd{color:var(--accent);font-size:12px;font-weight:700}
+.selrow{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);margin-bottom:8px}
+.selrow.best{border-color:color-mix(in srgb,var(--res) 50%,var(--line))}
+.selrow .sc{font-family:"Rajdhani";font-weight:700;font-size:22px;text-align:center;min-width:46px;line-height:1}
+.selrow .sc.pos{color:var(--res)}.selrow .sc.neg{color:var(--accent)}
+.selrow .sc .cap{display:block;font-size:9px;color:var(--ink2);font-weight:400;font-family:"Zen Kaku Gothic New"}
+.selrow .snm{font-weight:700;font-size:14px}
+.selrow .sgrid{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.selrow .oc{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;color:#fff}
+.selrow .oc.win{background:var(--res)}.selrow .oc.lose{background:var(--accent)}.selrow .oc.even{background:var(--surface2);color:var(--ink2);border:1px solid var(--line)}
+.selrow .summ{font-size:11.5px;color:var(--ink2);margin-top:4px}
+.foot{margin-top:22px;font-size:12px;color:var(--ink2);border-top:1px solid var(--line);padding-top:13px;line-height:1.7}
+.foot b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:430px){.tab{padding:8px 11px;font-size:13.5px}.tabs{gap:2px;padding:3px}.crow>label{width:60px}}
+.pickbtn,.addbtn{width:100%;font-family:inherit;font-weight:700;font-size:14px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer;text-align:left}
+.addbtn{text-align:center;color:var(--accent);border-style:dashed;min-height:110px}
+.pickbtn:hover,.addbtn:hover{border-color:var(--accent)}
+.picker-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:7vh 16px}
+.picker-overlay[hidden]{display:none}
+.picker-overlay:not([hidden]){display:flex}
+.picker-box{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:82vh}
+.picker-box input{border:none;border-bottom:1px solid var(--line);border-radius:0;background:var(--surface);font-size:15px;padding:14px}
+.picker-list{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.picker-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-family:inherit;font-size:14px;color:var(--ink);background:none;border:none;border-bottom:1px solid var(--surface2);padding:11px 14px;cursor:pointer}
+.picker-item:hover,.picker-item.hi{background:var(--surface2)}
+.picker-item .pn{font-weight:700;flex:1;min-width:0}
+.picker-item .pt{display:flex;gap:4px;flex-shrink:0}
+.picker-item .pt .tp{font-size:9.5px;padding:1px 6px}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 class="disp">CHAMPIONS <span class="jp">構築＆ダメージ計算</span></h1>
+    <span class="tag">Pokémon Champions</span>
+  </header>
+  <p class="lead">パーティを3つまで保存（ブラウザ内・サーバー不使用）。各ポケモンに性格・持ち物・努力値・技を登録し、その構成でダメージ計算します。</p>
+  <div class="samplebar">収録<b>312体</b>・種族値/技は実データ（PokéAPI）。<b>使用率は一部のみ仮値</b>。Lv50シングル前提の概算（特性・天候・壁・急所は未反映）。データは<b>この端末のブラウザにのみ保存</b>されます。</div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-view="build" type="button">パーティ構築</button>
+    <button class="tab" data-view="calc" type="button">ダメージ計算</button>
+    <button class="tab" data-view="infer" type="button">逆算（振り推定）</button>
+    <button class="tab" data-view="select" type="button">選出（対相手）</button>
+  </div>
+
+  <div id="view-build">
+    <div class="pbar" id="pbar"></div>
+    <div class="cards" id="cards"></div>
+
+    <div class="subhead"><h2 class="disp">WEAKNESS <span class="jp">／ 弱点と補完</span></h2></div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 12px;line-height:1.6">相手に弱点を突かれるタイプと、それを<b>半減・無効で受けられる味方がいるか</b>を表示します。<span style="color:var(--accent);font-weight:700">赤い「穴」</span>＝そのタイプで攻撃されると危険です。</p>
+    <div class="anzsum" id="analysisSummary"></div>
+    <div id="holes"></div>
+
+    <div class="subhead"><h2 class="disp">弱点を補える候補 <span class="jp">／ 追加してみる</span></h2>
+      <div class="toggle" id="sortToggle"><button data-sort="cover" class="on">補完力順</button><button data-sort="usage">使用率順</button></div>
+    </div>
+    <div class="list" id="suggest"></div>
+  </div>
+
+  <div id="view-calc" hidden>
+    <div class="calc-panels">
+      <section class="card cpanel atk">
+        <h3 class="cph">こうげき側</h3>
+        <div class="crow"><label>ポケモン</label><select id="a-sel"></select></div>
+        <div class="crow"><label>技</label><select id="a-move"></select></div>
+        <div class="crow"><label>状況</label><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)"><input type="checkbox" id="a-pinch" style="width:auto;flex:none"> ピンチ（HP1/3以下・もうか等）</label></div>
+        <div class="cstat" id="a-statline"></div>
+      </section>
+      <section class="card cpanel def">
+        <h3 class="cph">ぼうぎょ側</h3>
+        <div class="crow"><label>ポケモン</label><select id="d-sel"></select></div>
+        <div class="cstat" id="d-statline"></div>
+      </section>
+    </div>
+    <section class="card" style="margin-top:14px">
+      <h3 class="cph" style="color:var(--ink)">場・状況</h3>
+      <div class="fldgrid">
+        <label>天候<select id="f-weather"><option value="">なし</option><option value="sun">晴れ</option><option value="rain">雨</option></select></label>
+        <label>フィールド<select id="f-terrain"><option value="">なし</option><option value="electric">エレキ</option><option value="grassy">グラス</option><option value="psychic">サイコ</option><option value="misty">ミスト</option></select></label>
+        <label>壁<select id="f-wall"><option value="">なし</option><option value="reflect">リフレクター</option><option value="light">ひかりのかべ</option><option value="veil">オーロラベール</option></select></label>
+        <label>攻撃ランク<select id="f-arank"></select></label>
+        <label>防御ランク<select id="f-drank"></select></label>
+        <label class="fchk"><input type="checkbox" id="f-burn"> こうげき側やけど</label>
+        <label class="fchk"><input type="checkbox" id="f-crit"> 急所</label>
+      </div>
+    </section>
+    <div class="calc-result" id="calcResult"></div>
+    <p class="foot" style="border:none;padding-top:6px">※ 登録した構成（性格・努力値・持ち物・特性）＋場・状況（天候/フィールド/壁/やけど/急所/ランク）を反映。フィールドは接地前提の概算です。</p>
+  </div>
+
+  <div id="view-infer" hidden>
+    <div class="calc-panels">
+      <section class="card cpanel atk">
+        <h3 class="cph">こちら（攻撃）</h3>
+        <div class="crow"><label>ポケモン</label><select id="rb-a"></select></div>
+        <div class="crow"><label>技</label><select id="rb-mv"></select></div>
+        <div class="crow"><label>状況</label><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)"><input type="checkbox" id="rb-pinch" style="width:auto;flex:none"> ピンチ</label></div>
+      </section>
+      <section class="card cpanel def">
+        <h3 class="cph">相手（防御）</h3>
+        <div class="crow"><label>ポケモン</label><button type="button" id="rb-d-btn" class="pickbtn">ポケモンを選択</button><input type="hidden" id="rb-d"></div>
+        <div class="crow"><label>性格</label><select id="rb-dnat"><option value="0">無補正</option><option value="up">防御↑</option><option value="down">防御↓</option></select></div>
+        <div class="crow"><label>持ち物</label><select id="rb-ditem"></select></div>
+        <div class="crow"><label>特性</label><select id="rb-dabil"></select></div>
+        <div class="crow"><label>観測(%)</label><input id="rb-pmin" type="number" min="1" max="100" value="45" style="width:64px;flex:none">〜<input id="rb-pmax" type="number" min="1" max="100" value="48" style="width:64px;flex:none"><span style="font-size:11px;color:var(--ink2)">HPが減った割合</span></div>
+      </section>
+    </div>
+    <div style="margin-top:12px"><button id="rb-run" class="autobtn" type="button" style="padding:10px 18px;font-size:14px">この観測で相手の振りを推定</button></div>
+    <div class="calc-result" id="rb-result"><div class="empty-msg">攻撃側と相手を選び、相手のHPが減った割合(%)を入れて「推定」を押してください。</div></div>
+    <p class="foot" style="border:none">※ 相手のHP％の減りから、整合する「HP・防御の能力ポイント配分」を全通り(最大33×33)試して絞り込みます。1回の観測ではHPと防御の組合せが複数残ることがあります（複数回の観測やダメージ計算タブでの照合で絞れます）。</p>
+  </div>
+
+  <div id="view-select" hidden>
+    <div class="subhead"><h2 class="disp">相手のパーティ <span class="jp">／ 6体をセット</span></h2>
+      <button id="sel-clear" class="clearbtn" type="button">相手をクリア</button>
+    </div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 12px;line-height:1.6">相手のポケモンを入れると、<b>自分のパーティ（現在のパーティ）</b>のどれで選出すると<b>タイプ相性で有利か</b>をスコア順で提案します。</p>
+    <div class="oppgrid" id="opp-grid"></div>
+    <div class="subhead" style="margin-top:20px"><h2 class="disp">おすすめ選出 <span class="jp">／ 有利な順</span></h2></div>
+    <div id="sel-result"><div class="empty-msg">相手を1体以上セットすると、有利な選出が出ます。</div></div>
+    <p class="foot" style="border:none">※ 各自分ポケモンが、相手6体に対して「タイプ一致技で弱点を突ける（有利）／相手のタイプ一致技で弱点を突かれる（不利）」かを集計。<b>有利数−不利数</b>でスコア化しています（技・特性・数値ではなくタイプ相性ベースの目安）。</p>
+  </div>
+
+  <p class="foot">タイプ相性・ダメージ計算式は事実データに基づいて計算。ポケモン名・タイプ・種族値・技は実データ、使用率は公式バトルデータ入力までの暫定です。保存データはブラウザのみ・いつでもリセットできます。</p>
+</div>
+
+<div id="picker" class="picker-overlay" hidden><div class="picker-box"><input id="picker-search" type="search" autocomplete="off" placeholder="ポケモン名・タイプで検索"><div id="picker-list" class="picker-list"></div></div></div>
+
+<script>
+const TYPES=["ノーマル","ほのお","みず","でんき","くさ","こおり","かくとう","どく","じめん","ひこう","エスパー","むし","いわ","ゴースト","ドラゴン","あく","はがね","フェアリー"];
+const TCOLOR={ノーマル:"--nrm",ほのお:"--fir",みず:"--wtrc",でんき:"--elc",くさ:"--grs",こおり:"--ice",かくとう:"--fig",どく:"--poi",じめん:"--grd",ひこう:"--fly",エスパー:"--psy",むし:"--bug",いわ:"--rck",ゴースト:"--gho",ドラゴン:"--drg",あく:"--drk",はがね:"--stl",フェアリー:"--fai"};
+const CHART={
+ ノーマル:[[],["いわ","はがね"],["ゴースト"]],ほのお:[["くさ","こおり","むし","はがね"],["ほのお","みず","いわ","ドラゴン"],[]],みず:[["ほのお","じめん","いわ"],["みず","くさ","ドラゴン"],[]],でんき:[["みず","ひこう"],["でんき","くさ","ドラゴン"],["じめん"]],くさ:[["みず","じめん","いわ"],["ほのお","くさ","どく","ひこう","むし","ドラゴン","はがね"],[]],こおり:[["くさ","じめん","ひこう","ドラゴン"],["ほのお","みず","こおり","はがね"],[]],かくとう:[["ノーマル","こおり","いわ","あく","はがね"],["どく","ひこう","エスパー","むし","フェアリー"],["ゴースト"]],どく:[["くさ","フェアリー"],["どく","じめん","いわ","ゴースト"],["はがね"]],じめん:[["ほのお","でんき","どく","いわ","はがね"],["くさ","むし"],["ひこう"]],ひこう:[["くさ","かくとう","むし"],["でんき","いわ","はがね"],[]],エスパー:[["かくとう","どく"],["エスパー","はがね"],["あく"]],むし:[["くさ","エスパー","あく"],["ほのお","かくとう","どく","ひこう","ゴースト","はがね","フェアリー"],[]],いわ:[["ほのお","こおり","ひこう","むし"],["かくとう","じめん","はがね"],[]],ゴースト:[["エスパー","ゴースト"],["あく"],["ノーマル"]],ドラゴン:[["ドラゴン"],["はがね"],["フェアリー"]],あく:[["エスパー","ゴースト"],["かくとう","あく","フェアリー"],[]],はがね:[["こおり","いわ","フェアリー"],["ほのお","みず","でんき","はがね"],[]],フェアリー:[["かくとう","ドラゴン","あく"],["ほのお","どく","はがね"],[]]
+};
+function single(a,d){const [se,nv,ne]=CHART[a];if(ne.includes(d))return 0;if(se.includes(d))return 2;if(nv.includes(d))return .5;return 1;}
+function takes(types,a){return types.reduce((m,t)=>m*single(a,t),1);}
+
+const MONS=[
+["フシギバナ",["くさ","どく"],null],
+["メガフシギバナ",["くさ","どく"],null],
+["リザードン",["ほのお","ひこう"],null],
+["メガリザードンX",["ほのお","ドラゴン"],null],
+["メガリザードンY",["ほのお","ひこう"],null],
+["カメックス",["みず"],null],
+["メガカメックス",["みず"],null],
+["スピアー",["むし","どく"],null],
+["メガスピアー",["むし","どく"],null],
+["ピジョット",["ノーマル","ひこう"],null],
+["メガピジョット",["ノーマル","ひこう"],null],
+["アーボック",["どく"],null],
+["ピカチュウ",["でんき"],null],
+["ライチュウ",["でんき"],null],
+["ライチュウ（アローラのすがた）",["でんき","エスパー"],null],
+["メガライチュウX",["でんき"],null],
+["メガライチュウY",["でんき"],null],
+["ピクシー",["フェアリー"],null],
+["メガピクシー",["フェアリー","ひこう"],null],
+["キュウコン",["ほのお"],null],
+["キュウコン（アローラのすがた）",["こおり","フェアリー"],null],
+["ラフレシア",["くさ","どく"],null],
+["ウインディ",["ほのお"],null],
+["ウインディ（ヒスイのすがた）",["ほのお","いわ"],null],
+["フーディン",["エスパー"],null],
+["メガフーディン",["エスパー"],null],
+["カイリキー",["かくとう"],null],
+["ウツボット",["くさ","どく"],null],
+["メガウツボット",["くさ","どく"],null],
+["ヤドラン",["みず","エスパー"],null],
+["メガヤドラン",["みず","エスパー"],null],
+["ヤドラン（ガラルのすがた）",["どく","エスパー"],null],
+["ゲンガー",["ゴースト","どく"],null],
+["メガゲンガー",["ゴースト","どく"],null],
+["ガルーラ",["ノーマル"],null],
+["メガガルーラ",["ノーマル"],null],
+["スターミー",["みず","エスパー"],null],
+["メガスターミー",["みず","エスパー"],null],
+["カイロス",["むし"],null],
+["メガカイロス",["むし","ひこう"],null],
+["ケンタロス",["ノーマル"],null],
+["ケンタロス（パルデアのすがた・コンバットしゅ）",["かくとう"],null],
+["ケンタロス（パルデアのすがた・ブレイズしゅ）",["かくとう","ほのお"],null],
+["ケンタロス（パルデアのすがた・ウォーターしゅ）",["かくとう","みず"],null],
+["ギャラドス",["みず","ひこう"],null],
+["メガギャラドス",["みず","あく"],null],
+["メタモン",["ノーマル"],null],
+["シャワーズ",["みず"],null],
+["サンダース",["でんき"],null],
+["ブースター",["ほのお"],null],
+["プテラ",["いわ","ひこう"],null],
+["メガプテラ",["いわ","ひこう"],null],
+["カビゴン",["ノーマル"],null],
+["カイリュー",["ドラゴン","ひこう"],15.9],
+["メガカイリュー",["ドラゴン","ひこう"],null],
+["メガニウム",["くさ"],null],
+["メガメガニウム",["くさ","フェアリー"],null],
+["バクフーン",["ほのお"],null],
+["バクフーン（ヒスイのすがた）",["ほのお","ゴースト"],null],
+["オーダイル",["みず"],null],
+["メガオーダイル",["みず","ドラゴン"],null],
+["アリアドス",["むし","どく"],null],
+["デンリュウ",["でんき"],null],
+["メガデンリュウ",["でんき","ドラゴン"],null],
+["マリルリ",["みず","フェアリー"],null],
+["ニョロトノ",["みず"],null],
+["エーフィ",["エスパー"],null],
+["ブラッキー",["あく"],null],
+["ヤドキング",["みず","エスパー"],null],
+["ヤドキング（ガラルのすがた）",["どく","エスパー"],null],
+["フォレトス",["むし","はがね"],null],
+["ハガネール",["はがね","じめん"],null],
+["メガハガネール",["はがね","じめん"],null],
+["ハリーセン",["みず","どく"],null],
+["ハッサム",["むし","はがね"],9.6],
+["メガハッサム",["むし","はがね"],9.4],
+["ヘラクロス",["むし","かくとう"],null],
+["メガヘラクロス",["むし","かくとう"],null],
+["エアームド",["はがね","ひこう"],null],
+["メガエアームド",["はがね","ひこう"],null],
+["ヘルガー",["あく","ほのお"],null],
+["メガヘルガー",["あく","ほのお"],null],
+["バンギラス",["いわ","あく"],11.1],
+["メガバンギラス",["いわ","あく"],10.9],
+["ジュカイン",["くさ"],null],
+["メガジュカイン",["くさ","ドラゴン"],null],
+["バシャーモ",["ほのお","かくとう"],null],
+["メガバシャーモ",["ほのお","かくとう"],null],
+["ラグラージ",["みず","じめん"],null],
+["メガラグラージ",["みず","じめん"],null],
+["ペリッパー",["みず","ひこう"],null],
+["サーナイト",["エスパー","フェアリー"],null],
+["メガサーナイト",["エスパー","フェアリー"],null],
+["ヤミラミ",["あく","ゴースト"],null],
+["メガヤミラミ",["あく","ゴースト"],null],
+["クチート",["はがね","フェアリー"],null],
+["メガクチート",["はがね","フェアリー"],null],
+["ボスゴドラ",["はがね","いわ"],3.2],
+["メガボスゴドラ",["はがね"],null],
+["チャーレム",["かくとう","エスパー"],null],
+["メガチャーレム",["かくとう","エスパー"],null],
+["ライボルト",["でんき"],null],
+["メガライボルト",["でんき"],null],
+["サメハダー",["みず","あく"],null],
+["メガサメハダー",["みず","あく"],null],
+["バクーダ",["ほのお","じめん"],null],
+["メガバクーダ",["ほのお","じめん"],null],
+["コータス",["ほのお"],null],
+["チルタリス",["ドラゴン","ひこう"],null],
+["メガチルタリス",["ドラゴン","フェアリー"],null],
+["ミロカロス",["みず"],2.9],
+["ポワルン",["ノーマル"],null],
+["ジュペッタ",["ゴースト"],null],
+["メガジュペッタ",["ゴースト"],null],
+["チリーン",["エスパー"],null],
+["メガチリーン",["エスパー","はがね"],null],
+["アブソル",["あく"],null],
+["メガアブソル",["あく"],null],
+["メガアブソルZ",["あく","ゴースト"],null],
+["オニゴーリ",["こおり"],null],
+["メガオニゴーリ",["こおり"],null],
+["メタグロス",["はがね","エスパー"],3.7],
+["メガメタグロス",["はがね","エスパー"],3.6],
+["ドダイトス",["くさ","じめん"],null],
+["ゴウカザル",["ほのお","かくとう"],null],
+["エンペルト",["みず","はがね"],null],
+["ムクホーク",["ノーマル","ひこう"],null],
+["メガムクホーク",["かくとう","ひこう"],null],
+["レントラー",["でんき"],null],
+["ロズレイド",["くさ","どく"],null],
+["ラムパルド",["いわ"],null],
+["トリデプス",["いわ","はがね"],null],
+["ミミロップ",["ノーマル"],null],
+["メガミミロップ",["ノーマル","かくとう"],null],
+["ミカルゲ",["ゴースト","あく"],null],
+["ガブリアス",["ドラゴン","じめん"],28.4],
+["メガガブリアス",["ドラゴン","じめん"],null],
+["メガガブリアスZ",["ドラゴン"],null],
+["ルカリオ",["かくとう","はがね"],17.2],
+["メガルカリオ",["かくとう","はがね"],17.0],
+["カバルドン",["じめん"],null],
+["ドクロッグ",["どく","かくとう"],null],
+["ユキノオー",["くさ","こおり"],null],
+["メガユキノオー",["くさ","こおり"],null],
+["マニューラ",["あく","こおり"],null],
+["ドサイドン",["じめん","いわ"],null],
+["リーフィア",["くさ"],null],
+["グレイシア",["こおり"],null],
+["グライオン",["じめん","ひこう"],null],
+["マンムー",["こおり","じめん"],null],
+["エルレイド",["エスパー","かくとう"],null],
+["メガエルレイド",["エスパー","かくとう"],null],
+["ユキメノコ",["こおり","ゴースト"],null],
+["メガユキメノコ",["こおり","ゴースト"],null],
+["ロトム",["でんき","ゴースト"],null],
+["ヒートロトム（ヒートロトム）",["でんき","ほのお"],null],
+["ウォッシュロトム（ウォッシュロトム）",["でんき","みず"],null],
+["フロストロトム（フロストロトム）",["でんき","こおり"],null],
+["スピンロトム（スピンロトム）",["でんき","ひこう"],null],
+["カットロトム（カットロトム）",["でんき","くさ"],null],
+["ジャローダ",["くさ"],null],
+["エンブオー",["ほのお","かくとう"],null],
+["メガエンブオー",["ほのお","かくとう"],null],
+["ダイケンキ",["みず"],null],
+["ダイケンキ（ヒスイのすがた）",["みず","あく"],null],
+["ミルホッグ",["ノーマル"],null],
+["レパルダス",["あく"],null],
+["ヤナッキー",["くさ"],null],
+["バオッキー",["ほのお"],null],
+["ヒヤッキー",["みず"],null],
+["ムシャーナ",["エスパー"],null],
+["ドリュウズ",["じめん","はがね"],null],
+["メガドリュウズ",["じめん","はがね"],null],
+["タブンネ",["ノーマル"],null],
+["メガタブンネ",["ノーマル","フェアリー"],null],
+["ローブシン",["かくとう"],null],
+["ペンドラー",["むし","どく"],null],
+["メガペンドラー",["むし","どく"],null],
+["エルフーン",["くさ","フェアリー"],null],
+["ワルビアル",["じめん","あく"],null],
+["ズルズキン",["あく","かくとう"],null],
+["メガズルズキン",["あく","かくとう"],null],
+["デスカーン",["ゴースト"],null],
+["ダストダス",["どく"],null],
+["ゾロアーク",["あく"],null],
+["ゾロアーク（ヒスイのすがた）",["ノーマル","ゴースト"],null],
+["ランクルス",["エスパー"],null],
+["バイバニラ",["こおり"],null],
+["エモンガ",["でんき","ひこう"],null],
+["シビルドン",["でんき"],null],
+["メガシビルドン",["でんき"],null],
+["シャンデラ",["ゴースト","ほのお"],null],
+["メガシャンデラ",["ゴースト","ほのお"],null],
+["ツンベアー",["こおり"],null],
+["マッギョ",["じめん","でんき"],null],
+["マッギョ（ガラルのすがた）",["じめん","はがね"],null],
+["ゴルーグ",["じめん","ゴースト"],null],
+["メガゴルーグ",["じめん","ゴースト"],null],
+["サザンドラ",["あく","ドラゴン"],null],
+["ウルガモス",["むし","ほのお"],null],
+["ブリガロン",["くさ","かくとう"],null],
+["メガブリガロン",["くさ","かくとう"],null],
+["マフォクシー",["ほのお","エスパー"],null],
+["メガマフォクシー",["ほのお","エスパー"],null],
+["ゲッコウガ",["みず","あく"],null],
+["メガゲッコウガ",["みず","あく"],null],
+["ホルード",["ノーマル","じめん"],null],
+["ファイアロー",["ほのお","ひこう"],null],
+["ビビヨン",["むし","ひこう"],null],
+["カエンジシ（オスのすがた）",["ほのお","ノーマル"],null],
+["メガカエンジシ",["ほのお","ノーマル"],null],
+["フラエッテ（えいえんのはな）",["フェアリー"],null],
+["メガフラエッテ",["フェアリー"],null],
+["フラージェス",["フェアリー"],null],
+["ゴロンダ",["かくとう","あく"],null],
+["トリミアン",["ノーマル"],null],
+["ニャオニクス（オスのすがた）",["エスパー"],null],
+["ニャオニクス（メスのすがた）",["エスパー"],null],
+["メガニャオニクス",["エスパー"],null],
+["ギルガルド（シールドフォルム）",["はがね","ゴースト"],null],
+["ギルガルド（ブレードフォルム）",["はがね","ゴースト"],null],
+["フレフワン",["フェアリー"],null],
+["ペロリーム",["フェアリー"],null],
+["カラマネロ",["あく","エスパー"],null],
+["メガカラマネロ",["あく","エスパー"],null],
+["ガメノデス",["いわ","みず"],null],
+["メガガメノデス",["いわ","かくとう"],null],
+["ドラミドロ",["どく","ドラゴン"],null],
+["メガドラミドロ",["どく","ドラゴン"],null],
+["ブロスター",["みず"],null],
+["エレザード",["でんき","ノーマル"],null],
+["ガチゴラス",["いわ","ドラゴン"],null],
+["アマルルガ",["いわ","こおり"],null],
+["ニンフィア",["フェアリー"],null],
+["ルチャブル",["かくとう","ひこう"],null],
+["メガルチャブル",["かくとう","ひこう"],null],
+["デデンネ",["でんき","フェアリー"],null],
+["ヌメルゴン",["ドラゴン"],null],
+["ヌメルゴン（ヒスイのすがた）",["はがね","ドラゴン"],null],
+["クレッフィ",["はがね","フェアリー"],null],
+["オーロット",["ゴースト","くさ"],null],
+["パンプジン（ふつうのサイズ）",["ゴースト","くさ"],null],
+["クレベース",["こおり"],null],
+["クレベース（ヒスイのすがた）",["こおり","いわ"],null],
+["オンバーン",["ひこう","ドラゴン"],null],
+["ジュナイパー",["くさ","ゴースト"],null],
+["ジュナイパー（ヒスイのすがた）",["くさ","かくとう"],null],
+["ガオガエン",["ほのお","あく"],8.7],
+["アシレーヌ",["みず","フェアリー"],24.1],
+["ドデカバシ",["ノーマル","ひこう"],null],
+["ケケンカニ",["かくとう","こおり"],null],
+["メガケケンカニ",["かくとう","こおり"],null],
+["ルガルガン（まひるのすがた）",["いわ"],null],
+["ルガルガン（まよなかのすがた）",["いわ"],null],
+["ルガルガン（たそがれのすがた）",["いわ"],null],
+["ドヒドイデ",["どく","みず"],null],
+["バンバドロ",["じめん"],null],
+["オニシズクモ",["みず","むし"],null],
+["エンニュート",["どく","ほのお"],null],
+["アマージョ",["くさ"],null],
+["ヤレユータン",["ノーマル","エスパー"],null],
+["ナゲツケサル",["かくとう"],null],
+["ミミッキュ（ばけたすがた）",["ゴースト","フェアリー"],19.8],
+["ジジーロン",["ノーマル","ドラゴン"],null],
+["メガジジーロン",["ノーマル","ドラゴン"],null],
+["ジャラランガ",["ドラゴン","かくとう"],2.6],
+["アーマーガア",["ひこう","はがね"],null],
+["アップリュー",["くさ","ドラゴン"],null],
+["タルップル",["くさ","ドラゴン"],null],
+["サダイジャ",["じめん"],null],
+["ポットデス",["ゴースト"],null],
+["ブリムオン",["エスパー","フェアリー"],null],
+["オーロンゲ",["あく","フェアリー"],7.9],
+["バリコオル",["こおり","エスパー"],null],
+["デスバーン",["じめん","ゴースト"],null],
+["マホイップ",["フェアリー"],null],
+["タイレーツ",["かくとう"],null],
+["メガタイレーツ",["かくとう"],null],
+["モルペコ（まんぷくもよう）",["でんき","あく"],null],
+["モルペコ（はらぺこもよう）",["でんき","あく"],null],
+["ドラパルト",["ドラゴン","ゴースト"],10.2],
+["アヤシシ",["ノーマル","エスパー"],null],
+["バサギリ",["むし","いわ"],null],
+["イダイトウ（オスのすがた）",["みず","ゴースト"],null],
+["イダイトウ（メスのすがた）",["みず","ゴースト"],null],
+["オオニューラ",["かくとう","どく"],null],
+["ハリーマン",["あく","どく"],null],
+["マスカーニャ",["くさ","あく"],22.7],
+["ラウドボーン",["ほのお","ゴースト"],6.2],
+["ウェーニバル",["みず","かくとう"],5.6],
+["イッカネズミ（４ひきかぞく）",["ノーマル"],null],
+["キョジオーン",["いわ"],5.1],
+["グレンアルマ",["ほのお","エスパー"],4.7],
+["ソウブレイズ",["ほのお","ゴースト"],4.4],
+["ハラバリー",["でんき"],4.0],
+["スコヴィラン",["くさ","ほのお"],null],
+["メガスコヴィラン",["くさ","ほのお"],null],
+["クエスパトラ",["エスパー"],null],
+["デカヌチャン",["フェアリー","はがね"],7.1],
+["イルカマン（ナイーブフォルム）",["みず"],null],
+["イルカマン（マイティフォルム）",["みず"],null],
+["ミミズズ",["はがね"],null],
+["キラフロル",["いわ","どく"],null],
+["メガキラフロル",["いわ","どく"],null],
+["ハカドッグ",["ゴースト"],null],
+["コノヨザル",["かくとう","ゴースト"],6.8],
+["リキキリン",["ノーマル","エスパー"],null],
+["ドドゲザン",["あく","はがね"],12.4],
+["サーフゴー",["はがね","ゴースト"],13.5],
+["ヤバソチャ",["くさ","ゴースト"],null],
+["ブリジュラス",["はがね","ドラゴン"],21.3],
+["カミツオロチ",["くさ","ドラゴン"],null]
+].map((m,i)=>({id:i,name:m[0],types:m[1],usage:m[2]}));
+const STATS=[[80,82,83,100,100,80],[80,100,123,122,120,80],[78,84,78,109,85,100],[78,130,111,130,85,100],[78,104,78,159,115,100],[79,83,100,85,105,78],[79,103,120,135,115,78],[65,90,40,45,80,75],[65,150,40,15,80,145],[83,80,75,70,70,101],[83,80,80,135,80,121],[60,95,69,65,79,80],[35,55,40,50,50,90],[60,90,55,90,80,110],[60,85,50,95,85,110],[60,135,95,90,95,110],[60,100,55,160,80,130],[95,70,73,95,90,60],[95,80,93,135,110,70],[73,76,75,81,100,100],[73,67,75,81,100,109],[75,80,85,110,90,50],[90,110,80,100,80,95],[95,115,80,95,80,90],[55,50,45,135,95,120],[55,50,65,175,105,150],[90,130,80,65,85,55],[80,105,65,100,70,70],[80,125,85,135,95,70],[95,75,110,100,80,30],[95,75,180,130,80,30],[95,100,95,100,70,30],[60,65,60,130,75,110],[60,65,80,170,95,130],[105,95,80,40,80,90],[105,125,100,60,100,100],[60,75,85,100,85,115],[60,100,105,130,105,120],[65,125,100,55,70,85],[65,155,120,65,90,105],[75,100,95,40,70,110],[75,110,105,30,70,100],[75,110,105,30,70,100],[75,110,105,30,70,100],[95,125,79,60,100,81],[95,155,109,70,130,81],[48,48,48,48,48,48],[130,65,60,110,95,65],[65,65,60,110,95,130],[65,130,60,95,110,65],[80,105,65,60,75,130],[80,135,85,70,95,150],[160,110,65,65,110,30],[91,134,95,100,100,80],[91,124,115,145,125,100],[80,82,100,83,100,80],[80,92,115,143,115,80],[78,84,78,109,85,100],[73,84,78,119,85,95],[85,105,100,79,83,78],[85,160,125,89,93,78],[70,90,70,60,70,40],[90,75,85,115,90,55],[90,95,105,165,110,45],[100,50,80,60,80,50],[90,75,75,90,100,70],[65,65,60,130,95,110],[95,65,110,60,130,65],[95,75,80,100,110,30],[95,65,80,110,110,30],[75,90,140,60,60,40],[75,85,200,55,65,30],[75,125,230,55,95,30],[65,95,85,55,55,85],[70,130,100,55,80,65],[70,150,140,65,100,75],[80,125,75,40,95,85],[80,185,115,40,105,75],[65,80,140,40,70,70],[65,140,110,40,100,110],[75,90,50,110,80,95],[75,90,90,140,90,115],[100,134,110,95,100,61],[100,164,150,95,120,71],[70,85,65,105,85,120],[70,110,75,145,85,145],[80,120,70,110,70,80],[80,160,80,130,80,100],[100,110,90,85,90,60],[100,150,110,95,110,70],[60,50,100,95,70,65],[68,65,65,125,115,80],[68,85,65,165,135,100],[50,75,75,65,65,50],[50,85,125,85,115,20],[50,85,85,55,55,50],[50,105,125,55,95,50],[70,110,180,60,60,50],[70,140,230,60,80,50],[60,60,75,60,75,80],[60,100,85,80,85,100],[70,75,60,105,60,105],[70,75,80,135,80,135],[70,120,40,95,40,95],[70,140,70,110,65,105],[70,100,70,105,75,40],[70,120,100,145,105,20],[70,85,140,85,70,20],[75,70,90,70,105,80],[75,110,110,110,105,80],[95,60,79,100,125,81],[70,70,70,70,70,70],[64,115,65,83,63,65],[64,165,75,93,83,75],[75,50,80,95,90,65],[75,50,110,135,120,65],[65,130,60,75,60,75],[65,150,60,115,60,115],[65,154,60,75,60,151],[80,80,80,80,80,80],[80,120,80,120,80,100],[80,135,130,95,90,70],[80,145,150,105,110,110],[95,109,105,75,85,56],[76,104,71,104,71,108],[84,86,88,111,101,60],[85,120,70,50,60,100],[85,140,100,60,90,110],[80,120,79,95,79,70],[60,70,65,125,105,90],[97,165,60,65,50,58],[60,52,168,47,138,30],[65,76,84,54,96,105],[65,136,94,54,96,135],[50,92,108,92,108,35],[108,130,95,80,85,102],[108,170,115,120,95,92],[108,130,85,141,85,151],[70,110,70,115,70,90],[70,145,88,140,70,112],[108,112,118,68,72,47],[83,106,65,86,65,85],[90,92,75,92,85,60],[90,132,105,132,105,30],[70,120,65,45,85,125],[115,140,130,55,55,40],[65,110,130,60,65,95],[65,60,110,130,95,65],[75,95,125,45,75,95],[110,130,80,70,60,80],[68,125,65,65,115,80],[68,165,95,65,115,110],[70,80,70,80,70,110],[70,80,70,140,100,120],[50,50,77,95,77,91],[50,65,107,105,107,86],[50,65,107,105,107,86],[50,65,107,105,107,86],[50,65,107,105,107,86],[50,65,107,105,107,86],[75,75,95,75,95,113],[110,123,65,100,65,65],[110,148,75,110,110,75],[95,100,85,108,70,70],[90,108,80,100,65,85],[60,85,69,60,69,77],[64,88,50,88,50,106],[75,98,63,98,63,101],[75,98,63,98,63,101],[75,98,63,98,63,101],[116,55,85,107,95,29],[110,135,60,50,65,88],[110,165,100,65,65,103],[103,60,86,60,86,50],[103,60,126,80,126,50],[105,140,95,55,65,45],[60,100,89,55,69,112],[60,140,149,75,99,62],[60,67,85,77,75,116],[95,117,80,65,70,92],[65,90,115,45,115,58],[65,130,135,55,135,68],[58,50,145,95,105,30],[80,95,82,60,82,75],[60,105,60,120,60,105],[55,100,60,125,60,110],[110,65,75,125,85,30],[71,95,85,110,95,79],[55,75,60,75,60,103],[85,115,80,105,80,50],[85,145,80,135,90,80],[60,55,90,145,90,80],[60,75,110,175,110,90],[95,130,80,70,80,50],[109,66,84,81,99,32],[109,81,99,66,84,32],[89,124,80,55,80,55],[89,159,105,70,105,55],[92,105,90,125,90,98],[85,60,65,135,105,100],[88,107,122,74,75,64],[88,137,172,74,115,44],[75,69,72,114,100,104],[75,69,72,159,125,134],[72,95,67,103,71,122],[72,125,77,133,81,142],[85,56,77,50,77,78],[78,81,71,74,69,126],[80,52,50,90,50,89],[86,68,72,109,66,106],[86,88,92,129,86,126],[74,65,67,125,128,92],[74,85,87,155,148,102],[78,65,68,112,154,75],[95,124,78,69,71,58],[75,80,60,65,90,102],[74,48,76,83,81,104],[74,48,76,83,81,104],[74,48,76,143,101,124],[60,50,140,50,140,60],[60,140,50,140,50,60],[101,72,72,99,89,29],[82,80,86,85,75,72],[86,92,88,68,75,73],[86,102,88,98,120,88],[72,105,115,54,86,68],[72,140,130,64,106,88],[65,75,90,97,123,44],[65,85,105,132,163,44],[71,73,88,120,89,59],[62,55,52,109,94,109],[82,121,119,69,59,71],[123,77,72,99,92,58],[95,65,65,110,130,60],[78,92,75,74,63,118],[78,137,100,74,93,118],[67,58,57,81,67,101],[90,100,70,110,150,80],[80,100,100,110,150,60],[57,80,91,80,87,75],[85,110,76,65,82,56],[65,90,122,58,75,84],[95,117,184,44,46,28],[95,127,184,34,36,38],[85,70,80,97,80,123],[78,107,75,100,100,70],[88,112,80,95,95,60],[95,115,90,80,90,60],[80,74,74,126,116,60],[80,120,75,75,75,60],[97,132,77,62,67,43],[97,157,122,62,107,33],[75,115,65,55,65,112],[85,115,75,55,75,82],[75,117,65,55,65,110],[50,63,152,53,142,35],[100,125,100,55,85,35],[68,70,92,50,132,42],[68,64,60,111,60,117],[72,120,98,50,98,72],[90,60,80,90,110,60],[100,120,90,40,60,80],[55,90,80,50,105,96],[78,60,85,135,91,36],[78,85,110,160,116,36],[75,110,125,100,105,85],[98,87,105,53,85,67],[70,110,80,95,60,70],[110,85,80,100,80,30],[72,107,125,65,70,71],[60,65,65,134,114,70],[57,90,95,136,103,29],[95,120,65,95,75,60],[80,85,75,110,100,70],[58,95,145,50,105,30],[65,60,75,110,121,64],[65,100,100,70,60,75],[65,135,135,70,65,100],[58,95,58,70,58,97],[58,95,58,70,58,97],[88,120,75,100,75,142],[103,105,72,105,75,65],[70,135,95,45,70,85],[120,112,65,80,75,78],[120,92,65,100,75,78],[80,130,60,40,80,120],[85,115,95,65,65,85],[76,110,70,81,70,123],[104,75,100,110,75,66],[85,120,80,85,75,85],[74,75,70,65,75,111],[100,100,130,45,90,35],[85,60,100,125,80,75],[75,125,80,60,100,85],[109,64,91,103,83,45],[65,108,65,108,65,75],[65,138,85,138,85,75],[95,60,60,101,60,105],[85,75,77,70,105,94],[100,70,72,53,62,100],[100,160,97,106,87,100],[70,85,145,60,55,65],[83,55,90,130,81,86],[83,90,105,150,96,101],[72,101,100,50,97,68],[110,115,80,50,90,90],[120,90,70,110,70,60],[100,135,120,60,85,50],[87,60,95,133,91,84],[71,60,106,121,80,70],[90,105,130,125,65,85],[106,80,110,120,80,44]];
+const MOVES=[["あくのはどう",80,"あく","sp"],["あなをほる",80,"じめん","ph"],["あばれる",120,"ノーマル","ph"],["いびき",50,"ノーマル","sp"],["いわなだれ",75,"いわ","ph"],["うずしお",35,"みず","sp"],["うたかたのアリア",90,"みず","sp"],["うちおとす",50,"いわ","ph"],["うっぷんばらし",75,"あく","ph"],["うらみつらみ",75,"ゴースト","sp"],["おはかまいり",50,"ゴースト","ph"],["かえんほうしゃ",90,"ほのお","sp"],["かかとおとし",120,"かくとう","ph"],["かげうち",40,"ゴースト","ph"],["かげぬい",80,"ゴースト","ph"],["かふんだんご",90,"むし","sp"],["かみくだく",80,"あく","ph"],["かみつく",60,"あく","ph"],["かみなり",110,"でんき","sp"],["かみなりのキバ",65,"でんき","ph"],["かみなりパンチ",75,"でんき","ph"],["からげんき",70,"ノーマル","ph"],["かわらわり",75,"かくとう","ph"],["がんせきふうじ",60,"いわ","ph"],["がんせきほう",150,"いわ","ph"],["がんせきアックス",65,"いわ","ph"],["きあいだま",120,"かくとう","sp"],["きあいパンチ",150,"かくとう","ph"],["きまぐレーザー",80,"ドラゴン","sp"],["きゅうけつ",80,"むし","ph"],["くさわけ",50,"くさ","ph"],["くちばしキャノン",100,"ひこう","ph"],["げきりん",120,"ドラゴン","ph"],["げんしのちから",60,"いわ","sp"],["こうそくスピン",50,"ノーマル","ph"],["こおりのいぶき",60,"こおり","sp"],["こおりのつぶて",40,"こおり","ph"],["こおりのキバ",65,"こおり","ph"],["こごえるかぜ",55,"こおり","sp"],["さわぐ",90,"ノーマル","sp"],["しおづけ",40,"いわ","ph"],["しおふき",150,"みず","sp"],["しっとのほのお",70,"ほのお","sp"],["しっぺがえし",50,"あく","ph"],["しねんのずつき",80,"エスパー","ph"],["しめつける",15,"ノーマル","ph"],["しんくうは",40,"かくとう","sp"],["しんそく",80,"ノーマル","ph"],["じごくづき",80,"あく","ph"],["じしん",100,"じめん","ph"],["じだんだ",75,"じめん","ph"],["じならし",60,"じめん","ph"],["じばく",200,"ノーマル","ph"],["じゃれつく",90,"フェアリー","ph"],["じんつうりき",80,"エスパー","sp"],["すてみタックル",120,"ノーマル","ph"],["すなじごく",35,"じめん","ph"],["せいなるつるぎ",90,"かくとう","ph"],["そらをとぶ",90,"ひこう","ph"],["たきのぼり",80,"みず","ph"],["たたりめ",65,"ゴースト","sp"],["だいちのちから",90,"じめん","sp"],["だいちのはどう",50,"ノーマル","sp"],["だいばくはつ",250,"ノーマル","ph"],["だいふんげき",120,"ほのお","ph"],["だいもんじ",110,"ほのお","sp"],["だくりゅう",90,"みず","sp"],["ついばむ",60,"ひこう","ph"],["つけあがる",20,"あく","ph"],["つじぎり",70,"あく","ph"],["つばめがえし",60,"ひこう","ph"],["つららおとし",85,"こおり","ph"],["つららばり",25,"こおり","ph"],["てっていこうせん",140,"はがね","sp"],["であいがしら",90,"むし","ph"],["でんこうせっか",40,"ノーマル","ph"],["でんじほう",120,"でんき","sp"],["とっておき",140,"ノーマル","ph"],["とどめばり",50,"むし","ph"],["とびかかる",80,"むし","ph"],["とびつく",50,"むし","ph"],["とびはねる",85,"ひこう","ph"],["とびひざげり",130,"かくとう","ph"],["ともえなげ",60,"かくとう","ph"],["とんぼがえり",70,"むし","ph"],["どくづき",80,"どく","ph"],["どくどくのキバ",50,"どく","ph"],["どくばりセンボン",60,"どく","ph"],["どろかけ",20,"じめん","sp"],["どろぼう",60,"あく","ph"],["なみのり",90,"みず","sp"],["ねこだまし",40,"ノーマル","ph"],["ねっさのだいち",70,"じめん","sp"],["ねっとう",80,"みず","sp"],["ねっぷう",95,"ほのお","sp"],["のしかかり",85,"ノーマル","ph"],["はいよるいちげき",70,"むし","ph"],["はかいこうせん",150,"ノーマル","sp"],["はがねのつばさ",70,"はがね","ph"],["はたきおとす",65,"あく","ph"],["はたく",40,"ノーマル","ph"],["はどうだん",80,"かくとう","sp"],["はなびらのまい",120,"くさ","sp"],["はなふぶき",90,"くさ","ph"],["はめつのひかり",140,"フェアリー","sp"],["はやてがえし",65,"かくとう","ph"],["ばかぢから",120,"かくとう","ph"],["ばくおんぱ",140,"ノーマル","sp"],["ばくれつパンチ",100,"かくとう","ph"],["ひけん・ちえなみ",65,"あく","ph"],["ひゃっきやこう",60,"ゴースト","sp"],["ひやみず",50,"みず","sp"],["ひょうざんおろし",100,"こおり","ph"],["ふいうち",70,"あく","ph"],["ふぶき",110,"こおり","sp"],["ふんえん",80,"ほのお","sp"],["ふんか",150,"ほのお","sp"],["ふんどのこぶし",50,"ゴースト","ph"],["ぶきみなじゅもん",80,"エスパー","sp"],["ぶちかまし",120,"じめん","ph"],["ぶんまわす",60,"あく","ph"],["ほうでん",80,"でんき","sp"],["ほうふく",1,"あく","ph"],["ほしがる",60,"ノーマル","ph"],["ほっぺすりすり",20,"でんき","ph"],["ほのおのうず",35,"ほのお","sp"],["ほのおのまい",80,"ほのお","sp"],["ほのおのキバ",65,"ほのお","ph"],["ほのおのパンチ",75,"ほのお","ph"],["ほのおのムチ",80,"ほのお","ph"],["ぼうふう",110,"ひこう","sp"],["まきつく",15,"ノーマル","ph"],["まとわりつく",20,"むし","sp"],["みずあめボム",60,"くさ","sp"],["みずしゅりけん",15,"みず","sp"],["みずのはどう",60,"みず","sp"],["みらいよち",120,"エスパー","sp"],["みわくのボイス",80,"フェアリー","sp"],["むしくい",60,"むし","ph"],["むしのさざめき",90,"むし","sp"],["むしのていこう",50,"むし","sp"],["むねんのつるぎ",90,"ほのお","ph"],["もえつきる",130,"ほのお","sp"],["もろはのずつき",150,"いわ","ph"],["やけっぱち",75,"ほのお","ph"],["やまあらし",60,"かくとう","ph"],["ゆきなだれ",60,"こおり","ph"],["りゅうせいぐん",130,"ドラゴン","sp"],["りゅうのはどう",85,"ドラゴン","sp"],["りんごさん",80,"くさ","sp"],["りんしょう",60,"ノーマル","sp"],["れいとうパンチ",75,"こおり","ph"],["れいとうビーム",90,"こおり","sp"],["れんごく",100,"ほのお","sp"],["アイアンテール",100,"はがね","ph"],["アイアンヘッド",80,"はがね","ph"],["アイアンローラー",130,"はがね","ph"],["アイススピナー",80,"こおり","ph"],["アイスハンマー",100,"こおり","ph"],["アクアカッター",70,"みず","ph"],["アクアジェット",40,"みず","ph"],["アクアステップ",80,"みず","ph"],["アクアテール",90,"みず","ph"],["アクアブレイク",85,"みず","ph"],["アクセルロック",40,"いわ","ph"],["アクロバット",55,"ひこう","ph"],["アシストパワー",20,"エスパー","sp"],["アシッドボム",40,"どく","sp"],["アーマーキャノン",120,"ほのお","sp"],["アームハンマー",100,"かくとう","ph"],["イカサマ",95,"あく","ph"],["インファイト",120,"かくとう","ph"],["ウェザーボール",50,"ノーマル","sp"],["ウェーブタックル",120,"みず","ph"],["ウッドハンマー",120,"くさ","ph"],["ウッドホーン",75,"くさ","ph"],["エアカッター",60,"ひこう","sp"],["エアスラッシュ",75,"ひこう","sp"],["エナジーボール",90,"くさ","sp"],["エレキネット",55,"でんき","sp"],["エレクトロビーム",130,"でんき","sp"],["オーバーヒート",130,"ほのお","sp"],["オーラぐるま",110,"でんき","ph"],["キラースピン",30,"どく","ph"],["ギガインパクト",150,"ノーマル","ph"],["ギガドレイン",75,"くさ","sp"],["クイックターン",60,"みず","ph"],["クラブハンマー",100,"みず","ph"],["クリアスモッグ",50,"どく","sp"],["クロスチョップ",100,"かくとう","ph"],["クロスポイズン",70,"どく","ph"],["グラススライダー",55,"くさ","ph"],["ゲップ",120,"どく","sp"],["コメットパンチ",90,"はがね","ph"],["ゴッドバード",140,"ひこう","ph"],["ゴーストダイブ",90,"ゴースト","ph"],["ゴールドラッシュ",120,"はがね","sp"],["サイコカッター",70,"エスパー","ph"],["サイコキネシス",90,"エスパー","sp"],["サイコショック",80,"エスパー","sp"],["サイコノイズ",75,"エスパー","sp"],["サイコファング",85,"エスパー","ph"],["サンダーダイブ",100,"でんき","ph"],["シェルアームズ",90,"どく","sp"],["シェルブレード",75,"みず","ph"],["シザークロス",80,"むし","ph"],["シャカシャカほう",80,"くさ","sp"],["シャドークロー",70,"ゴースト","ph"],["シャドーパンチ",60,"ゴースト","ph"],["シャドーボール",80,"ゴースト","sp"],["ジェットパンチ",60,"みず","ph"],["スイープビンタ",25,"ノーマル","ph"],["スケイルショット",25,"ドラゴン","ph"],["スケイルノイズ",110,"ドラゴン","sp"],["ストーンエッジ",100,"いわ","ph"],["スマートホーン",70,"はがね","ph"],["ソウルクラッシュ",75,"フェアリー","ph"],["ソーラービーム",120,"くさ","sp"],["ソーラーブレード",125,"くさ","ph"],["タネばくだん",80,"くさ","ph"],["タネマシンガン",25,"くさ","ph"],["ダイビング",80,"みず","ph"],["ダストシュート",120,"どく","ph"],["ダブルアタック",35,"ノーマル","ph"],["ダブルウイング",40,"ひこう","ph"],["ダメおし",60,"あく","ph"],["チャージビーム",50,"でんき","sp"],["ツインビーム",40,"エスパー","sp"],["デカハンマー",160,"はがね","ph"],["トライアタック",80,"ノーマル","sp"],["トラバサミ",35,"くさ","ph"],["トリックフラワー",70,"くさ","ph"],["トリプルアクセル",20,"こおり","ph"],["トロピカルキック",70,"くさ","ph"],["ドゲザン",85,"あく","ph"],["ドラゴンアロー",50,"ドラゴン","ph"],["ドラゴンクロー",80,"ドラゴン","ph"],["ドラゴンダイブ",100,"ドラゴン","ph"],["ドラゴンテール",60,"ドラゴン","ph"],["ドリルくちばし",80,"ひこう","ph"],["ドリルライナー",80,"じめん","ph"],["ドレインキッス",50,"フェアリー","sp"],["ドレインパンチ",75,"かくとう","ph"],["ナイトバースト",85,"あく","sp"],["ニトロチャージ",50,"ほのお","ph"],["ネズミざん",20,"ノーマル","ph"],["ハイドロカノン",150,"みず","sp"],["ハイドロポンプ",110,"みず","sp"],["ハイパーボイス",90,"ノーマル","sp"],["ハードプラント",150,"くさ","sp"],["バリアーラッシュ",70,"エスパー","ph"],["バレットパンチ",40,"はがね","ph"],["バークアウト",55,"あく","sp"],["パラボラチャージ",65,"でんき","sp"],["パワーウィップ",120,"くさ","ph"],["パワージェム",80,"いわ","sp"],["フェイタルクロー",80,"どく","ph"],["フェイント",30,"ノーマル","ph"],["フライングプレス",100,"かくとう","ph"],["フリーズドライ",70,"こおり","sp"],["フレアソング",80,"ほのお","sp"],["フレアドライブ",120,"ほのお","ph"],["ブラストバーン",150,"ほのお","sp"],["ブレイククロー",75,"ノーマル","ph"],["ブレイズキック",85,"ほのお","ph"],["ブレイブバード",120,"ひこう","ph"],["ヘドロばくだん",90,"どく","sp"],["ヘドロウェーブ",95,"どく","sp"],["ベノムショック",65,"どく","sp"],["ボディプレス",80,"かくとう","ph"],["ボルテッカー",120,"でんき","ph"],["ボルトチェンジ",70,"でんき","sp"],["ボーンラッシュ",25,"じめん","ph"],["ポルターガイスト",110,"ゴースト","ph"],["マジカルシャイン",80,"フェアリー","sp"],["マジカルフレイム",75,"ほのお","sp"],["マッドショット",55,"じめん","sp"],["マッハパンチ",40,"かくとう","ph"],["ミサイルばり",25,"むし","ph"],["ミストバースト",100,"フェアリー","sp"],["ムーンフォース",95,"フェアリー","sp"],["メガトンキック",120,"ノーマル","ph"],["メガホーン",120,"むし","ph"],["メテオビーム",120,"いわ","sp"],["ライジングボルト",70,"でんき","sp"],["ラスターカノン",80,"はがね","sp"],["リーフストーム",130,"くさ","sp"],["リーフブレード",90,"くさ","ph"],["ルミナコリジョン",80,"エスパー","sp"],["レイジングブル",90,"ノーマル","ph"],["ロックブラスト",25,"いわ","ph"],["ローキック",65,"かくとう","ph"],["ワイドフォース",80,"エスパー","sp"],["ワイドブレイカー",60,"ドラゴン","ph"],["ワイルドボルト",90,"でんき","ph"],["１０まんばりき",95,"じめん","ph"],["１０まんボルト",90,"でんき","sp"],["３ぼんのや",90,"かくとう","ph"],["ＤＤラリアット",85,"あく","ph"],["Ｇのちから",80,"くさ","ph"]].map(a=>({n:a[0],p:a[1],t:a[2],c:a[3]}));
+const MOVEPOOL=[[184,97,249,286,32,55,217,102,254,49,267,266,178,61,103,95,85,219,50,185,21,268,99,150,51,191,3,30,172,62,167,220,88,45],[184,97,249,286,32,55,217,102,254,49,267,266,178,61,103,95,85,219,50,185,21,268,99,150,51,191,3,30,172,62,167,220,45],[262,27,184,97,181,261,281,26,32,55,217,130,65,154,153,49,108,237,94,11,58,264,148,95,1,16,236,128,4,144,275,20,22,177,21,207,92,98,127,17,23,150,33,293,176,51,70,238,120,165,3,172,244,224,125,212,88],[262,27,184,97,181,261,281,26,32,55,217,130,65,154,153,49,237,94,11,58,148,95,1,16,236,128,4,144,20,22,177,21,207,92,98,127,17,23,150,33,293,176,51,70,238,120,165,3,172,244,125,212],[262,27,184,97,181,261,281,26,32,55,217,130,65,154,153,49,237,94,11,58,148,95,1,16,236,128,4,144,20,22,177,21,207,92,98,127,17,23,150,33,293,176,51,70,238,120,165,3,172,244,125,212],[27,41,184,97,246,281,26,32,173,55,114,247,154,49,108,152,162,66,90,148,163,95,0,1,269,16,285,155,44,59,221,93,101,157,4,22,151,21,135,17,146,23,51,186,238,150,276,38,3,7,34,172,62,111,160,91,5,88],[27,41,184,97,246,281,26,32,173,55,114,247,154,49,152,162,66,90,148,163,95,0,1,269,16,285,155,44,59,221,93,101,157,4,22,151,21,135,17,146,23,51,186,238,150,276,38,3,7,34,172,62,111,160,91,5],[184,97,32,55,217,266,139,15,48,205,79,85,240,22,185,21,190,84,96,268,99,138,150,176,70,89,225,120,165,179,3,140,43,78,80,224,223,278,132],[184,97,32,55,217,266,139,15,48,205,79,85,240,22,185,21,190,84,96,268,99,138,150,176,70,89,225,120,165,179,3,140,43,78,80,224,223,278,132],[184,97,194,265,55,130,94,39,58,177,21,84,98,150,176,67,70,89,3,75,224,88],[97,184,194,265,130,94,39,58,177,98,84,21,70,150,89,3,224,75],[184,97,55,192,222,154,49,267,266,162,201,95,0,1,16,29,48,85,219,4,8,50,185,21,96,113,268,19,37,99,127,17,150,23,293,51,89,238,120,276,252,3,30,43,86,167,212,132,88,131,45],[27,270,281,55,76,18,154,108,294,39,296,53,90,95,1,137,121,20,22,271,21,284,99,105,150,89,123,179,3,30,226,241,75,91,257,88,124],[27,184,97,270,281,26,55,76,18,154,108,294,39,296,53,90,95,1,137,274,121,20,22,242,271,21,284,99,105,150,89,120,123,179,3,30,226,241,75,91,257,88,124],[27,184,97,136,270,281,26,76,18,154,39,296,294,53,198,90,95,1,137,274,292,199,121,20,22,200,271,21,284,99,105,150,89,123,179,3,30,226,241,75,91,257,166,124],[27,184,97,270,281,26,76,18,154,294,296,53,90,95,1,137,274,121,20,22,242,271,21,284,99,105,150,89,120,179,3,30,226,241,75,91,257,124],[27,184,97,270,281,26,76,18,154,294,296,53,90,95,1,137,274,121,20,22,242,271,21,284,99,105,150,89,120,179,3,30,226,241,75,91,257,124],[27,184,97,77,136,281,26,283,55,76,217,18,65,114,154,279,108,280,11,152,39,296,53,193,198,248,81,95,1,137,44,199,209,229,274,128,275,20,22,151,177,242,21,99,135,150,89,123,38,3,226,111,241,224,100,166,88],[27,184,97,136,26,283,55,217,18,65,114,279,280,11,152,39,296,53,193,198,248,81,95,1,137,44,199,209,274,229,128,275,20,22,151,177,242,21,99,135,150,89,38,3,226,111,241,224,166],[184,97,181,261,55,217,65,153,154,170,94,11,178,95,0,1,44,54,199,209,275,21,42,92,60,150,123,252,3,43,172,244,75,125,211,166],[184,97,55,217,114,154,280,170,152,162,178,53,95,0,1,274,44,54,199,259,21,37,60,146,150,35,123,38,3,43,172,111,241,36,72,211,166,232],[184,97,286,218,55,217,102,267,280,266,15,178,103,95,274,219,185,242,21,268,150,191,3,30,172,167,220,132],[184,97,142,181,2,261,32,171,55,64,217,106,65,154,94,11,294,53,248,148,201,95,1,16,155,47,144,21,92,19,127,17,150,51,70,89,123,252,3,244,125,88],[143,184,97,142,181,2,261,32,171,55,64,217,65,154,214,94,11,294,53,248,148,201,95,1,16,155,47,255,4,144,21,215,92,19,127,17,150,23,51,70,89,123,252,3,7,244,125,290],[27,184,97,136,281,26,55,76,154,108,170,178,198,95,1,274,292,44,199,209,229,128,20,151,242,21,197,99,150,89,3,226,166],[27,184,97,136,281,26,154,170,178,198,95,1,274,292,44,199,209,229,128,20,151,242,21,197,99,150,89,3,226,166],[27,184,97,281,26,171,55,106,65,49,189,214,108,295,11,298,95,1,48,85,128,4,20,151,22,50,242,21,190,291,99,145,23,150,51,89,225,120,3,7,43,277,46,251,223,290,88],[184,97,286,55,217,254,267,266,287,178,95,29,79,85,219,185,21,113,268,99,138,150,89,191,3,30,172,188,80,167,220,132,131,45],[184,97,286,217,254,267,266,287,178,95,29,79,85,219,185,21,113,268,99,138,150,89,191,3,30,172,188,80,167,220,131],[27,184,97,136,281,26,55,192,76,65,114,247,154,49,108,170,11,152,162,66,198,90,163,95,1,269,292,44,59,199,209,221,93,229,22,151,200,204,242,21,135,146,150,51,70,276,38,3,172,111,5,166,88],[27,184,97,136,26,192,65,114,247,154,49,170,11,152,162,66,198,90,163,95,1,269,292,44,59,199,209,221,93,229,22,151,200,204,242,21,135,146,150,51,70,276,38,3,172,111,5,166],[184,97,136,281,26,55,192,222,65,114,247,154,49,267,170,266,11,152,66,198,203,90,163,95,1,269,292,44,59,199,209,85,221,93,229,255,22,151,204,242,21,268,37,135,146,150,51,120,276,38,3,7,172,111,167,5,290,166],[63,52,27,184,97,281,26,55,76,222,273,18,108,267,170,266,39,296,178,195,198,95,0,274,209,85,128,20,22,151,185,200,242,21,207,96,113,268,60,99,150,208,89,38,3,43,188,167,132],[63,52,27,184,97,26,222,273,18,267,170,266,39,296,178,195,198,95,0,274,209,85,128,20,22,151,185,200,242,21,207,96,113,268,60,99,150,208,89,38,3,43,188,167,132],[27,184,97,77,281,26,32,55,76,217,18,65,114,247,154,169,49,108,11,152,162,39,296,90,95,1,16,209,128,4,263,20,22,151,242,21,207,113,135,17,146,23,150,51,70,83,89,225,123,38,3,62,91,100,5,223,88],[27,184,97,77,281,26,32,55,217,18,65,114,247,154,169,49,108,11,152,162,39,296,90,95,1,16,209,128,4,263,20,22,151,242,21,207,113,135,17,146,23,150,51,70,83,89,225,123,38,3,62,91,5,223],[52,184,97,283,55,76,18,114,247,152,296,198,90,163,274,285,157,292,44,59,199,221,93,229,255,21,197,135,146,150,33,186,38,3,34,226,111,160,5],[52,184,97,283,55,18,114,247,152,296,198,90,163,274,285,157,292,44,59,199,221,93,229,255,21,197,135,146,150,33,186,38,3,34,226,111,160,5],[27,184,97,2,26,32,171,55,106,49,214,295,95,1,48,205,79,4,22,21,99,138,145,23,150,51,70,83,89,120,3,7,140,80,75,223,257,45],[27,184,97,2,26,32,171,106,49,214,295,95,1,48,205,79,4,22,21,99,138,145,23,150,51,70,83,89,120,3,7,140,80,75,223,257,45],[184,97,2,282,32,171,55,76,217,18,65,114,154,49,214,295,11,152,289,39,296,294,90,95,1,155,44,48,209,4,8,50,21,215,135,150,23,51,89,225,38,3,30,43,5],[184,97,2,282,32,171,55,154,49,214,295,289,294,39,90,95,1,269,155,44,48,240,4,8,50,21,215,150,23,51,89,225,3,30],[184,97,181,2,261,282,32,171,55,65,154,49,214,295,11,289,294,39,95,1,269,155,44,240,4,8,144,50,21,215,150,23,51,89,3,30,244,125],[184,97,2,282,32,171,173,55,247,154,49,214,295,289,294,39,90,163,95,1,269,155,44,240,4,8,50,21,215,135,150,23,51,89,3,30,111,160,5],[184,97,2,32,55,76,254,130,18,65,114,247,154,49,214,237,11,152,162,39,296,66,90,148,81,95,0,16,155,59,221,93,8,144,21,37,135,17,146,150,51,238,120,38,3,43,111,5,212,45],[184,97,2,32,55,254,130,18,65,114,247,154,49,214,237,11,152,162,39,296,66,90,148,81,95,0,16,155,59,221,93,8,144,21,37,135,17,146,150,51,238,120,38,3,43,111,5,212,45],[],[184,97,77,55,114,247,154,152,162,66,90,248,163,95,1,137,59,209,221,93,21,135,17,150,186,123,38,3,30,172,111,75,5,166,88],[184,97,77,55,76,18,154,294,296,248,95,1,137,209,121,271,21,284,19,17,150,123,179,3,30,172,226,75,278,166,88],[184,97,77,181,261,55,76,106,65,154,94,11,248,95,1,137,209,115,144,275,21,42,92,127,17,150,123,3,30,172,244,75,125,166,88],[184,97,194,283,55,130,65,154,49,214,94,11,162,58,61,148,201,16,155,236,4,21,98,19,37,127,17,150,23,33,176,51,70,89,225,120,3,7,43,224,290],[184,97,194,283,130,65,154,49,214,94,11,162,58,61,148,201,16,155,236,4,21,98,19,37,127,17,150,23,33,51,70,89,225,120,3,7,43,224,290],[52,27,184,97,77,156,281,26,32,55,192,76,217,222,106,18,65,114,247,169,49,202,108,295,11,152,39,296,294,198,90,248,298,95,1,269,16,155,44,209,219,128,4,20,22,151,50,21,135,17,23,150,51,123,38,3,7,30,62,111,5,88],[27,184,97,147,281,26,32,55,76,106,130,18,65,114,247,154,49,214,108,237,94,11,152,162,296,58,90,148,95,269,155,157,47,59,221,236,128,4,20,22,151,177,50,21,98,135,23,293,176,51,70,238,150,120,38,3,172,111,160,224,5,125,212,88,131,45],[27,184,97,147,281,26,32,106,130,18,65,114,247,154,49,214,237,94,11,152,162,296,58,90,148,95,269,155,157,47,59,221,236,128,4,20,22,151,177,50,21,98,135,23,293,176,51,70,238,150,120,38,3,172,111,160,125,212,131],[184,97,249,286,218,32,55,217,102,154,49,15,287,178,61,103,95,269,274,44,219,50,185,21,99,150,33,51,238,191,3,30,172,220,88],[184,97,249,286,218,32,55,217,102,154,49,15,287,178,61,103,95,269,274,44,219,50,185,21,99,150,33,51,238,191,3,30,172,220,88],[262,27,184,97,116,142,181,261,281,26,55,217,273,65,154,153,49,108,94,11,294,53,95,1,155,44,48,54,209,115,128,4,144,20,22,50,21,42,207,92,60,127,23,150,51,70,123,3,244,75,125,88],[262,27,184,97,116,142,181,261,281,26,55,217,273,65,154,153,49,94,11,294,53,95,1,155,44,54,209,115,128,4,144,275,20,22,50,242,21,42,207,60,127,150,51,70,110,123,3,244,75,125],[27,184,97,246,2,281,26,32,55,106,114,247,154,49,108,152,162,39,66,90,148,163,201,95,1,16,59,221,93,236,4,8,22,151,50,21,207,37,135,17,146,23,150,33,293,51,186,70,89,238,120,276,38,252,3,111,30,160,5,212,88],[27,184,97,246,2,281,26,32,55,106,114,247,154,49,152,162,39,66,90,148,163,201,95,1,16,59,221,236,4,8,22,151,50,21,207,37,135,17,146,23,150,33,293,51,186,70,89,238,120,276,38,252,3,111,30,160,5,212,88],[184,97,282,55,217,267,170,266,139,198,74,81,95,1,29,48,205,79,85,50,185,21,190,69,215,96,113,268,60,99,138,150,89,225,179,3,140,30,78,80,13,167,278,132],[27,184,97,281,26,283,32,55,76,18,154,202,108,294,296,148,95,1,274,121,255,128,20,22,151,50,271,21,284,253,150,293,51,238,120,179,3,30,226],[27,184,97,281,26,283,32,55,76,18,154,202,294,296,148,95,1,274,121,255,128,20,22,151,50,271,21,284,253,150,293,51,238,120,179,3,30,226],[27,184,97,156,136,281,26,55,106,114,247,154,279,108,152,162,39,53,66,90,248,163,81,95,1,137,157,59,221,93,22,151,21,99,135,150,51,120,123,276,38,3,30,111,241,160,5,88],[27,184,97,281,26,55,114,247,49,108,152,39,61,66,198,90,248,163,81,95,1,59,221,93,22,151,21,291,135,150,51,89,276,38,3,43,172,111,100,5,88],[184,97,77,136,55,76,154,198,248,201,95,1,137,274,292,44,199,209,255,200,21,17,150,123,3,30,172,241,75,166,88],[184,97,77,55,76,154,170,198,248,95,0,1,137,16,48,209,8,21,113,17,150,89,225,123,252,3,30,43,172,75,166,88],[27,184,97,136,281,26,55,192,76,65,114,247,154,49,108,170,11,152,162,66,198,90,163,95,1,292,44,59,199,209,221,93,229,255,128,4,20,22,151,200,204,242,21,135,146,23,150,51,238,276,38,3,172,111,5,166,88],[184,97,136,281,26,192,222,65,114,247,154,49,267,170,266,11,152,66,198,90,163,95,1,292,44,59,199,209,85,221,93,229,118,255,128,20,22,151,50,200,204,242,21,268,291,60,135,146,150,51,276,38,252,3,172,111,167,5,166],[63,52,184,97,73,156,55,76,217,49,214,139,61,95,1,269,155,285,157,79,85,219,240,4,185,271,21,215,268,138,23,150,51,3,140,34,43,80,56,278,290],[63,52,143,184,97,73,156,283,55,154,49,214,295,162,61,148,201,95,0,1,269,16,155,285,240,4,50,21,92,19,37,127,150,23,33,293,51,238,120,3,7,43,56,290,88,45],[63,52,143,184,97,73,156,283,55,154,49,214,295,162,61,148,201,95,0,1,269,16,155,285,240,4,50,21,92,19,37,127,150,23,33,293,51,238,120,3,7,43,56,290,45],[63,52,184,156,55,222,114,247,267,266,152,162,90,163,81,16,48,59,209,85,221,93,21,268,60,135,150,186,87,225,276,38,3,43,78,111,160,167,5,278,212],[184,97,73,171,55,106,139,155,285,205,79,22,177,21,190,69,197,84,96,98,268,99,138,150,176,70,89,225,120,165,3,140,30,80,46,75,224,251,56,223,257],[184,97,73,171,55,106,139,155,285,205,79,22,177,21,69,197,84,96,98,268,99,138,150,176,70,89,225,120,165,3,140,30,80,46,75,224,251,223,257],[27,184,97,2,282,26,171,55,49,214,295,139,95,1,48,79,4,22,21,69,207,215,96,268,99,105,138,23,150,51,70,83,89,225,120,3,7,140,30,80,46,257,278,290,220],[27,184,97,2,282,26,171,55,49,214,295,139,95,1,48,79,4,22,21,69,207,215,96,268,99,105,138,23,150,51,70,83,89,225,120,3,7,140,30,80,46,257,278,290,220],[184,97,194,73,265,55,130,58,0,269,155,285,205,239,240,4,177,21,69,98,150,23,176,67,70,89,225,38,3,43,224,56,257,88],[184,97,194,73,265,130,58,0,269,155,285,205,239,240,4,177,21,69,98,150,23,176,70,89,225,38,3,43,224,56,257],[184,97,181,261,55,217,65,153,154,170,94,266,11,39,248,201,95,0,16,48,209,8,144,21,42,92,113,19,127,17,150,89,276,252,3,30,43,244,125,257,88,122],[184,97,181,261,55,217,65,153,154,170,94,266,11,39,248,201,95,0,16,48,209,8,144,21,42,92,113,19,127,17,150,89,276,252,3,30,43,244,125,257,88,122],[27,184,97,2,281,26,32,55,106,18,65,114,247,154,49,214,108,295,170,11,152,162,39,296,61,66,90,95,148,1,0,269,16,155,236,255,128,4,8,20,22,151,50,21,207,37,19,99,127,135,17,146,23,33,293,51,70,225,238,150,120,276,38,252,3,7,43,5,56,290,88],[27,184,97,2,281,26,32,55,106,18,65,114,247,154,49,214,295,170,11,152,162,39,296,61,66,90,95,148,1,0,269,16,155,236,255,128,4,8,20,22,151,50,21,207,37,19,99,127,135,17,146,23,33,293,51,70,225,238,150,120,276,38,252,3,7,43,56,290,88],[27,184,97,249,286,218,281,26,32,55,217,154,49,108,237,287,178,61,148,95,1,16,48,205,219,236,4,20,22,185,242,21,190,69,291,105,23,150,293,51,70,89,225,238,120,165,191,3,30,46,75,100,212,220,88],[27,184,97,249,286,218,281,26,32,55,217,154,49,237,287,178,61,148,95,1,16,48,205,219,236,4,20,22,185,242,21,190,69,291,105,23,150,293,51,70,89,225,238,120,165,191,3,30,46,75,100,212,220],[262,27,184,97,77,181,82,261,265,281,26,171,55,217,106,65,49,214,108,94,11,39,264,81,95,1,85,101,128,4,263,144,20,22,21,69,207,84,92,291,99,105,23,150,51,70,89,225,165,3,244,46,75,125,257,88],[262,27,184,97,77,181,82,261,265,281,26,171,55,217,106,65,49,214,94,11,39,264,81,95,1,85,101,128,4,263,144,20,22,21,69,207,84,92,291,99,105,23,150,51,70,89,225,165,3,244,46,75,125,257,88],[27,184,97,246,281,26,32,173,55,106,114,247,154,169,49,214,108,267,295,266,152,162,39,61,66,90,163,298,95,1,269,59,85,221,93,4,22,151,50,21,99,135,17,146,23,150,33,51,186,276,38,3,7,172,111,5,56,88],[27,184,97,246,281,26,32,173,55,106,114,247,154,169,49,214,267,295,266,152,162,39,61,66,90,163,95,1,269,59,85,221,93,4,22,151,50,21,99,135,17,146,23,150,33,51,186,276,38,3,7,172,111,5,56,88],[184,97,194,265,55,222,130,114,247,152,39,58,66,90,163,95,59,219,93,177,21,84,98,99,135,150,176,67,70,89,165,38,3,43,172,111,75,224,5,88],[184,97,136,281,26,55,279,280,296,178,198,248,95,137,274,292,44,199,209,101,128,275,20,151,200,21,99,150,89,38,3,226,241,13,46,166,88,232],[184,97,136,26,279,280,296,178,198,248,95,137,274,292,44,199,209,101,128,275,20,151,200,21,99,150,89,38,3,226,241,13,46,166,232],[27,184,97,281,55,273,108,170,178,195,198,95,1,0,274,44,48,205,209,85,255,128,8,20,22,151,185,242,21,69,207,96,113,291,60,99,135,23,150,70,208,89,276,38,252,3,43,13,91,257,88],[27,184,97,281,273,170,178,195,198,95,1,0,274,44,48,205,209,85,255,128,8,20,22,151,185,242,21,69,207,96,113,291,60,99,135,23,150,70,208,89,276,38,252,3,43,13,91,257,88],[27,184,97,73,77,281,26,55,217,65,214,108,170,266,11,152,53,201,95,0,16,285,155,209,4,20,22,151,21,113,19,37,99,127,17,23,150,33,225,120,38,3,43,86,226,241,88],[27,184,97,73,77,281,26,55,217,65,214,108,170,266,11,152,53,201,95,0,16,285,155,209,4,20,22,151,21,113,19,37,99,127,17,23,150,33,225,120,38,3,43,86,226],[143,27,184,97,73,156,283,281,26,32,55,217,106,18,65,114,247,154,49,214,108,237,295,11,152,162,39,296,61,90,148,95,1,0,269,16,285,155,236,128,4,20,22,151,50,21,207,215,135,146,23,33,51,70,238,150,120,38,3,7,43,5,56,290,88],[143,27,184,97,73,156,283,281,26,32,55,217,106,18,65,114,247,154,49,214,237,295,11,152,162,39,296,61,90,148,95,1,0,269,16,285,155,236,128,4,20,22,151,50,21,207,215,135,146,23,33,51,70,238,150,120,38,3,7,43,5,56,290,88],[27,184,97,82,12,281,26,171,55,108,178,198,264,95,292,44,199,209,85,101,128,4,20,22,151,242,21,197,291,105,23,150,70,89,3,30,46,91,100,251,257,166,88],[27,184,97,82,12,281,26,171,108,178,198,264,95,292,44,199,209,85,101,128,4,20,22,151,242,21,197,291,105,23,150,70,89,3,30,46,91,251,257,166],[184,97,181,55,18,154,202,11,294,39,296,248,201,95,16,121,271,21,284,19,37,127,17,150,89,252,3,30,80,226,75,88],[184,97,181,18,154,202,11,294,39,296,248,201,95,16,121,271,21,284,19,37,127,17,150,89,252,3,30,80,226,75],[184,97,2,171,55,114,247,49,152,39,90,163,201,81,0,16,44,59,85,221,93,21,69,37,135,17,146,150,23,33,51,186,89,225,38,252,3,43,86,111,160,5,257,212,88],[184,97,2,171,55,114,247,49,152,39,90,163,201,81,0,16,44,59,85,221,93,21,69,37,135,17,146,150,23,33,51,186,89,225,38,252,3,43,86,111,160,5,257,212],[63,52,184,97,116,181,261,55,217,65,49,214,295,94,11,61,95,1,269,155,285,44,115,4,8,144,50,21,42,92,150,23,33,51,276,3,7,30,244,125,88],[63,52,184,97,116,181,261,55,217,65,49,214,295,94,11,61,95,1,269,155,285,44,115,4,8,144,50,21,42,92,150,23,33,51,276,3,7,30,244,125,88],[63,52,184,97,116,181,261,55,217,106,65,153,154,49,214,94,266,11,61,95,269,44,115,4,144,50,21,42,92,150,23,33,51,3,34,172,188,244,125,88],[184,97,194,147,265,32,55,217,130,65,154,49,237,280,94,11,152,39,53,58,248,148,95,137,274,236,21,98,150,293,176,51,67,70,89,165,3,30,172,224,125,88],[184,97,194,147,265,32,55,217,130,65,154,49,237,280,94,11,152,39,53,58,248,148,95,137,274,236,21,98,150,293,51,67,70,89,165,3,30,172,224,125],[184,97,55,114,247,154,152,162,66,90,148,95,137,155,59,221,93,21,96,135,146,150,293,51,186,238,120,276,38,3,172,111,241,5,212,88,232,131,45],[77,136,55,217,130,18,65,114,247,11,152,296,178,95,209,93,21,60,135,146,150,89,38,3,172,188,111],[184,97,55,222,273,18,170,296,195,198,95,0,274,44,48,209,8,21,42,207,96,113,60,99,150,208,89,38,3,30,43,80,226,13,132,88],[184,97,222,273,18,170,296,195,198,0,274,44,48,209,8,21,42,207,96,113,60,99,150,208,89,38,3,30,43,80,226,13,132],[52,77,107,136,55,39,178,198,248,274,285,292,44,54,199,209,200,21,99,150,38,252,3,226,241,166,131,45],[52,107,136,55,39,178,198,248,274,285,292,44,54,199,209,200,21,99,150,38,252,3,226,241,166,131],[184,97,136,282,171,55,106,18,65,114,154,214,170,11,152,296,53,195,81,95,0,44,48,205,209,4,177,21,69,197,207,113,60,99,135,17,150,23,70,89,225,120,38,252,3,30,43,226,13,75,257,88],[184,97,136,282,171,55,106,18,65,114,154,214,170,11,152,296,53,195,81,95,0,44,48,205,209,4,177,21,69,197,207,113,60,99,135,17,150,23,70,89,225,120,38,252,3,30,43,226,13,75,257],[],[63,52,184,97,156,55,114,49,170,152,71,95,0,16,155,157,209,259,21,37,60,135,17,146,150,35,51,38,3,30,43,172,111,36,72],[63,52,184,97,156,114,49,170,152,71,95,0,16,155,157,209,259,21,37,60,135,17,146,150,35,51,38,3,30,43,172,111,36,72],[63,52,27,184,97,73,156,136,283,55,169,49,214,108,266,193,198,201,95,269,155,285,292,44,199,209,4,20,22,151,50,200,21,197,207,99,23,150,51,70,208,120,38,3,30,251,88],[63,52,27,184,97,73,156,136,283,55,169,49,214,266,193,198,201,95,269,155,285,292,44,199,209,4,20,22,151,50,200,21,197,207,23,150,51,70,208,120,38,3,30,251,88],[184,97,249,286,2,32,174,55,217,106,119,154,49,214,295,287,178,61,248,95,269,16,155,44,219,4,50,185,21,92,17,150,23,51,276,191,3,7,30,56,290,220,88],[262,27,184,97,181,261,26,171,55,64,217,222,65,154,49,214,94,11,39,264,95,1,44,48,85,101,128,4,8,144,20,22,242,21,42,207,84,92,291,99,105,23,150,51,70,89,123,165,3,7,244,277,46,91,125,257,88],[184,97,246,73,173,55,114,247,49,152,39,90,163,95,1,285,157,48,59,221,93,239,4,8,22,177,21,207,98,99,135,146,23,150,176,51,186,67,70,123,38,3,172,111,160,46,224,100,5,68,88,232],[184,97,194,265,26,171,55,130,94,39,58,264,22,177,21,84,98,150,176,67,70,89,165,3,140,75,224,88],[184,97,194,265,26,171,55,130,94,39,58,264,22,177,21,84,98,150,176,70,89,165,3,75,224],[184,97,55,106,18,154,202,294,296,53,201,95,16,48,121,271,21,284,69,19,37,127,17,150,89,179,252,3,30,226,75,88],[184,97,286,217,102,254,266,39,178,103,95,274,54,209,85,219,185,21,268,150,123,191,3,30,172,278,220,88],[143,27,184,97,2,26,283,32,55,106,18,65,114,154,169,49,202,214,11,152,39,296,61,90,148,95,1,269,16,155,44,236,128,4,20,22,50,21,17,146,23,150,33,293,51,89,225,238,3,7,30,43,5,290,88],[184,97,73,156,283,32,55,18,65,114,154,49,214,170,11,152,296,61,95,1,269,155,285,255,4,50,21,92,146,150,23,33,51,3,7,30,56,290,88],[27,184,97,77,82,281,26,171,55,217,18,114,154,108,152,39,296,53,248,81,1,209,101,128,20,151,242,21,84,291,135,150,83,120,225,123,165,3,30,43,80,226,241,277,75,91,100,223,88,232],[27,184,97,77,82,281,26,171,217,18,114,154,108,152,39,296,53,248,81,1,209,101,128,20,151,242,21,84,291,135,150,83,120,225,123,165,3,30,43,80,226,241,277,75,91,100,223,232],[184,97,273,170,39,195,198,95,0,54,199,209,8,21,42,113,60,135,150,23,89,38,252,3,43,13,132,166],[184,97,147,2,32,55,65,154,49,214,237,11,162,61,90,148,163,95,1,16,155,85,236,255,4,22,50,21,207,92,19,127,17,23,150,293,51,70,238,120,276,3,5,56,212,88],[184,97,147,2,32,55,65,154,49,214,237,11,162,61,90,148,163,95,1,16,155,85,236,255,4,22,50,21,207,92,19,127,17,23,150,293,51,70,238,120,276,3,56,212],[],[27,184,97,73,82,281,26,171,154,49,189,214,193,198,264,148,95,0,1,16,285,44,47,209,85,101,4,20,151,22,242,21,207,291,105,135,17,23,51,70,83,150,3,30,43,62,277,46,75,251,257,272,88],[27,184,97,73,82,281,26,171,154,49,189,214,193,198,264,148,95,0,1,16,285,44,47,209,85,101,4,20,22,151,242,21,207,291,105,135,17,23,150,51,70,83,3,30,43,62,46,75,251,257,272],[184,97,55,106,154,49,214,295,61,66,248,95,1,269,16,155,4,50,21,92,19,37,127,135,17,150,23,51,276,3,172,56,88],[27,184,97,281,26,171,192,222,49,189,214,108,267,170,266,61,81,0,1,48,205,209,85,4,8,20,22,151,242,21,190,207,113,268,291,99,105,23,150,51,70,89,225,276,38,3,43,111,167,46,91,251,257,88],[27,184,97,286,281,26,32,174,55,217,114,154,158,49,152,178,61,71,95,269,157,209,219,4,22,151,50,185,21,135,146,23,150,35,51,38,191,3,30,172,111,36,72,220,88],[27,184,97,286,281,26,32,174,55,217,114,154,158,49,152,178,61,95,269,157,209,219,4,22,151,50,185,21,135,146,23,150,35,51,38,191,3,30,172,111,36,72,220,88],[27,184,97,281,26,114,154,170,152,90,71,0,1,157,48,205,209,85,8,22,151,21,69,197,207,291,99,105,135,17,146,150,70,89,225,38,252,3,30,43,111,36,75,91,5,223,257,72,88,232],[27,184,97,24,283,281,282,26,32,55,106,18,65,114,247,154,169,49,202,214,237,295,11,152,162,39,296,61,90,95,148,1,269,16,285,155,85,240,128,4,20,22,151,50,144,21,207,215,92,37,19,127,146,23,33,293,51,89,238,150,120,38,276,3,7,43,5,290,88],[184,97,77,286,218,55,217,154,287,178,248,95,1,137,205,209,219,185,21,99,17,150,70,123,276,191,3,30,172,75,220,166,88],[184,97,77,55,114,154,152,162,248,95,1,137,209,259,21,37,135,17,146,150,35,123,276,38,3,30,172,111,36,75,72,166,88,232],[184,97,194,55,222,254,154,49,187,214,295,266,162,61,201,0,1,16,48,205,79,85,4,22,21,190,69,84,96,98,268,19,37,99,127,138,23,150,293,51,70,89,225,120,276,165,3,140,43,75,224,56,257,278,212,88],[184,97,2,55,106,114,49,214,295,152,61,71,95,1,269,155,48,4,50,259,21,37,99,17,146,150,23,33,51,276,38,3,7,30,36,56,223,290,72,88],[27,184,97,218,136,281,26,171,49,214,287,296,178,57,198,248,95,137,274,292,44,48,199,205,209,85,101,128,4,275,20,22,151,177,242,21,159,69,197,207,291,60,99,105,23,150,51,70,89,38,3,226,241,13,46,257,166,88,232],[27,184,97,218,136,281,26,171,49,214,287,296,178,57,198,248,95,137,274,292,44,48,199,205,209,85,101,128,4,275,20,22,151,177,242,21,159,69,197,207,291,60,99,105,23,150,51,70,89,38,3,226,241,13,46,257,166,232],[184,97,18,273,114,152,296,195,198,71,95,16,157,209,151,21,113,37,60,135,17,146,150,35,38,3,30,43,172,111,241,36,72,88,232],[184,97,18,273,114,152,296,195,198,71,95,16,157,209,151,21,37,60,135,17,146,150,35,38,3,30,43,172,111,241,36,72,232],[273,18,170,39,296,248,0,209,121,271,21,284,113,60,150,89,179,3,226,166,88],[181,273,18,170,39,296,248,0,209,121,271,21,284,113,60,150,89,179,3,226,166,88],[273,18,247,170,39,296,248,0,209,121,271,21,284,113,60,150,89,179,3,226,166,88],[273,18,114,170,39,296,248,0,209,121,271,21,284,113,60,150,89,179,3,226,166,88],[273,18,170,39,296,248,0,209,121,177,271,21,284,113,60,150,89,179,3,226,166,88],[286,273,18,170,39,296,248,0,209,121,271,21,284,113,60,150,89,179,3,226,166,88],[184,97,249,286,32,55,217,154,287,162,178,103,148,95,219,185,21,99,150,293,70,238,120,191,3,30,212,220,131,45],[262,143,27,184,97,142,181,218,2,261,26,171,55,217,106,65,154,169,49,214,295,94,11,294,95,1,269,155,44,85,93,128,4,144,20,22,50,242,21,92,113,291,99,145,23,150,51,225,123,3,7,30,244,125,88],[262,143,27,184,97,142,181,218,2,261,26,171,55,217,106,65,154,169,49,214,295,94,11,294,95,1,269,155,44,85,93,128,4,144,20,22,50,242,21,92,113,291,99,145,23,150,51,225,3,7,30,244,125,88],[184,97,246,282,106,114,247,154,152,162,57,90,163,95,0,1,48,59,205,221,93,240,8,22,177,204,21,159,69,215,99,105,135,146,150,51,186,70,89,225,238,123,38,252,3,111,160,46,5],[184,97,246,282,106,114,247,154,152,162,57,90,163,95,0,1,48,59,205,221,240,8,22,177,204,21,159,69,215,113,99,105,109,135,146,150,51,186,70,89,225,38,252,3,111,160,46,5],[27,184,97,77,26,55,222,18,154,11,162,296,1,16,44,209,219,128,20,151,50,21,99,17,150,225,123,276,3,30,220],[184,97,222,154,170,53,248,201,0,16,48,209,219,8,21,42,69,197,207,84,96,113,19,37,99,127,17,150,70,89,225,123,252,3,30,43,75,91],[27,184,97,286,218,26,192,217,222,106,154,39,178,1,16,48,219,4,22,185,21,207,291,99,17,23,150,89,123,165,191,3,30,43,91,220],[27,184,97,181,261,26,192,217,222,106,65,154,94,11,39,264,1,16,48,128,4,144,22,21,42,207,92,291,99,17,23,150,89,123,165,3,43,244,91,125],[27,184,97,26,192,222,106,114,247,154,152,162,39,90,163,1,16,48,59,221,93,4,22,151,21,207,291,99,135,17,23,150,186,89,123,165,38,3,43,111,91],[184,97,136,279,280,178,198,274,292,44,199,209,4,21,150,23,3,226,166],[184,97,73,282,26,55,49,295,266,61,95,1,155,48,205,85,240,4,263,22,50,21,207,215,92,23,150,51,70,120,276,3,34,56,290,88],[184,97,73,282,26,55,49,295,266,61,95,1,155,48,205,85,240,4,263,22,50,21,207,215,92,23,150,51,70,120,276,3,34,56,290,88],[27,184,97,77,281,55,217,18,65,114,154,11,152,39,296,294,198,90,248,95,1,274,44,48,199,209,128,20,151,50,242,21,99,150,123,38,3,226,111,241,100],[27,184,97,77,281,55,217,18,65,114,154,11,152,39,296,294,198,90,248,95,1,274,44,48,199,209,128,20,151,50,242,21,99,150,123,38,3,226,111,241,100],[27,184,97,281,26,171,55,106,169,49,214,108,295,95,1,85,128,4,20,151,22,50,242,21,291,99,105,23,150,51,89,120,3,7,43,277,100,290],[184,97,156,282,55,217,222,106,154,49,266,162,1,29,48,205,85,4,50,21,190,215,96,268,60,138,17,23,150,51,225,3,140,30,43,80,167,223,278,132],[184,97,156,282,55,217,222,106,154,49,266,1,29,48,205,85,4,50,21,190,215,96,268,60,138,17,23,150,51,225,3,30,43,80,167,223,278],[184,97,217,130,280,178,53,198,274,209,219,185,21,84,99,150,89,123,191,3],[27,184,97,2,281,26,32,171,55,222,106,154,49,214,295,170,266,162,39,61,148,298,95,0,1,16,155,48,236,4,8,22,50,21,207,92,96,19,291,99,127,17,23,150,293,51,70,89,225,238,120,276,252,3,7,43,56,212,68,88],[143,27,184,97,82,281,26,32,171,55,154,214,108,170,266,39,148,95,1,0,16,155,44,48,85,236,128,4,8,20,22,151,242,21,291,99,105,23,150,89,225,238,252,3,7,30,43,167,91],[143,27,184,97,82,281,26,32,171,55,154,214,108,170,266,39,148,95,1,0,16,155,44,48,85,236,128,4,8,20,22,151,242,21,291,99,105,23,150,89,225,238,252,3,7,30,43,167,91],[52,184,97,273,178,195,198,0,269,44,209,185,21,207,60,99,150,208,89,3,43,132],[63,52,184,97,26,192,217,222,267,266,296,198,95,0,269,85,219,50,185,242,21,190,268,150,33,89,276,3,7,43,188,167,100,290,132],[184,97,281,26,170,266,11,39,198,248,81,95,243,0,1,16,48,54,209,8,22,21,42,69,207,84,96,113,291,60,99,150,70,89,225,123,252,3,43],[27,184,97,281,26,273,170,266,11,39,195,198,248,81,95,0,1,16,48,54,209,8,9,22,21,42,207,84,96,291,60,99,150,70,89,225,38,252,3,43,13,122],[63,27,184,97,156,136,26,106,18,169,178,198,95,285,292,44,199,209,128,4,20,151,200,242,21,99,150,23,3,132,166],[63,52,184,97,114,152,39,248,71,285,157,259,21,135,146,150,35,38,3,172,111,36,72],[77,217,18,154,294,296,178,121,177,271,21,284,84,99,150,70,123,165,179,3,80,226,75,224,124],[27,184,97,2,32,171,76,106,18,154,202,11,162,294,296,66,148,163,201,81,95,269,16,285,44,48,59,79,236,121,128,4,263,20,22,50,185,242,271,21,284,84,19,60,99,23,150,51,238,165,179,3,86,226,167,45],[27,184,97,2,32,171,76,106,18,154,202,11,294,296,66,148,163,201,81,95,269,16,285,44,48,59,79,236,121,128,4,263,20,22,50,185,242,271,21,284,84,19,60,99,23,150,51,238,165,179,3,86,226,167],[184,97,181,261,217,273,65,153,94,11,178,198,0,209,8,144,275,21,42,96,60,150,89,3,30,43,188,244,125],[184,97,181,261,217,273,65,153,94,11,178,198,0,209,8,144,275,21,42,96,60,150,89,3,30,43,188,244,125],[27,184,97,2,281,26,171,55,106,114,49,214,152,53,90,163,71,95,1,269,16,48,205,221,4,22,151,21,69,207,37,135,146,23,150,35,51,70,89,225,123,276,38,252,3,30,111,160,72,88],[18,49,214,267,170,266,162,39,296,61,66,90,81,1,93,121,4,8,50,21,113,135,150,23,51,276,179,3,43,132,88],[73,49,214,267,170,266,39,61,66,90,81,1,16,285,93,4,8,50,21,113,37,150,23,51,276,3,43,62,230,88,45],[52,27,184,97,281,26,171,55,217,106,119,273,169,49,214,108,295,152,296,58,61,195,198,298,95,1,269,285,155,44,209,128,4,20,22,151,50,242,21,92,291,60,99,23,150,51,208,89,38,3,7,226,100,88],[52,27,184,97,281,26,171,55,217,106,119,273,169,49,214,108,295,152,296,58,61,195,198,95,1,269,285,155,44,209,128,4,20,22,151,50,242,21,92,291,60,99,23,150,51,208,89,38,3,7,226,88],[143,184,97,147,26,32,192,106,65,247,154,49,214,237,94,11,162,39,58,61,90,248,148,95,0,16,285,44,48,229,4,8,50,21,84,98,19,37,127,17,23,150,293,51,89,120,225,238,165,252,3,43,226,224,223,125,212],[184,97,181,2,261,55,217,130,65,94,11,139,294,58,198,95,29,44,79,85,126,275,177,185,21,84,96,138,150,176,70,165,3,140,30,80,244,224,125],[27,184,97,249,286,156,26,171,174,55,217,106,154,169,49,214,295,266,178,95,1,269,16,155,44,85,219,236,4,20,22,50,185,242,21,207,291,99,17,23,150,51,70,276,191,3,7,30,43,257,278,220,88],[27,184,97,249,286,156,26,171,174,55,217,106,154,169,49,214,295,266,178,95,1,269,16,155,44,85,219,236,4,20,22,50,185,242,21,207,291,99,17,23,150,51,70,276,191,3,7,30,43,257,278,220,88],[262,184,97,181,261,136,26,217,65,154,170,94,11,198,248,274,292,44,199,209,128,275,20,200,21,42,92,60,150,89,123,276,3,244,125,166,88],[262,184,97,181,261,136,26,217,65,154,170,94,11,198,248,274,292,44,199,209,128,275,20,200,21,42,92,60,150,89,276,3,244,125,166,88],[184,97,246,222,114,247,267,152,90,163,81,0,1,54,59,221,93,4,22,151,21,69,84,96,291,105,135,23,150,186,70,89,120,276,165,38,3,7,30,172,111,13,75,100,88,134],[184,97,246,222,114,247,267,152,90,163,81,0,1,54,59,221,4,22,151,21,69,84,96,291,105,135,23,150,186,70,89,120,276,165,38,3,7,30,172,111,13,75,88,134],[27,184,97,77,281,222,106,154,169,49,214,295,170,266,294,39,61,90,81,95,1,155,128,4,20,22,151,50,21,84,92,99,23,150,51,89,120,276,3,7,30,43,75,56,88],[184,97,194,181,261,265,55,217,130,65,94,11,58,264,144,177,21,84,98,105,150,176,70,89,165,3,244,75,224,125,257],[184,97,217,130,139,15,178,198,177,185,21,84,96,138,150,176,70,89,165,179,3,140,172,80,241,132],[184,97,181,261,55,217,65,154,94,11,294,248,201,81,95,0,1,16,144,21,42,92,19,127,150,51,89,165,252,3,30,43,244,125,88],[184,97,181,261,55,217,65,154,94,11,294,248,201,95,0,1,16,144,21,42,92,19,127,150,51,89,165,252,3,30,43,244,125,88],[97,104,217,102,280,15,178,198,103,137,274,219,185,21,150,123,3,30,111,241,166],[97,104,217,102,280,198,103,15,178,137,274,219,185,21,111,241,30,166],[184,97,217,102,279,280,15,178,198,103,137,274,219,185,200,21,150,123,191,3,30,111,241,166],[27,184,97,281,26,32,171,222,106,119,169,49,214,170,266,39,90,248,298,95,1,0,16,155,44,48,205,85,236,128,4,8,20,22,151,50,242,21,69,207,291,99,145,23,150,51,70,83,89,120,123,252,3,43,251,132,68,122],[184,77,55,154,294,39,90,248,201,0,1,16,44,21,84,113,19,37,127,17,150,252,3,30,226],[184,97,154,296,178,53,198,0,1,137,292,44,199,209,200,21,113,150,123,3,30,43,226,91,211,166],[184,97,136,154,296,178,53,198,0,1,137,292,44,54,199,209,200,21,113,150,123,3,30,43,226,91,211,166],[184,97,154,296,178,53,198,0,1,137,292,44,199,209,200,21,113,150,123,3,30,43,226,91,211,166],[143,184,97,73,218,171,273,57,155,285,44,209,4,22,177,21,69,197,207,150,70,120,3,13,223],[143,184,97,73,218,171,273,57,155,285,44,209,4,22,177,21,69,197,207,150,70,120,3,13,223],[184,97,18,279,280,296,178,198,137,274,285,199,242,21,150,123,3,226,241],[97,184,18,279,198,296,11,178,53,90,274,242,21,150,89,123,3,241],[184,97,136,106,170,11,296,198,163,0,292,44,48,199,79,85,4,8,200,21,69,197,99,150,67,70,89,120,3,30,43,223,166,131,45],[184,97,136,106,170,11,296,198,163,0,292,44,48,199,79,85,4,8,200,21,69,197,99,150,67,70,89,120,3,30,43,223,166,131],[184,97,26,283,171,106,114,49,189,214,267,266,152,39,61,66,90,163,1,59,205,85,221,93,236,4,22,204,21,159,69,207,135,23,150,33,51,70,89,225,120,276,38,3,7,43,111,5,223,290,132,88],[184,97,26,283,171,106,114,49,189,214,267,266,152,39,61,66,90,163,1,59,205,85,221,93,236,4,22,204,21,159,69,207,23,150,33,51,89,225,120,276,38,3,43,111,5,223,290,88],[184,97,147,26,32,222,18,247,154,267,266,162,296,53,66,90,148,163,81,59,209,85,221,93,21,268,135,150,186,89,238,276,38,3,111,167,5,212,88],[184,97,147,26,32,222,18,247,154,267,266,162,296,53,66,90,148,163,59,209,85,221,93,21,268,135,150,186,89,238,276,38,3,111,167,5,212,88],[184,97,26,114,247,154,187,267,266,152,162,66,90,148,163,81,95,0,285,59,209,221,93,101,4,21,84,268,135,150,186,89,276,38,3,7,172,62,80,111,160,88],[184,97,281,26,217,18,154,237,294,296,90,248,148,1,0,121,128,4,20,271,21,284,84,291,253,23,150,293,51,120,238,179,3,30,172,80,226,75,100,212,88],[143,184,97,147,2,283,32,171,106,154,49,214,295,53,61,248,148,201,95,0,1,16,155,44,236,4,8,22,50,21,19,37,127,17,23,150,33,293,51,70,120,225,238,3,86,290,212],[184,97,283,32,18,114,154,49,214,152,162,296,61,198,248,95,0,155,285,157,44,121,4,259,21,135,146,150,23,33,35,51,238,276,38,3,172,226,111,290,72],[184,97,77,55,279,154,280,53,198,248,95,1,137,274,199,209,275,21,17,150,123,3,30,172,241,75,166,88],[27,184,97,194,77,82,265,281,26,171,106,258,189,214,39,58,81,95,1,269,155,44,48,205,79,85,128,4,20,22,177,242,21,84,98,291,105,23,150,70,89,225,165,3,30,43,224,257],[27,184,97,194,82,265,281,26,171,106,258,189,214,39,58,81,95,1,269,155,44,48,205,79,85,128,4,20,22,177,242,21,84,98,291,105,23,150,70,89,225,165,3,30,43,224,257],[184,97,77,18,154,294,296,53,1,274,219,121,20,271,21,284,84,253,150,70,89,123,179,3,30,226,241,124],[27,184,97,147,281,26,32,106,254,18,65,114,247,154,49,267,266,11,152,162,296,66,90,148,95,269,93,236,128,4,20,50,185,21,96,99,135,150,293,51,225,238,120,276,3,172,111,167,257,132],[184,97,73,147,32,18,65,114,247,154,49,267,266,11,152,296,66,90,148,95,269,155,285,157,236,128,4,8,20,50,21,96,99,135,23,33,293,51,238,276,172,111,167,257],[184,97,73,77,136,170,53,198,274,285,199,21,96,150,89,123,3,241,166],[184,97,286,26,174,217,273,49,170,178,195,198,0,1,205,209,85,219,4,8,175,185,200,242,21,42,207,96,113,60,99,150,51,208,89,120,191,3,30],[63,52,184,97,26,217,254,273,65,280,170,266,11,178,195,198,0,209,219,4,275,185,21,96,60,150,89,120,191,3,226,244,13,220],[184,97,55,106,114,247,49,214,295,152,90,71,95,269,16,155,285,157,4,50,21,37,135,17,146,150,23,35,51,38,3,34,111,72],[184,97,283,55,114,49,214,112,295,152,61,95,1,269,16,155,285,157,4,50,21,37,135,17,146,23,33,51,38,34,111,36,290,72],[184,97,194,107,147,26,32,55,217,130,154,237,94,11,294,39,58,198,248,148,95,0,29,205,209,236,22,177,200,21,207,84,98,135,17,150,293,176,70,89,238,165,3,224],[27,184,97,249,194,286,218,265,26,171,217,130,273,287,178,195,14,209,219,101,22,177,185,21,197,207,84,96,98,113,291,60,99,105,23,150,176,67,70,123,165,191,3,7,30,13,224,220],[27,184,97,249,286,265,26,171,217,287,297,178,219,101,22,177,185,21,197,207,84,98,113,291,99,105,23,150,176,67,70,191,3,7,30,13,224,220],[262,27,184,97,181,2,261,281,26,32,171,55,106,65,49,189,94,11,264,298,95,0,16,155,29,48,128,8,144,20,22,50,242,21,42,207,84,92,291,99,127,17,150,51,70,89,225,120,123,165,252,3,30,244,91,125,68,45],[184,97,246,114,247,279,154,280,6,152,162,39,178,53,198,90,248,163,95,137,274,157,59,209,221,93,200,21,135,150,186,123,165,38,3,172,111,241,160,100,5,166,232],[184,97,194,107,181,265,222,130,31,94,39,58,248,285,48,219,239,144,22,177,21,84,98,99,150,176,67,70,89,165,3,7,244,224,290,220],[27,184,97,26,171,222,106,114,158,49,187,214,108,152,163,95,1,269,155,157,44,93,4,20,151,22,50,242,21,99,105,146,23,150,35,51,89,120,276,38,3,43,111,277,72,88],[27,184,97,26,171,222,106,114,158,49,187,108,152,163,95,1,269,155,157,44,4,20,151,22,50,242,21,99,105,146,23,150,51,89,120,276,38,3,43,111,277,72,88],[184,77,2,171,55,154,214,53,61,248,201,95,1,16,155,44,240,4,22,50,21,113,19,127,17,23,150,51,225,123,252,3,30,164,75,290,211,88],[27,184,77,2,281,32,171,55,154,214,170,39,53,61,248,201,95,1,16,155,44,48,128,4,8,20,22,50,21,207,113,19,291,99,105,127,17,23,150,51,123,252,3,30,43,290,88],[184,77,2,32,171,55,154,214,53,61,248,201,95,1,16,155,44,48,240,4,263,22,50,21,113,19,127,17,23,150,51,123,252,3,30,164,75,290,211,88],[184,97,222,114,247,267,266,152,66,90,163,95,157,79,85,93,21,190,268,60,99,135,17,150,35,123,276,38,3,7,43,80,111,167,278,132],[184,97,281,26,171,55,106,49,214,295,61,95,269,155,4,8,50,21,291,150,23,51,276,3,7,43,56,88],[184,97,114,247,139,152,90,163,95,16,29,59,205,79,85,221,93,185,21,96,135,138,17,150,35,38,3,30,80,111,132],[184,97,181,261,192,222,65,154,267,170,94,266,11,248,148,95,129,29,85,236,144,21,42,190,207,96,268,99,127,150,293,89,238,123,165,3,30,43,86,244,167,91,100,212,88],[184,97,286,82,218,281,217,254,178,53,103,81,274,44,219,185,21,84,233,291,99,150,123,165,191,3,30,34,43,241,220,232],[184,97,77,136,281,26,18,49,170,296,178,198,248,95,292,44,54,199,209,4,22,200,21,99,150,51,120,123,3,30,43,62,226,111,166],[27,184,97,2,281,26,171,55,222,106,154,49,39,178,95,155,209,219,4,22,242,21,84,291,99,105,23,150,51,70,89,225,120,165,179,3,7,30,43,111,46,75,257],[184,97,77,174,18,296,53,195,198,0,274,29,205,209,185,242,21,42,69,207,60,150,89,123,3,30,43,80,226,241,13,132],[184,97,147,26,32,217,106,130,18,65,114,247,49,237,94,11,152,39,296,178,53,58,61,90,248,148,95,54,209,229,236,4,8,50,21,207,98,135,150,293,51,238,38,252,3,212],[184,97,147,26,32,217,106,130,18,65,114,247,49,237,94,11,152,39,296,178,53,58,61,90,248,148,95,54,209,229,236,4,8,50,21,207,98,150,293,51,38,252,3,212],[27,184,97,107,147,281,26,32,171,55,106,213,154,49,11,162,39,248,148,95,269,285,155,48,205,85,101,236,128,4,20,22,151,50,242,21,207,105,135,23,293,51,70,120,238,150,3,43,46,212],[184,97,194,73,265,55,130,58,95,269,155,285,239,177,21,84,98,150,176,67,70,89,225,3,43,224,68],[184,97,147,286,32,217,237,178,58,148,299,219,177,185,21,84,113,150,70,165,191,3,30,80,167,224,220],[184,97,147,286,32,217,106,49,295,178,148,95,269,149,155,44,219,50,185,21,113,150,51,238,191,3,30,43,80,220],[184,97,77,32,192,130,49,214,237,295,61,95,1,269,155,44,240,4,21,92,96,19,127,150,23,51,120,276,3,56,290,212,88,131],[52,97,184,273,170,195,198,0,199,209,185,113,21,60,150,3,43,166],[184,97,136,254,279,53,198,0,274,292,199,209,275,185,200,21,197,207,150,120,3,241,166,124],[27,184,97,281,26,106,254,169,170,39,53,298,95,0,269,16,274,29,48,128,8,20,22,151,50,216,242,21,42,207,113,291,17,150,89,225,3,30,111,241,91],[184,97,136,281,26,217,18,114,170,152,39,296,178,198,95,274,157,292,44,199,209,22,151,50,242,259,21,113,146,150,35,89,38,3,34,43,111,36,91,100,72,166,232],[52,184,97,273,49,214,178,61,195,198,148,0,269,44,199,209,4,185,21,207,60,150,23,51,208,89,120,3,43,56,290],[184,97,77,217,279,178,53,198,137,274,199,229,275,185,242,21,150,3,241,166],[184,97,26,282,171,106,295,39,74,95,269,155,44,48,79,85,219,4,22,21,215,99,105,23,150,225,3,30,43,223],[184,97,26,282,171,106,295,39,74,95,269,155,44,48,79,85,219,4,22,21,215,99,105,23,150,225,3,30,43,223],[2,32,55,18,182,170,294,39,296,201,0,16,219,8,20,22,50,271,21,284,19,37,99,127,17,150,89,225,179,252,3,34,43,226,75,91,220,68],[2,32,55,18,182,170,294,39,296,201,0,16,219,8,20,22,50,271,21,284,19,37,99,127,17,150,89,225,179,252,3,34,43,226,75,91,220,68],[184,97,77,147,32,55,217,18,65,247,237,11,296,58,195,90,148,201,95,209,221,93,229,236,21,84,98,113,60,17,150,293,89,225,238,165,3,80,235,75,223,132],[184,97,2,136,282,55,217,18,49,295,39,296,294,178,61,198,95,1,292,44,48,54,199,79,209,200,21,250,17,51,89,30,226,166],[184,97,171,55,214,139,205,79,4,22,177,21,69,84,96,25,138,23,33,176,70,89,120,165,7,140,30,80,46,75,224,223,257,290],[143,184,97,2,32,173,55,114,247,152,39,66,195,90,163,201,16,44,59,209,21,37,60,135,17,186,276,38,10,111,160,5,212],[143,184,97,2,32,173,55,114,247,152,39,66,195,90,163,201,16,44,59,209,21,37,60,135,17,186,276,38,10,111,160,5,212],[27,184,97,26,171,222,267,266,1,256,48,205,209,85,128,4,8,22,21,69,207,84,268,291,105,23,70,89,165,30,167,46,75,91,223,257],[52,184,97,55,222,114,247,267,266,152,162,90,163,0,16,48,59,209,85,8,21,215,268,60,135,17,87,276,38,78,111,160,167,278,212],[184,97,249,286,217,170,15,178,53,103,0,48,209,219,101,255,8,20,22,185,21,69,207,84,231,113,291,99,17,70,89,165,191,30,111,75,220,88,232],[262,184,97,142,181,261,32,192,217,273,65,49,94,11,61,248,95,1,260,137,16,44,209,219,144,50,21,207,92,19,60,127,17,150,252,244,125,88],[184,97,246,77,265,281,171,173,130,247,90,163,157,161,22,177,21,159,84,291,99,105,135,176,186,70,165,38,34,111,160,100,5,223,232],[184,97,55,53,248,1,16,219,21,207,84,291,135,17,70,89,276,30,111,100,223,257,220,88,245],[63,27,184,97,283,55,169,49,214,108,61,95,1,269,155,285,44,255,128,4,20,22,151,50,21,146,23,33,51,276,7,40,290],[97,142,181,261,26,283,168,217,65,94,11,178,198,148,0,285,292,199,209,101,115,275,21,92,172,188,244,167,125,166],[184,142,181,218,261,171,273,65,94,11,141,195,155,48,205,209,85,236,115,22,21,69,197,207,60,188,244,13,46,125,166],[184,97,76,18,202,294,296,66,248,121,271,113,253,135,276,179,172,226,111,167,88],[184,97,286,181,261,217,65,11,178,16,44,219,8,144,50,185,21,42,19,127,17,89,191,30,223,125,220],[184,97,286,181,261,217,65,11,178,16,44,219,8,144,50,185,21,42,19,127,17,89,191,30,223,125,220],[184,97,77,265,55,170,39,178,198,248,95,274,285,288,292,44,199,209,219,239,21,84,60,67,70,89,80,75,166,88],[228,73,174,158,214,170,53,285,4,22,21,96,99,23,51,89,120,123,7,80,241,91,257],[27,184,97,107,26,32,171,173,114,247,152,162,90,248,163,81,95,155,44,48,59,221,101,151,242,21,135,186,210,165,38,111,241,160,5,223],[27,184,97,107,26,32,171,173,114,247,152,162,90,248,163,81,95,155,44,48,59,221,101,151,242,21,135,186,210,165,38,111,241,160,5,223],[184,97,73,55,154,49,295,61,95,1,269,155,285,4,50,21,23,51,276,7,56,290,88,131],[63,52,184,97,283,217,222,214,267,266,178,61,274,285,255,4,21,268,23,33,276,7,167,56,183,290],[63,52,184,97,283,217,222,214,267,266,178,61,274,285,255,4,21,268,23,33,276,7,167,56,183,290],[184,97,55,273,39,53,195,201,1,269,16,44,209,50,21,19,37,60,127,17,51,89,276,252,10,13,88],[27,184,97,181,2,26,32,171,55,222,18,49,189,214,108,39,296,195,95,1,48,209,85,219,128,4,8,20,22,151,50,242,21,69,207,84,291,145,23,51,208,89,225,165,7,117,46],[184,97,136,55,18,49,295,170,39,296,178,198,248,201,95,16,274,155,292,44,199,209,50,200,21,51,89,225,30,226,227,223,166],[184,97,73,26,214,170,234,0,1,155,285,44,48,205,85,8,22,177,21,69,207,113,291,23,70,89,225,252],[27,184,97,73,26,196,273,18,296,198,90,274,155,285,199,209,255,20,291,60,208,89,226],[97,286,217,273,170,195,39,178,206,209,93,185,60],[184,97,73,147,180,283,32,55,217,18,49,214,170,296,148,95,0,269,155,285,101,236,4,22,21,69,23,293,238,252,7],[184,97,147,286,32,55,217,254,247,49,15,39,178,61,148,95,269,28,219,185,21,113,133,138,293,238,191,80,223,220,132]];
+const ABIL=[["しんりょく","ようりょくそ"],["あついしぼう"],["もうか","サンパワー"],["かたいツメ"],["ひでり"],["げきりゅう","あめうけざら"],["メガランチャー"],["むしのしらせ","スナイパー"],["てきおうりょく"],["するどいめ","ちどりあし","はとむね"],["ノーガード"],["いかく","だっぴ","きんちょうかん"],["せいでんき","ひらいしん"],["せいでんき","ひらいしん"],["サーフテール"],["エレキメイカー"],["ノーガード"],["メロメロボディ","マジックガード","てんねん"],["マジックミラー"],["もらいび","ひでり"],["ゆきがくれ","ゆきふらし"],["ようりょくそ","ほうし"],["いかく","もらいび","せいぎのこころ"],["いかく","もらいび","いしあたま"],["シンクロ","せいしんりょく","マジックガード"],["トレース"],["こんじょう","ノーガード","ふくつのこころ"],["ようりょくそ","くいしんぼう"],["とびだすなかみ"],["どんかん","マイペース","さいせいりょく"],["シェルアーマー"],["クイックドロウ","マイペース","さいせいりょく"],["のろわれボディ"],["かげふみ"],["はやおき","きもったま","せいしんりょく"],["おやこあい"],["はっこう","しぜんかいふく","アナライズ"],["ちからもち"],["かいりきバサミ","かたやぶり","じしんかじょう"],["スカイスキン"],["いかく","いかりのつぼ","ちからずく"],["いかく","いかりのつぼ","はんすう"],["いかく","いかりのつぼ","はんすう"],["いかく","いかりのつぼ","はんすう"],["いかく","じしんかじょう"],["かたやぶり"],["じゅうなん","かわりもの"],["ちょすい","うるおいボディ"],["ちくでん","はやあし"],["もらいび","こんじょう"],["いしあたま","プレッシャー","きんちょうかん"],["かたいツメ"],["めんえき","あついしぼう","くいしんぼう"],["せいしんりょく","マルチスケイル"],["マルチスケイル"],["しんりょく","リーフガード"],["メガソーラー"],["もうか","もらいび"],["もうか","おみとおし"],["げきりゅう","ちからずく"],["ドラゴンスキン"],["むしのしらせ","ふみん","スナイパー"],["せいでんき","プラス"],["かたやぶり"],["あついしぼう","ちからもち","そうしょく"],["ちょすい","しめりけ","あめふらし"],["シンクロ","マジックミラー"],["シンクロ","せいしんりょく"],["どんかん","マイペース","さいせいりょく"],["きみょうなくすり","マイペース","さいせいりょく"],["がんじょう","ぼうじん"],["いしあたま","がんじょう","ちからずく"],["すなのちから"],["どくのトゲ","すいすい","いかく"],["むしのしらせ","テクニシャン","ライトメタル"],["テクニシャン"],["むしのしらせ","こんじょう","じしんかじょう"],["スキルリンク"],["するどいめ","がんじょう","くだけるよろい"],["すじがねいり"],["はやおき","もらいび","きんちょうかん"],["サンパワー"],["すなおこし","きんちょうかん"],["すなおこし"],["しんりょく","かるわざ"],["ひらいしん"],["もうか","かそく"],["かそく"],["げきりゅう","しめりけ"],["すいすい"],["するどいめ","あめふらし","あめうけざら"],["シンクロ","トレース","テレパシー"],["フェアリースキン"],["するどいめ","あとだし","いたずらごころ"],["マジックミラー"],["かいりきバサミ","いかく","ちからずく"],["ちからもち"],["がんじょう","いしあたま","ヘヴィメタル"],["フィルター"],["ヨガパワー","テレパシー"],["ヨガパワー"],["せいでんき","ひらいしん","マイナス"],["いかく"],["さめはだ","かそく"],["がんじょうあご"],["マグマのよろい","ハードロック","いかりのつぼ"],["ちからずく"],["しろいけむり","ひでり","シェルアーマー"],["しぜんかいふく","ノーてんき"],["フェアリースキン"],["ふしぎなうろこ","かちき","メロメロボディ"],["てんきや"],["ふみん","おみとおし","のろわれボディ"],["いたずらごころ"],["ふゆう"],["ふゆう"],["プレッシャー","きょううん","せいぎのこころ"],["マジックミラー"],["きれあじ"],["せいしんりょく","アイスボディ","ムラっけ"],["フリーズスキン"],["クリアボディ","ライトメタル"],["かたいツメ"],["しんりょく","シェルアーマー"],["もうか","てつのこぶし"],["げきりゅう","かちき"],["いかく","すてみ"],["あまのじゃく"],["とうそうしん","いかく","こんじょう"],["しぜんかいふく","どくのトゲ","テクニシャン"],["かたやぶり","ちからずく"],["がんじょう","ぼうおん"],["メロメロボディ","ぶきよう","じゅうなん"],["きもったま"],["プレッシャー","すりぬけ"],["すながくれ","さめはだ"],["すなのちから"],["ふゆう"],["ふくつのこころ","せいしんりょく","せいぎのこころ"],["てきおうりょく"],["すなおこし","すなのちから"],["きけんよち","かんそうはだ","どくしゅ"],["ゆきふらし","ぼうおん"],["ゆきふらし"],["プレッシャー","わるいてぐせ"],["ひらいしん","ハードロック","すてみ"],["リーフガード","ようりょくそ"],["ゆきがくれ","アイスボディ"],["かいりきバサミ","すながくれ","ポイズンヒール"],["どんかん","ゆきがくれ","あついしぼう"],["ふくつのこころ","きれあじ","せいぎのこころ"],["せいしんりょく"],["ゆきがくれ","のろわれボディ"],["ゆきふらし"],["ふゆう"],["ふゆう"],["ふゆう"],["ふゆう"],["ふゆう"],["ふゆう"],["しんりょく","あまのじゃく"],["もうか","すてみ"],["かたやぶり"],["げきりゅう","シェルアーマー"],["げきりゅう","きれあじ"],["はっこう","するどいめ","アナライズ"],["じゅうなん","かるわざ","いたずらごころ"],["くいしんぼう","しんりょく"],["くいしんぼう","もうか"],["くいしんぼう","げきりゅう"],["よちむ","シンクロ","テレパシー"],["すなかき","すなのちから","かたやぶり"],["かんつうドリル"],["いやしのこころ","さいせいりょく","ぶきよう"],["いやしのこころ"],["こんじょう","ちからずく","てつのこぶし"],["どくのトゲ","むしのしらせ","かそく"],["シェルアーマー"],["いたずらごころ","すりぬけ","ようりょくそ"],["いかく","じしんかじょう","いかりのつぼ"],["だっぴ","じしんかじょう","いかく"],["いかく"],["ミイラ"],["あくしゅう","くだけるよろい","ゆうばく"],["イリュージョン"],["イリュージョン"],["ぼうじん","マジックガード","さいせいりょく"],["アイスボディ","ゆきふらし","くだけるよろい"],["せいでんき","でんきエンジン"],["ふゆう"],["eelevate"],["もらいび","ほのおのからだ","すりぬけ"],["すりぬけ"],["ゆきがくれ","ゆきかき","すいすい"],["せいでんき","じゅうなん","すながくれ"],["ぎたい"],["てつのこぶし","ぶきよう","ノーガード"],["ふかしのこぶし"],["ふゆう"],["ほのおのからだ","むしのしらせ"],["しんりょく","ぼうだん"],["ぼうだん"],["もうか","マジシャン"],["ふゆう"],["げきりゅう","へんげんじざい"],["へんげんじざい"],["ものひろい","ほおぶくろ","ちからもち"],["ほのおのからだ","はやてのつばさ"],["りんぷん","ふくがん","フレンドガード"],["とうそうしん","きんちょうかん","じしんかじょう"],["fire-mane"],["フラワーベール","きょうせい"],["フェアリーオーラ"],["フラワーベール","きょうせい"],["てつのこぶし","かたやぶり","きもったま"],["ファーコート"],["するどいめ","すりぬけ","いたずらごころ"],["するどいめ","すりぬけ","かちき"],["トレース"],["バトルスイッチ"],["バトルスイッチ"],["いやしのこころ","アロマベール"],["スイートベール","かるわざ"],["あまのじゃく","きゅうばん","すりぬけ"],["あまのじゃく"],["かたいツメ","スナイパー","わるいてぐせ"],["かたいツメ"],["どくのトゲ","どくしゅ","てきおうりょく"],["さいせいりょく"],["メガランチャー"],["かんそうはだ","すながくれ","サンパワー"],["がんじょうあご","いしあたま"],["フリーズスキン","ゆきふらし"],["メロメロボディ","フェアリースキン"],["じゅうなん","かるわざ","かたやぶり"],["ノーガード"],["ほおぶくろ","ものひろい","プラス"],["そうしょく","うるおいボディ","ぬめぬめ"],["そうしょく","シェルアーマー","ぬめぬめ"],["いたずらごころ","マジシャン"],["しぜんかいふく","おみとおし","しゅうかく"],["ものひろい","おみとおし","ふみん"],["マイペース","アイスボディ","がんじょう"],["がんじょうあご","アイスボディ","がんじょう"],["おみとおし","すりぬけ","テレパシー"],["しんりょく","えんかく"],["しんりょく","きもったま"],["もうか","いかく"],["げきりゅう","うるおいボイス"],["するどいめ","スキルリンク","ちからずく"],["かいりきバサミ","てつのこぶし","いかりのつぼ"],["てつのこぶし"],["するどいめ","すなかき","ふくつのこころ"],["するどいめ","やるき","ノーガード"],["かたいツメ"],["ひとでなし","じゅうなん","さいせいりょく"],["マイペース","じきゅうりょく","せいしんりょく"],["すいほう","ちょすい"],["ふしょく","どんかん"],["リーフガード","じょおうのいげん","スイートベール"],["せいしんりょく","テレパシー","きょうせい"],["レシーバー","まけんき"],["ばけのかわ"],["ぎゃくじょう","そうしょく","ノーてんき"],["ぎゃくじょう"],["ぼうだん","ぼうおん","ぼうじん"],["プレッシャー","きんちょうかん","ミラーアーマー"],["じゅくせい","くいしんぼう","はりきり"],["じゅくせい","くいしんぼう","あついしぼう"],["すなはき","だっぴ","すながくれ"],["くだけるよろい","のろわれボディ"],["いやしのこころ","きけんよち","マジックミラー"],["いたずらごころ","おみとおし","わるいてぐせ"],["ちどりあし","バリアフリー","アイスボディ"],["さまようたましい"],["スイートベール","アロマベール"],["カブトアーマー","まけんき"],["まけんき"],["はらぺこスイッチ"],["はらぺこスイッチ"],["クリアボディ","すりぬけ","のろわれボディ"],["いかく","おみとおし","そうしょく"],["むしのしらせ","ちからずく","きれあじ"],["すいすい","てきおうりょく","かたやぶり"],["すいすい","てきおうりょく","かたやぶり"],["プレッシャー","かるわざ","どくしゅ"],["どくのトゲ","すいすい","いかく"],["しんりょく","へんげんじざい"],["もうか","てんねん"],["げきりゅう","じしんかじょう"],["フレンドガード","ほおぶくろ","テクニシャン"],["きよめのしお","がんじょう","クリアボディ"],["もらいび","くだけるよろい"],["もらいび","くだけるよろい"],["でんきにかえる","せいでんき","しめりけ"],["ようりょくそ","ふみん","ムラっけ"],["とびだすハバネロ"],["びんじょう","おみとおし","かそく"],["かたやぶり","マイペース","わるいてぐせ"],["マイティチェンジ"],["マイティチェンジ"],["どしょく","すながくれ"],["どくげしょう","ふしょく"],["てきおうりょく"],["すなかき","もふもふ"],["やるき","せいしんりょく","まけんき"],["はんすう","テイルアーマー","そうしょく"],["まけんき","そうだいしょう","プレッシャー"],["おうごんのからだ"],["おもてなし","たいねつ"],["じきゅうりょく","がんじょう","すじがねいり"],["かんろなミツ","さいせいりょく","ねんちゃく"]];
+MONS.forEach((m,i)=>m.stats=STATS[i]);
+
+// 性格（H除く 攻/防/特攻/特防/速 = idx1..5）
+const NATURES=[
+ {n:"まじめ",u:0,d:0},{n:"さみしがり",u:1,d:2},{n:"ゆうかん",u:1,d:5},{n:"いじっぱり",u:1,d:3},{n:"やんちゃ",u:1,d:4},
+ {n:"ずぶとい",u:2,d:1},{n:"のんき",u:2,d:5},{n:"わんぱく",u:2,d:3},{n:"のうてんき",u:2,d:4},
+ {n:"おくびょう",u:5,d:1},{n:"せっかち",u:5,d:2},{n:"ようき",u:5,d:3},{n:"むじゃき",u:5,d:4},
+ {n:"ひかえめ",u:3,d:1},{n:"おっとり",u:3,d:2},{n:"れいせい",u:3,d:5},{n:"うっかりや",u:3,d:4},
+ {n:"おだやか",u:4,d:1},{n:"おとなしい",u:4,d:2},{n:"なまいき",u:4,d:5},{n:"しんちょう",u:4,d:3}
+];
+// atk(mv,eff,stab,A): 攻撃側の威力倍率 / ddef(mv): 防御側の防御実数値倍率 / drr(mv,eff): 受けるダメージ倍率 / sash: 満HPで一撃耐え
+const TYPEITEMS=[['シルクのスカーフ','ノーマル'],['もくたん','ほのお'],['しんぴのしずく','みず'],['じしゃく','でんき'],['きせきのタネ','くさ'],['とけないこおり','こおり'],['くろおび','かくとう'],['どくばり','どく'],['やわらかいすな','じめん'],['するどいくちばし','ひこう'],['まがったスプーン','エスパー'],['ぎんのこな','むし'],['かたいいし','いわ'],['のろいのおふだ','ゴースト'],['りゅうのキバ','ドラゴン'],['くろいメガネ','あく'],['こうてつプレート','はがね'],['せいれいプレート','フェアリー']];
+const ITEMS=[
+ {n:"なし"},
+ {n:"こだわりハチマキ（物1.5）",atk:mv=>mv.c==='ph'?1.5:1},
+ {n:"こだわりメガネ（特1.5）",atk:mv=>mv.c==='sp'?1.5:1},
+ {n:"こだわりスカーフ（速・補正なし）"},
+ {n:"いのちのたま（×1.3）",atk:()=>1.3},
+ {n:"たつじんのおび（抜群×1.2）",atk:(mv,eff)=>eff>1?1.2:1},
+ {n:"ちからのハチマキ（物1.1）",atk:mv=>mv.c==='ph'?1.1:1},
+ {n:"ものしりメガネ（特1.1）",atk:mv=>mv.c==='sp'?1.1:1},
+ ...TYPEITEMS.map(([nm,t])=>({n:`${nm}（${t}技×1.2）`,atk:mv=>mv.t===t?1.2:1})),
+ {n:"でんきだま（ピカチュウ攻特×2）",atk:(mv,eff,stab,A)=>A&&MONS[A.sp].name==='ピカチュウ'?2:1},
+ {n:"とつげきチョッキ（特防1.5）",ddef:mv=>mv.c==='sp'?1.5:1},
+ {n:"しんかのきせき（防・特防1.5）",ddef:()=>1.5},
+ {n:"半減きのみ（抜群を半減）",drr:(mv,eff)=>eff>1?0.5:1},
+ {n:"きあいのタスキ（満HPで一撃を耐える）",sash:true},
+ {n:"たべのこし（補正なし）"},{n:"オボンのみ（補正なし）"},{n:"ゴツゴツメット（補正なし）"},
+];
+// 特性の効果（ダメージに関わる主要どころ）。満HP・場なし前提の概算。
+const ATK_ABIL={
+ 'てきおうりょく':{stab:2},
+ 'テクニシャン':{mul:mv=>mv.p<=60?1.5:1},
+ 'ちからもち':{atkx:mv=>mv.c==='ph'?2:1},'ヨガパワー':{atkx:mv=>mv.c==='ph'?2:1},
+ 'はりきり':{mul:mv=>mv.c==='ph'?1.5:1},
+ 'かたやぶり':{mold:true},'ターボブレイズ':{mold:true},'テラボルテージ':{mold:true},
+ // ピンチ特性（HP1/3以下で発動＝計算タブの「ピンチ」ON時のみ）
+ 'もうか':{pinch:'ほのお'},'げきりゅう':{pinch:'みず'},'しんりょく':{pinch:'くさ'},'むしのしらせ':{pinch:'むし'},
+};
+const DEF_ABIL={
+ 'ふゆう':{immune:'じめん'},
+ 'もらいび':{immune:'ほのお'},'こんがりボディ':{immune:'ほのお'},
+ 'ちょすい':{immune:'みず'},'よびみず':{immune:'みず'},'かんそうはだ':{immune:'みず'},
+ 'でんきエンジン':{immune:'でんき'},'ひらいしん':{immune:'でんき'},'ちくでん':{immune:'でんき'},
+ 'そうしょく':{immune:'くさ'},'ぼうおん':{},
+ 'ハードロック':{seRed:0.75},'フィルター':{seRed:0.75},'プリズムアーマー':{seRed:0.75},'いろめがね':{},
+ 'あついしぼう':{half:['ほのお','こおり']},'たいねつ':{half:['ほのお']},
+ 'マルチスケイル':{fullHP:0.5},'ファントムガード':{fullHP:0.5},
+ 'こおりのりんぷん':{spHalf:0.5},
+};
+const STLABEL=["H","A","B","C","D","S"];
+const LV=50;
+const MOVEBYNAME={}; MOVES.forEach((m,i)=>MOVEBYNAME[m.n]=i);
+const NAMEBYID={}; MONS.forEach(m=>NAMEBYID[m.name]=m.id);
+
+// チャンピオンズ式：個体値31固定・Lv50・能力ポイントP（1ヶ所最大32/合計66）。1P=実数値+1。
+const IV=31, PT_MAX=32, PT_TOTAL=66;
+function statAt(b,i){
+  const base=MONS[b.sp].stats[i], P=b.evs[i]||0;
+  const core=Math.floor((2*base+IV+2*P)*LV/100);
+  if(i===0) return core+LV+10;
+  const nat=NATURES[b.nat]; const mod = nat.u===i?1.1 : nat.d===i?0.9 : 1;
+  return Math.floor((core+5)*mod);
+}
+function defaultBuild(sp){return {sp,nat:0,item:0,abil:(ABIL[sp]&&ABIL[sp][0])||"",evs:[0,0,0,0,0,0],moves:["","","",""]};}
+
+// ===== 状態（localStorage）=====
+const KEY="champ-builder-v1";
+let DB;
+function load(){try{const s=localStorage.getItem(KEY);if(s){DB=JSON.parse(s);if(DB&&DB.parties&&DB.parties.length===3){if(!Array.isArray(DB.opp))DB.opp=new Array(6).fill(null);return;}}}catch(e){}
+  DB={active:0,opp:new Array(6).fill(null),parties:[{builds:new Array(6).fill(null)},{builds:new Array(6).fill(null)},{builds:new Array(6).fill(null)}]};}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+const party=()=>DB.parties[DB.active];
+const builds=()=>party().builds;
+const teamIds=()=>builds().filter(Boolean).map(b=>b.sp);
+
+const $=s=>document.querySelector(s);
+const tpChip=t=>`<span class="tp" style="background:var(${TCOLOR[t]})">${t}</span>`;
+let sortMode="cover";
+
+// ===== パーティバー =====
+function renderPbar(){
+  const chips=DB.parties.map((p,i)=>{const c=p.builds.filter(Boolean).length;return `<button class="pchip ${i===DB.active?'on':''}" data-p="${i}">パーティ${i+1}<span class="c">${c}/6</span></button>`;}).join("");
+  $("#pbar").innerHTML=chips+`<button class="autobtn" id="autoBtn" type="button">⚡ おすすめ選出</button><button class="presetbtn" id="resetBtn" type="button">このパーティをリセット</button>`;
+  $("#pbar").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{DB.active=+b.dataset.p;save();renderAll();});
+  $("#autoBtn").onclick=autoFill;
+  $("#resetBtn").onclick=()=>{if(confirm(`パーティ${DB.active+1}を空にします。よろしいですか？`)){party().builds=new Array(6).fill(null);save();renderAll();}};
+}
+
+// ===== ビルドカード =====
+function moveSel(b,slot,k){
+  const pool=(MOVEPOOL[b.sp]&&MOVEPOOL[b.sp].length)?MOVEPOOL[b.sp]:MOVES.map((_,i)=>i);
+  const cur=b.moves[k]||'';
+  const opts=`<option value="">技${k+1}を選択</option>`+pool.map(i=>{const m=MOVES[i];return `<option value="${m.n}"${m.n===cur?' selected':''}>${m.n}（${m.p}/${m.t}）</option>`;}).join("");
+  return `<select data-f="mv" data-k="${k}" data-slot="${slot}">${opts}</select>`;
+}
+function renderCards(){
+  $("#cards").innerHTML=builds().map((b,slot)=>{
+    if(!b) return `<section class="card slot empty"><button type="button" class="addbtn" data-slot="${slot}">＋ ポケモンを追加</button></section>`;
+    const mon=MONS[b.sp];
+    const evTotal=b.evs.reduce((a,c)=>a+c,0);
+    const stats=[0,1,2,3,4,5].map(i=>statAt(b,i));
+    return `<section class="card slot" data-slot="${slot}">
+      <div class="bhd"><span class="bnm">${mon.name}</span><span class="types">${mon.types.map(tpChip).join("")}</span><button class="bx" data-rm="${slot}" title="外す">×</button></div>
+      <div class="brow">
+        <select data-f="nat" data-slot="${slot}">${NATURES.map((n,i)=>`<option value="${i}"${i===b.nat?' selected':''}>${n.n}${n.u?`(${STLABEL[n.u]}↑${STLABEL[n.d]}↓)`:'(無)'}</option>`).join("")}</select>
+        <select data-f="item" data-slot="${slot}">${ITEMS.map((it,i)=>`<option value="${i}"${i===b.item?' selected':''}>${it.n}</option>`).join("")}</select>
+      </div>
+      <div class="blab">特性</div>
+      <select data-f="abil" data-slot="${slot}">${(ABIL[b.sp]&&ABIL[b.sp].length?ABIL[b.sp]:['（データなし）']).map(a=>`<option value="${a}"${a===b.abil?' selected':''}>${a}</option>`).join("")}</select>
+      <div class="blab">技（このポケモンが使える技のみ）</div>
+      <div class="moves">${[0,1,2,3].map(k=>moveSel(b,slot,k)).join("")}</div>
+      <div class="blab">能力ポイント（合計 <span class="evsum">${evTotal}</span>/66・1ヶ所32まで）</div>
+      <div class="evgrid">${[0,1,2,3,4,5].map(i=>`<div class="cell"><label>${STLABEL[i]}</label><input data-f="ev" data-i="${i}" data-slot="${slot}" type="number" min="0" max="32" step="1" value="${b.evs[i]}"></div>`).join("")}</div>
+      <div class="evtotal ${evTotal>PT_TOTAL?'over':''}">${evTotal>PT_TOTAL?'⚠ 合計が66を超えています':''}</div>
+      <div class="statline">${stats.map((v,i)=>`<div class="s"><div class="k">${STLABEL[i]}</div><div class="v">${v}</div></div>`).join("")}</div>
+    </section>`;
+  }).join("");
+  // wire
+  $("#cards").querySelectorAll(".addbtn").forEach(bt=>bt.onclick=()=>openPicker(id=>{builds()[+bt.dataset.slot]=defaultBuild(id);save();renderAll();}));
+  $("#cards").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{builds()[+b.dataset.rm]=null;save();renderAll();});
+  $("#cards").querySelectorAll("[data-f]").forEach(el=>{
+    el.addEventListener(el.type==='number'?'input':'change',()=>{
+      const slot=+el.dataset.slot; const b=builds()[slot]; if(!b)return; const f=el.dataset.f;
+      if(f==='nat')b.nat=+el.value; else if(f==='item')b.item=+el.value; else if(f==='abil')b.abil=el.value;
+      else if(f==='mv')b.moves[+el.dataset.k]=el.value;
+      else if(f==='ev'){const v=Math.max(0,Math.min(PT_MAX,Math.floor(+el.value||0)));b.evs[+el.dataset.i]=v;if(String(v)!==el.value)el.value=v;}
+      save();
+      if(f==='ev'||f==='nat')updateCardStats(slot); // その場更新（再描画せずフォーカス維持）
+    });
+  });
+}
+function updateCardStats(slot){
+  const b=builds()[slot]; if(!b)return;
+  const card=document.querySelector(`.card.slot[data-slot="${slot}"]`); if(!card)return;
+  const vs=card.querySelectorAll(".statline .v");
+  [0,1,2,3,4,5].forEach(i=>{if(vs[i])vs[i].textContent=statAt(b,i);});
+  const total=b.evs.reduce((a,c)=>a+c,0);
+  const tt=card.querySelector(".evtotal"); if(tt){tt.textContent=total>PT_TOTAL?'⚠ 合計が66を超えています':'';tt.classList.toggle('over',total>PT_TOTAL);}
+  const es=card.querySelector(".evsum"); if(es)es.textContent=total;
+}
+
+// ===== 弱点分析・補完候補 =====
+function weaknessTypes(mon){return TYPES.filter(t=>takes(mon.types,t)>1);}
+function teamProfile(ids){const p={};TYPES.forEach(t=>{let w=0,c=0;ids.forEach(id=>{const mm=takes(MONS[id].types,t);if(mm>1)w++;if(mm<1)c++;});p[t]={w,c};});return p;}
+function teamOffense(ids){const s=new Set();ids.forEach(id=>MONS[id].types.forEach(a=>TYPES.forEach(d=>{if(single(a,d)===2)s.add(d);})));return s.size;}
+function renderAnalysis(){
+  const ids=teamIds();
+  if(ids.length===0){$("#analysisSummary").innerHTML="";$("#holes").innerHTML=`<div class="holerow"><span class="lbl">ポケモンを追加すると弱点分析が出ます。</span></div>`;renderSuggest();return;}
+  const p=teamProfile(ids);
+  const weak=TYPES.filter(t=>p[t].w>0), hole=weak.filter(t=>p[t].c===0), cov=weak.length-hole.length, off=teamOffense(ids);
+  $("#analysisSummary").innerHTML=`
+    <div class="tile"><div class="tn tnum">${weak.length}</div><div class="tl">弱点タイプ</div><div class="ts">突かれる数</div></div>
+    <div class="tile ok"><div class="tn tnum">${cov}</div><div class="tl">カバー済み</div><div class="ts">味方が受けられる</div></div>
+    <div class="tile ${hole.length?'bad':''}"><div class="tn tnum">${hole.length}</div><div class="tl">穴</div><div class="ts">誰も受けられない</div></div>
+    <div class="tile"><div class="tn tnum">${off}<span style="font-size:13px;color:var(--ink2)">/18</span></div><div class="tl">攻撃範囲</div><div class="ts">弱点を突けるタイプ</div></div>`;
+  const verdict = hole.length
+    ? `<div class="verdict bad"><b>⚠ 危険な弱点が${hole.length}個</b>：${hole.map(t=>`<span class="pill" style="background:var(${TCOLOR[t]})">${t}</span>`).join('')} で攻撃されると、半減・無効で受けられる味方がいません。下の候補から足して埋めましょう。</div>`
+    : `<div class="verdict good"><b>◎ 弱点はカバーOK</b>：どのタイプで攻撃されても、半減か無効で受けられる味方がいます。</div>`;
+  const rows = weak.map(t=>{
+    const weakN=ids.filter(id=>takes(MONS[id].types,t)>1).length;
+    const coverers=ids.filter(id=>takes(MONS[id].types,t)<1).map(id=>MONS[id].name);
+    return {t,weakN,coverers,isHole:coverers.length===0};
+  }).sort((a,b)=>(b.isHole?1:0)-(a.isHole?1:0)||b.weakN-a.weakN);
+  $("#holes").innerHTML = verdict + `<div class="wklist">` + rows.map(r=>`
+    <div class="wkrow ${r.isHole?'hole':''}">
+      <span class="pill" style="background:var(${TCOLOR[r.t]})">${r.t}</span>
+      <span class="wkc">${r.weakN}匹が弱点</span>
+      ${r.isHole?`<span class="wkbad">⚠ 誰も受けられない</span>`:`<span class="wkok">✓ ${r.coverers.slice(0,3).join('・')}${r.coverers.length>3?' 他':''} が受けられる</span>`}
+    </div>`).join('') + `</div>`;
+  renderSuggest();
+}
+function renderSuggest(){
+  const ids=teamIds();
+  if(ids.length===0){$("#suggest").innerHTML=`<div class="row" style="grid-template-columns:1fr;text-align:center;color:var(--ink2)">ポケモンを追加すると、弱点を補える候補が出ます。</div>`;return;}
+  const p=teamProfile(ids);
+  const hole=TYPES.filter(t=>p[t].w>0&&p[t].c===0);
+  const anchorWeak=weaknessTypes(MONS[ids[0]]);
+  const target=hole.length?hole:anchorWeak;
+  const inTeam=new Set(ids);
+  const scored=MONS.filter(m=>!inTeam.has(m.id)).map(m=>({m,covered:target.filter(t=>takes(m.types,t)<1),get score(){return this.covered.length;}}));
+  const uv=x=>x.m.usage==null?-1:x.m.usage;
+  scored.sort((a,b)=>sortMode==="usage"?uv(b)-uv(a)||b.covered.length-a.covered.length:b.covered.length-a.covered.length||uv(b)-uv(a));
+  const full=builds().every(Boolean);
+  $("#suggest").innerHTML=scored.slice(0,20).map(s=>{
+    const cc=s.covered.length?s.covered.map(t=>`<span class="pill" style="background:var(${TCOLOR[t]})">${t}</span>`).join(""):`<span class="clabel">補完なし</span>`;
+    return `<div class="row ${s.covered.length?'':'dim'}">
+      <div class="use"><div class="pct tnum">${s.m.usage==null?'—':s.m.usage.toFixed(1)+'%'}</div><div class="cap">使用率</div></div>
+      <div><span class="nm">${s.m.name}</span><div class="meta">${s.m.types.map(tpChip).join("")}<span class="clabel">補える弱点</span>${cc}${s.covered.length?`<span class="score">+${s.covered.length}</span>`:''}</div></div>
+      <button class="add" data-add="${s.m.id}" ${full?'disabled':''}>${full?'満員':'＋追加'}</button>
+    </div>`;
+  }).join("");
+  $("#suggest").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const i=builds().indexOf(null);if(i>=0){builds()[i]=defaultBuild(+b.dataset.add);save();renderAll();}});
+}
+function autoFill(){
+  let base=teamIds();
+  if(base.length===0){let t=MONS[0];MONS.forEach(m=>{if((m.usage??-1)>(t.usage??-1))t=m;});base=[t.id];}
+  while(base.length<6){
+    const p=teamProfile(base);const hole=TYPES.filter(t=>p[t].w>0&&p[t].c===0);
+    let best=null,bs=-1,bu=-2;
+    for(const m of MONS){if(base.includes(m.id))continue;const cov=hole.filter(t=>takes(m.types,t)<1).length;const use=m.usage==null?-1:m.usage;if(cov>bs||(cov===bs&&use>bu)){best=m.id;bs=cov;bu=use;}}
+    if(best==null)break;base.push(best);
+  }
+  const nb=new Array(6).fill(null); base.forEach((id,i)=>nb[i]=defaultBuild(id));
+  party().builds=nb; save(); renderAll();
+}
+
+// ===== ダメージ計算 =====
+function allBuildRefs(){const out=[];DB.parties.forEach((p,pi)=>p.builds.forEach((b,si)=>{if(b)out.push({label:`P${pi+1}・${MONS[b.sp].name}`,pi,si});}));return out;}
+function getBuild(ref){return DB.parties[ref.pi].builds[ref.si];}
+function renderCalc(){
+  const refs=allBuildRefs();
+  if(refs.length<1){$("#a-sel").innerHTML="";$("#d-sel").innerHTML="";$("#calcResult").innerHTML=`<div class="empty-msg">「パーティ構築」でポケモンを登録すると、その構成でダメージ計算できます。</div>`;$("#a-statline").innerHTML="";$("#d-statline").innerHTML="";return;}
+  const opt=refs.map((r,i)=>`<option value="${i}">${r.label}</option>`).join("");
+  const aPrev=$("#a-sel").value, dPrev=$("#d-sel").value;
+  $("#a-sel").innerHTML=opt; $("#d-sel").innerHTML=opt;
+  $("#a-sel").value=aPrev&&aPrev<refs.length?aPrev:0;
+  $("#d-sel").value=dPrev&&dPrev<refs.length?dPrev:(refs.length>1?1:0);
+  refreshMoveSel(); runCalc();
+}
+function refreshMoveSel(){
+  const refs=allBuildRefs();const b=getBuild(refs[+$("#a-sel").value]);
+  const mv=b.moves.filter(Boolean);
+  $("#a-move").innerHTML = mv.length?mv.map(n=>`<option value="${n}">${n}</option>`).join(""):`<option value="">技が未登録</option>`;
+}
+// 純粋なダメージ計算コア（DOM非依存）。逆算でも再利用。
+function damageRolls(A, mv, D, opt){
+  opt=opt||{};
+  const Amon=MONS[A.sp], Dmon=MONS[D.sp];
+  const isPh=mv.c==='ph';
+  const aItem=ITEMS[A.item]||ITEMS[0], dItem=ITEMS[D.item]||ITEMS[0];
+  const aAb=ATK_ABIL[A.abil]||{}, dAb=DEF_ABIL[D.abil]||{};
+  const mold=!!(aAb.mold||opt.mold); // かたやぶり：相手特性を無視
+  const rankMul=n=>{n=n||0;return n>=0?(2+n)/2:2/(2-n);};
+  let Aatk=statAt(A,isPh?1:3); if(aAb.atkx) Aatk=Math.floor(Aatk*aAb.atkx(mv));
+  Aatk=Math.max(1,Math.floor(Aatk*rankMul(opt.atkRank)));
+  const dHP=statAt(D,0);
+  const ddefMod=dItem.ddef?dItem.ddef(mv):1;
+  const dRank=(opt.crit&&(opt.defRank||0)>0)?0:(opt.defRank||0); // 急所は相手の上昇ランク無視
+  const Ddef=Math.max(1,Math.floor(Math.floor(statAt(D,isPh?2:4)*rankMul(dRank))*ddefMod));
+  const eff=Dmon.types.reduce((m,t)=>m*single(mv.t,t),1);
+  const stab=Amon.types.includes(mv.t);
+  const stabF=stab?(aAb.stab||1.5):1;
+  const itemMod=aItem.atk?aItem.atk(mv,eff,stab,A):1;
+  const drr=dItem.drr?dItem.drr(mv,eff):1;
+  const atkAbil=aAb.mul?aAb.mul(mv):1;
+  const pinchMul=(opt.pinch&&aAb.pinch===mv.t)?1.5:1;
+  let defAbil=1, abilImmune=false;
+  if(!mold){
+    if(dAb.immune===mv.t) abilImmune=true;
+    if(dAb.seRed && eff>1) defAbil*=dAb.seRed;
+    if(dAb.half && dAb.half.includes(mv.t)) defAbil*=0.5;
+    if(dAb.spHalf && mv.c==='sp') defAbil*=dAb.spHalf;
+    if(dAb.fullHP) defAbil*=dAb.fullHP;
+  }
+  // 場・状況（接地前提の概算）
+  let weatherMul=1;
+  if(opt.weather==='sun') weatherMul=mv.t==='ほのお'?1.5:mv.t==='みず'?0.5:1;
+  else if(opt.weather==='rain') weatherMul=mv.t==='みず'?1.5:mv.t==='ほのお'?0.5:1;
+  let terrainMul=1;
+  if(opt.terrain==='electric') terrainMul=mv.t==='でんき'?1.3:1;
+  else if(opt.terrain==='grassy') terrainMul=mv.t==='くさ'?1.3:(['じしん','10まんばりき','マグニチュード'].includes(mv.n)?0.5:1);
+  else if(opt.terrain==='psychic') terrainMul=mv.t==='エスパー'?1.3:1;
+  else if(opt.terrain==='misty') terrainMul=mv.t==='ドラゴン'?0.5:1;
+  let wallMul=1;
+  if(!opt.crit){ if(opt.wall==='reflect')wallMul=isPh?0.5:1; else if(opt.wall==='light')wallMul=isPh?1:0.5; else if(opt.wall==='veil')wallMul=0.5; }
+  const burnMul=(opt.burn&&isPh)?0.5:1;
+  const critMul=opt.crit?1.5:1;
+  const mult=abilImmune?0:stabF*eff*itemMod*drr*atkAbil*defAbil*pinchMul*weatherMul*terrainMul*wallMul*burnMul*critMul;
+  const baseDmg=Math.floor(Math.floor((2*LV/5+2)*mv.p*Aatk/Ddef)/50)+2;
+  const rolls=[];for(let r=85;r<=100;r++)rolls.push(Math.floor(Math.floor(baseDmg*r/100)*mult));
+  return {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,abilImmune,aItem,dItem,aAb,dAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul};
+}
+function runCalc(){
+  const refs=allBuildRefs();
+  const A=getBuild(refs[+$("#a-sel").value]), D=getBuild(refs[+$("#d-sel").value]);
+  const Amon=MONS[A.sp], Dmon=MONS[D.sp];
+  const mvName=$("#a-move").value; const mv=mvName?MOVES[MOVEBYNAME[mvName]]:null;
+  if(!mv){$("#calcResult").innerHTML=`<div class="empty-msg">こうげき側に技を登録してください。</div>`;$("#a-statline").innerHTML=`${Amon.name}`;$("#d-statline").innerHTML=`${Dmon.name}`;return;}
+  const opt={
+    pinch:!!($("#a-pinch")&&$("#a-pinch").checked),
+    weather:$("#f-weather").value, terrain:$("#f-terrain").value, wall:$("#f-wall").value,
+    atkRank:+$("#f-arank").value||0, defRank:+$("#f-drank").value||0,
+    burn:$("#f-burn").checked, crit:$("#f-crit").checked
+  };
+  const R=damageRolls(A,mv,D,opt);
+  const {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,abilImmune,aItem,dItem,aAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul}=R;
+  const min=rolls[0],max=rolls[15];const pMin=min/dHP*100,pMax=max/dHP*100;
+  let ko;
+  if(abilImmune)ko={t:`${D.abil} で無効`,k:'k0'};
+  else if(max<=0)ko={t:'効果がない',k:'k0'};
+  else{const g=Math.ceil(dHP/min),p=Math.ceil(dHP/max);ko=g===p?{t:`確定${g}発`,k:g===1?'k1':'k0'}:{t:`乱数${p}〜${g}発`,k:p===1?'k1':'k0'};}
+  if(dItem.sash && max>=dHP && max>0 && !abilImmune) ko={t:'きあいのタスキで耐える（満HP時・残り1）',k:'k0'};
+  const abilNotes=[]; if(stab&&aAb.stab)abilNotes.push('適応力'); if(atkAbil!==1)abilNotes.push(`${A.abil}×${atkAbil}`); if(aAb.atkx&&aAb.atkx(mv)!==1)abilNotes.push(`${A.abil}(攻撃2倍)`); if(!abilImmune&&defAbil!==1)abilNotes.push(`${D.abil}×${defAbil}`); if(pinchMul!==1)abilNotes.push(`${A.abil}(ピンチ×1.5)`); if(mold)abilNotes.push('かたやぶり(相手特性無視)');
+  if(weatherMul!==1)abilNotes.push(`天候×${weatherMul}`); if(terrainMul!==1)abilNotes.push(`フィールド×${terrainMul}`); if(wallMul!==1)abilNotes.push(`壁×${wallMul}`); if(burnMul!==1)abilNotes.push('やけど×0.5'); if(critMul!==1)abilNotes.push('急所×1.5');
+  const arank=+$("#f-arank").value||0, drank=+$("#f-drank").value||0;
+  if(arank)abilNotes.push(`攻撃ランク${arank>0?'+':''}${arank}`); if(drank)abilNotes.push(`防御ランク${drank>0?'+':''}${drank}`);
+  const effL=eff===0?'×0（無効）':eff>=4?'×4':eff>1?'×2（抜群）':eff<=.25?'×¼':eff<1?'×½（半減）':'×1';
+  $("#a-statline").innerHTML=`${Amon.name}／${isPh?'こうげき':'とくこう'} <b>${Aatk}</b>・タイプ一致 ${stab?'あり':'なし'}・特性 ${A.abil||'—'}・持ち物 ${aItem.n}`;
+  $("#d-statline").innerHTML=`${Dmon.name}／HP <b>${dHP}</b>・${isPh?'ぼうぎょ':'とくぼう'} <b>${Ddef}</b>${ddefMod!==1?'（持ち物補正込み）':''}・特性 ${D.abil||'—'}・持ち物 ${dItem.n}`;
+  $("#calcResult").innerHTML=`
+    <div class="rtitle">${Amon.name} の「${mv.n}」→ ${Dmon.name}</div>
+    <div><span class="rdmg tnum">${min} 〜 ${max}</span><span class="rpct">${pMin.toFixed(1)}% 〜 ${pMax.toFixed(1)}%</span></div>
+    <span class="rko ${ko.k}">${ko.t}</span>
+    <div class="rbar"><div class="fmin" style="width:${Math.min(pMin,100)}%"></div><div class="fmax" style="width:${Math.min(pMax,100)}%"></div></div>
+    <div class="rmeta">タイプ相性 <b>${effL}</b>${itemMod!==1?` ・ 攻撃側持ち物 ×${itemMod}`:''}${drr!==1?` ・ 防御側きのみ ×${drr}`:''}${abilNotes.length?` ・ 特性 ${abilNotes.join('／')}`:''} ・ 技 ${tpChip(mv.t)}</div>`;
+}
+
+// ===== 逆算（相手の振り推定）=====
+function refreshInferMove(){const refs=allBuildRefs();const b=refs.length?getBuild(refs[+($("#rb-a").value||0)]):null;const mv=b?b.moves.filter(Boolean):[];$("#rb-mv").innerHTML=mv.length?mv.map(n=>`<option value="${n}">${n}</option>`).join(""):`<option value="">技未登録</option>`;}
+function refreshInferAbil(){const sp=+$("#rb-d").value;const list=(ABIL[sp]&&ABIL[sp].length?ABIL[sp]:[]);$("#rb-dabil").innerHTML=`<option value="">なし/不明</option>`+list.map(a=>`<option value="${a}">${a}</option>`).join("");}
+function renderInfer(){
+  const refs=allBuildRefs();
+  $("#rb-a").innerHTML=refs.length?refs.map((r,i)=>`<option value="${i}">${r.label}</option>`).join(""):`<option value="">（構築でポケモン登録が必要）</option>`;
+  if(!$("#rb-d").value) $("#rb-d").value=MONS[0].id;
+  $("#rb-d-btn").textContent=MONS[+$("#rb-d").value].name;
+  if(!$("#rb-ditem").options.length){$("#rb-ditem").innerHTML=ITEMS.map((it,i)=>`<option value="${i}">${it.n}</option>`).join("");}
+  refreshInferMove(); refreshInferAbil();
+}
+function runInfer(){
+  const refs=allBuildRefs();
+  if(!refs.length){$("#rb-result").innerHTML=`<div class="empty-msg">先に「パーティ構築」で攻撃側ポケモンを登録してください。</div>`;return;}
+  const A=getBuild(refs[+$("#rb-a").value]); const mvName=$("#rb-mv").value; const mv=mvName?MOVES[MOVEBYNAME[mvName]]:null;
+  if(!mv){$("#rb-result").innerHTML=`<div class="empty-msg">攻撃側の技を選んでください（構築で技を登録）。</div>`;return;}
+  const dsp=+$("#rb-d").value, pinch=$("#rb-pinch").checked, item=+$("#rb-ditem").value, abil=$("#rb-dabil").value;
+  const isPh=mv.c==='ph', defIdx=isPh?2:4;
+  const natSel=$("#rb-dnat").value;
+  const natUp=isPh?NATURES.findIndex(n=>n.u===2):NATURES.findIndex(n=>n.u===4);
+  const natDn=isPh?NATURES.findIndex(n=>n.d===2):NATURES.findIndex(n=>n.d===4);
+  const nat=natSel==='up'?natUp:natSel==='down'?natDn:0;
+  const pmin=Math.min(+$("#rb-pmin").value,+$("#rb-pmax").value), pmax=Math.max(+$("#rb-pmin").value,+$("#rb-pmax").value);
+  const cons=[];
+  for(let hp=0;hp<=32;hp++)for(let dp=0;dp<=32;dp++){
+    if(hp+dp>66) continue;
+    const evs=[0,0,0,0,0,0]; evs[0]=hp; evs[defIdx]=dp;
+    const R=damageRolls(A,mv,{sp:dsp,nat,item,abil,evs,moves:[]},{pinch});
+    if(R.abilImmune) continue;
+    const lo=R.rolls[0]/R.dHP*100, hi=R.rolls[15]/R.dHP*100;
+    if(hi>=pmin && lo<=pmax) cons.push({hp,dp});
+  }
+  const L=isPh?'B':'D';
+  if(!cons.length){$("#rb-result").innerHTML=`<div class="empty-msg">整合する配分が見つかりませんでした。観測％・性格・持ち物・特性を見直してください（無効特性/半減実の可能性も）。</div>`;return;}
+  const hps=cons.map(c=>c.hp), dps=cons.map(c=>c.dp);
+  const chips=cons.slice(0,48).map(c=>`<span class="pill" style="background:var(--surface2);color:var(--ink);border:1px solid var(--line)">H${c.hp}/${L}${c.dp}</span>`).join(' ');
+  $("#rb-result").innerHTML=`
+    <div class="rtitle">${MONS[A.sp].name}「${mv.n}」で ${MONS[dsp].name} が <b>${pmin}〜${pmax}%</b> 減ったなら</div>
+    <div style="margin:8px 0"><span class="rdmg" style="font-size:20px">${cons.length}通り</span> の振りが整合（HP <b>${Math.min(...hps)}〜${Math.max(...hps)}</b> ／ ${L} <b>${Math.min(...dps)}〜${Math.max(...dps)}</b> ポイント）</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">${chips}${cons.length>48?`<span class="pill" style="background:var(--surface2);color:var(--ink2);border:1px solid var(--line)">…他${cons.length-48}</span>`:''}</div>`;
+}
+
+// ===== ポケモン選択オーバーレイ（検索＋スクロール）=====
+let pickerCB=null, pickerHi=-1;
+function openPicker(cb){pickerCB=cb;$("#picker").hidden=false;$("#picker-search").value='';renderPickerList('');setTimeout(()=>$("#picker-search").focus(),0);}
+function closePicker(){$("#picker").hidden=true;pickerCB=null;pickerHi=-1;}
+function renderPickerList(q){
+  const list=MONS.filter(m=>!q||m.name.includes(q)||m.types.some(t=>t.includes(q))).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  pickerHi=-1;
+  $("#picker-list").innerHTML=list.length?list.map(m=>`<button type="button" class="picker-item" data-id="${m.id}"><span class="pn">${m.name}</span><span class="pt">${m.types.map(tpChip).join("")}</span></button>`).join(""):`<div style="padding:16px;color:var(--ink2)">該当なし</div>`;
+  $("#picker-list").querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{const id=+b.dataset.id;const cb=pickerCB;closePicker();if(cb)cb(id);});
+}
+
+// ===== 選出（相手パーティに対する有利ランキング）=====
+function renderSelectView(){
+  $("#opp-grid").innerHTML=DB.opp.map((id,i)=>{
+    if(id==null) return `<div class="oppslot" data-oi="${i}"><span class="oadd">＋ 相手</span></div>`;
+    const m=MONS[id];
+    return `<div class="oppslot filled"><button class="ox" data-orm="${i}" title="外す">×</button><span class="on">${m.name}</span><span class="ot">${m.types.map(tpChip).join("")}</span></div>`;
+  }).join("");
+  $("#opp-grid").querySelectorAll("[data-oi]").forEach(el=>el.onclick=()=>openPicker(id=>{DB.opp[+el.dataset.oi]=id;save();renderSelectView();}));
+  $("#opp-grid").querySelectorAll("[data-orm]").forEach(b=>b.onclick=(e)=>{e.stopPropagation();DB.opp[+b.dataset.orm]=null;save();renderSelectView();});
+  const opp=DB.opp.filter(x=>x!=null), my=teamIds();
+  if(!opp.length){$("#sel-result").innerHTML=`<div class="empty-msg">相手を1体以上セットすると、有利な選出が出ます。</div>`;return;}
+  if(!my.length){$("#sel-result").innerHTML=`<div class="empty-msg">「パーティ構築」で自分のポケモンを登録してください（現在のパーティが対象）。</div>`;return;}
+  const threatens=(a,d)=>MONS[a].types.some(at=>takes(MONS[d].types,at)>1);
+  const rows=my.map(mid=>{
+    const cells=opp.map(oid=>{const iHit=threatens(mid,oid),theyHit=threatens(oid,mid);return {oid,st:iHit&&!theyHit?'win':theyHit&&!iHit?'lose':'even'};});
+    const win=cells.filter(c=>c.st==='win').length, lose=cells.filter(c=>c.st==='lose').length;
+    return {mid,cells,win,lose,score:win-lose};
+  }).sort((a,b)=>b.score-a.score||b.win-a.win||a.lose-b.lose);
+  $("#sel-result").innerHTML=rows.map((r,idx)=>`
+    <div class="selrow ${idx<3&&r.score>0?'best':''}">
+      <div class="sc ${r.score>0?'pos':r.score<0?'neg':''}">${r.score>0?'+':''}${r.score}<span class="cap">有${r.win}/不${r.lose}</span></div>
+      <div>
+        <span class="snm">${MONS[r.mid].name}</span> <span style="font-size:11px">${MONS[r.mid].types.map(tpChip).join("")}</span>
+        <div class="sgrid">${r.cells.map(c=>`<span class="oc ${c.st}">${MONS[c.oid].name}</span>`).join("")}</div>
+      </div>
+    </div>`).join("");
+}
+
+function renderAll(){renderPbar();renderCards();renderAnalysis();renderCalc();}
+
+function init(){
+  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();});
+  $("#sel-clear").addEventListener("click",()=>{DB.opp=new Array(6).fill(null);save();renderSelectView();});
+  $("#rb-a").addEventListener("change",refreshInferMove);
+  $("#rb-d-btn").addEventListener("click",()=>openPicker(id=>{$("#rb-d").value=id;$("#rb-d-btn").textContent=MONS[id].name;refreshInferAbil();}));
+  $("#rb-run").addEventListener("click",runInfer);
+  $("#picker-search").addEventListener("input",e=>renderPickerList(e.target.value.trim()));
+  $("#picker").addEventListener("click",e=>{if(e.target.id==='picker')closePicker();});
+  document.addEventListener("keydown",e=>{if(e.key==='Escape'&&!$("#picker").hidden)closePicker();});
+  $("#sortToggle").querySelectorAll("button").forEach(b=>b.onclick=()=>{sortMode=b.dataset.sort;$("#sortToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderSuggest();});
+  $("#a-sel").addEventListener("change",()=>{refreshMoveSel();runCalc();});
+  $("#d-sel").addEventListener("change",runCalc);
+  $("#a-move").addEventListener("change",runCalc);
+  $("#a-pinch").addEventListener("change",runCalc);
+  const rankOpts=[6,5,4,3,2,1,0,-1,-2,-3,-4,-5,-6].map(n=>`<option value="${n}"${n===0?' selected':''}>${n>0?'+':''}${n}</option>`).join("");
+  $("#f-arank").innerHTML=rankOpts; $("#f-drank").innerHTML=rankOpts;
+  ['f-weather','f-terrain','f-wall','f-arank','f-drank','f-burn','f-crit'].forEach(id=>$("#"+id).addEventListener("change",runCalc));
+  load(); renderAll();
+}
+init();
+</script>
+<script>
+(function(){
+  function postH(){ try{ parent.postMessage({champHeight: Math.ceil(document.documentElement.scrollHeight)}, '*'); }catch(e){} }
+  window.addEventListener('load', postH);
+  if(window.ResizeObserver){ new ResizeObserver(postH).observe(document.body); }
+  setInterval(postH, 800);
+})();
+</script>

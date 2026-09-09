@@ -30,6 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '',                  priority: 1.0,  freq: 'daily'  },
         { path: '/simulator',        priority: 0.95, freq: 'daily'  },
         { path: '/global-simulator', priority: 0.95, freq: 'daily'  },
+        { path: '/champions',        priority: 0.9,  freq: 'daily'  },
         { path: '/practice',         priority: 0.9,  freq: 'daily'  },
         { path: '/decks',            priority: 0.85, freq: 'daily'  },
         { path: '/env',              priority: 0.85, freq: 'daily'  },
