@@ -180,10 +180,10 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
 .pickbtn,.addbtn{width:100%;font-family:inherit;font-weight:700;font-size:14px;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;cursor:pointer;text-align:left}
 .addbtn{text-align:center;color:var(--accent);border-style:dashed;min-height:110px}
 .pickbtn:hover,.addbtn:hover{border-color:var(--accent)}
-.picker-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);align-items:flex-start;justify-content:center;padding:7vh 16px}
+.picker-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5)}
 .picker-overlay[hidden]{display:none}
-.picker-overlay:not([hidden]){display:flex}
-.picker-box{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:82vh}
+.picker-overlay:not([hidden]){display:block}
+.picker-box{position:absolute;width:min(340px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:min(70vh,440px)}
 .picker-box input{border:none;border-bottom:1px solid var(--line);border-radius:0;background:var(--surface);font-size:15px;padding:14px}
 .picker-list{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .picker-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-family:inherit;font-size:14px;color:var(--ink);background:none;border:none;border-bottom:1px solid var(--surface2);padding:11px 14px;cursor:pointer}
@@ -795,7 +795,7 @@ function renderCards(){
     </section>`;
   }).join("");
   // wire
-  $("#cards").querySelectorAll(".addbtn").forEach(bt=>bt.onclick=()=>openPicker(id=>{builds()[+bt.dataset.slot]=defaultBuild(id);save();renderAll();}));
+  $("#cards").querySelectorAll(".addbtn").forEach(bt=>bt.onclick=()=>openPicker(id=>{builds()[+bt.dataset.slot]=defaultBuild(id);save();renderAll();},bt));
   $("#cards").querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{openDetails.delete(`${DB.active}-${+b.dataset.rm}`);builds()[+b.dataset.rm]=null;save();renderAll();});
   $("#cards").querySelectorAll("details.bdetail").forEach(d=>d.addEventListener("toggle",()=>{const key=`${DB.active}-${d.dataset.slot}`;if(d.open)openDetails.add(key);else openDetails.delete(key);}));
   $("#cards").querySelectorAll("[data-f]").forEach(el=>{
@@ -1066,7 +1066,21 @@ function runInfer(){
 
 // ===== ポケモン選択オーバーレイ（検索＋スクロール）=====
 let pickerCB=null, pickerHi=-1;
-function openPicker(cb){pickerCB=cb;$("#picker").hidden=false;$("#picker-search").value='';renderPickerList('');setTimeout(()=>$("#picker-search").focus(),0);}
+function positionPicker(anchor){
+  const box=$("#picker .picker-box"); if(!box)return;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  box.style.bottom='auto';
+  if(!anchor||!anchor.getBoundingClientRect){ box.style.left='50%'; box.style.top='40px'; box.style.transform='translateX(-50%)'; return; }
+  box.style.transform='none';
+  const r=anchor.getBoundingClientRect(), bw=box.offsetWidth||Math.min(340,vw-16);
+  const left=Math.min(Math.max(8,r.left), Math.max(8,vw-bw-8));
+  box.style.left=Math.round(left)+'px';
+  box.style.top=Math.round(r.bottom+6)+'px';
+  // はみ出す場合はボタンの上に出す／画面内に収める
+  const bh=box.offsetHeight; let top=r.bottom+6;
+  if(top+bh>vh-8){ top=r.top-6-bh; if(top<8) top=Math.max(8, vh-bh-8); box.style.top=Math.round(top)+'px'; }
+}
+function openPicker(cb,anchor){pickerCB=cb;$("#picker").hidden=false;$("#picker-search").value='';renderPickerList('');positionPicker(anchor);setTimeout(()=>positionPicker(anchor),0);setTimeout(()=>$("#picker-search").focus({preventScroll:true}),0);}
 function closePicker(){$("#picker").hidden=true;pickerCB=null;pickerHi=-1;}
 function renderPickerList(q){
   const list=MONS.filter(m=>!q||m.name.includes(q)||m.types.some(t=>t.includes(q))).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
@@ -1082,7 +1096,7 @@ function renderSelectView(){
     const m=MONS[id];
     return `<div class="oppslot filled"><button class="ox" data-orm="${i}" title="外す">×</button><span class="on">${m.name}</span><span class="ot">${m.types.map(tpChip).join("")}</span></div>`;
   }).join("");
-  $("#opp-grid").querySelectorAll("[data-oi]").forEach(el=>el.onclick=()=>openPicker(id=>{DB.opp[+el.dataset.oi]=id;save();renderSelectView();}));
+  $("#opp-grid").querySelectorAll("[data-oi]").forEach(el=>el.onclick=()=>openPicker(id=>{DB.opp[+el.dataset.oi]=id;save();renderSelectView();},el));
   $("#opp-grid").querySelectorAll("[data-orm]").forEach(b=>b.onclick=(e)=>{e.stopPropagation();DB.opp[+b.dataset.orm]=null;save();renderSelectView();});
   const opp=DB.opp.filter(x=>x!=null), my=teamIds();
   if(!opp.length){$("#sel-result").innerHTML=`<div class="empty-msg">相手を1体以上セットすると、有利な選出が出ます。</div>`;return;}
@@ -1109,7 +1123,7 @@ function init(){
   $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();});
   $("#sel-clear").addEventListener("click",()=>{DB.opp=new Array(6).fill(null);save();renderSelectView();});
   $("#rb-a").addEventListener("change",refreshInferMove);
-  $("#rb-d-btn").addEventListener("click",()=>openPicker(id=>{$("#rb-d").value=id;$("#rb-d-btn").textContent=MONS[id].name;refreshInferAbil();}));
+  $("#rb-d-btn").addEventListener("click",e=>openPicker(id=>{$("#rb-d").value=id;$("#rb-d-btn").textContent=MONS[id].name;refreshInferAbil();},e.currentTarget));
   $("#rb-run").addEventListener("click",runInfer);
   $("#picker-search").addEventListener("input",e=>renderPickerList(e.target.value.trim()));
   $("#picker").addEventListener("click",e=>{if(e.target.id==='picker')closePicker();});

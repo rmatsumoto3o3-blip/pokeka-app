@@ -3,6 +3,7 @@ import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import ChampionsTool from '@/components/ChampionsTool'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 export const metadata: Metadata = {
     title: 'ポケチャン ダメージ計算・構築ツール',
@@ -127,6 +128,11 @@ export default function ChampionsPage() {
                     <ChampionsTool />
                 </div>
 
+                {/* 広告：ツールの外・コンテンツ側に配置（ツール操作に干渉しない） */}
+                <div className="mt-6 max-w-3xl">
+                    <AdPlaceholder slot="2515406718" format="auto" />
+                </div>
+
                 <section className="mt-8 max-w-3xl text-sm leading-7 text-gray-600">
                     <h2 className="text-lg font-bold text-gray-900">このツールでできること</h2>
                     <p className="mt-2"><b>ダメージ計算</b>：登録したポケモンの構成（性格補正・能力ポイント・持ち物・特性）でダメージ乱数・HP割合・確定/乱数◯発を算出。天候・壁・やけど・急所・能力ランクにも対応しています。</p>
@@ -166,6 +172,11 @@ export default function ChampionsPage() {
                         ))}
                     </div>
                 </section>
+
+                {/* 広告：ページ下部（コンテンツの区切り） */}
+                <div className="mt-8 max-w-3xl">
+                    <AdPlaceholder slot="5651129539" format="auto" />
+                </div>
 
                 <p className="mt-8 max-w-3xl text-xs leading-6 text-gray-400">
                     ※ ポケモン・種族値・タイプ・技・特性は公開データ（PokéAPI等）を基に集計しています。使用率は暫定値、天候連動特性など一部の効果は順次対応予定です。ゲーム内の最新の調整とは差が出る場合があります。
