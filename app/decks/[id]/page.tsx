@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
@@ -17,7 +17,7 @@ function cleanLocation(location: string | null): string {
 // featured_decks（月別シート由来の公開デッキ）から取得。過去の deck_records とは分離。
 // URL パラメータは deck_code（同期のたびに変わる id ではなく不変のコードで解決＝リンク切れ防止）。
 async function getDeck(deckCode: string) {
-    const supabase = await createClient()
+    // 公開読み取りは cookie 非依存の anon クライアント(lib/supabase)を使用しISRを維持
 
     const { data, error } = await supabase
         .from('featured_decks')

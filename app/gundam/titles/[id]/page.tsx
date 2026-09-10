@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
@@ -11,7 +11,7 @@ export const revalidate = 3600
 export const dynamicParams = true
 
 async function getRecommendedDeck(id: string) {
-    const supabase = await createClient()
+    // 公開読み取りは cookie 非依存の anon クライアント(lib/supabase)を使用しISRを維持
     const { data: deck, error } = await supabase
         .from('gundam_recommended_decks')
         .select('id, deck_code, tag_code, deck_name, image_url')

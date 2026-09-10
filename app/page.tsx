@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { unstable_cache } from 'next/cache'
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/actions'
@@ -298,7 +298,8 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 export default async function Home() {
-  const supabase = await createClient()
+  // 公開読み取りは cookie 非依存の anon クライアント（lib/supabase）を使用。
+  // これにより本ページは真のISR（revalidate=3600）として静的配信され、毎リクエストの動的レンダリング＝Fluid Active CPU を回避する。
   // 記事・アーキタイプは60秒ISR、採用率データは24時間キャッシュで並列取得
   const [
     { data: archetypes },

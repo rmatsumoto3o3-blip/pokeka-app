@@ -1699,11 +1699,11 @@ export async function getGundamSeriesAction() {
 
 // みんなのデッキ一覧（旧タイトル別を転用）。icon_urls 列が未追加でも動くようフォールバック。
 export async function getGundamRecommendedDecksAction() {
-    // 公開読み取りは anon(RLS) 経由に統一（詳細ページと同じ実績のある経路。service roleキー未設定でも動く）
+    // 公開読み取りは cookie 非依存の anon(RLS) クライアントに統一。
+    // cookie を読まないので /gundam・/gundam/titles を静的ISRのまま維持でき、Fluid Active CPU を削減する。
     const base = 'id, deck_code, tag_code, deck_name, image_url'
     try {
-        const { createClient: createServerClient } = await import('@/utils/supabase/server')
-        const supabase = await createServerClient()
+        const { supabase } = await import('@/lib/supabase')
         const run = (cols: string) => supabase
             .from('gundam_recommended_decks')
             .select(cols)

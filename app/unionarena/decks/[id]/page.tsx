@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
@@ -38,7 +38,7 @@ async function getDeckFromFirebase(code: string) {
 }
 
 async function getDeck(id: string) {
-    const supabase = await createClient()
+    // 公開読み取りは cookie 非依存の anon クライアント(lib/supabase)を使用しISRを維持
     const { data: deck, error } = await supabase
         .from('unionarena_deck_records')
         .select(`
