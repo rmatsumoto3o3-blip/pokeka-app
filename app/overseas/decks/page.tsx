@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
     robots: { index: false, follow: false },
 }
 
-export default async function OverseasDecksPage({ searchParams }: { searchParams: Promise<{ archetype?: string }> }) {
-    const [{ archetype }, archetypes, results, tournaments] = await Promise.all([searchParams, getOverseasArchetypes(), getOverseasResults(), getOverseasTournaments()])
-    return <div className="flex min-h-screen flex-col bg-slate-50"><PublicHeader game="overseas" /><main className="mx-auto w-full max-w-5xl flex-grow px-4 py-8"><div className="mb-7"><Link href="/overseas" className="text-sm font-medium text-sky-600">← 海外TOPに戻る</Link><div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="text-2xl font-extrabold text-gray-900 md:text-4xl">海外大会・デッキ一覧</h1></div><p className="mt-2 text-sm text-gray-600">地域・大会・順位・デッキタイプで絞り込みできます。カード名は英語のまま表示します。</p></div><OverseasDeckList archetypes={archetypes} results={results} tournaments={tournaments} initialArchetypeId={archetype} /></main><Footer game="pokemon" /></div>
+// ?archetype= の初期フィルタはクライアント側(OverseasDeckList)で useSearchParams から読む。
+// サーバーで searchParams を読まないことで本ページを静的ISR(1日)に保ち、毎リクエストの
+// 動的レンダリング＝5MB超の再取得/再パース（Fluid CPU）を避ける。noindex なのでSEO影響なし。
+export default async function OverseasDecksPage() {
+    const [archetypes, results, tournaments] = await Promise.all([getOverseasArchetypes(), getOverseasResults(), getOverseasTournaments()])
+    return <div className="flex min-h-screen flex-col bg-slate-50"><PublicHeader game="overseas" /><main className="mx-auto w-full max-w-5xl flex-grow px-4 py-8"><div className="mb-7"><Link href="/overseas" className="text-sm font-medium text-sky-600">← 海外TOPに戻る</Link><div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="text-2xl font-extrabold text-gray-900 md:text-4xl">海外大会・デッキ一覧</h1></div><p className="mt-2 text-sm text-gray-600">地域・大会・順位・デッキタイプで絞り込みできます。カード名は英語のまま表示します。</p></div><Suspense fallback={null}><OverseasDeckList archetypes={archetypes} results={results} tournaments={tournaments} /></Suspense></main><Footer game="pokemon" /></div>
 }

@@ -1,6 +1,7 @@
 // 海外(PTCG)環境データ。GASウェブアプリが配信するJSONを読み、型へ変換する。
 // データ源: 海外用スプレッドシートの doGet（Limitless収集→自前集計）。Supabase不使用。
 // ※GASのデプロイを「更新」する限りURLは不変。新規デプロイすると変わるので、その時はここを差し替える。
+import { cache } from 'react'
 import { translateCardName, translateArchetypeName } from './overseasTranslations'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 
@@ -106,12 +107,15 @@ interface RawDeck {
 interface RawArchetype { id: string; name: string; deckCount: number; sharePct: number; tier: string }
 interface RawPayload { generatedAt: string; totalDecks: number; archetypes: RawArchetype[]; decks: RawDeck[] }
 
-// 24時間キャッシュ（GASは常に最新を返すが、サイト側は1日1回取得で十分）
-async function fetchOverseas(): Promise<RawPayload> {
+// 24時間キャッシュ（GASは常に最新を返すが、サイト側は1日1回取得で十分）。
+// 応答が5MB超で Next のデータキャッシュに載らない（>2MBは不可）ため、1回のレンダリングで
+// 複数の getOverseas* が呼ばれても取得＋JSONパースが1回で済むよう React cache() で重複排除する。
+// これがないと1ページで5MB超の fetch+parse が3〜4回走り Fluid CPU を浪費する。
+const fetchOverseas = cache(async (): Promise<RawPayload> => {
     const res = await fetch(OVERSEAS_DATA_URL, { next: { revalidate: 86400 } })
     if (!res.ok) throw new Error('overseas fetch failed: ' + res.status)
     return res.json()
-}
+})
 
 function rankToLabel(rank: string): OverseasResult['rankLabel'] {
     if (rank === '優勝') return 'Winner'

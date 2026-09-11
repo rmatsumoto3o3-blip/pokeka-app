@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { OverseasArchetype, OverseasResult, OverseasTournament } from '@/lib/overseasData'
@@ -16,9 +17,12 @@ export default function OverseasDeckList({ archetypes, results, tournaments, ini
     const [region, setRegion] = useState('All')
     const [tournamentId, setTournamentId] = useState('All')
     const [rank, setRank] = useState('All')
-    // ランキングから ?archetype=<id> で来た場合はそのデッキタイプで初期絞り込み
+    // ランキングから ?archetype=<id> で来た場合はそのデッキタイプで初期絞り込み。
+    // サーバーで searchParams を読むとページが動的化するため、初期値はクライアントで読む。
+    const spArchetype = useSearchParams().get('archetype') || undefined
+    const initArchetype = initialArchetypeId ?? spArchetype
     const [archetypeId, setArchetypeId] = useState(
-        initialArchetypeId && archetypes.some(a => a.id === initialArchetypeId) ? initialArchetypeId : 'All'
+        initArchetype && archetypes.some(a => a.id === initArchetype) ? initArchetype : 'All'
     )
     const tournamentMap = new Map(tournaments.map(item => [item.id, item]))
     const archetypeMap = new Map(archetypes.map(item => [item.id, item]))
