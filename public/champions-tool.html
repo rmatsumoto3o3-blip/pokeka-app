@@ -206,6 +206,7 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
     <button class="tab" data-view="calc" type="button">ダメージ計算</button>
     <button class="tab" data-view="infer" type="button">逆算（振り推定）</button>
     <button class="tab" data-view="select" type="button">選出（対相手）</button>
+    <button class="tab" data-view="speed" type="button">スピード/耐久</button>
   </div>
 
   <div id="view-build">
@@ -289,6 +290,42 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
     <div class="subhead" style="margin-top:20px"><h2 class="disp">おすすめ選出 <span class="jp">／ 有利な順</span></h2></div>
     <div id="sel-result"><div class="empty-msg">相手を1体以上セットすると、有利な選出が出ます。</div></div>
     <p class="foot" style="border:none">※ 各自分ポケモンが、相手6体に対して「タイプ一致技で弱点を突ける（有利）／相手のタイプ一致技で弱点を突かれる（不利）」かを集計。<b>有利数−不利数</b>でスコア化しています（技・特性・数値ではなくタイプ相性ベースの目安）。</p>
+  </div>
+
+  <div id="view-speed" hidden>
+    <div class="subhead"><h2 class="disp">SPEED <span class="jp">／ 素早さ比較</span></h2></div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 12px;line-height:1.6">2体の素早さを<b>最速・準速・無振り</b>で比較します（Lv50・個体値31固定）。どちらが先に動けるかの目安に。</p>
+    <div class="calc-panels">
+      <section class="card"><div class="crow"><label>ポケモンA</label><button type="button" id="sp-a-btn" class="pickbtn">ポケモンを選択</button></div><div class="cstat" id="sp-a-stat">未選択</div></section>
+      <section class="card"><div class="crow"><label>ポケモンB</label><button type="button" id="sp-b-btn" class="pickbtn">ポケモンを選択</button></div><div class="cstat" id="sp-b-stat">未選択</div></section>
+    </div>
+    <div id="sp-verdict"></div>
+
+    <div class="subhead" style="margin-top:22px"><h2 class="disp">素早さティア <span class="jp">／ 最速順</span></h2></div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 10px">全ポケモンを<b>最速素早さ順</b>で表示（<span style="color:var(--accent);font-weight:700">色付き＝現在のパーティ</span>）。準速も併記。</p>
+    <input id="sp-search" type="search" autocomplete="off" placeholder="ポケモン名・タイプで絞り込み" style="margin-bottom:10px">
+    <div id="sp-tiers" class="list"></div>
+
+    <div class="subhead" style="margin-top:26px"><h2 class="disp">BULK <span class="jp">／ 耐久調整</span></h2></div>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-6px 0 12px;line-height:1.6">相手の技を<b>確定で耐える／乱数で耐える</b>ために必要な、こちらの<b>HP・防御(特防)の能力ポイント配分</b>を計算します。攻撃側は登録済みビルドを参照します。</p>
+    <div class="calc-panels">
+      <section class="card cpanel atk">
+        <h3 class="cph">相手（攻撃）</h3>
+        <div class="crow"><label>ポケモン</label><select id="bk-a"></select></div>
+        <div class="crow"><label>技</label><select id="bk-mv"></select></div>
+        <div class="crow"><label>状況</label><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)"><input type="checkbox" id="bk-pinch" style="width:auto;flex:none"> ピンチ</label></div>
+      </section>
+      <section class="card cpanel def">
+        <h3 class="cph">自分（耐える側）</h3>
+        <div class="crow"><label>ポケモン</label><button type="button" id="bk-d-btn" class="pickbtn">ポケモンを選択</button><input type="hidden" id="bk-d"></div>
+        <div class="crow"><label>性格</label><select id="bk-dnat"><option value="0">無補正</option><option value="up">耐久↑(防御/特防)</option><option value="down">耐久↓</option></select></div>
+        <div class="crow"><label>持ち物</label><select id="bk-ditem"></select></div>
+        <div class="crow"><label>特性</label><select id="bk-dabil"></select></div>
+      </section>
+    </div>
+    <div style="margin-top:12px"><button id="bk-run" class="autobtn" type="button" style="padding:10px 18px;font-size:14px">耐える振りを計算</button></div>
+    <div class="calc-result" id="bk-result"><div class="empty-msg">攻撃側・技・耐える側を選んで「計算」を押してください。</div></div>
+    <p class="foot" style="border:none">※ 個体値31固定・Lv50。HPと防御(物理技なら防御／特殊技なら特防)への能力ポイント配分（各32・合計66まで）を総当たりし、<b>合計ポイントが少ない順</b>に「確定耐え／乱数耐え」の候補を表示します。急所・複数回攻撃は未考慮の目安です。</p>
   </div>
 
   <p class="foot">タイプ相性・ダメージ計算式は事実データに基づいて計算。ポケモン名・タイプ・種族値・技は実データ、使用率は公式バトルデータ入力までの暫定です。保存データはブラウザのみ・いつでもリセットできます。</p>
@@ -919,6 +956,81 @@ function autoFill(){
   party().builds=nb; save(); renderAll();
 }
 
+// ===== スピード / 耐久調整 =====
+function spd(sp,P,mod){const base=MONS[sp].stats[5];const core=Math.floor((2*base+IV+2*P)*LV/100);return Math.floor((core+5)*mod);}
+const maxSpd=sp=>spd(sp,32,1.1), nrmSpd=sp=>spd(sp,32,1.0), zeroSpd=sp=>spd(sp,0,1.0);
+let spA=null, spB=null;
+function spLine(id){if(id==null)return '未選択';return `<b>${MONS[id].name}</b>　最速 <b class="disp" style="color:var(--accent)">${maxSpd(id)}</b>／準速 ${nrmSpd(id)}／無振り ${zeroSpd(id)}`;}
+function renderSpeed(){
+  $("#sp-a-stat").innerHTML=spLine(spA);
+  $("#sp-b-stat").innerHTML=spLine(spB);
+  if(spA!=null&&spB!=null){
+    const rows=[['最速',maxSpd(spA),maxSpd(spB)],['準速',nrmSpd(spA),nrmSpd(spB)]].map(([lab,a,b])=>{
+      const win=a>b?`${MONS[spA].name}が先手`:a<b?`${MONS[spB].name}が先手`:'同速（先制は運）';
+      return `<div class="wkrow"><span class="wkc" style="min-width:40px;font-weight:700">${lab}</span><span class="wkc">${MONS[spA].name} <b>${a}</b> ／ ${MONS[spB].name} <b>${b}</b></span><span class="wkok" style="margin-left:auto">${win}</span></div>`;
+    }).join("");
+    const note = nrmSpd(spA)>maxSpd(spB)?`${MONS[spA].name}は準速でも${MONS[spB].name}の最速を抜けます`:maxSpd(spA)<=nrmSpd(spB)?`${MONS[spA].name}は最速でも${MONS[spB].name}の準速に届きません`:'';
+    $("#sp-verdict").innerHTML=`<div class="wklist" style="margin-bottom:6px">${rows}</div>${note?`<p style="font-size:12px;color:var(--ink2);margin:2px 0 0">💡 ${note}</p>`:''}`;
+  } else $("#sp-verdict").innerHTML='';
+  renderSpTiers($("#sp-search")?$("#sp-search").value:'');
+  renderBulkControls();
+}
+function renderSpTiers(q){
+  q=(q||'').trim();
+  const team=new Set(teamIds());
+  const list=MONS.filter(m=>!q||m.name.includes(q)||m.types.some(t=>t.includes(q)))
+    .map(m=>({m,ms:maxSpd(m.id),ns:nrmSpd(m.id)})).sort((a,b)=>b.ms-a.ms);
+  $("#sp-tiers").innerHTML=list.slice(0,120).map(o=>{
+    const mine=team.has(o.m.id);
+    return `<div class="row" style="grid-template-columns:1fr auto;${mine?'border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface))':''}">
+      <div><span class="nm">${o.m.name}</span><div class="meta">${o.m.types.map(tpChip).join("")}${mine?'<span class="clabel" style="color:var(--accent);font-weight:700">パーティ</span>':''}</div></div>
+      <div style="text-align:right"><div class="disp" style="font-size:17px">${o.ms}<span style="font-size:11px;color:var(--ink2)"> 最速</span></div><div style="font-size:11px;color:var(--ink2)">準速 ${o.ns}</div></div>
+    </div>`;}).join("") + (list.length>120?`<div class="clabel" style="text-align:center;padding:8px">上位120件を表示（絞り込みで全件が対象）</div>`:'');
+}
+function renderBulkControls(){
+  const refs=allBuildRefs();
+  $("#bk-a").innerHTML=refs.length?refs.map((r,i)=>`<option value="${i}">${r.label}</option>`).join(""):`<option value="">（構築でポケモン登録が必要）</option>`;
+  if(!$("#bk-d").value)$("#bk-d").value=MONS[0].id;
+  $("#bk-d-btn").textContent=MONS[+$("#bk-d").value].name;
+  if(!$("#bk-ditem").options.length)$("#bk-ditem").innerHTML=ITEMS.map((it,i)=>`<option value="${i}">${it.n}</option>`).join("");
+  refreshBulkMove(); refreshBulkAbil();
+}
+function refreshBulkMove(){const refs=allBuildRefs();const b=refs.length?getBuild(refs[+($("#bk-a").value||0)]):null;const mv=b?b.moves.filter(n=>n&&MOVEBYNAME[n]!=null&&MOVES[MOVEBYNAME[n]].p>0&&MOVES[MOVEBYNAME[n]].c!=='st'):[];$("#bk-mv").innerHTML=mv.length?mv.map(n=>`<option value="${n}">${n}</option>`).join(""):`<option value="">攻撃技未登録</option>`;}
+function refreshBulkAbil(){const sp=+$("#bk-d").value;const list=(ABIL[sp]&&ABIL[sp].length?ABIL[sp]:[]);$("#bk-dabil").innerHTML=`<option value="">なし/不明</option>`+list.map(a=>`<option value="${a}">${a}</option>`).join("");}
+function runBulk(){
+  const refs=allBuildRefs();
+  if(!refs.length){$("#bk-result").innerHTML=`<div class="empty-msg">先に「パーティ構築」で攻撃側ポケモンを登録してください。</div>`;return;}
+  const A=getBuild(refs[+$("#bk-a").value]); const mvName=$("#bk-mv").value; const mv=mvName?MOVES[MOVEBYNAME[mvName]]:null;
+  if(!mv){$("#bk-result").innerHTML=`<div class="empty-msg">相手の攻撃技を選んでください。</div>`;return;}
+  const dsp=+$("#bk-d").value; const isPh=mv.c==='ph', defIdx=isPh?2:4;
+  const natSel=$("#bk-dnat").value;
+  const natUp=isPh?NATURES.findIndex(n=>n.u===2):NATURES.findIndex(n=>n.u===4);
+  const natDn=isPh?NATURES.findIndex(n=>n.d===2):NATURES.findIndex(n=>n.d===4);
+  const nat=natSel==='up'?natUp:natSel==='down'?natDn:0;
+  const item=+$("#bk-ditem").value||0, abil=$("#bk-dabil").value||'', pinch=$("#bk-pinch").checked;
+  const mkD=(h,d)=>{const evs=[0,0,0,0,0,0];evs[0]=h;evs[defIdx]=d;return {sp:dsp,nat,item,abil,evs,moves:[]};};
+  if(damageRolls(A,mv,mkD(0,0),{pinch}).abilImmune){$("#bk-result").innerHTML=`<div class="rtitle">${MONS[dsp].name}</div><div class="rdmg">特性で無効（ダメージなし）</div>`;return;}
+  let found=null;
+  for(let T=0;T<=64&&!found;T++){const sols=[];for(let h=0;h<=Math.min(32,T);h++){const d=T-h;if(d>32)continue;const R=damageRolls(A,mv,mkD(h,d),{pinch});if(R.rolls[15]<R.dHP)sols.push({h,d});}if(sols.length)found={T,sols};}
+  const defLab=isPh?'防御':'特防';
+  const fmt=(h,d)=>`HP+${h} / ${defLab}+${d}（合計${h+d}）`;
+  let html;
+  if(found){
+    const s=found.sols; const balanced=s[Math.floor(s.length/2)]; const hpHeavy=s.reduce((a,b)=>b.h>a.h?b:a); const dfHeavy=s.reduce((a,b)=>b.d>a.d?b:a);
+    const uniq=[]; [balanced,hpHeavy,dfHeavy].forEach(x=>{if(!uniq.some(u=>u.h===x.h&&u.d===x.d))uniq.push(x);});
+    const Rex=damageRolls(A,mv,mkD(balanced.h,balanced.d),{pinch});
+    html=`<div class="rtitle">${MONS[dsp].name} が「${MONS[A.sp].name}の${mv.n}」を<b>確定耐え</b>する最小振り（合計${found.T}pt）</div>
+      <div style="margin-top:8px" class="wklist">${uniq.map(x=>`<div class="wkrow"><span class="wkok">✓ 確定耐え</span><span class="wkc" style="margin-left:auto"><b>${fmt(x.h,x.d)}</b></span></div>`).join("")}</div>
+      <div class="rmeta">例（バランス振り）：HP実数値 ${Rex.dHP} ／ 受けるダメージ最大 ${Rex.rolls[15]}（残りHP ${Rex.dHP-Rex.rolls[15]}）</div>`;
+  } else {
+    const R=damageRolls(A,mv,mkD(32,32),{pinch}); const surv=R.rolls.filter(x=>x<R.dHP).length;
+    html=`<div class="rtitle">${MONS[dsp].name} は最大振り(HP+32/${defLab}+32)でも<b>確定耐え不可</b></div>
+      <div class="rdmg">${surv>0?`乱数耐え ${Math.round(surv/16*100)}%`:'確定で落ちる'}</div>
+      <div class="rmeta">受けるダメージ ${R.rolls[0]}〜${R.rolls[15]} ／ HP実数値 ${R.dHP}</div>`;
+  }
+  $("#bk-result").innerHTML=`<div>${html}</div>`;
+}
+
 // ===== ダメージ計算 =====
 function allBuildRefs(){const out=[];DB.parties.forEach((p,pi)=>p.builds.forEach((b,si)=>{if(b)out.push({label:`P${pi+1}・${MONS[b.sp].name}`,pi,si});}));return out;}
 function getBuild(ref){return DB.parties[ref.pi].builds[ref.si];}
@@ -1120,11 +1232,18 @@ function renderSelectView(){
 function renderAll(){renderPbar();renderCards();renderAnalysis();renderCalc();}
 
 function init(){
-  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();});
+  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";$("#view-speed").hidden=v!=="speed";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();});
   $("#sel-clear").addEventListener("click",()=>{DB.opp=new Array(6).fill(null);save();renderSelectView();});
   $("#rb-a").addEventListener("change",refreshInferMove);
   $("#rb-d-btn").addEventListener("click",e=>openPicker(id=>{$("#rb-d").value=id;$("#rb-d-btn").textContent=MONS[id].name;refreshInferAbil();},e.currentTarget));
   $("#rb-run").addEventListener("click",runInfer);
+  // スピード/耐久
+  $("#sp-a-btn").addEventListener("click",e=>openPicker(id=>{spA=id;renderSpeed();},e.currentTarget));
+  $("#sp-b-btn").addEventListener("click",e=>openPicker(id=>{spB=id;renderSpeed();},e.currentTarget));
+  $("#sp-search").addEventListener("input",e=>renderSpTiers(e.target.value));
+  $("#bk-a").addEventListener("change",refreshBulkMove);
+  $("#bk-d-btn").addEventListener("click",e=>openPicker(id=>{$("#bk-d").value=id;$("#bk-d-btn").textContent=MONS[id].name;refreshBulkAbil();},e.currentTarget));
+  $("#bk-run").addEventListener("click",runBulk);
   $("#picker-search").addEventListener("input",e=>renderPickerList(e.target.value.trim()));
   $("#picker").addEventListener("click",e=>{if(e.target.id==='picker')closePicker();});
   document.addEventListener("keydown",e=>{if(e.key==='Escape'&&!$("#picker").hidden)closePicker();});
