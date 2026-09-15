@@ -49,6 +49,26 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);ou
 .presetbtn:hover{color:var(--accent);border-color:var(--accent)}
 .autobtn{font-family:inherit;font-weight:700;font-size:12.5px;color:var(--accent-ink);background:var(--accent);border:none;border-radius:9px;padding:8px 12px;cursor:pointer}
 
+/* party diagnosis scorecard */
+.diagcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px 15px;margin-bottom:16px}
+.diagcard.empty{color:var(--ink2);font-size:12.5px;line-height:1.6}
+.diag-head{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.diag-grade{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:32px;line-height:1;width:50px;height:50px;display:flex;align-items:center;justify-content:center;border:2.5px solid;border-radius:12px;flex:none}
+.diag-title{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:17px}
+.diag-sub{font-size:12px;color:var(--ink2)}
+.diag-axes{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:11px}
+@media(max-width:560px){.diag-axes{grid-template-columns:repeat(5,1fr);gap:5px}}
+.diag-axis{min-width:0}
+.da-k{font-size:11px;color:var(--ink2);font-weight:700;margin-bottom:3px}
+.da-bar{height:7px;background:var(--surface2);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.da-bar span{display:block;height:100%;border-radius:5px}
+.da-cap{font-size:10px;color:var(--ink2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.diag-advice{display:flex;flex-direction:column;gap:5px}
+.diag-adv{font-size:12px;line-height:1.6;padding:6px 9px;border-radius:8px;background:var(--surface2)}
+.diag-adv.warn{background:color-mix(in srgb,var(--accent) 8%,var(--surface2))}
+.diag-adv.good{background:color-mix(in srgb,var(--res) 9%,var(--surface2));color:var(--res);font-weight:700}
+.diag-adv .pill{margin:0 1px}
+
 /* build cards */
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}}
@@ -211,6 +231,7 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
 
   <div id="view-build">
     <div class="pbar" id="pbar"></div>
+    <div id="diag"></div>
     <div class="cards" id="cards"></div>
 
     <div class="subhead"><h2 class="disp">WEAKNESS <span class="jp">／ 弱点と補完</span></h2></div>
@@ -1229,7 +1250,54 @@ function renderSelectView(){
     </div>`).join("");
 }
 
-function renderAll(){renderPbar();renderCards();renderAnalysis();renderCalc();}
+// ===== パーティ診断（スコアカード）=====
+function renderDiag(){
+  const el=$("#diag"); if(!el)return;
+  const ids=teamIds();
+  if(ids.length===0){el.innerHTML=`<div class="diagcard empty">ポケモンを追加すると<b>パーティ診断</b>（総合ランク・守り/攻め/素早さ等のスコアと改善アドバイス）が表示されます。</div>`;return;}
+  const pl=t=>`<span class="pill" style="background:var(${TCOLOR[t]})">${t}</span>`;
+  const N=ids.length;
+  const p=teamProfile(ids);
+  const holes=TYPES.filter(t=>p[t].w>0&&p[t].c===0);
+  const maxW=Math.max(0,...TYPES.map(t=>p[t].w));
+  const worstType=TYPES.find(t=>p[t].w===maxW&&maxW>0);
+  const off=teamOffense(ids);
+  const blind=offenseAnalyze(ids).blindTypes;
+  const spds=ids.map(maxSpd);
+  const fast=spds.filter(s=>s>=130).length;
+  const phys=ids.filter(id=>MONS[id].stats[1]>=MONS[id].stats[3]).length, spec=N-phys;
+  const sDef = holes.length===0?100:holes.length===1?80:holes.length===2?58:holes.length===3?40:22;
+  const sConc = maxW<=1?100:maxW===2?82:maxW===3?55:maxW===4?32:15;
+  const sOff = off>=15?100:off>=13?86:off>=11?70:off>=9?52:32;
+  const sSpd = fast>=2?96:fast===1?80:(spds.some(s=>s>=110)?55:36);
+  const sBal = (phys>=1&&spec>=1)?(Math.min(phys,spec)>=Math.ceil(N*0.33)?100:78):48;
+  const axes=[
+    {k:'守り',v:sDef,cap:holes.length?`穴${holes.length}`:'穴なし'},
+    {k:'集中',v:sConc,cap:maxW>=3?`${worstType}${maxW}体`:'分散OK'},
+    {k:'攻め',v:sOff,cap:`${off}/18`},
+    {k:'素早さ',v:sSpd,cap:fast?`高速${fast}`:'高速なし'},
+    {k:'物特',v:sBal,cap:`物${phys}/特${spec}`},
+  ];
+  const overall=Math.round(sDef*0.28+sOff*0.24+sConc*0.18+sSpd*0.16+sBal*0.14);
+  const rank=overall>=88?'S':overall>=76?'A':overall>=62?'B':overall>=45?'C':'D';
+  const rankColor=overall>=76?'var(--res)':overall>=62?'var(--wtr)':'var(--accent)';
+  const adv=[];
+  if(holes.length) adv.push({t:'warn',m:`弱点の穴：${holes.map(pl).join('')} を誰も半減/無効で受けられない → 受け枠を追加`});
+  if(maxW>=3) adv.push({t:'warn',m:`${pl(worstType)}弱点が<b>${maxW}体</b>に集中 → タイプを分散させると崩れにくい`});
+  if(blind.length) adv.push({t:'tip',m:`一致技で抜群を取れない相手：${blind.slice(0,6).map(pl).join('')} → 該当タイプの技/枠を検討`});
+  if(fast===0) adv.push({t:'tip',m:`高速枠がいない（最速${Math.max(...spds)}）→ 素早さの高いポケモンや先制技で上を取られにくく`});
+  if(phys===0||spec===0) adv.push({t:'tip',m:`アタッカーが${phys===0?'特殊':'物理'}に偏り → 逆側のアタッカーも入れると受けを絞られにくい`});
+  const adviceHtml = adv.length? adv.slice(0,3).map(a=>`<div class="diag-adv ${a.t}">${a.t==='warn'?'⚠':'💡'} ${a.m}</div>`).join('') : `<div class="diag-adv good">◎ 大きな穴なし。バランス良好です</div>`;
+  el.innerHTML=`<div class="diagcard">
+    <div class="diag-head">
+      <div class="diag-grade" style="color:${rankColor};border-color:${rankColor}">${rank}</div>
+      <div><div class="diag-title">パーティ診断</div><div class="diag-sub">総合スコア <b>${overall}</b>/100 ・ ${N}体${N<6?'（6体で精度UP）':''}</div></div>
+    </div>
+    <div class="diag-axes">${axes.map(a=>`<div class="diag-axis"><div class="da-k">${a.k}</div><div class="da-bar"><span style="width:${a.v}%;background:${a.v>=75?'var(--res)':a.v>=50?'var(--wtr)':'var(--accent)'}"></span></div><div class="da-cap">${a.cap}</div></div>`).join('')}</div>
+    <div class="diag-advice">${adviceHtml}</div>
+  </div>`;
+}
+function renderAll(){renderPbar();renderCards();renderDiag();renderAnalysis();renderCalc();}
 
 function init(){
   $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";$("#view-speed").hidden=v!=="speed";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();});
