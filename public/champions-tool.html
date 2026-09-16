@@ -233,6 +233,7 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
 
   <div class="tabs" id="tabs">
     <button class="tab on" data-view="menu" type="button">メニュー</button>
+    <button class="tab" data-view="fp" type="button">火力推定</button>
     <button class="tab" data-view="calc" type="button">ダメージ計算</button>
     <button class="tab" data-view="build" type="button">パーティ構築</button>
     <button class="tab" data-view="select" type="button">選出</button>
@@ -243,12 +244,12 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
   <div id="view-menu">
     <p class="menulead"><b>何をしますか？</b>　使いたい機能を選んでください（上のタブでいつでも切替できます）。</p>
     <div class="menugrid">
-      <button class="mcard hot" data-goto="calc" type="button"><span class="go">›</span><span class="mic i1">⚔️</span><span class="mh">ダメージ計算<span class="mbadge">相手なしでもOK</span></span><span class="mp">技・振り・持ち物・特性で与ダメを算出。攻撃側だけで「火力指数」も出せます。</span></button>
-      <button class="mcard" data-goto="build" type="button"><span class="go">›</span><span class="mic i2">🧩</span><span class="mh">パーティ構築</span><span class="mp">6体を組んで3つ保存。弱点補完・攻めのタイプ候補・診断スコアを表示。</span></button>
-      <button class="mcard" data-goto="select" type="button"><span class="go">›</span><span class="mic i3">🎯</span><span class="mh">選出（対相手）</span><span class="mp">相手6体を入れると、有利に立ち回れる自分の選出をスコア順で提案。</span></button>
-      <button class="mcard" data-goto="speed" type="button"><span class="go">›</span><span class="mic i4">⚡</span><span class="mh">スピード / 耐久</span><span class="mp">2体の素早さ比較・最速ティア表。相手の技を耐える振りも逆算。</span></button>
-      <button class="mcard" data-goto="infer" type="button"><span class="go">›</span><span class="mic i5">🔍</span><span class="mh">振り逆算</span><span class="mp">相手のHPが減った％から、相手のHP・防御の振りを絞り込み。</span></button>
-      <button class="mcard" data-goto="build" type="button"><span class="go">›</span><span class="mic i6">📊</span><span class="mh">パーティ診断</span><span class="mp">今の構築を守り・攻め・素早さで採点し、弱点と改善点を提示（構築タブ上部）。</span></button>
+      <button class="mcard hot" data-goto="fp" type="button"><span class="go">›</span><span class="mic i1">🔥</span><span class="mh">火力推定<span class="mbadge">相手不要</span></span><span class="mp">攻撃側だけで「この技がどれくらいの火力か」を算出。技・振り・性格の比較に。</span></button>
+      <button class="mcard" data-goto="calc" type="button"><span class="go">›</span><span class="mic i2">⚔️</span><span class="mh">ダメージ計算</span><span class="mp">攻撃側・防御側ともその場で選んで、実ダメージ・HP％・確定/乱数◯発を算出。</span></button>
+      <button class="mcard" data-goto="build" type="button"><span class="go">›</span><span class="mic i3">🧩</span><span class="mh">パーティ構築</span><span class="mp">6体を組んで3つ保存。弱点補完・攻めのタイプ候補・診断スコアを表示。</span></button>
+      <button class="mcard" data-goto="select" type="button"><span class="go">›</span><span class="mic i4">🎯</span><span class="mh">選出（対相手）</span><span class="mp">相手6体を入れると、有利に立ち回れる自分の選出をスコア順で提案。</span></button>
+      <button class="mcard" data-goto="speed" type="button"><span class="go">›</span><span class="mic i5">⚡</span><span class="mh">スピード / 耐久</span><span class="mp">2体の素早さ比較・最速ティア表。相手の技を耐える振りも逆算。</span></button>
+      <button class="mcard" data-goto="infer" type="button"><span class="go">›</span><span class="mic i6">🔍</span><span class="mh">振り逆算</span><span class="mp">相手のHPが減った％から、相手のHP・防御の振りを絞り込み。</span></button>
     </div>
   </div>
 
@@ -272,20 +273,50 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
     <div id="offense"></div>
   </div>
 
+  <div id="view-fp" hidden>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-2px 0 12px;line-height:1.6"><b>相手は不要。</b>攻撃側だけで「この技がどれくらいの火力か」を出します（防御実数値100・等倍・場なし換算の目安）。技・振り・性格・持ち物の火力比較に。</p>
+    <div class="calc-panels">
+      <section class="card cpanel atk">
+        <h3 class="cph">攻撃するポケモン</h3>
+        <div class="crow"><label>ポケモン</label><button type="button" id="fp-mon" class="pickbtn">ポケモンを選択</button></div>
+        <div class="crow"><label>技</label><select id="fp-move"></select></div>
+        <div class="brow" id="fp-direct" hidden><label class="fchk" style="grid-column:1/-1;font-size:11px;color:var(--ink2)">威力<input type="number" id="fp-dpow" min="1" max="250" value="100" style="width:66px;margin:0 8px 0 4px">タイプ<select id="fp-dtype" style="margin-left:6px"></select><select id="fp-dcat" style="margin-left:6px;width:auto"><option value="ph">物理</option><option value="sp">特殊</option></select></label></div>
+        <div class="blab">性格 ／ 持ち物</div>
+        <div class="brow"><select id="fp-nat"></select><select id="fp-item"></select></div>
+        <div class="blab">特性 ／ 攻撃の能力ポイント（0〜32）</div>
+        <div class="brow"><select id="fp-abil"></select><input type="number" id="fp-off" min="0" max="32" value="0"></div>
+        <div class="blab">攻撃ランク ／ 状況</div>
+        <div class="brow"><select id="fp-rank"></select><label class="fchk" style="font-size:12.5px;color:var(--ink)"><input type="checkbox" id="fp-pinch" style="width:auto;flex:none"> ピンチ（もうか等）</label></div>
+      </section>
+    </div>
+    <div class="calc-result" id="fp-result"><div class="empty-msg">攻撃するポケモンと技を選ぶと、火力指数が出ます。</div></div>
+    <p class="foot" style="border:none;padding-top:6px">※ 火力指数は「防御実数値100・等倍・場なし」換算の相対値。相手を決めた実ダメージは「ダメージ計算」タブで。</p>
+  </div>
+
   <div id="view-calc" hidden>
+    <p style="font-size:12.5px;color:var(--ink2);margin:-2px 0 12px;line-height:1.6">攻撃側・防御側とも<b>その場でポケモンを選んで</b>計算できます（パーティ登録は不要）。相手なしで火力だけ見たいときは上の<b>「火力推定」</b>タブへ。</p>
     <div class="calc-panels">
       <section class="card cpanel atk">
         <h3 class="cph">こうげき側</h3>
-        <div class="crow"><label>ポケモン</label><select id="a-sel"></select></div>
-        <div class="crow"><label>技</label><select id="a-move"></select></div>
-        <div class="crow"><label>状況</label><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)"><input type="checkbox" id="a-pinch" style="width:auto;flex:none"> ピンチ（HP1/3以下・もうか等）</label></div>
-        <div class="cstat" id="a-statline"></div>
-        <div class="cstat" id="a-power" style="margin-top:8px"></div>
+        <div class="crow"><label>ポケモン</label><button type="button" id="dc-a-mon" class="pickbtn">ポケモンを選択</button></div>
+        <div class="crow"><label>技</label><select id="dc-a-move"></select></div>
+        <div class="blab">性格 ／ 持ち物</div>
+        <div class="brow"><select id="dc-a-nat"></select><select id="dc-a-item"></select></div>
+        <div class="blab">特性 ／ 攻撃の能力ポイント</div>
+        <div class="brow"><select id="dc-a-abil"></select><input type="number" id="dc-a-off" min="0" max="32" value="0"></div>
+        <label class="fchk" style="font-size:12.5px;color:var(--ink);margin-top:7px"><input type="checkbox" id="dc-a-pinch" style="width:auto;flex:none"> ピンチ（HP1/3以下・もうか等）</label>
+        <div class="cstat" id="dc-a-stat" style="margin-top:8px"></div>
       </section>
       <section class="card cpanel def">
         <h3 class="cph">ぼうぎょ側</h3>
-        <div class="crow"><label>ポケモン</label><select id="d-sel"></select></div>
-        <div class="cstat" id="d-statline"></div>
+        <div class="crow"><label>ポケモン</label><button type="button" id="dc-d-mon" class="pickbtn">ポケモンを選択</button></div>
+        <div class="blab">性格 ／ 持ち物</div>
+        <div class="brow"><select id="dc-d-nat"></select><select id="dc-d-item"></select></div>
+        <div class="blab">特性</div>
+        <div class="brow one"><select id="dc-d-abil"></select></div>
+        <div class="blab">HP ／ 防御(特防) の能力ポイント</div>
+        <div class="brow"><input type="number" id="dc-d-hp" min="0" max="32" value="0" placeholder="HP振り"><input type="number" id="dc-d-def" min="0" max="32" value="0" placeholder="防御振り"></div>
+        <div class="cstat" id="dc-d-stat" style="margin-top:8px"></div>
       </section>
     </div>
     <section class="card" style="margin-top:14px">
@@ -300,8 +331,8 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
         <label class="fchk"><input type="checkbox" id="f-crit"> 急所</label>
       </div>
     </section>
-    <div class="calc-result" id="calcResult"></div>
-    <p class="foot" style="border:none;padding-top:6px">※ 登録した構成（性格・努力値・持ち物・特性）＋場・状況（天候/フィールド/壁/やけど/急所/ランク）を反映。フィールドは接地前提の概算です。</p>
+    <div class="calc-result" id="calcResult"><div class="empty-msg">攻撃側・防御側のポケモンと技を選ぶと、ダメージが出ます。</div></div>
+    <p class="foot" style="border:none;padding-top:6px">※ 性格・能力ポイント・持ち物・特性＋場・状況（天候/フィールド/壁/やけど/急所/ランク）を反映。フィールドは接地前提の概算です。</p>
   </div>
 
   <div id="view-infer" hidden>
@@ -1081,21 +1112,58 @@ function runBulk(){
 // ===== ダメージ計算 =====
 function allBuildRefs(){const out=[];DB.parties.forEach((p,pi)=>p.builds.forEach((b,si)=>{if(b)out.push({label:`P${pi+1}・${MONS[b.sp].name}`,pi,si});}));return out;}
 function getBuild(ref){return DB.parties[ref.pi].builds[ref.si];}
-function renderCalc(){
-  const refs=allBuildRefs();
-  if(refs.length<1){$("#a-sel").innerHTML="";$("#d-sel").innerHTML="";$("#calcResult").innerHTML=`<div class="empty-msg">「パーティ構築」でポケモンを登録すると、その構成でダメージ計算できます。</div>`;$("#a-statline").innerHTML="";$("#d-statline").innerHTML="";return;}
-  const opt=refs.map((r,i)=>`<option value="${i}">${r.label}</option>`).join("");
-  const aPrev=$("#a-sel").value, dPrev=$("#d-sel").value;
-  $("#a-sel").innerHTML=opt; $("#d-sel").innerHTML=opt;
-  $("#a-sel").value=aPrev&&aPrev<refs.length?aPrev:0;
-  $("#d-sel").value=dPrev&&dPrev<refs.length?dPrev:(refs.length>1?1:0);
-  refreshMoveSel(); runCalc();
+// ===== 単発計算の共通ヘルパー（パーティ非依存）=====
+const dcA={sp:null,nat:0,item:0,abil:'',off:0,move:''};
+const dcD={sp:null,nat:0,item:0,abil:'',hp:0,def:0};
+const fp={sp:null,nat:0,item:0,abil:'',off:0,move:''};
+function rankOptsHTML(){return [6,5,4,3,2,1,0,-1,-2,-3,-4,-5,-6].map(n=>`<option value="${n}"${n===0?' selected':''}>${n>0?'+':''}${n}</option>`).join("");}
+function natOptsHTML(sel){return NATURES.map((n,i)=>`<option value="${i}"${i===sel?' selected':''}>${n.n}${n.u?`(${STLABEL[n.u]}↑${STLABEL[n.d]}↓)`:'(無)'}</option>`).join("");}
+function itemOptsHTML(sel){return ITEMS.map((it,i)=>`<option value="${i}"${i===sel?' selected':''}>${it.n}</option>`).join("");}
+function abilOptsHTML(sp,sel){const l=(sp!=null&&ABIL[sp]&&ABIL[sp].length)?ABIL[sp]:[];return `<option value="">なし/不明</option>`+l.map(a=>`<option value="${a}"${a===sel?' selected':''}>${a}</option>`).join("");}
+function atkMovesHTML(sp,sel){
+  if(sp==null)return `<option value="">先にポケモンを選択</option>`;
+  const pool=(MOVEPOOL[sp]&&MOVEPOOL[sp].length)?MOVEPOOL[sp]:MOVES.map((_,i)=>i);
+  const list=pool.map(i=>MOVES[i]).filter(m=>m.p>0&&m.c!=='st').sort((a,b)=>b.p-a.p);
+  return (list.map(m=>`<option value="${m.n}"${m.n===sel?' selected':''}>${m.n}（威力${m.p}・${m.t}・${m.c==='ph'?'物':'特'}）</option>`).join(""))||`<option value="">攻撃技なし</option>`;
 }
-function refreshMoveSel(){
-  const refs=allBuildRefs();const b=getBuild(refs[+$("#a-sel").value]);
-  // 変化技(威力0)はダメージ計算の対象外なので攻撃技のみ
-  const mv=b.moves.filter(n=>n&&MOVEBYNAME[n]!=null&&MOVES[MOVEBYNAME[n]].p>0&&MOVES[MOVEBYNAME[n]].c!=='st');
-  $("#a-move").innerHTML = mv.length?mv.map(n=>`<option value="${n}">${n}</option>`).join(""):`<option value="">攻撃技が未登録</option>`;
+// ===== 火力推定（攻撃側のみ・相手不要）=====
+function renderFp(){
+  $("#fp-mon").textContent=fp.sp!=null?MONS[fp.sp].name:'ポケモンを選択';
+  $("#fp-nat").innerHTML=natOptsHTML(fp.nat);
+  $("#fp-item").innerHTML=itemOptsHTML(fp.item);
+  $("#fp-abil").innerHTML=abilOptsHTML(fp.sp,fp.abil);
+  if(!$("#fp-rank").options.length)$("#fp-rank").innerHTML=rankOptsHTML();
+  if(!$("#fp-dtype").options.length)$("#fp-dtype").innerHTML=TYPES.map(t=>`<option value="${t}">${t}</option>`).join("");
+  $("#fp-move").innerHTML=`<option value="">技を選択</option><option value="__direct__">威力を直接入力…</option>`+atkMovesHTML(fp.sp,fp.move);
+  $("#fp-move").value=fp.move||''; $("#fp-off").value=fp.off;
+  $("#fp-direct").hidden=fp.move!=='__direct__';
+  runFp();
+}
+function runFp(){
+  const el=$("#fp-result");
+  if(fp.sp==null){el.innerHTML=`<div class="empty-msg">攻撃するポケモンと技を選ぶと、火力指数が出ます。</div>`;return;}
+  let mv;
+  if(fp.move==='__direct__') mv={n:'指定技',p:Math.max(1,+$("#fp-dpow").value||100),t:$("#fp-dtype").value,c:$("#fp-dcat").value};
+  else if(fp.move&&MOVEBYNAME[fp.move]!=null) mv=MOVES[MOVEBYNAME[fp.move]];
+  else {el.innerHTML=`<div class="empty-msg">技を選んでください（または「威力を直接入力」）。</div>`;return;}
+  const isPh=mv.c==='ph';
+  const evs=[0,0,0,0,0,0]; evs[isPh?1:3]=Math.max(0,Math.min(32,+fp.off||0));
+  const A={sp:fp.sp,nat:fp.nat,item:fp.item,abil:fp.abil,evs,moves:[]};
+  const opt={pinch:$("#fp-pinch").checked, atkRank:+$("#fp-rank").value||0};
+  const pi=powerIndex(A,mv,opt); const Aatk=statAt(A,isPh?1:3);
+  el.innerHTML=`<div class="rtitle">${MONS[fp.sp].name} の「${mv.n}」（${tpChip(mv.t)}${isPh?'物理':'特殊'}・威力${mv.p}）</div>
+    <div style="margin-top:2px"><span style="font-size:12px;color:var(--ink2)">火力指数</span> <span class="rdmg tnum" style="color:var(--brand)">${pi.min} 〜 ${pi.max}</span>${pi.stab?' <span style="font-size:11px;color:var(--brand);font-weight:700">タイプ一致</span>':''}</div>
+    <div class="rmeta">${isPh?'こうげき':'とくこう'}実数値 <b>${Aatk}</b>（振り${evs[isPh?1:3]}・${NATURES[fp.nat].n}）／ 持ち物 ${ITEMS[fp.item].n} ／ <b>防御100・等倍・場なし</b>換算の目安</div>`;
+}
+// ===== ダメージ計算（両側フリー選択）=====
+function renderCalc(){
+  $("#dc-a-mon").textContent=dcA.sp!=null?MONS[dcA.sp].name:'ポケモンを選択';
+  $("#dc-d-mon").textContent=dcD.sp!=null?MONS[dcD.sp].name:'ポケモンを選択';
+  $("#dc-a-nat").innerHTML=natOptsHTML(dcA.nat); $("#dc-a-item").innerHTML=itemOptsHTML(dcA.item); $("#dc-a-abil").innerHTML=abilOptsHTML(dcA.sp,dcA.abil);
+  $("#dc-a-move").innerHTML=`<option value="">技を選択</option>`+atkMovesHTML(dcA.sp,dcA.move); $("#dc-a-move").value=dcA.move||'';
+  $("#dc-d-nat").innerHTML=natOptsHTML(dcD.nat); $("#dc-d-item").innerHTML=itemOptsHTML(dcD.item); $("#dc-d-abil").innerHTML=abilOptsHTML(dcD.sp,dcD.abil);
+  $("#dc-a-off").value=dcA.off; $("#dc-d-hp").value=dcD.hp; $("#dc-d-def").value=dcD.def;
+  runCalc();
 }
 // 純粋なダメージ計算コア（DOM非依存）。逆算でも再利用。
 function damageRolls(A, mv, D, opt){
@@ -1164,30 +1232,25 @@ function powerIndex(A, mv, opt){
   const min=Math.floor(Math.floor(base*85/100)*mult), max=Math.floor(base*mult);
   return {min,max,stab};
 }
-function updatePowerIndex(){
-  const el=$("#a-power"); if(!el)return;
-  const refs=allBuildRefs(); if(!refs.length){el.innerHTML='';return;}
-  const A=getBuild(refs[+$("#a-sel").value]); const mvName=$("#a-move").value; const mv=mvName?MOVES[MOVEBYNAME[mvName]]:null;
-  if(!mv){el.innerHTML='';return;}
-  const opt={pinch:!!($("#a-pinch")&&$("#a-pinch").checked), atkRank:+($("#f-arank")&&$("#f-arank").value)||0};
-  const pi=powerIndex(A,mv,opt);
-  el.innerHTML=`<b>火力指数</b> <b class="disp" style="color:var(--accent);font-size:18px">${pi.min}〜${pi.max}</b>${pi.stab?' <span style="font-size:10px;color:var(--res);font-weight:700">一致</span>':''}<div style="font-size:10.5px;color:var(--ink2);margin-top:2px">相手不要の火力目安（防御実数値100・等倍・場なし換算）。技・振り・性格の火力比較に。</div>`;
-}
 function runCalc(){
-  const refs=allBuildRefs();
-  updatePowerIndex();
-  const A=getBuild(refs[+$("#a-sel").value]), D=getBuild(refs[+$("#d-sel").value]);
+  const aR=$("#dc-a-stat"),dR=$("#dc-d-stat"),res=$("#calcResult");
+  if(dcA.sp==null||dcD.sp==null){res.innerHTML=`<div class="empty-msg">攻撃側・防御側のポケモンを選んでください。</div>`;if(aR)aR.innerHTML=dcA.sp!=null?MONS[dcA.sp].name:'';if(dR)dR.innerHTML=dcD.sp!=null?MONS[dcD.sp].name:'';return;}
+  const mv=(dcA.move&&MOVEBYNAME[dcA.move]!=null)?MOVES[MOVEBYNAME[dcA.move]]:null;
+  if(!mv){res.innerHTML=`<div class="empty-msg">こうげき側の技を選んでください。</div>`;return;}
+  const isPh=mv.c==='ph';
+  const aEvs=[0,0,0,0,0,0]; aEvs[isPh?1:3]=Math.max(0,Math.min(32,+dcA.off||0));
+  const A={sp:dcA.sp,nat:dcA.nat,item:dcA.item,abil:dcA.abil,evs:aEvs,moves:[]};
+  const dEvs=[0,0,0,0,0,0]; dEvs[0]=Math.max(0,Math.min(32,+dcD.hp||0)); dEvs[isPh?2:4]=Math.max(0,Math.min(32,+dcD.def||0));
+  const D={sp:dcD.sp,nat:dcD.nat,item:dcD.item,abil:dcD.abil,evs:dEvs,moves:[]};
   const Amon=MONS[A.sp], Dmon=MONS[D.sp];
-  const mvName=$("#a-move").value; const mv=mvName?MOVES[MOVEBYNAME[mvName]]:null;
-  if(!mv){$("#calcResult").innerHTML=`<div class="empty-msg">こうげき側に技を登録してください。</div>`;$("#a-statline").innerHTML=`${Amon.name}`;$("#d-statline").innerHTML=`${Dmon.name}`;return;}
   const opt={
-    pinch:!!($("#a-pinch")&&$("#a-pinch").checked),
+    pinch:!!($("#dc-a-pinch")&&$("#dc-a-pinch").checked),
     weather:$("#f-weather").value, terrain:$("#f-terrain").value, wall:$("#f-wall").value,
     atkRank:+$("#f-arank").value||0, defRank:+$("#f-drank").value||0,
     burn:$("#f-burn").checked, crit:$("#f-crit").checked
   };
   const R=damageRolls(A,mv,D,opt);
-  const {rolls,dHP,eff,stab,isPh,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,sliceMul,abilImmune,aItem,dItem,aAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul}=R;
+  const {rolls,dHP,eff,stab,Aatk,Ddef,ddefMod,itemMod,drr,atkAbil,defAbil,pinchMul,sliceMul,abilImmune,aItem,dItem,aAb,mold,weatherMul,terrainMul,wallMul,burnMul,critMul}=R;
   const min=rolls[0],max=rolls[15];const pMin=min/dHP*100,pMax=max/dHP*100;
   let ko;
   if(abilImmune)ko={t:`${D.abil} で無効`,k:'k0'};
@@ -1199,9 +1262,9 @@ function runCalc(){
   const arank=+$("#f-arank").value||0, drank=+$("#f-drank").value||0;
   if(arank)abilNotes.push(`攻撃ランク${arank>0?'+':''}${arank}`); if(drank)abilNotes.push(`防御ランク${drank>0?'+':''}${drank}`);
   const effL=eff===0?'×0（無効）':eff>=4?'×4':eff>1?'×2（抜群）':eff<=.25?'×¼':eff<1?'×½（半減）':'×1';
-  $("#a-statline").innerHTML=`${Amon.name}／${isPh?'こうげき':'とくこう'} <b>${Aatk}</b>・タイプ一致 ${stab?'あり':'なし'}・特性 ${A.abil||'—'}・持ち物 ${aItem.n}`;
-  $("#d-statline").innerHTML=`${Dmon.name}／HP <b>${dHP}</b>・${isPh?'ぼうぎょ':'とくぼう'} <b>${Ddef}</b>${ddefMod!==1?'（持ち物補正込み）':''}・特性 ${D.abil||'—'}・持ち物 ${dItem.n}`;
-  $("#calcResult").innerHTML=`
+  if(aR)aR.innerHTML=`${Amon.name}／${isPh?'こうげき':'とくこう'} <b>${Aatk}</b>・一致 ${stab?'あり':'なし'}・特性 ${A.abil||'—'}・${aItem.n}`;
+  if(dR)dR.innerHTML=`${Dmon.name}／HP <b>${dHP}</b>・${isPh?'ぼうぎょ':'とくぼう'} <b>${Ddef}</b>${ddefMod!==1?'（持ち物込）':''}・特性 ${D.abil||'—'}・${dItem.n}`;
+  res.innerHTML=`
     <div class="rtitle">${Amon.name} の「${mv.n}」→ ${Dmon.name}</div>
     <div><span class="rdmg tnum">${min} 〜 ${max}</span><span class="rpct">${pMin.toFixed(1)}% 〜 ${pMax.toFixed(1)}%</span></div>
     <span class="rko ${ko.k}">${ko.t}</span>
@@ -1371,19 +1434,37 @@ function init(){
   $("#picker").addEventListener("click",e=>{if(e.target.id==='picker')closePicker();});
   document.addEventListener("keydown",e=>{if(e.key==='Escape'&&!$("#picker").hidden)closePicker();});
   $("#sortToggle").querySelectorAll("button").forEach(b=>b.onclick=()=>{sortMode=b.dataset.sort;$("#sortToggle").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderSuggest();});
-  $("#a-sel").addEventListener("change",()=>{refreshMoveSel();runCalc();});
-  $("#d-sel").addEventListener("change",runCalc);
-  $("#a-move").addEventListener("change",runCalc);
-  $("#a-pinch").addEventListener("change",runCalc);
-  const rankOpts=[6,5,4,3,2,1,0,-1,-2,-3,-4,-5,-6].map(n=>`<option value="${n}"${n===0?' selected':''}>${n>0?'+':''}${n}</option>`).join("");
+  // 火力推定（攻撃側のみ）
+  $("#fp-mon").addEventListener("click",e=>openPicker(id=>{fp.sp=id;fp.abil=(ABIL[id]&&ABIL[id][0])||'';fp.move='';renderFp();},e.currentTarget));
+  $("#fp-move").addEventListener("change",e=>{fp.move=e.target.value;renderFp();});
+  $("#fp-nat").addEventListener("change",e=>{fp.nat=+e.target.value;runFp();});
+  $("#fp-item").addEventListener("change",e=>{fp.item=+e.target.value;runFp();});
+  $("#fp-abil").addEventListener("change",e=>{fp.abil=e.target.value;runFp();});
+  $("#fp-off").addEventListener("input",e=>{fp.off=e.target.value;runFp();});
+  ['fp-rank','fp-pinch','fp-dpow','fp-dtype','fp-dcat'].forEach(id=>$("#"+id).addEventListener(id==='fp-dpow'?'input':'change',runFp));
+  // ダメージ計算（両側フリー選択）
+  $("#dc-a-mon").addEventListener("click",e=>openPicker(id=>{dcA.sp=id;dcA.abil=(ABIL[id]&&ABIL[id][0])||'';dcA.move='';renderCalc();},e.currentTarget));
+  $("#dc-d-mon").addEventListener("click",e=>openPicker(id=>{dcD.sp=id;dcD.abil=(ABIL[id]&&ABIL[id][0])||'';renderCalc();},e.currentTarget));
+  $("#dc-a-move").addEventListener("change",e=>{dcA.move=e.target.value;runCalc();});
+  $("#dc-a-nat").addEventListener("change",e=>{dcA.nat=+e.target.value;runCalc();});
+  $("#dc-a-item").addEventListener("change",e=>{dcA.item=+e.target.value;runCalc();});
+  $("#dc-a-abil").addEventListener("change",e=>{dcA.abil=e.target.value;runCalc();});
+  $("#dc-a-off").addEventListener("input",e=>{dcA.off=e.target.value;runCalc();});
+  $("#dc-a-pinch").addEventListener("change",runCalc);
+  $("#dc-d-nat").addEventListener("change",e=>{dcD.nat=+e.target.value;runCalc();});
+  $("#dc-d-item").addEventListener("change",e=>{dcD.item=+e.target.value;runCalc();});
+  $("#dc-d-abil").addEventListener("change",e=>{dcD.abil=e.target.value;runCalc();});
+  $("#dc-d-hp").addEventListener("input",e=>{dcD.hp=e.target.value;runCalc();});
+  $("#dc-d-def").addEventListener("input",e=>{dcD.def=e.target.value;runCalc();});
+  const rankOpts=rankOptsHTML();
   $("#f-arank").innerHTML=rankOpts; $("#f-drank").innerHTML=rankOpts;
   ['f-weather','f-terrain','f-wall','f-arank','f-drank','f-burn','f-crit'].forEach(id=>$("#"+id).addEventListener("change",runCalc));
   load(); renderAll(); showView('menu');
 }
 function showView(v){
   $("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.view===v));
-  ["menu","build","calc","infer","select","speed"].forEach(id=>{const el=$("#view-"+id);if(el)el.hidden=(id!==v);});
-  if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();
+  ["menu","fp","build","calc","infer","select","speed"].forEach(id=>{const el=$("#view-"+id);if(el)el.hidden=(id!==v);});
+  if(v==="fp")renderFp();if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();
 }
 init();
 </script>
