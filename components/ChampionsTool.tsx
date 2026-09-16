@@ -20,7 +20,7 @@ export default function ChampionsTool() {
         <iframe
             src="/champions-tool.html"
             title="ポケモンチャンピオンズ 構築＆ダメージ計算ツール"
-            style={{ width: '100%', height, border: 0, display: 'block', background: '#0f1218' }}
+            style={{ width: '100%', height, border: 0, display: 'block', background: '#f8fafc' }}
         />
     )
 }

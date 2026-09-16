@@ -7,18 +7,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
 <style>
+/* サイト準拠：白基調＋緑ブランド。赤(--accent)は警告/弱点/KO用に維持。常時ライト（ダークは廃止） */
 :root{
-  --bg:#e9ecf1; --surface:#ffffff; --surface2:#f3f5f9; --ink:#1a1d25; --ink2:#59606f;
-  --line:#d7dce4; --accent:#d8322f; --accent-ink:#fff;
-  --weak2:#e8664f; --weak4:#c62f28; --res:#3aa96b; --res4:#1f7a49; --immune:#5566c9; --wtr:#4D90D5;
-  --shadow:0 1px 2px rgba(20,24,35,.06),0 6px 20px rgba(20,24,35,.06);
+  --bg:#f8fafc; --surface:#ffffff; --surface2:#f1f5f9; --ink:#0f172a; --ink2:#64748b;
+  --line:#e2e8f0; --accent:#dc2626; --accent-ink:#fff;
+  --brand:#059669; --brand2:#10b981; --brand-ink:#fff; --brandbg:#ecfdf5;
+  --weak2:#e8664f; --weak4:#c62f28; --res:#059669; --res4:#047857; --immune:#5566c9; --wtr:#2563eb;
+  --shadow:0 1px 2px rgba(15,23,42,.05),0 4px 14px rgba(15,23,42,.06);
   --nrm:#9099A1;--fir:#FF9C54;--wtrc:#4D90D5;--elc:#F3D23B;--grs:#63BB5B;--ice:#74CEC0;--fig:#CE4069;--poi:#AB6AC8;--grd:#D97746;--fly:#8FA8DD;--psy:#F97176;--bug:#90C12C;--rck:#C7B78B;--gho:#5269AC;--drg:#0A6DC4;--drk:#5A5366;--stl:#5A8EA1;--fai:#EC8FE6;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f1218; --surface:#181c24; --surface2:#20252f; --ink:#e9ecf3; --ink2:#98a1b2; --line:#2a313d; --accent:#ff574c; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
-}}
-:root[data-theme="dark"]{
-  --bg:#0f1218; --surface:#181c24; --surface2:#20252f; --ink:#e9ecf3; --ink2:#98a1b2; --line:#2a313d; --accent:#ff574c; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Kaku Gothic New",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -29,13 +25,28 @@ h1,h2,h3{margin:0;text-wrap:balance}
 header{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;margin-bottom:4px}
 header h1{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:28px}
 header .jp{font-weight:900;font-size:20px}
-.tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:3px 9px}
+.tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);border:1.5px solid var(--brand);border-radius:999px;padding:3px 9px}
 .lead{color:var(--ink2);font-size:13px;margin:2px 0 14px;max-width:70ch}
 .samplebar{font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;margin-bottom:16px}
 .samplebar b{color:var(--ink)}
-.tabs{display:inline-flex;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:16px}
-.tab{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:15px;color:var(--ink2);background:none;border:none;border-radius:8px;padding:8px 18px;cursor:pointer}
-.tab.on{background:var(--accent);color:var(--accent-ink)}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:16px}
+.tab{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:15px;color:var(--ink2);background:none;border:none;border-radius:8px;padding:8px 16px;cursor:pointer}
+.tab.on{background:var(--brand);color:var(--brand-ink)}
+/* 入口メニュー */
+.menulead{font-size:13.5px;color:var(--ink2);margin:2px 2px 14px}
+.menulead b{color:var(--ink)}
+.menugrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:820px){.menugrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.menugrid{grid-template-columns:1fr}}
+.mcard{position:relative;display:block;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:15px 15px 16px;cursor:pointer;box-shadow:var(--shadow);transition:border-color .12s,transform .12s,box-shadow .12s}
+.mcard:hover{border-color:var(--brand2);transform:translateY(-2px);box-shadow:0 6px 18px rgba(5,150,105,.12)}
+.mcard.hot{border-color:var(--brand2);box-shadow:0 0 0 1px var(--brand2),var(--shadow)}
+.mcard .go{position:absolute;top:14px;right:14px;color:var(--ink2);opacity:.5;font-size:16px}
+.mcard .mic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:11px;background:var(--brandbg);color:var(--brand)}
+.mcard .mh{display:block;font-size:15.5px;font-weight:900;color:var(--ink);margin-bottom:4px}
+.mcard .mp{display:block;font-size:12px;color:var(--ink2);line-height:1.55}
+.mcard .mbadge{display:inline-block;font-size:10px;font-weight:700;color:var(--brand-ink);background:var(--brand);border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+.mcard .i1{background:#fef2f2;color:#dc2626}.mcard .i2{background:var(--brandbg);color:var(--brand)}.mcard .i3{background:#eff6ff;color:#2563eb}.mcard .i4{background:#fffbeb;color:#d97706}.mcard .i5{background:#f5f3ff;color:#7c3aed}.mcard .i6{background:#f1f5f9;color:#475569}
 select,input,button{font-family:inherit}
 select,input[type=search],input[type=text]{width:100%;font-size:14px;font-weight:500;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;appearance:none}
 input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
@@ -43,11 +54,11 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);ou
 /* party bar */
 .pbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .pchip{font-family:"Rajdhani";font-weight:700;font-size:14px;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;cursor:pointer}
-.pchip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.pchip.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
 .pchip .c{opacity:.7;font-size:12px;margin-left:5px}
 .presetbtn{margin-left:auto;font-weight:600;font-size:12.5px;color:var(--ink2);background:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer}
 .presetbtn:hover{color:var(--accent);border-color:var(--accent)}
-.autobtn{font-family:inherit;font-weight:700;font-size:12.5px;color:var(--accent-ink);background:var(--accent);border:none;border-radius:9px;padding:8px 12px;cursor:pointer}
+.autobtn{font-family:inherit;font-weight:700;font-size:12.5px;color:var(--brand-ink);background:var(--brand);border:none;border-radius:9px;padding:8px 12px;cursor:pointer}
 
 /* party diagnosis scorecard */
 .diagcard{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px 15px;margin-bottom:16px}
@@ -218,15 +229,27 @@ details.ivs summary{font-size:11px;color:var(--ink2);cursor:pointer;font-weight:
     <h1 class="disp">CHAMPIONS <span class="jp">構築＆ダメージ計算</span></h1>
     <span class="tag">Pokémon Champions</span>
   </header>
-  <p class="lead">パーティを3つまで保存（ブラウザ内・サーバー不使用）。各ポケモンに性格・持ち物・努力値・技を登録し、その構成でダメージ計算します。</p>
-  <div class="samplebar">収録<b>312体</b>・種族値/技は実データ（PokéAPI）。<b>使用率は一部のみ仮値</b>。Lv50シングル前提の概算（特性・天候・壁・急所は未反映）。データは<b>この端末のブラウザにのみ保存</b>されます。</div>
+  <p class="lead">ポケモンチャンピオンズ（Reg M-C・Lv50シングル）の無料ツール。ダメージ計算・パーティ構築・選出・素早さ/耐久・振り逆算をまとめて。データは<b>この端末のブラウザにのみ保存</b>・ログイン不要。</p>
 
   <div class="tabs" id="tabs">
-    <button class="tab on" data-view="build" type="button">パーティ構築</button>
+    <button class="tab on" data-view="menu" type="button">メニュー</button>
     <button class="tab" data-view="calc" type="button">ダメージ計算</button>
-    <button class="tab" data-view="infer" type="button">逆算（振り推定）</button>
-    <button class="tab" data-view="select" type="button">選出（対相手）</button>
+    <button class="tab" data-view="build" type="button">パーティ構築</button>
+    <button class="tab" data-view="select" type="button">選出</button>
     <button class="tab" data-view="speed" type="button">スピード/耐久</button>
+    <button class="tab" data-view="infer" type="button">逆算</button>
+  </div>
+
+  <div id="view-menu">
+    <p class="menulead"><b>何をしますか？</b>　使いたい機能を選んでください（上のタブでいつでも切替できます）。</p>
+    <div class="menugrid">
+      <button class="mcard hot" data-goto="calc" type="button"><span class="go">›</span><span class="mic i1">⚔️</span><span class="mh">ダメージ計算<span class="mbadge">相手なしでもOK</span></span><span class="mp">技・振り・持ち物・特性で与ダメを算出。攻撃側だけで「火力指数」も出せます。</span></button>
+      <button class="mcard" data-goto="build" type="button"><span class="go">›</span><span class="mic i2">🧩</span><span class="mh">パーティ構築</span><span class="mp">6体を組んで3つ保存。弱点補完・攻めのタイプ候補・診断スコアを表示。</span></button>
+      <button class="mcard" data-goto="select" type="button"><span class="go">›</span><span class="mic i3">🎯</span><span class="mh">選出（対相手）</span><span class="mp">相手6体を入れると、有利に立ち回れる自分の選出をスコア順で提案。</span></button>
+      <button class="mcard" data-goto="speed" type="button"><span class="go">›</span><span class="mic i4">⚡</span><span class="mh">スピード / 耐久</span><span class="mp">2体の素早さ比較・最速ティア表。相手の技を耐える振りも逆算。</span></button>
+      <button class="mcard" data-goto="infer" type="button"><span class="go">›</span><span class="mic i5">🔍</span><span class="mh">振り逆算</span><span class="mp">相手のHPが減った％から、相手のHP・防御の振りを絞り込み。</span></button>
+      <button class="mcard" data-goto="build" type="button"><span class="go">›</span><span class="mic i6">📊</span><span class="mh">パーティ診断</span><span class="mp">今の構築を守り・攻め・素早さで採点し、弱点と改善点を提示（構築タブ上部）。</span></button>
+    </div>
   </div>
 
   <div id="view-build">
@@ -1329,7 +1352,8 @@ function renderDiag(){
 function renderAll(){renderPbar();renderCards();renderDiag();renderAnalysis();renderCalc();}
 
 function init(){
-  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{const v=b.dataset.view;$("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));$("#view-build").hidden=v!=="build";$("#view-calc").hidden=v!=="calc";$("#view-infer").hidden=v!=="infer";$("#view-select").hidden=v!=="select";$("#view-speed").hidden=v!=="speed";if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();});
+  $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>showView(b.dataset.view));
+  $("#view-menu").querySelectorAll(".mcard").forEach(c=>c.onclick=()=>showView(c.dataset.goto));
   $("#sel-clear").addEventListener("click",()=>{DB.opp=new Array(6).fill(null);save();renderSelectView();});
   $("#rb-a").addEventListener("change",refreshInferMove);
   $("#rb-d-btn").addEventListener("click",e=>openPicker(id=>{$("#rb-d").value=id;$("#rb-d-btn").textContent=MONS[id].name;refreshInferAbil();},e.currentTarget));
@@ -1352,7 +1376,12 @@ function init(){
   const rankOpts=[6,5,4,3,2,1,0,-1,-2,-3,-4,-5,-6].map(n=>`<option value="${n}"${n===0?' selected':''}>${n>0?'+':''}${n}</option>`).join("");
   $("#f-arank").innerHTML=rankOpts; $("#f-drank").innerHTML=rankOpts;
   ['f-weather','f-terrain','f-wall','f-arank','f-drank','f-burn','f-crit'].forEach(id=>$("#"+id).addEventListener("change",runCalc));
-  load(); renderAll();
+  load(); renderAll(); showView('menu');
+}
+function showView(v){
+  $("#tabs").querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.view===v));
+  ["menu","build","calc","infer","select","speed"].forEach(id=>{const el=$("#view-"+id);if(el)el.hidden=(id!==v);});
+  if(v==="calc")renderCalc();if(v==="infer")renderInfer();if(v==="select")renderSelectView();if(v==="speed")renderSpeed();
 }
 init();
 </script>

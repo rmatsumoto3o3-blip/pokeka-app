@@ -113,20 +113,22 @@ export default function ChampionsPage() {
                     <Link href="/" className="text-sky-600">ホーム</Link> › ポケモンチャンピオンズ ツール
                 </nav>
                 <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">ポケモンチャンピオンズ ダメージ計算・構築ツール</h1>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-gray-600">
+
+                {/* ツールを最上部に（開いた瞬間に見える）。背景は白基調でサイトに馴染ませる */}
+                <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <ChampionsTool />
+                </div>
+
+                <p className="mt-6 max-w-3xl text-sm leading-7 text-gray-600">
                     <b>ポケモンチャンピオンズ（ポケチャン）</b>用の無料ツールです。パーティ構築（3つ保存）・<b>ダメージ計算</b>・<b>選出補助</b>・相手の<b>振り逆算</b>をまとめて行えます。
                     個体値31固定・<b>能力ポイント（1ヶ所32／合計66）</b>・<b>性格補正</b>・持ち物・特性に対応し、天候・フィールド・壁・急所・ランクまで反映します。
                     データはお使いのブラウザにのみ保存され、ログイン不要・完全無料です。
                 </p>
                 <ul className="mt-3 flex flex-wrap gap-2 text-xs">
                     {['パーティ構築（3保存）', 'ダメージ計算', '弱点と補完', '攻めのタイプ候補', '相手の振り逆算', '有利な選出提案'].map(t => (
-                        <li key={t} className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 font-medium text-sky-700">{t}</li>
+                        <li key={t} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-700">{t}</li>
                     ))}
                 </ul>
-
-                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-[#0f1218] shadow-sm">
-                    <ChampionsTool />
-                </div>
 
                 {/* 広告：ツールの外・コンテンツ側に配置（ツール操作に干渉しない） */}
                 <div className="mt-6 max-w-3xl">
