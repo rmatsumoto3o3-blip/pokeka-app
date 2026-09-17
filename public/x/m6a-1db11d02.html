@@ -37,9 +37,9 @@ tr:last-child td{border-bottom:none}
 <div class="wrap">
   <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
   <div class="how">
-    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（ミニグラフ：<span style="color:#059669">緑＝上昇シナリオ</span>〜<span style="color:#dc2626">赤＝下落シナリオ</span>の帯）</b>・<b>予想レンジ（上がった場合の上値／下がった場合の底値）</b>。上昇シナリオは参考弾SARが中盤で再上昇した幅を根拠にしています。<b>在庫が少ない＝品薄で、下がりにくく上がりやすい／多い＝下がりやすい</b>を予測に反映。判定＝<span class="chip c-buy">買い寄り</span>・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ち</span>。
+    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（ミニグラフ：<span style="color:#059669">緑＝上昇シナリオ</span>〜<span style="color:#dc2626">赤＝下落シナリオ</span>の帯）</b>・<b>予想レンジ（上がった場合の上値／下がった場合の底値）</b>。上昇シナリオは参考弾SARが中盤で再上昇した幅を根拠にしています。<b>在庫が少ない＝品薄で、下がりにくく上がりやすい／多い＝下がりやすい</b>を予測に反映。判定は「<b>待てば下がる</b>」か「<b>待つと上がる/売り切れる</b>」かの綱引きで：<span class="chip c-buy">今でも可</span>（品薄・上昇余地あり）・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ちが得</span>（在庫潤沢で下落見込み大）。<b>新弾はどれも3ヶ月で下がるので、多くは「待ちが得」</b>になります。
     <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #a7f3d0">
-      <b>例）</b>ブラッキーex＝<b>品薄</b>で下がりにくく<span class="chip c-buy">買い寄り</span>。／ ジラーチex＝在庫が多く供給過多→<b>▼約50%</b>下がり得るので<span class="chip c-wait">待ち</span>。「今すぐ欲しい」なら買い寄りを、「安く揃えたい」なら待ちのカードが数ヶ月後どこまで下がるかを目安に。
+      <b>例）</b>ブラッキーex＝<b>品薄</b>で待つと上がる/売り切れる恐れ→<span class="chip c-buy">今でも可</span>。／ ジラーチex＝<b>在庫が多く</b>▼約50%下がる見込み→待てば安くなるので<span class="chip c-wait">待ちが得</span>。つまり<b>“今すぐ欲しい＆品薄”なら今、そうでなければ基本は待ち</b>が得。
     </div>
   </div>
   <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。価格は2026/9/17時点。</div>
@@ -125,16 +125,17 @@ function calc(){
     if(c.hr!=null&&c.hrst!==0&&!c.hrso)opt.push(['hr',c.hr,c.hrst]);
     let best=null;opt.forEach(o=>{if(!best||o[1]<best[1])best=o;});
     const avail=!!best, price=avail?best[1]:(c.cr||c.hr||c.dr||0);
-    const stockRep=avail?(best[2]!=null?best[2]:(c.hrst!=null?c.hrst:c.crst)):(c.hrst!=null?c.hrst:c.crst);
+    const _stk=[c.crst,c.hrst].filter(x=>x!=null); const stockRep=_stk.length?Math.max(..._stk):null; // 市場の供給量＝全店の最大在庫
     const fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
     const floor=Math.round(price*fpct/100/10)*10, drop=(price-floor)/price*100;
     const upPct=Math.max(0.04,Math.min(0.9,UPBASE[c.hold]*upSupply(stockRep)));
     const ceil=Math.round(price*(1+upPct)/10)*10, rise=upPct*100;
-    let lvl,label; const t1=34,t2=54;
+    // 判定：待てば下がる(下落余地)か、待つと上がる/売り切れる(上昇余地・品薄)かの綱引き。新弾は基本“待ちが得”
+    let lvl,label; const scarce=(stockRep!=null&&stockRep<=5), net=rise-drop;
     if(!avail){lvl='na';label='売切';}
-    else if(drop<=t1){lvl='buy';label='買い寄り';}
-    else if(drop<=t2){lvl='soon';label='様子見';}
-    else{lvl='wait';label='待ち';}
+    else if(net>=2||scarce){lvl='buy';label='今でも可';}
+    else if(net>=-22){lvl='soon';label='様子見';}
+    else{lvl='wait';label='待ちが得';}
     return {...c,best,avail,price,stockRep,floor,fpct,drop,ceil,rise,lvl,label};
   });
   const sort=document.getElementById('sort').value, ord={buy:0,soon:1,wait:2,na:3};
