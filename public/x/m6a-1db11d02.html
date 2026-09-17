@@ -40,6 +40,22 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 .hbox{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
 .hlabel{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:4px}
 .hist{display:block;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}
+@media (max-width:680px){
+  .tblwrap{overflow-x:visible}
+  table{min-width:0;border:none;background:transparent;border-radius:0}
+  tr.hd{display:none}
+  tr.main{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:9px}
+  tr.main td{border:none!important;padding:2px 0;text-align:left;white-space:normal;display:flex;align-items:baseline;gap:5px}
+  tr.main td[data-label]::before{content:attr(data-label);color:var(--ink2);font-size:11px;flex:0 0 auto}
+  td.cnm{grid-column:1/-1;padding-bottom:4px;border-bottom:1px solid var(--line)!important;margin-bottom:3px}
+  td.cspark{grid-column:1/-1;flex-direction:column;align-items:flex-start}
+  td[data-label="予想レンジ"]{grid-column:1/-1}
+  td.cjudge{grid-column:1/-1;justify-content:flex-start;margin-top:3px}
+  tr.det{display:block;margin:-6px 0 9px}
+  tr.det>td{display:block;width:auto;padding:12px!important;border-radius:0 0 10px 10px}
+  .hbox{flex-direction:column;gap:14px}
+  .hist{width:100%;max-width:300px}
+}
 </style>
 
 <div class="wrap">
@@ -179,7 +195,7 @@ function calc(){
   const sort=document.getElementById('sort').value, ord={buy:0,soon:1,wait:2,na:3};
   rows.sort((a,b)=> sort==='phi'?b.price-a.price : sort==='plo'?a.price-b.price : sort==='dhi'?b.drop-a.drop : sort==='dlo'?a.drop-b.drop : (ord[a.lvl]-ord[b.lvl])||b.price-a.price);
   const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
-  document.getElementById('tbl').innerHTML=`<table><tr>
+  document.getElementById('tbl').innerHTML=`<table><tr class="hd">
     <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
     rows.map((r,i)=>{
       const bs=r.best?r.best[0]:'', s=r.stockRep;
@@ -188,14 +204,14 @@ function calc(){
       const pastArr=PAST[r.no]||[]; const series=DATES.map((d,k)=>[d,pastArr[k]]).filter(p=>p[1]!=null);
       if(r.avail)series.push([TODAY,r.price]);
       return `<tr class="main" data-i="${i}">
-        <td><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
-        <td>${cell(r.cr,r.crst===0,bs==='cr')}</td>
-        <td>${cell(r.dr,r.drso,bs==='dr')}</td>
-        <td>${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
-        <td>${stk}</td>
-        <td style="text-align:left">${r.avail?spark(r.price,r.floor,r.ceil,r.hold):'<span class="sub">—</span>'}</td>
-        <td>${r.avail?`<div style="color:#059669;font-weight:700">▲${yen(r.ceil)}<span class="sub" style="color:#059669"> +${r.rise.toFixed(0)}%</span></div><div class="down">▼${yen(r.floor)}<span class="sub" style="color:var(--accent)"> -${r.drop.toFixed(0)}%</span></div>`:'—'}</td>
-        <td><span class="chip c-${r.lvl}">${r.label}</span></td>
+        <td class="cnm"><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
+        <td data-label="ラッシュ">${cell(r.cr,r.crst===0,bs==='cr')}</td>
+        <td data-label="ドラスタ">${cell(r.dr,r.drso,bs==='dr')}</td>
+        <td data-label="晴れる屋2">${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
+        <td data-label="在庫">${stk}</td>
+        <td class="cspark" data-label="予測推移" style="text-align:left">${r.avail?spark(r.price,r.floor,r.ceil,r.hold):'<span class="sub">—</span>'}</td>
+        <td data-label="予想レンジ">${r.avail?`<div style="color:#059669;font-weight:700">▲${yen(r.ceil)}<span class="sub" style="color:#059669"> +${r.rise.toFixed(0)}%</span></div><div class="down">▼${yen(r.floor)}<span class="sub" style="color:var(--accent)"> -${r.drop.toFixed(0)}%</span></div>`:'—'}</td>
+        <td class="cjudge" data-label="判定"><span class="chip c-${r.lvl}">${r.label}</span></td>
       </tr>
       <tr class="det" data-i="${i}" hidden><td colspan="8"><div class="hbox">
         <div><div class="hlabel">価格の推移（記録した時点ごとの最安値）</div>${histChart(series)}</div>
