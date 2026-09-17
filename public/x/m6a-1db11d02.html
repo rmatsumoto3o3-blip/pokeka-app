@@ -32,12 +32,20 @@ tr:last-child td{border-bottom:none}
 .stk{font-weight:700}.stk.hi{color:var(--accent)}.stk.lo{color:var(--em)}.stk.no{color:var(--ink2)}
 .down{color:var(--accent);font-weight:700}
 .spark{display:block}
+tr.main{cursor:pointer}
+tr.main:hover{background:#f8fafc}
+.arw{display:inline-block;width:12px;color:var(--ink2);transition:transform .15s;font-size:11px}
+tr.main.open .arw{transform:rotate(90deg)}
+tr.det>td{background:#f8fafc;padding:12px 14px}
+.hbox{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.hlabel{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:4px}
+.hist{display:block;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}
 </style>
 
 <div class="wrap">
   <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
   <div class="how">
-    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（ミニグラフ：<span style="color:#059669">緑＝上昇シナリオ</span>〜<span style="color:#dc2626">赤＝下落シナリオ</span>の帯）</b>・<b>予想レンジ（上がった場合の上値／下がった場合の底値）</b>。上昇シナリオは参考弾SARが中盤で再上昇した幅を根拠にしています。<b>在庫が少ない＝品薄で、下がりにくく上がりやすい／多い＝下がりやすい</b>を予測に反映。判定は「<b>待てば下がる</b>」か「<b>待つと上がる/売り切れる</b>」かの綱引きで：<span class="chip c-buy">今でも可</span>（品薄・上昇余地あり）・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ちが得</span>（在庫潤沢で下落見込み大）。<b>新弾はどれも3ヶ月で下がるので、多くは「待ちが得」</b>になります。
+    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（ミニグラフ：<span style="color:#059669">緑＝上昇シナリオ</span>〜<span style="color:#dc2626">赤＝下落シナリオ</span>の帯）</b>・<b>予想レンジ（上がった場合の上値／下がった場合の底値）</b>。上昇シナリオは参考弾SARが中盤で再上昇した幅を根拠にしています。<b>各行をタップで開く</b>と、価格を記録した時点ごとの<b>実際の推移グラフ（最安値）</b>と各店の現在価格が見られます（更新のたびに履歴の点が増えます）。<b>在庫が少ない＝品薄で、下がりにくく上がりやすい／多い＝下がりやすい</b>を予測に反映。判定は「<b>待てば下がる</b>」か「<b>待つと上がる/売り切れる</b>」かの綱引きで：<span class="chip c-buy">今でも可</span>（品薄・上昇余地あり）・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ちが得</span>（在庫潤沢で下落見込み大）。<b>新弾はどれも3ヶ月で下がるので、多くは「待ちが得」</b>になります。
     <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #a7f3d0">
       <b>例）</b>ブラッキーex＝<b>品薄</b>で待つと上がる/売り切れる恐れ→<span class="chip c-buy">今でも可</span>。／ ジラーチex＝<b>在庫が多く</b>▼約50%下がる見込み→待てば安くなるので<span class="chip c-wait">待ちが得</span>。つまり<b>“今すぐ欲しい＆品薄”なら今、そうでなければ基本は待ち</b>が得。
     </div>
@@ -93,6 +101,36 @@ const CARDS=[
  {n:"パルキアLV.X",no:"147",tier:"復刻",cr:1080,crst:81,dr:null,drso:false,hr:1100,hrst:29,hrso:false,hold:'L'},
  {n:"ハッサムex",no:"145",tier:"復刻",cr:1080,crst:89,dr:null,drso:false,hr:1100,hrst:10,hrso:false,hold:'L'},
 ];
+// 価格を記録した時点ごとの「最安値」履歴（キー=no）。更新のたびにここへ日付と最安値を追記していく。今日ぶんは自動で末尾に付く。
+const DATES=["9/16"];               // 過去に記録した日付（古い順）。今日は自動追加。
+const TODAY="9/17";
+const PAST={ // no: [DATES順の最安値]
+ "R":[750000],"G":[500000],"135":[18000],"134":[12000],"044":[13800],"043":[8980],
+ "127":[12000],"126":[10000],"129":[9000],"131":[6000],"128":[5000],"130":[5000],
+ "132":[4000],"125":[2500],"133":[1200],"124":[1000],"137":[16000],"142":[14000],
+ "165":[7500],"150":[7000],"151+152":[5600],"136":[3800],"141":[3300],"144":[2000],
+ "163":[2000],"154":[2000],"153":[2000],"160":[1800],"138":[1500],"147":[1100],"145":[1100]
+};
+function histChart(series){
+  if(!series.length) return '<div class="sub">価格の記録がまだありません</div>';
+  const W=280,H=96,pl=8,pr=8,pt=18,pb=20,n=series.length;
+  const vals=series.map(s=>s[1]),max=Math.max(...vals),min=Math.min(...vals),span=(max-min)||max||1;
+  const x=i=>n===1?W/2:pl+(W-pl-pr)*(i/(n-1));
+  const y=v=>pt+(H-pt-pb)*(1-(v-min)/span);
+  const ta=i=>n===1?'middle':(i===0?'start':(i===n-1?'end':'middle'));
+  let svg='<svg class="hist" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  if(n>1){const up=series[n-1][1]>=series[0][1];
+    svg+='<polyline points="'+series.map((s,i)=>x(i).toFixed(1)+','+y(s[1]).toFixed(1)).join(' ')+'" fill="none" stroke="'+(up?'#dc2626':'#059669')+'" stroke-width="2"/>';}
+  series.forEach((s,i)=>{
+    svg+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(s[1]).toFixed(1)+'" r="3" fill="#0f172a"/>'+
+      '<text x="'+x(i).toFixed(1)+'" y="'+(H-6)+'" font-size="10" fill="#64748b" text-anchor="'+ta(i)+'">'+s[0]+'</text>'+
+      '<text x="'+x(i).toFixed(1)+'" y="'+(y(s[1])-6).toFixed(1)+'" font-size="10" fill="#0f172a" text-anchor="'+ta(i)+'">'+yen(s[1])+'</text>';
+  });
+  svg+='</svg>';
+  if(n>1){const d=series[n-1][1]-series[0][1],p=d/series[0][1]*100;
+    return svg+'<div class="sub" style="color:'+(d<=0?'var(--em)':'var(--accent)')+'">記録期間の変化 '+(d>0?'+':'')+yen(d)+'（'+(p>0?'+':'')+p.toFixed(0)+'%）</div>';}
+  return svg+'<div class="sub">記録が1点のみ。更新するたびに履歴が増えていきます。</div>';
+}
 const HOLDMUL={H:1.28,M:1.0,L:0.84};
 function supplyMul(s){ if(s==null)return 1.0; if(s===0)return 1.12; if(s<20)return 1.12; if(s<80)return 1.03; if(s<160)return .95; return .88; }
 // 上昇シナリオ：参考弾SARの再上昇幅を根拠にした「上値の伸びしろ%」。品薄ほど上がりやすい
@@ -143,11 +181,14 @@ function calc(){
   const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
   document.getElementById('tbl').innerHTML=`<table><tr>
     <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
-    rows.map(r=>{
+    rows.map((r,i)=>{
       const bs=r.best?r.best[0]:'', s=r.stockRep;
       const stk=s==null?`<span class="stk no">?</span>`:s===0?`<span class="stk hi">売切</span>`:`<span class="stk ${s<40?'lo':s>150?'hi':''}">${s}</span>`;
-      return `<tr>
-        <td><span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
+      // 実測の価格履歴：過去の記録＋今日の最安値
+      const pastArr=PAST[r.no]||[]; const series=DATES.map((d,k)=>[d,pastArr[k]]).filter(p=>p[1]!=null);
+      if(r.avail)series.push([TODAY,r.price]);
+      return `<tr class="main" data-i="${i}">
+        <td><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
         <td>${cell(r.cr,r.crst===0,bs==='cr')}</td>
         <td>${cell(r.dr,r.drso,bs==='dr')}</td>
         <td>${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
@@ -155,9 +196,23 @@ function calc(){
         <td style="text-align:left">${r.avail?spark(r.price,r.floor,r.ceil,r.hold):'<span class="sub">—</span>'}</td>
         <td>${r.avail?`<div style="color:#059669;font-weight:700">▲${yen(r.ceil)}<span class="sub" style="color:#059669"> +${r.rise.toFixed(0)}%</span></div><div class="down">▼${yen(r.floor)}<span class="sub" style="color:var(--accent)"> -${r.drop.toFixed(0)}%</span></div>`:'—'}</td>
         <td><span class="chip c-${r.lvl}">${r.label}</span></td>
-      </tr>`;
+      </tr>
+      <tr class="det" data-i="${i}" hidden><td colspan="8"><div class="hbox">
+        <div><div class="hlabel">価格の推移（記録した時点ごとの最安値）</div>${histChart(series)}</div>
+        <div><div class="hlabel">現在の価格（各店）</div>
+          <div class="sub">カードラッシュ：${r.cr!=null?(r.crst===0?'売切':yen(r.cr)):'—'}</div>
+          <div class="sub">ドラスタ：${r.dr!=null?(r.drso?'売切':yen(r.dr)):'—'}</div>
+          <div class="sub">晴れる屋2：${r.hr!=null?((r.hrso||r.hrst===0)?'売切':yen(r.hr)):'—'}</div>
+          ${r.avail?`<div class="sub" style="margin-top:6px">今後の予想レンジ：<span style="color:#059669">▲${yen(r.ceil)}</span> 〜 <span style="color:var(--accent)">▼${yen(r.floor)}</span></div>`:''}
+        </div>
+      </div></td></tr>`;
     }).join('')+`</table>`;
 }
 ['sort'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
+document.getElementById('tbl').addEventListener('click',e=>{
+  const tr=e.target.closest('tr.main'); if(!tr)return;
+  const i=tr.dataset.i, det=document.querySelector('tr.det[data-i="'+i+'"]');
+  if(!det)return; const willOpen=det.hidden; det.hidden=!willOpen; tr.classList.toggle('open',willOpen);
+});
 calc();
 </script>
