@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+</head><body>
+<title>30th CELEBRATION 買い時ひとめ表</title>
+<style>
+:root{--bg:#f8fafc;--surface:#fff;--ink:#0f172a;--ink2:#64748b;--line:#e2e8f0;--em:#059669;--accent:#dc2626;--amber:#d97706;--blue:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Kaku Gothic ProN",sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:19px;margin:0 0 6px}
+.how{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:11px 13px;font-size:13px;margin:6px 0 10px;line-height:1.7}
+.how b{color:#064e3b}
+.warn{background:#fffbeb;border:1px solid #fcd34d;color:#92400e;border-radius:8px;padding:8px 12px;font-size:12px;margin:0 0 14px}
+.ctrl{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+label{font-size:12px;color:var(--ink2);display:flex;flex-direction:column;gap:3px}
+select{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.chip{display:inline-block;font-size:11px;font-weight:800;color:#fff;padding:2px 8px;border-radius:6px}
+.c-buy{background:var(--em)}.c-wait{background:var(--accent)}.c-soon{background:var(--amber)}.c-na{background:var(--ink2)}
+.tblwrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;min-width:820px}
+th,td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:right;white-space:nowrap;vertical-align:middle}
+th{background:#f8fafc;color:var(--ink2);font-weight:600;font-size:12px}
+td:first-child,th:first-child{text-align:left;white-space:normal}
+tr:last-child td{border-bottom:none}
+.nm{font-weight:700}.rar{font-size:11px;color:var(--ink2)}
+.sub{font-size:11px;color:var(--ink2)}
+.best{font-weight:800;color:var(--em)}
+.so{color:var(--accent);font-weight:700}
+.stk{font-weight:700}.stk.hi{color:var(--accent)}.stk.lo{color:var(--em)}.stk.no{color:var(--ink2)}
+.down{color:var(--accent);font-weight:700}
+.spark{display:block}
+</style>
+
+<div class="wrap">
+  <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
+  <div class="how">
+    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（急落→中盤の反発→底で安定、という上下の見通し）</b>・<b>下落見込み（今買うと最大どれだけ下がり得るか）</b>。<b>在庫が少ない＝品薄で下がりにくい／多い＝下がりやすい</b>を予測に反映。判定＝<span class="chip c-buy">買い寄り</span>・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ち</span>。
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #a7f3d0">
+      <b>例）</b>ブラッキーex＝<b>品薄</b>で下がりにくく<span class="chip c-buy">買い寄り</span>。／ ジラーチex＝在庫が多く供給過多→<b>▼約50%</b>下がり得るので<span class="chip c-wait">待ち</span>。「今すぐ欲しい」なら買い寄りを、「安く揃えたい」なら待ちのカードが数ヶ月後どこまで下がるかを目安に。
+    </div>
+  </div>
+  <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。価格は2026/9/17時点。</div>
+
+  <div class="ctrl">
+    <label>並び替え<select id="sort">
+      <option value="phi" selected>価格 高い</option>
+      <option value="plo">価格 安い</option>
+      <option value="dhi">下落見込み ▲（大きい）</option>
+      <option value="dlo">下落見込み ▼（小さい）</option>
+      <option value="buy">おすすめ（買い寄り順）</option>
+    </select></label>
+  </div>
+  <div class="tblwrap"><div id="tbl"></div></div>
+</div>
+
+<script>
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+// cr=カードラッシュ / dr=ドラスタ / hr=晴れる屋2。crst/hrst=在庫(0=売切,null=不明)、drso/hrso=SOLDOUT
+const CARDS=[
+ {n:"ミュウ R/RGB",no:"R",tier:"RGB",cr:null,crst:null,dr:700000,drso:true,hr:750000,hrst:1,hrso:false,hold:'H'},
+ {n:"ミュウ G/RGB",no:"G",tier:"RGB",cr:null,crst:null,dr:500000,drso:true,hr:500000,hrst:1,hrso:false,hold:'H'},
+ {n:"ミュウ B/RGB",no:"B",tier:"RGB",cr:null,crst:null,dr:500000,drso:true,hr:600000,hrst:0,hrso:true,hold:'H'},
+ {n:"ミュウex FUR",no:"135",tier:"FUR",cr:null,crst:null,dr:18000,drso:false,hr:18000,hrst:28,hrso:false,hold:'H'},
+ {n:"ミュウツーex FUR",no:"134",tier:"FUR",cr:null,crst:null,dr:12000,drso:false,hr:14000,hrst:36,hrso:false,hold:'H'},
+ {n:"ブラッキーex SAR仕様",no:"044",tier:"MF",cr:13800,crst:3,dr:null,drso:false,hr:null,hrst:null,hrso:false,hold:'H'},
+ {n:"エーフィex SAR仕様",no:"043",tier:"MF",cr:8980,crst:18,dr:null,drso:false,hr:null,hrst:null,hrso:false,hold:'M'},
+ {n:"ピカチュウex (127)",no:"127",tier:"SAR",cr:12800,crst:92,dr:12000,drso:false,hr:13000,hrst:25,hrso:false,hold:'H'},
+ {n:"ピカチュウex (126)",no:"126",tier:"SAR",cr:11800,crst:149,dr:10000,drso:false,hr:12000,hrst:27,hrso:false,hold:'H'},
+ {n:"ミュウex (129)",no:"129",tier:"SAR",cr:8980,crst:0,dr:10000,drso:false,hr:9000,hrst:26,hrso:false,hold:'M'},
+ {n:"ゲンガーex (131)",no:"131",tier:"SAR",cr:7480,crst:176,dr:6000,drso:false,hr:7500,hrst:30,hrso:false,hold:'M'},
+ {n:"ミュウツーex (128)",no:"128",tier:"SAR",cr:5980,crst:159,dr:5000,drso:false,hr:6000,hrst:28,hrso:false,hold:'M'},
+ {n:"ニンフィアex (130)",no:"130",tier:"SAR",cr:5980,crst:170,dr:5000,drso:false,hr:6000,hrst:19,hrso:false,hold:'M'},
+ {n:"ジラーチex (132)",no:"132",tier:"SAR",cr:4980,crst:222,dr:4000,drso:false,hr:4500,hrst:17,hrso:false,hold:'M'},
+ {n:"ゲッコウガex (125)",no:"125",tier:"SAR",cr:3280,crst:134,dr:2500,drso:false,hr:3300,hrst:28,hrso:false,hold:'L'},
+ {n:"ボーマンダex (133)",no:"133",tier:"SAR",cr:1480,crst:125,dr:1200,drso:false,hr:1400,hrst:49,hrso:false,hold:'L'},
+ {n:"ホゲータex (124)",no:"124",tier:"SAR",cr:1380,crst:null,dr:1000,drso:false,hr:1600,hrst:10,hrso:false,hold:'L'},
+ {n:"リザードン LV.76",no:"137",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:16000,hrst:8,hrso:false,hold:'H'},
+ {n:"ルギア（クリスタル）",no:"142",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:14000,hrst:9,hrso:false,hold:'H'},
+ {n:"コイキング",no:"165",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:7500,hrst:6,hrso:false,hold:'M'},
+ {n:"ゲンガー",no:"150",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:7000,hrst:7,hrso:false,hold:'M'},
+ {n:"ダークライ&クレセリアLEGEND(上下)",no:"151+152",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:5600,hrst:22,hrso:false,hold:'M'},
+ {n:"ピカチュウ LV.12",no:"136",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:3800,hrst:12,hrso:false,hold:'M'},
+ {n:"ひかるセレビィ LV.18",no:"141",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:3300,hrst:18,hrso:false,hold:'M'},
+ {n:"わるいバンギラス",no:"144",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:2000,hrst:5,hrso:false,hold:'L'},
+ {n:"ミュウVMAX",no:"163",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:2000,hrst:8,hrso:false,hold:'L'},
+ {n:"レックウザEX",no:"154",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:2000,hrst:27,hrso:false,hold:'L'},
+ {n:"N",no:"153",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:2000,hrst:27,hrso:false,hold:'L'},
+ {n:"ピカチュウ&ゼクロムGX",no:"160",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:1800,hrst:29,hrso:false,hold:'L'},
+ {n:"カスミ",no:"138",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:1500,hrst:24,hrso:false,hold:'L'},
+ {n:"パルキアLV.X",no:"147",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:1100,hrst:24,hrso:false,hold:'L'},
+ {n:"ハッサムex",no:"145",tier:"復刻",cr:null,crst:null,dr:null,drso:false,hr:1100,hrst:12,hrso:false,hold:'L'},
+];
+const HOLDMUL={H:1.28,M:1.0,L:0.84};
+function supplyMul(s){ if(s==null)return 1.0; if(s===0)return 1.12; if(s<20)return 1.12; if(s<80)return 1.03; if(s<160)return .95; return .88; }
+function spark(price,floor,hold){
+  const W=130,H=40,DAYS=90,pad=4,tau=13,rng=(price-floor)||1;
+  const amp={H:0.34,M:0.20,L:0.10}[hold]||0.16;
+  const f=d=>Math.max(floor*0.9, floor+rng*Math.exp(-d/tau)+rng*amp*Math.exp(-Math.pow(d-34,2)/(2*121))+rng*0.05*Math.sin(d/8));
+  const pts=[];for(let d=0;d<=DAYS;d+=2)pts.push([d,f(d)]);pts[0][1]=price;
+  const ys=pts.map(p=>p[1]),top=Math.max(price,...ys),bot=Math.min(floor*0.9,...ys);
+  const x=d=>pad+(W-2*pad)*(d/DAYS),y=v=>H-pad-(H-2*pad)*((v-bot)/((top-bot)||1));
+  const line=pts.map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${line}" fill="none" stroke="#2563eb" stroke-width="1.8"/><circle cx="${x(0).toFixed(1)}" cy="${y(price).toFixed(1)}" r="2.6" fill="#0f172a"/><circle cx="${x(DAYS).toFixed(1)}" cy="${y(floor).toFixed(1)}" r="2.6" fill="#059669"/></svg><div class="sub">今 → 3ヶ月後の予想（底値 ${yen(floor)}）</div>`;
+}
+function calc(){
+  const base=48;
+  let rows=CARDS.map(c=>{
+    const opt=[];
+    if(c.cr!=null&&c.crst!==0)opt.push(['cr',c.cr,c.crst]);
+    if(c.dr!=null&&!c.drso)opt.push(['dr',c.dr,null]);
+    if(c.hr!=null&&c.hrst!==0&&!c.hrso)opt.push(['hr',c.hr,c.hrst]);
+    let best=null;opt.forEach(o=>{if(!best||o[1]<best[1])best=o;});
+    const avail=!!best, price=avail?best[1]:(c.cr||c.hr||c.dr||0);
+    const stockRep=avail?(best[2]!=null?best[2]:(c.hrst!=null?c.hrst:c.crst)):(c.hrst!=null?c.hrst:c.crst);
+    const fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
+    const floor=Math.round(price*fpct/100/10)*10, drop=(price-floor)/price*100;
+    let lvl,label; const t1=34,t2=54;
+    if(!avail){lvl='na';label='売切';}
+    else if(drop<=t1){lvl='buy';label='買い寄り';}
+    else if(drop<=t2){lvl='soon';label='様子見';}
+    else{lvl='wait';label='待ち';}
+    return {...c,best,avail,price,stockRep,floor,fpct,drop,lvl,label};
+  });
+  const sort=document.getElementById('sort').value, ord={buy:0,soon:1,wait:2,na:3};
+  rows.sort((a,b)=> sort==='phi'?b.price-a.price : sort==='plo'?a.price-b.price : sort==='dhi'?b.drop-a.drop : sort==='dlo'?a.drop-b.drop : (ord[a.lvl]-ord[b.lvl])||b.price-a.price);
+  const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
+  document.getElementById('tbl').innerHTML=`<table><tr>
+    <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>在庫</th><th>今後の予測推移</th><th>下落見込み</th><th>判定</th></tr>`+
+    rows.map(r=>{
+      const bs=r.best?r.best[0]:'', s=r.stockRep;
+      const stk=s==null?`<span class="stk no">?</span>`:s===0?`<span class="stk hi">売切</span>`:`<span class="stk ${s<40?'lo':s>150?'hi':''}">${s}</span>`;
+      return `<tr>
+        <td><span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
+        <td>${cell(r.cr,r.crst===0,bs==='cr')}</td>
+        <td>${cell(r.dr,r.drso,bs==='dr')}</td>
+        <td>${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
+        <td>${stk}</td>
+        <td style="text-align:left">${r.avail?spark(r.price,r.floor,r.hold):'<span class="sub">—</span>'}</td>
+        <td class="down">${r.avail?'▼'+r.drop.toFixed(0)+'%':'—'}</td>
+        <td><span class="chip c-${r.lvl}">${r.label}</span></td>
+      </tr>`;
+    }).join('')+`</table>`;
+}
+['sort'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
+calc();
+</script>
+
+</body></html>
