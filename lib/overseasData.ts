@@ -111,10 +111,22 @@ interface RawPayload { generatedAt: string; totalDecks: number; archetypes: RawA
 // 応答が5MB超で Next のデータキャッシュに載らない（>2MBは不可）ため、1回のレンダリングで
 // 複数の getOverseas* が呼ばれても取得＋JSONパースが1回で済むよう React cache() で重複排除する。
 // これがないと1ページで5MB超の fetch+parse が3〜4回走り Fluid CPU を浪費する。
+const EMPTY_PAYLOAD: RawPayload = { generatedAt: '', totalDecks: 0, archetypes: [], decks: [] }
+
 const fetchOverseas = cache(async (): Promise<RawPayload> => {
-    const res = await fetch(OVERSEAS_DATA_URL, { next: { revalidate: 86400 } })
-    if (!res.ok) throw new Error('overseas fetch failed: ' + res.status)
-    return res.json()
+    // 取得元(GAS)が一時的に404/500やタイムアウトを返してもサイト全体のビルドを落とさない。
+    // 失敗時は空データを返し、ページは空状態で描画→次回 revalidate で自動復帰する。
+    try {
+        const res = await fetch(OVERSEAS_DATA_URL, { next: { revalidate: 86400 } })
+        if (!res.ok) {
+            console.warn('overseas fetch failed: ' + res.status + ' → 空データで継続')
+            return EMPTY_PAYLOAD
+        }
+        return await res.json()
+    } catch (e) {
+        console.warn('overseas fetch error → 空データで継続', e)
+        return EMPTY_PAYLOAD
+    }
 })
 
 function rankToLabel(rank: string): OverseasResult['rankLabel'] {
