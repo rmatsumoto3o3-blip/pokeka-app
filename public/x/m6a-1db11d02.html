@@ -37,7 +37,7 @@ tr:last-child td{border-bottom:none}
 <div class="wrap">
   <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
   <div class="how">
-    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（急落→中盤の反発→底で安定、という上下の見通し）</b>・<b>下落見込み（今買うと最大どれだけ下がり得るか）</b>。<b>在庫が少ない＝品薄で下がりにくい／多い＝下がりやすい</b>を予測に反映。判定＝<span class="chip c-buy">買い寄り</span>・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ち</span>。
+    <b>見方：</b>新弾は<b>発売直後が最高値</b>になりやすく、ネット上の相場の動きから見ると<b>数ヶ月で約半値まで下がる</b>のが典型です。表は各カードの<b>3店の価格（最安を緑で強調）</b>・<b>在庫</b>・<b>今後の予測推移（ミニグラフ：<span style="color:#059669">緑＝上昇シナリオ</span>〜<span style="color:#dc2626">赤＝下落シナリオ</span>の帯）</b>・<b>予想レンジ（上がった場合の上値／下がった場合の底値）</b>。上昇シナリオは参考弾SARが中盤で再上昇した幅を根拠にしています。<b>在庫が少ない＝品薄で、下がりにくく上がりやすい／多い＝下がりやすい</b>を予測に反映。判定＝<span class="chip c-buy">買い寄り</span>・<span class="chip c-soon">様子見</span>・<span class="chip c-wait">待ち</span>。
     <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #a7f3d0">
       <b>例）</b>ブラッキーex＝<b>品薄</b>で下がりにくく<span class="chip c-buy">買い寄り</span>。／ ジラーチex＝在庫が多く供給過多→<b>▼約50%</b>下がり得るので<span class="chip c-wait">待ち</span>。「今すぐ欲しい」なら買い寄りを、「安く揃えたい」なら待ちのカードが数ヶ月後どこまで下がるかを目安に。
     </div>
@@ -95,15 +95,26 @@ const CARDS=[
 ];
 const HOLDMUL={H:1.28,M:1.0,L:0.84};
 function supplyMul(s){ if(s==null)return 1.0; if(s===0)return 1.12; if(s<20)return 1.12; if(s<80)return 1.03; if(s<160)return .95; return .88; }
-function spark(price,floor,hold){
-  const W=130,H=40,DAYS=90,pad=4,tau=13,rng=(price-floor)||1;
-  const amp={H:0.34,M:0.20,L:0.10}[hold]||0.16;
-  const f=d=>Math.max(floor*0.9, floor+rng*Math.exp(-d/tau)+rng*amp*Math.exp(-Math.pow(d-34,2)/(2*121))+rng*0.05*Math.sin(d/8));
-  const pts=[];for(let d=0;d<=DAYS;d+=2)pts.push([d,f(d)]);pts[0][1]=price;
-  const ys=pts.map(p=>p[1]),top=Math.max(price,...ys),bot=Math.min(floor*0.9,...ys);
+// 上昇シナリオ：参考弾SARの再上昇幅を根拠にした「上値の伸びしろ%」。品薄ほど上がりやすい
+const UPBASE={H:0.38,M:0.24,L:0.12};
+function upSupply(s){ if(s==null)return 1.0; if(s===0)return 1.3; if(s<20)return 1.3; if(s<80)return 1.05; if(s<160)return .85; return .7; }
+function spark(price,floor,ceil,hold){
+  const W=140,H=44,DAYS=90,pad=4,tau=13;
+  const dn=d=>floor+(price-floor)*Math.exp(-d/tau)+(price-floor)*0.05*Math.sin(d/8);       // 下落シナリオ
+  const up=d=>price+(ceil-price)*(1-Math.exp(-d/16));                                        // 上昇シナリオ（再上昇→頭打ち）
+  const dpts=[],upts=[];for(let d=0;d<=DAYS;d+=3){dpts.push([d,Math.max(floor*0.9,dn(d))]);upts.push([d,up(d)]);}
+  dpts[0][1]=price;upts[0][1]=price;
+  const top=ceil*1.03, bot=floor*0.9;
   const x=d=>pad+(W-2*pad)*(d/DAYS),y=v=>H-pad-(H-2*pad)*((v-bot)/((top-bot)||1));
-  const line=pts.map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
-  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${line}" fill="none" stroke="#2563eb" stroke-width="1.8"/><circle cx="${x(0).toFixed(1)}" cy="${y(price).toFixed(1)}" r="2.6" fill="#0f172a"/><circle cx="${x(DAYS).toFixed(1)}" cy="${y(floor).toFixed(1)}" r="2.6" fill="#059669"/></svg><div class="sub">今 → 3ヶ月後の予想（底値 ${yen(floor)}）</div>`;
+  const dline=dpts.map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+  const uline=upts.map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+  const poly=upts.map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ')+' '+dpts.slice().reverse().map(p=>`${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`+
+    `<polygon points="${poly}" fill="#94a3b8" opacity="0.14"/>`+
+    `<polyline points="${uline}" fill="none" stroke="#059669" stroke-width="1.6"/>`+
+    `<polyline points="${dline}" fill="none" stroke="#dc2626" stroke-width="1.6"/>`+
+    `<circle cx="${x(0).toFixed(1)}" cy="${y(price).toFixed(1)}" r="2.6" fill="#0f172a"/>`+
+    `</svg><div class="sub">今 → 3ヶ月後（<span style="color:#059669">上昇</span>〜<span style="color:#dc2626">下落</span>）</div>`;
 }
 function calc(){
   const base=48;
@@ -117,18 +128,20 @@ function calc(){
     const stockRep=avail?(best[2]!=null?best[2]:(c.hrst!=null?c.hrst:c.crst)):(c.hrst!=null?c.hrst:c.crst);
     const fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
     const floor=Math.round(price*fpct/100/10)*10, drop=(price-floor)/price*100;
+    const upPct=Math.max(0.04,Math.min(0.9,UPBASE[c.hold]*upSupply(stockRep)));
+    const ceil=Math.round(price*(1+upPct)/10)*10, rise=upPct*100;
     let lvl,label; const t1=34,t2=54;
     if(!avail){lvl='na';label='売切';}
     else if(drop<=t1){lvl='buy';label='買い寄り';}
     else if(drop<=t2){lvl='soon';label='様子見';}
     else{lvl='wait';label='待ち';}
-    return {...c,best,avail,price,stockRep,floor,fpct,drop,lvl,label};
+    return {...c,best,avail,price,stockRep,floor,fpct,drop,ceil,rise,lvl,label};
   });
   const sort=document.getElementById('sort').value, ord={buy:0,soon:1,wait:2,na:3};
   rows.sort((a,b)=> sort==='phi'?b.price-a.price : sort==='plo'?a.price-b.price : sort==='dhi'?b.drop-a.drop : sort==='dlo'?a.drop-b.drop : (ord[a.lvl]-ord[b.lvl])||b.price-a.price);
   const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
   document.getElementById('tbl').innerHTML=`<table><tr>
-    <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>在庫</th><th>今後の予測推移</th><th>下落見込み</th><th>判定</th></tr>`+
+    <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
     rows.map(r=>{
       const bs=r.best?r.best[0]:'', s=r.stockRep;
       const stk=s==null?`<span class="stk no">?</span>`:s===0?`<span class="stk hi">売切</span>`:`<span class="stk ${s<40?'lo':s>150?'hi':''}">${s}</span>`;
@@ -138,8 +151,8 @@ function calc(){
         <td>${cell(r.dr,r.drso,bs==='dr')}</td>
         <td>${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
         <td>${stk}</td>
-        <td style="text-align:left">${r.avail?spark(r.price,r.floor,r.hold):'<span class="sub">—</span>'}</td>
-        <td class="down">${r.avail?'▼'+r.drop.toFixed(0)+'%':'—'}</td>
+        <td style="text-align:left">${r.avail?spark(r.price,r.floor,r.ceil,r.hold):'<span class="sub">—</span>'}</td>
+        <td>${r.avail?`<div style="color:#059669;font-weight:700">▲${yen(r.ceil)}<span class="sub" style="color:#059669"> +${r.rise.toFixed(0)}%</span></div><div class="down">▼${yen(r.floor)}<span class="sub" style="color:var(--accent)"> -${r.drop.toFixed(0)}%</span></div>`:'—'}</td>
         <td><span class="chip c-${r.lvl}">${r.label}</span></td>
       </tr>`;
     }).join('')+`</table>`;
