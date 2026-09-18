@@ -6,6 +6,7 @@ const TOOLS = [
     { href: '/simulator', emoji: '🔢', title: '初手確率シミュレーター', desc: '初手・サイド落ち確率を10万回シミュレーション' },
     { href: '/decks', emoji: '🏆', title: '環境・優勝デッキ一覧', desc: '大会入賞デッキのレシピとデッキコード' },
     { href: '/archetypes', emoji: '📊', title: '採用率ランキング', desc: '環境デッキの使用率と採用カードを集計' },
+    { href: '/unionarena', emoji: '🃏', title: 'ユニアリ Tier表・環境デッキ', desc: 'ユニオンアリーナの最新Tier表と環境ランキング' },
 ]
 
 export default function RelatedTools({ exclude, className = '' }: { exclude?: string; className?: string }) {

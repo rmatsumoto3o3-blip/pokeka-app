@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import RelatedTools from '@/components/RelatedTools'
+import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: 'ポケカ一人回し練習',
@@ -49,6 +51,9 @@ export default function PracticeLayout({ children }: { children: React.ReactNode
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {children}
+      {/* 内部リンク導線：/practice は最大流入だが行き止まりだったため、評価を /simulator 等へ流す（SEO内部リンク強化） */}
+      <RelatedTools exclude="/practice" />
+      <Footer />
     </>
   )
 }
