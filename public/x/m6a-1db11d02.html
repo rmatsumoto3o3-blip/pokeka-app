@@ -40,6 +40,16 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 .hbox{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
 .hlabel{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:4px}
 .hist{display:block;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px}
+.meta{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:0 0 8px}
+.upd{font-size:12px;color:var(--ink2)}.upd b{color:var(--em);font-size:13px}
+.adbox{margin:14px 0;text-align:center}
+.adlbl{font-size:10px;letter-spacing:.15em;color:#94a3b8;margin-bottom:4px;text-transform:uppercase}
+.summary{font-size:12.5px;color:var(--ink2);margin:2px 0 10px}
+.summary b{color:var(--ink)}
+.delta{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:6px;white-space:nowrap}
+.delta.dn{background:#ecfdf5;color:#047857}.delta.up{background:#fef2f2;color:#b91c1c}
+.ctrl input[type=search]{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:120px}
+.empty{padding:24px;text-align:center;color:var(--ink2);background:var(--surface);border:1px solid var(--line);border-radius:10px}
 @media (max-width:680px){
   .tblwrap{overflow-x:visible}
   table{min-width:0;border:none;background:transparent;border-radius:0}
@@ -58,9 +68,13 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 }
 </style>
 
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2951381820280282" crossorigin="anonymous"></script>
 <div class="wrap">
   <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
-  <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。価格は2026/9/18時点。</div>
+  <div class="meta"><span class="upd">最終更新 <b id="lastupd"></b></span><span class="sub">価格は目安（ネット上の相場傾向からの推定）</span></div>
+  <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。</div>
+
+  <div class="adbox"><div class="adlbl">スポンサーリンク</div><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2951381820280282" data-ad-slot="1093986865" data-ad-format="auto" data-full-width-responsive="true"></ins></div>
 
   <div class="ctrl">
     <label>並び替え<select id="sort">
@@ -68,10 +82,29 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
       <option value="plo">価格 安い</option>
       <option value="dhi">下落見込み ▲（大きい）</option>
       <option value="dlo">下落見込み ▼（小さい）</option>
-      <option value="buy">おすすめ（買い寄り順）</option>
+      <option value="buy">おすすめ（今でも可 順）</option>
     </select></label>
+    <label>判定<select id="fjudge">
+      <option value="">すべて</option>
+      <option value="buy">今でも可</option>
+      <option value="soon">様子見</option>
+      <option value="wait">待ちが得</option>
+      <option value="na">売切</option>
+    </select></label>
+    <label>タイプ<select id="ftier">
+      <option value="">すべて</option>
+      <option value="RGB">RGB</option>
+      <option value="FUR">FUR</option>
+      <option value="SAR">SAR</option>
+      <option value="MF">MF</option>
+      <option value="復刻">復刻</option>
+    </select></label>
+    <label>検索<input id="q" type="search" placeholder="カード名で絞り込み"></label>
   </div>
+  <div id="summary" class="summary"></div>
   <div class="tblwrap"><div id="tbl"></div></div>
+
+  <div class="adbox"><div class="adlbl">スポンサーリンク</div><ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2951381820280282" data-ad-slot="1093986865" data-ad-format="auto" data-full-width-responsive="true"></ins></div>
 </div>
 
 <script>
@@ -173,6 +206,7 @@ function spark(price,floor,ceil,hold){
     `<circle cx="${x(0).toFixed(1)}" cy="${y(price).toFixed(1)}" r="2.6" fill="#0f172a"/>`+
     `</svg><div class="sub">今 → 3ヶ月後（<span style="color:#059669">上昇</span>〜<span style="color:#dc2626">下落</span>）</div>`;
 }
+const val=id=>{const e=document.getElementById(id);return e?e.value:'';};
 function calc(){
   const base=48;
   let rows=CARDS.map(c=>{
@@ -185,31 +219,47 @@ function calc(){
     let best=null;opt.forEach(o=>{if(!best||o[1]<best[1])best=o;});
     const avail=!!best, price=avail?best[1]:(c.cr||c.hr||c.dr||hbp||0);
     const _stk=[c.crst,c.hrst,hbst].filter(x=>x!=null); const stockRep=_stk.length?Math.max(..._stk):null; // 市場の供給量＝全店の最大在庫
-    const fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
+    // 実測の価格履歴：過去の記録＋今日の最安値。obs=記録期間の総変化率、dlt=直近1ステップの変化率(前回比バッジ)
+    const pastArr=PAST[c.no]||[]; const series=DATES.map((d,k)=>[d,pastArr[k]]).filter(p=>p[1]!=null);
+    if(avail)series.push([TODAY,price]);
+    let obs=0,dlt=null;
+    if(series.length>=2){ obs=(series[series.length-1][1]-series[0][1])/series[0][1];
+      const a=series[series.length-2][1],b=series[series.length-1][1]; dlt=(b-a)/a; }
+    const mom=Math.max(-0.4,Math.min(0.4,obs)); // 実測トレンドを予測へ反映（±40%でクランプ）
+    // 底値：下落トレンドなら実測分だけさらに下げる
+    let fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
+    if(mom<0) fpct=Math.max(22,fpct-(-mom)*100*0.5);
     const floor=Math.round(price*fpct/100/10)*10, drop=(price-floor)/price*100;
-    const upPct=Math.max(0.04,Math.min(0.9,UPBASE[c.hold]*upSupply(stockRep)));
+    // 上値：上昇トレンドなら実測分だけ上げる
+    let upPct=Math.max(0.04,Math.min(0.9,UPBASE[c.hold]*upSupply(stockRep)));
+    if(mom>0) upPct=Math.min(1.2,upPct+mom*0.5);
     const ceil=Math.round(price*(1+upPct)/10)*10, rise=upPct*100;
-    // 判定：待てば下がる(下落余地)か、待つと上がる/売り切れる(上昇余地・品薄)かの綱引き。新弾は基本“待ちが得”
+    // 判定：待てば下がる(下落余地)か、待つと上がる/売り切れる(上昇余地・品薄)かの綱引き
     let lvl,label; const scarce=(stockRep!=null&&stockRep<=5), net=rise-drop;
     if(!avail){lvl='na';label='売切';}
     else if(net>=2||scarce){lvl='buy';label='今でも可';}
     else if(net>=-22){lvl='soon';label='様子見';}
     else{lvl='wait';label='待ちが得';}
-    return {...c,hbp,hbst,best,avail,price,stockRep,floor,fpct,drop,ceil,rise,lvl,label};
+    return {...c,hbp,hbst,best,avail,price,stockRep,floor,fpct,drop,ceil,rise,lvl,label,series,dlt};
   });
-  const sort=document.getElementById('sort').value, ord={buy:0,soon:1,wait:2,na:3};
+  const sort=val('sort'), ord={buy:0,soon:1,wait:2,na:3};
   rows.sort((a,b)=> sort==='phi'?b.price-a.price : sort==='plo'?a.price-b.price : sort==='dhi'?b.drop-a.drop : sort==='dlo'?a.drop-b.drop : (ord[a.lvl]-ord[b.lvl])||b.price-a.price);
-  const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
+  // 絞り込み：判定・タイプ・名前検索
+  const fj=val('fjudge'), ft=val('ftier'), q=(val('q')||'').trim();
+  const view=rows.filter(r=>(!fj||r.lvl===fj)&&(!ft||r.tier===ft)&&(!q||r.n.includes(q)||String(r.no).includes(q)));
+  // 合計サマリー（表示中・在庫ありの最安合計）
+  const av=view.filter(r=>r.avail); const total=av.reduce((s,r)=>s+r.price,0);
+  document.getElementById('summary').innerHTML=`表示 <b>${view.length}</b>件 ／ 在庫あり <b>${av.length}</b>件 ・ 最安合計 <b>${yen(total)}</b>`;
+  const cell=(v,soldout,isBest)=> v==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(v)}</span>`;
+  const dbadge=r=> r.dlt==null?'' : `<span class="delta ${r.dlt<=0?'dn':'up'}">前回比 ${r.dlt>0?'+':''}${(r.dlt*100).toFixed(0)}%</span>`;
+  if(!view.length){ document.getElementById('tbl').innerHTML='<div class="empty">該当するカードがありません</div>'; return; }
   document.getElementById('tbl').innerHTML=`<table><tr class="hd">
     <th>カード</th><th>A店</th><th>B店</th><th>C店</th><th>D店</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
-    rows.map((r,i)=>{
+    view.map((r,i)=>{
       const bs=r.best?r.best[0]:'', s=r.stockRep;
       const stk=s==null?`<span class="stk no">?</span>`:s===0?`<span class="stk hi">売切</span>`:`<span class="stk ${s<40?'lo':s>150?'hi':''}">${s}</span>`;
-      // 実測の価格履歴：過去の記録＋今日の最安値
-      const pastArr=PAST[r.no]||[]; const series=DATES.map((d,k)=>[d,pastArr[k]]).filter(p=>p[1]!=null);
-      if(r.avail)series.push([TODAY,r.price]);
       return `<tr class="main" data-i="${i}">
-        <td class="cnm"><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
+        <td class="cnm"><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span>${dbadge(r)}</td>
         <td data-label="A店">${cell(r.cr,r.crst===0,bs==='cr')}</td>
         <td data-label="B店">${cell(r.dr,r.drso,bs==='dr')}</td>
         <td data-label="C店">${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
@@ -220,7 +270,7 @@ function calc(){
         <td class="cjudge" data-label="判定"><span class="chip c-${r.lvl}">${r.label}</span></td>
       </tr>
       <tr class="det" data-i="${i}" hidden><td colspan="9"><div class="hbox">
-        <div><div class="hlabel">価格の推移（記録した時点ごとの最安値）</div>${histChart(series)}</div>
+        <div><div class="hlabel">価格の推移（記録した時点ごとの最安値）</div>${histChart(r.series)}</div>
         <div><div class="hlabel">現在の価格（各店）</div>
           <div class="sub">A店：${r.cr!=null?(r.crst===0?'売切':yen(r.cr)):'—'}</div>
           <div class="sub">B店：${r.dr!=null?(r.drso?'売切':yen(r.dr)):'—'}</div>
@@ -231,7 +281,8 @@ function calc(){
       </div></td></tr>`;
     }).join('')+`</table>`;
 }
-['sort'].forEach(id=>document.getElementById(id).addEventListener('input',calc));
+['sort','fjudge','ftier','q'].forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener('input',calc);});
+document.getElementById('lastupd').textContent='2026/'+TODAY;
 document.getElementById('tbl').addEventListener('click',e=>{
   const tr=e.target.closest('tr.main'); if(!tr)return;
   const i=tr.dataset.i, det=document.querySelector('tr.det[data-i="'+i+'"]');
