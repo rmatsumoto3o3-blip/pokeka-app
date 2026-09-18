@@ -60,7 +60,7 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 
 <div class="wrap">
   <h1>30th CELEBRATION 「今、買い時か」ひとめ表</h1>
-  <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。価格は2026/9/17時点。</div>
+  <div class="warn">⚠ 確定した予測ではなく、ネット上の相場傾向から今後の動きを推定した“目安”です。大会結果・在庫・再録などで実際は変わります。価格は2026/9/18時点。</div>
 
   <div class="ctrl">
     <label>並び替え<select id="sort">
@@ -78,17 +78,17 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
 // cr=カードラッシュ / dr=ドラスタ / hr=晴れる屋2。crst/hrst=在庫(0=売切,null=不明)、drso/hrso=SOLDOUT
 const CARDS=[
- {n:"ミュウ R/RGB",no:"R",tier:"RGB",cr:null,crst:null,dr:700000,drso:true,hr:700000,hrst:1,hrso:false,hold:'H'},
- {n:"ミュウ G/RGB",no:"G",tier:"RGB",cr:null,crst:null,dr:500000,drso:true,hr:450000,hrst:1,hrso:false,hold:'H'},
- {n:"ミュウ B/RGB",no:"B",tier:"RGB",cr:null,crst:null,dr:500000,drso:true,hr:550000,hrst:0,hrso:true,hold:'H'},
- {n:"ミュウex FUR",no:"135",tier:"FUR",cr:17800,crst:114,dr:18000,drso:false,hr:18000,hrst:26,hrso:false,hold:'H'},
- {n:"ミュウツーex FUR",no:"134",tier:"FUR",cr:13800,crst:56,dr:12000,drso:false,hr:14000,hrst:36,hrso:false,hold:'H'},
+ {n:"ミュウ R/RGB",no:"R",tier:"RGB",cr:null,crst:null,dr:600000,drso:false,hr:700000,hrst:1,hrso:false,hold:'H'},
+ {n:"ミュウ G/RGB",no:"G",tier:"RGB",cr:null,crst:null,dr:500000,drso:false,hr:450000,hrst:1,hrso:false,hold:'H'},
+ {n:"ミュウ B/RGB",no:"B",tier:"RGB",cr:null,crst:null,dr:500000,drso:false,hr:550000,hrst:0,hrso:true,hold:'H'},
+ {n:"ミュウex FUR",no:"135",tier:"FUR",cr:17800,crst:114,dr:16000,drso:false,hr:18000,hrst:26,hrso:false,hold:'H'},
+ {n:"ミュウツーex FUR",no:"134",tier:"FUR",cr:13800,crst:56,dr:10000,drso:false,hr:14000,hrst:36,hrso:false,hold:'H'},
  {n:"ブラッキーex SAR仕様",no:"044",tier:"MF",cr:13800,crst:3,dr:null,drso:false,hr:null,hrst:null,hrso:false,hold:'H'},
  {n:"エーフィex SAR仕様",no:"043",tier:"MF",cr:8980,crst:18,dr:null,drso:false,hr:null,hrst:null,hrso:false,hold:'M'},
  {n:"ピカチュウex (127)",no:"127",tier:"SAR",cr:11800,crst:76,dr:12000,drso:false,hr:13000,hrst:23,hrso:false,hold:'H'},
  {n:"ピカチュウex (126)",no:"126",tier:"SAR",cr:10800,crst:139,dr:10000,drso:false,hr:12000,hrst:28,hrso:false,hold:'H'},
  {n:"ミュウex (129)",no:"129",tier:"SAR",cr:8980,crst:0,dr:10000,drso:false,hr:9000,hrst:11,hrso:false,hold:'M'},
- {n:"ゲンガーex (131)",no:"131",tier:"SAR",cr:6980,crst:145,dr:6000,drso:false,hr:7500,hrst:28,hrso:false,hold:'M'},
+ {n:"ゲンガーex (131)",no:"131",tier:"SAR",cr:6980,crst:145,dr:6500,drso:false,hr:7500,hrst:28,hrso:false,hold:'M'},
  {n:"ミュウツーex (128)",no:"128",tier:"SAR",cr:5480,crst:129,dr:5000,drso:false,hr:6000,hrst:31,hrso:false,hold:'M'},
  {n:"ニンフィアex (130)",no:"130",tier:"SAR",cr:5480,crst:142,dr:5000,drso:false,hr:5500,hrst:23,hrso:false,hold:'M'},
  {n:"ジラーチex (132)",no:"132",tier:"SAR",cr:4480,crst:198,dr:4000,drso:false,hr:4000,hrst:18,hrso:false,hold:'M'},
@@ -112,14 +112,14 @@ const CARDS=[
  {n:"ハッサムex",no:"145",tier:"復刻",cr:1080,crst:89,dr:null,drso:false,hr:1100,hrst:10,hrso:false,hold:'L'},
 ];
 // 価格を記録した時点ごとの「最安値」履歴（キー=no）。更新のたびにここへ日付と最安値を追記していく。今日ぶんは自動で末尾に付く。
-const DATES=["9/16"];               // 過去に記録した日付（古い順）。今日は自動追加。
-const TODAY="9/17";
+const DATES=["9/16","9/17"];        // 過去に記録した日付（古い順）。今日は自動追加。
+const TODAY="9/18";
 const PAST={ // no: [DATES順の最安値]
- "R":[750000],"G":[500000],"135":[18000],"134":[12000],"044":[13800],"043":[8980],
- "127":[12000],"126":[10000],"129":[9000],"131":[6000],"128":[5000],"130":[5000],
- "132":[4000],"125":[2500],"133":[1200],"124":[1000],"137":[16000],"142":[14000],
- "165":[7500],"150":[7000],"151+152":[5600],"136":[3800],"141":[3300],"144":[2000],
- "163":[2000],"154":[2000],"153":[2000],"160":[1800],"138":[1500],"147":[1100],"145":[1100]
+ "R":[750000,700000],"G":[500000,450000],"135":[18000,17800],"134":[12000,12000],"044":[13800,13800],"043":[8980,8980],
+ "127":[12000,11800],"126":[10000,10000],"129":[9000,9000],"131":[6000,6000],"128":[5000,5000],"130":[5000,5000],
+ "132":[4000,4000],"125":[2500,2500],"133":[1200,1200],"124":[1000,1000],"137":[16000,16000],"142":[14000,15000],
+ "165":[7500,6980],"150":[7000,6480],"151+152":[5600,5000],"136":[3800,3500],"141":[3300,2800],"144":[2000,1780],
+ "163":[2000,1780],"154":[2000,2000],"153":[2000,2000],"160":[1800,1500],"138":[1500,1300],"147":[1100,1080],"145":[1100,1080]
 };
 function histChart(series){
   if(!series.length) return '<div class="sub">価格の記録がまだありません</div>';
