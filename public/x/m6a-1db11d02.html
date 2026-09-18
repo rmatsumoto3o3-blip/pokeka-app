@@ -76,7 +76,7 @@ tr.det>td{background:#f8fafc;padding:12px 14px}
 
 <script>
 const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
-// cr=カードラッシュ / dr=ドラスタ / hr=晴れる屋2。crst/hrst=在庫(0=売切,null=不明)、drso/hrso=SOLDOUT
+// cr=A店 / dr=B店 / hr=C店。crst/hrst=在庫(0=売切,null=不明)、drso/hrso=SOLDOUT
 const CARDS=[
  {n:"ミュウ R/RGB",no:"R",tier:"RGB",cr:648000,crst:1,dr:600000,drso:false,hr:700000,hrst:1,hrso:false,hold:'H'},
  {n:"ミュウ G/RGB",no:"G",tier:"RGB",cr:448000,crst:1,dr:500000,drso:false,hr:450000,hrst:1,hrso:false,hold:'H'},
@@ -121,7 +121,7 @@ const PAST={ // no: [DATES順の最安値]
  "165":[7500,6980],"150":[7000,6480],"151+152":[5600,5000],"136":[3800,3500],"141":[3300,2800],"144":[2000,1780],
  "163":[2000,1780],"154":[2000,2000],"153":[2000,2000],"160":[1800,1500],"138":[1500,1300],"147":[1100,1080],"145":[1100,1080]
 };
-// ホビステ(ホビーステーション) 価格指標。no:[価格, 在庫]（◎＝豊富→50, 数字＝実数, 空欄＝不明null）
+// D店 価格指標。no:[価格, 在庫]（◎＝豊富→50, 数字＝実数, 空欄＝不明null）
 const HB={
  "R":[698000,null],"B":[548000,null],"G":[448000,null],
  "135":[14800,50],"134":[11800,50],"142":[25800,null],"137":[21800,null],
@@ -201,7 +201,7 @@ function calc(){
   rows.sort((a,b)=> sort==='phi'?b.price-a.price : sort==='plo'?a.price-b.price : sort==='dhi'?b.drop-a.drop : sort==='dlo'?a.drop-b.drop : (ord[a.lvl]-ord[b.lvl])||b.price-a.price);
   const cell=(val,soldout,isBest)=> val==null?'<span class="sub">—</span>' : soldout?'<span class="so">売切</span>' : `<span class="${isBest?'best':''}">${yen(val)}</span>`;
   document.getElementById('tbl').innerHTML=`<table><tr class="hd">
-    <th>カード</th><th>カードラッシュ</th><th>ドラスタ</th><th>晴れる屋2</th><th>ホビステ</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
+    <th>カード</th><th>A店</th><th>B店</th><th>C店</th><th>D店</th><th>在庫</th><th>今後の予測推移</th><th>予想レンジ<br><span class="sub">上昇／下落</span></th><th>判定</th></tr>`+
     rows.map((r,i)=>{
       const bs=r.best?r.best[0]:'', s=r.stockRep;
       const stk=s==null?`<span class="stk no">?</span>`:s===0?`<span class="stk hi">売切</span>`:`<span class="stk ${s<40?'lo':s>150?'hi':''}">${s}</span>`;
@@ -210,10 +210,10 @@ function calc(){
       if(r.avail)series.push([TODAY,r.price]);
       return `<tr class="main" data-i="${i}">
         <td class="cnm"><span class="arw">▶</span> <span class="nm">${r.n}</span> <span class="rar">${r.tier}・${r.no}</span></td>
-        <td data-label="ラッシュ">${cell(r.cr,r.crst===0,bs==='cr')}</td>
-        <td data-label="ドラスタ">${cell(r.dr,r.drso,bs==='dr')}</td>
-        <td data-label="晴れる屋2">${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
-        <td data-label="ホビステ">${cell(r.hbp,r.hbst===0,bs==='hb')}</td>
+        <td data-label="A店">${cell(r.cr,r.crst===0,bs==='cr')}</td>
+        <td data-label="B店">${cell(r.dr,r.drso,bs==='dr')}</td>
+        <td data-label="C店">${cell(r.hr,r.hrso||r.hrst===0,bs==='hr')}</td>
+        <td data-label="D店">${cell(r.hbp,r.hbst===0,bs==='hb')}</td>
         <td data-label="在庫">${stk}</td>
         <td class="cspark" data-label="予測推移" style="text-align:left">${r.avail?spark(r.price,r.floor,r.ceil,r.hold):'<span class="sub">—</span>'}</td>
         <td data-label="予想レンジ">${r.avail?`<div style="color:#059669;font-weight:700">▲${yen(r.ceil)}<span class="sub" style="color:#059669"> +${r.rise.toFixed(0)}%</span></div><div class="down">▼${yen(r.floor)}<span class="sub" style="color:var(--accent)"> -${r.drop.toFixed(0)}%</span></div>`:'—'}</td>
@@ -222,10 +222,10 @@ function calc(){
       <tr class="det" data-i="${i}" hidden><td colspan="9"><div class="hbox">
         <div><div class="hlabel">価格の推移（記録した時点ごとの最安値）</div>${histChart(series)}</div>
         <div><div class="hlabel">現在の価格（各店）</div>
-          <div class="sub">カードラッシュ：${r.cr!=null?(r.crst===0?'売切':yen(r.cr)):'—'}</div>
-          <div class="sub">ドラスタ：${r.dr!=null?(r.drso?'売切':yen(r.dr)):'—'}</div>
-          <div class="sub">晴れる屋2：${r.hr!=null?((r.hrso||r.hrst===0)?'売切':yen(r.hr)):'—'}</div>
-          <div class="sub">ホビステ：${r.hbp!=null?(r.hbst===0?'売切':yen(r.hbp)):'—'}</div>
+          <div class="sub">A店：${r.cr!=null?(r.crst===0?'売切':yen(r.cr)):'—'}</div>
+          <div class="sub">B店：${r.dr!=null?(r.drso?'売切':yen(r.dr)):'—'}</div>
+          <div class="sub">C店：${r.hr!=null?((r.hrso||r.hrst===0)?'売切':yen(r.hr)):'—'}</div>
+          <div class="sub">D店：${r.hbp!=null?(r.hbst===0?'売切':yen(r.hbp)):'—'}</div>
           ${r.avail?`<div class="sub" style="margin-top:6px">今後の予想レンジ：<span style="color:#059669">▲${yen(r.ceil)}</span> 〜 <span style="color:var(--accent)">▼${yen(r.floor)}</span></div>`:''}
         </div>
       </div></td></tr>`;
