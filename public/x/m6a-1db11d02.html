@@ -226,13 +226,10 @@ function calc(){
     if(series.length>=2){ obs=(series[series.length-1][1]-series[0][1])/series[0][1];
       const a=series[series.length-2][1],b=series[series.length-1][1]; dlt=(b-a)/a; }
     const mom=Math.max(-0.4,Math.min(0.4,obs)); // 実測トレンドを予測へ反映（±40%でクランプ）
-    // 底値：下落トレンドなら実測分だけさらに下げる
-    let fpct=Math.max(28,Math.min(82,base*HOLDMUL[c.hold]*supplyMul(stockRep)));
-    if(mom<0) fpct=Math.max(22,fpct-(-mom)*100*0.5);
+    // トレンドに合わせて予想レンジ全体をシフト：上昇なら底値も上値も上げ、下落なら両方下げる
+    const fpct=Math.max(26,Math.min(90, base*HOLDMUL[c.hold]*supplyMul(stockRep) + mom*100*0.5));
     const floor=Math.round(price*fpct/100/10)*10, drop=(price-floor)/price*100;
-    // 上値：上昇トレンドなら実測分だけ上げる
-    let upPct=Math.max(0.04,Math.min(0.9,UPBASE[c.hold]*upSupply(stockRep)));
-    if(mom>0) upPct=Math.min(1.2,upPct+mom*0.5);
+    const upPct=Math.max(0.04,Math.min(1.2, UPBASE[c.hold]*upSupply(stockRep) + mom*0.5));
     const ceil=Math.round(price*(1+upPct)/10)*10, rise=upPct*100;
     // 判定：待てば下がる(下落余地)か、待つと上がる/売り切れる(上昇余地・品薄)かの綱引き
     let lvl,label; const scarce=(stockRep!=null&&stockRep<=5), net=rise-drop;
