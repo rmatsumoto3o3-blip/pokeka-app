@@ -289,4 +289,10 @@ document.getElementById('tbl').addEventListener('click',e=>{
   if(!det)return; const willOpen=det.hidden; det.hidden=!willOpen; tr.classList.toggle('open',willOpen);
 });
 calc();
+// 広告：iframe埋め込み時(=サイト本体に設置)は広告ポリシー上ここでは出さず非表示。単独URLのときだけ配信。
+(function(){
+  var framed; try{framed=window.self!==window.top;}catch(e){framed=true;}
+  if(framed){ Array.prototype.forEach.call(document.querySelectorAll('.adbox'),function(el){el.style.display='none';}); return; }
+  try{ Array.prototype.forEach.call(document.querySelectorAll('ins.adsbygoogle'),function(){ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }); }catch(e){}
+})();
 </script>

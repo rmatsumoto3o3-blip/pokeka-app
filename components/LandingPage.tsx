@@ -544,6 +544,35 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                 </div>
             </div>
 
+            {/* 30th CELEBRATION 相場・買い時（SEO用に本文へ設置。ナビ/タブには非掲載） */}
+            <section className="py-12 bg-white">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">
+                            30th CELEBRATION 相場・買い時ひとめ表
+                        </h2>
+                        <p className="text-gray-600 text-sm md:text-base max-w-3xl mx-auto leading-relaxed">
+                            ポケモンカード「30th CELEBRATION」の高レアリティ（SAR・FUR・RGB・復刻）の
+                            <strong>価格を複数ショップで比較</strong>し、在庫状況と<strong>実測の価格推移</strong>から
+                            <strong>「今が買い時か・待つべきか」</strong>の目安をひとめで確認できます。
+                            ミュウ(RGB)・ピカチュウex・ミュウツーex・リザードン LV.76・ルギア(クリスタルタイプ)などの相場チェックに。
+                            <span className="block mt-2 text-gray-400 text-xs">
+                                ※価格はネット上の相場傾向からの推定（目安）です。実際の売買はご自身の判断でお願いします。
+                            </span>
+                        </p>
+                    </div>
+                    <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+                        <iframe
+                            src="/x/m6a-1db11d02.html"
+                            title="30th CELEBRATION 相場・買い時ひとめ表"
+                            loading="lazy"
+                            className="w-full"
+                            style={{ height: 680, border: 0 }}
+                        />
+                    </div>
+                </div>
+            </section>
+
             {/* FAQ Section (kept for structured-data consistency with page.tsx's FAQPage JSON-LD) */}
             <section className="py-16 bg-gray-50">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
