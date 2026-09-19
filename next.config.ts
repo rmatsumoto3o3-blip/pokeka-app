@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: '5mb' },
   },
   images: {
+    // Image Optimizationの変換回数(無料枠5K)超過＋Fluid CPU浪費対策。
+    // 変換を無効化＝変換回数0・最適化CPU削減。リモート画像はVercelを経由せず直配信になり転送も減る。
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
