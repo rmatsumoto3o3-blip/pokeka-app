@@ -2290,29 +2290,32 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
             {/* Mulligan Reveal Overlay */}
             {mulliganReveal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm p-6">
-                    <div className="bg-white rounded-3xl p-8 max-w-4xl w-full shadow-2xl border border-gray-100">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">マリガン（たねがいません）</h3>
-                        <p className="text-gray-500 mb-8 text-center">相手（CPU）の手札を公開しています。</p>
-                        
-                        <div className="flex flex-wrap justify-center gap-4 mb-10">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-3xl p-5 sm:p-8 max-w-4xl w-full shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 text-center">マリガン（たねがいません）</h3>
+                        <p className="text-gray-500 text-sm mb-5 text-center">この手札を山札に戻して引き直します。</p>
+
+                        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6">
                             {mulliganReveal.map((card, i) => (
-                                <div key={i} className="relative group">
-                                    <div className="w-24 h-36 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                                        <div className="p-2 text-[10px] text-gray-800 font-bold leading-tight">
-                                            {card.name}
-                                        </div>
-                                    </div>
-                                </div>
+                                <Image
+                                    key={i}
+                                    src={card.imageUrl}
+                                    alt={card.name}
+                                    title={card.name}
+                                    width={96}
+                                    height={134}
+                                    unoptimized
+                                    className="w-16 sm:w-24 h-auto rounded-lg border border-gray-200 shadow-sm bg-gray-50"
+                                />
                             ))}
                         </div>
 
                         <div className="flex justify-center">
-                            <button 
+                            <button
                                 onClick={executeMulligan}
-                                className="px-10 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xl rounded-2xl transition-all shadow-lg"
+                                className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-lg rounded-2xl transition-all shadow-lg whitespace-nowrap"
                             >
-                                全て山札に戻して引き直す
+                                引き直し
                             </button>
                         </div>
                     </div>
