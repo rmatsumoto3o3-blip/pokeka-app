@@ -654,7 +654,7 @@ export function GameModals(props: GameModalsProps) {
             {menuModal}
             {damageSelectorModal}
             {retreatEnergyModal}
-            {detailModalEl}
+            {detailModalEl && typeof document !== 'undefined' && createPortal(detailModalEl, document.body)}
             {showActionMenu && actionMenu}
         </>
     )
