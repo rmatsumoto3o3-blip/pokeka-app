@@ -1579,7 +1579,7 @@ function PracticeContent() {
                                     <div className="p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0">
 
                                         {/* Main Battle Row: Opponent - Stadium - Coin/Dmg - Self */}
-                                        <div className="flex flex-row items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
+                                        <div className="flex flex-row flex-wrap items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
                                             {/* Mobile Portal Slot: Opponent Battle (P2) */}
                                             <div id="mobile-battle-p2" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
 
@@ -1639,7 +1639,7 @@ function PracticeContent() {
                                             </DroppableZone>
 
                                             {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
-                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5">
+                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5 order-last md:order-none basis-full md:basis-auto">
                                                 {/* Player Toggle - Mobile Only */}
                                                 <div className="md:hidden flex flex-col gap-1 mb-1">
                                                     <button 
