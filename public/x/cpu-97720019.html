@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+</head><body>
+<title>CPU対戦 α（GAS思考）</title>
+<style>
+:root{--bg:#f8fafc;--surface:#fff;--ink:#0f172a;--ink2:#64748b;--line:#e2e8f0;--em:#059669;--accent:#dc2626;--blue:#2563eb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Kaku Gothic ProN",sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:14px 12px 60px}
+h1{font-size:18px;margin:0 0 4px}
+.sub{font-size:12px;color:var(--ink2)}
+.side{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--surface)}
+.side.cpu{background:#fff7f7;border-color:#fecaca}
+.side.you{background:#f0fdf4;border-color:#bbf7d0}
+.head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.head b{font-size:14px}
+.prz{font-weight:800}
+.mon{display:inline-flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:3px;background:#fff;min-width:96px;vertical-align:top}
+.mon.act{border-color:var(--blue);box-shadow:0 0 0 2px #dbeafe}
+.mon .nm{font-weight:700;font-size:12px}
+.mon .st{font-size:11px;color:var(--ink2)}
+.hpbar{height:6px;background:#fee2e2;border-radius:4px;overflow:hidden;margin-top:2px}
+.hpbar>i{display:block;height:100%;background:var(--em)}
+.bench{margin-top:4px}
+.ctrls{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+button.primary{background:var(--em);color:#fff;border-color:var(--em)}
+button.warn{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.log{margin-top:10px;border:1px solid var(--line);border-radius:8px;background:#fff;max-height:220px;overflow:auto;padding:8px 10px;font-size:12.5px}
+.log .cpu{color:var(--accent)}.log .you{color:var(--em)}.log .sys{color:var(--ink2)}
+.badge{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;background:#eef2ff;color:#3730a3;margin-left:6px}
+.win{padding:14px;text-align:center;font-weight:800;border-radius:10px;margin:8px 0}
+.win.w{background:#ecfdf5;color:#065f46}.win.l{background:#fef2f2;color:#991b1b}
+.top{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+</style>
+<div class="wrap">
+  <h1>CPU対戦 α <span class="badge">思考=GAS / 端末は表示のみ</span></h1>
+  <div class="sub">簡略ルールの検証版。たね出し・進化・エネ添付・こうげき・サイド6。CPUの手はGASが選びます。</div>
+
+  <div class="top">
+    <button class="primary" id="newgame">新しい対戦</button>
+    <button id="auto">自動デモ(CPU対CPU)</button>
+    <span class="sub" id="turnlbl"></span>
+  </div>
+
+  <div id="winbox"></div>
+  <div class="side cpu" id="cpuSide"></div>
+  <div class="side you" id="youSide"></div>
+  <div class="ctrls" id="controls"></div>
+  <div class="log" id="log"></div>
+</div>
+
+<script>
+const CPU_ENDPOINT = "https://script.google.com/macros/s/AKfycbwAnlrG3zlNv4ef_hrp5GIU5KiA4hstJH4efLi9zKsulGLdoqarm-wAmN-ZkCyGacevvw/exec";
+const CPU_VERSION = "rule-v0";
+
+// ---- 簡略カード/ポケモン ----
+const TIER=[{hp:70,atk:20,cost:1},{hp:120,atk:60,cost:2},{hp:180,atk:120,cost:3}];
+const NAMES=["リザ","ゲンガ","ゾロア","ドラパ","ミュウ","バンギ"];
+let uid=1;
+function mkMon(tier){const t=TIER[tier];return{id:uid++,name:NAMES[(Math.random()*NAMES.length)|0],tier,hp:t.hp,maxHp:t.hp,atk:t.atk,cost:t.cost,energy:0};}
+// デッキ：たね/進化/エネ/サポート(ドロー) をまぜる
+function mkDeck(){const d=[];for(let i=0;i<8;i++)d.push({k:'basic'});for(let i=0;i<6;i++)d.push({k:'evo'});for(let i=0;i<14;i++)d.push({k:'energy'});for(let i=0;i<6;i++)d.push({k:'draw'});return shuffle(d);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function mkSide(name){
+  const deck=mkDeck();
+  // 開始手札7（たねを1枚は保証）
+  let hand=deck.splice(0,7);
+  if(!hand.some(c=>c.k==='basic')){deck.push(hand.pop());hand.push({k:'basic'});}
+  const active=mkMon(0); // たねを場に
+  return {name,deck,hand,active,bench:[],prizes:6,energyUsed:false,supUsed:false,lost:false};
+}
+let G=null, AUTO=false, BUSY=false;
+
+function newGame(auto){
+  AUTO=auto; BUSY=false;
+  G={you:mkSide("あなた"),cpu:mkSide("CPU"),turn:1,whose:'you',over:false};
+  logLine('sys',`--- 対戦開始（先攻：あなた）---`);
+  render(); if(auto){G.whose='you';cpuLikeAuto();}
+}
+
+// ---- 合法手生成（GASに渡す形） ----
+function legalMoves(s,opp){
+  const mv=[];
+  const canAtk = s.active && s.active.energy>=s.active.cost;
+  if(s.hand.some(c=>c.k==='energy') && !s.energyUsed){
+    mv.push({type:'attachEnergy',toAttacker:true,_do:()=>{takeCard(s,'energy');s.active.energy++;s.energyUsed=true;log2(s,`${s.active.name}にエネ添付`);}});
+  }
+  if(s.hand.some(c=>c.k==='basic') && s.bench.length<5){
+    mv.push({type:'bench',_do:()=>{takeCard(s,'basic');s.bench.push(mkMon(0));log2(s,`ベンチにたね展開`);}});
+  }
+  // 進化：アクティブが進化可能（tier<2）
+  if(s.hand.some(c=>c.k==='evo') && s.active && s.active.tier<2){
+    mv.push({type:'evolve',_do:()=>{takeCard(s,'evo');evolve(s.active);log2(s,`${s.active.name}が進化`);}});
+  }
+  if(s.hand.some(c=>c.k==='draw') && !s.supUsed){
+    mv.push({type:'draw',_do:()=>{takeCard(s,'draw');draw(s,2);s.supUsed=true;log2(s,`サポートで2ドロー`);}});
+  }
+  if(canAtk){
+    const dmg=s.active.atk, ko=(opp.active && opp.active.hp-dmg<=0);
+    mv.push({type:'attack',damage:dmg,koTarget:!!ko,selfDamage:0,_end:true,_do:()=>doAttack(s,opp)});
+  }
+  mv.push({type:'pass',_end:true,_do:()=>{ /* 何もせずターン終了 */ }});
+  return mv;
+}
+function evolve(m){m.tier=Math.min(2,m.tier+1);const t=TIER[m.tier];const dmg=m.maxHp-m.hp;m.maxHp=t.hp;m.hp=t.hp-dmg;m.atk=t.atk;m.cost=t.cost;}
+function takeCard(s,k){const i=s.hand.findIndex(c=>c.k===k);if(i>=0)s.hand.splice(i,1);}
+function draw(s,n){for(let i=0;i<n;i++){if(s.deck.length)s.hand.push(s.deck.shift());}}
+function doAttack(s,opp){
+  const dmg=s.active.atk;
+  log2(s,`${s.active.name}のこうげき（${dmg}ダメージ）`);
+  if(!opp.active){return;}
+  opp.active.hp-=dmg;
+  if(opp.active.hp<=0){
+    log2(s,`→ ${opp.active.name}をきぜつ！サイドを取る`);
+    s.prizes=Math.max(0,s.prizes-1);
+    if(opp.bench.length){opp.active=opp.bench.shift();log2(opp,`${opp.active.name}をバトル場へ`);}
+    else{opp.active=null;}
+  }
+}
+
+// ---- ターン処理 ----
+function startTurn(s){s.energyUsed=false;s.supUsed=false;draw(s,1);}
+function endCheck(){
+  // 勝敗
+  if(G.you.prizes<=0){finish('you');return true;}
+  if(G.cpu.prizes<=0){finish('cpu');return true;}
+  if(!G.you.active){finish('cpu');return true;}
+  if(!G.cpu.active){finish('you');return true;}
+  return false;
+}
+function finish(winner){
+  G.over=true;
+  const youWin = winner==='you';
+  document.getElementById('winbox').innerHTML=`<div class="win ${youWin?'w':'l'}">${youWin?'🎉 あなたの勝ち':'💀 CPUの勝ち'}</div>`;
+  logLine('sys',`--- 終了：${youWin?'あなた':'CPU'}の勝ち（${G.turn}ターン）---`);
+  render();
+  sendLog(youWin?'win':'lose');
+}
+
+// プレイヤーのターン：合法手ボタン
+function render(){
+  document.getElementById('turnlbl').textContent = G.over?'':`ターン${G.turn}・${G.whose==='you'?'あなた':'CPU'}の番`;
+  document.getElementById('cpuSide').innerHTML = sideHtml(G.cpu,'cpu');
+  document.getElementById('youSide').innerHTML = sideHtml(G.you,'you');
+  const ctr=document.getElementById('controls'); ctr.innerHTML='';
+  if(G.over||AUTO||G.whose!=='you'){return;}
+  const mv=legalMoves(G.you,G.cpu);
+  mv.forEach(m=>{
+    const b=document.createElement('button');
+    b.textContent=label(m);
+    if(m.type==='attack')b.className='primary';
+    if(m.type==='pass')b.className='warn';
+    b.onclick=()=>{ if(BUSY)return; m._do(); if(m._end){ endTurn('you'); } else { render(); } };
+    ctr.appendChild(b);
+  });
+}
+function label(m){return {attachEnergy:'エネ添付',bench:'たね展開',evolve:'進化',draw:'サポートでドロー',attack:`こうげき(${m.damage}${m.koTarget?'・KO!':''})`,pass:'ターン終了'}[m.type]||m.type;}
+
+function endTurn(who){
+  if(endCheck())return;
+  G.whose = who==='you'?'cpu':'you';
+  if(who==='you'){ G.whose='cpu'; startTurn(G.cpu); render(); setTimeout(cpuTurn,400); }
+  else { G.turn++; G.whose='you'; startTurn(G.you); render(); if(AUTO) setTimeout(()=>youAuto(),400); }
+}
+
+// CPUのターン：GASに思考させる
+async function cpuTurn(){
+  BUSY=true;
+  for(let step=0; step<6 && !G.over; step++){
+    const mv=legalMoves(G.cpu,G.you);
+    const payloadMoves=mv.map(({_do,_end,...rest})=>rest);
+    const idx=await gasThink(cpuState(),payloadMoves);
+    const chosen = (idx>=0&&idx<mv.length)?mv[idx]:localPick(mv);
+    chosen._do();
+    render();
+    if(chosen._end) break;
+    await sleep(250);
+  }
+  BUSY=false;
+  endTurn('cpu');
+}
+// AUTOデモ：あなた側もGASに打たせる
+async function youAuto(){
+  BUSY=true;
+  for(let step=0; step<6 && !G.over; step++){
+    const mv=legalMoves(G.you,G.cpu);
+    const idx=await gasThink(youState(),mv.map(({_do,_end,...r})=>r));
+    const chosen=(idx>=0&&idx<mv.length)?mv[idx]:localPick(mv);
+    chosen._do(); render();
+    if(chosen._end) break; await sleep(200);
+  }
+  BUSY=false; endTurn('you');
+}
+function cpuLikeAuto(){ startTurn(G.you); render(); setTimeout(youAuto,300); }
+
+function cpuState(){return sideState(G.cpu,G.you);}
+function youState(){return sideState(G.you,G.cpu);}
+function sideState(s,opp){return{turn:G.turn,myPrizes:s.prizes,oppPrizes:opp.prizes,myHand:s.hand.length,myBench:s.bench.length,oppBench:opp.bench.length,myActiveHp:s.active?s.active.hp:0,oppActiveHp:opp.active?opp.active.hp:0,myActiveEnergy:s.active?s.active.energy:0};}
+
+// ---- GAS通信 ----
+async function gasThink(state,legalMoves){
+  try{
+    const res=await fetch(CPU_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'think',state,legalMoves}),redirect:'follow'});
+    const j=await res.json();
+    if(j&&typeof j.moveIndex==='number'){ if(j.reason) logLine('sys',`GAS判断：${j.reason}`); return j.moveIndex; }
+  }catch(e){ logLine('sys',`GAS応答なし→簡易フォールバック`); }
+  // フォールバック：攻撃>ドロー>先頭
+  return -1; // 呼び出し側で末尾(pass)にフォールバックしないよう下で処理
+}
+async function sendLog(result){
+  try{
+    await fetch(CPU_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'log',game:{user:'playtest',humanDeck:'簡略A',cpuDeck:'簡略B',result,turns:G.turn,cpuVersion:CPU_VERSION,trace:G._trace||[]}}),redirect:'follow'});
+    logLine('sys','対戦ログを送信しました');
+  }catch(e){ logLine('sys','ログ送信失敗（対戦は継続）'); }
+}
+
+// ---- 表示 ----
+function sideHtml(s,cls){
+  const a=s.active;
+  const act = a?`<div class="mon act"><div class="nm">${a.name}<span class="st"> ⚡${a.energy}/${a.cost}</span></div><div class="st">HP ${Math.max(0,a.hp)}/${a.maxHp}・${a.atk}ダメ</div><div class="hpbar"><i style="width:${Math.max(0,a.hp)/a.maxHp*100}%"></i></div></div>`:`<div class="mon">（場に無し）</div>`;
+  const bench = s.bench.map(m=>`<span class="mon"><span class="nm">${m.name}</span><span class="st">HP${m.hp} ⚡${m.energy}</span></span>`).join('')||'<span class="sub">ベンチなし</span>';
+  return `<div class="head"><b>${s.name}</b><span class="prz">サイド ${s.prizes}｜手札 ${s.hand.length}｜山 ${s.deck.length}</span></div>
+    <div>バトル場：${act}</div><div class="bench">ベンチ：${bench}</div>`;
+}
+let LOG=[];
+function logLine(cls,t){LOG.unshift(`<div class="${cls}">${t}</div>`);if(LOG.length>60)LOG.pop();document.getElementById('log').innerHTML=LOG.join('');}
+function log2(s,t){const cls=(s===G.cpu)?'cpu':'you';logLine(cls,`[${s.name}] ${t}`);(G._trace=G._trace||[]).push({turn:G.turn,side:s.name,act:t});}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// 端末内フォールバック（GAS不応答時）：KO攻撃>攻撃>ドロー>エネ>展開>進化>最初の非パス>パス
+function localPick(mv){
+  const by=t=>mv.find(m=>m.type===t);
+  const koAtk=mv.find(m=>m.type==='attack'&&m.koTarget);
+  return koAtk||by('attack')||by('draw')||by('attachEnergy')||by('bench')||by('evolve')||mv.find(m=>m.type!=='pass')||mv[mv.length-1];
+}
+
+document.getElementById('newgame').onclick=()=>newGame(false);
+document.getElementById('auto').onclick=()=>newGame(true);
+newGame(false);
+</script>
