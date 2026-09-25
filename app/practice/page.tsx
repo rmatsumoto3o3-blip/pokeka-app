@@ -1548,7 +1548,7 @@ function PracticeContent() {
                                 {/* Player 1 - Mobile Order 3 (Bottom) */}
                                 {deck1.length > 0 && (
                                     <div key="p1-fixed-container" className={`order-3 md:order-none w-full transition-all duration-700 
-                                        ${isMobile && activePlayer === 'player2' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
+                                        ${isMobile && activePlayer === 'player2' ? 'opacity-60' : 'opacity-100'}
                                     `}>
                                         <DeckPractice
                                             key={`p1-${loadCounter}`}
@@ -1693,7 +1693,7 @@ function PracticeContent() {
                                 {/* Player 2 - Mobile Order 1 (Top) */}
                                 {deck2.length > 0 && (
                                     <div key="p2-fixed-container" className={`order-1 md:order-none w-full transition-all duration-700 
-                                        ${isMobile && activePlayer === 'player1' ? 'opacity-60 scale-95 rotate-180' : 'opacity-100 scale-100 rotate-0'}
+                                        ${isMobile && activePlayer === 'player1' ? 'opacity-60' : 'opacity-100'}
                                     `}>
                                         <DeckPractice
                                             key={`p2-${loadCounter}`}
