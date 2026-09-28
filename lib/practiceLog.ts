@@ -12,7 +12,8 @@ let buffer: Ev[] = []
 let timer: ReturnType<typeof setInterval> | null = null
 let listenersBound = false
 
-const ENDPOINT = '/api/practice/log'
+// 送信先＝GASウェブアプリ(スプレッドシート追記)。Supabaseは使わない。未設定なら送信しない。
+const ENDPOINT = process.env.NEXT_PUBLIC_PRACTICE_LOG_URL || ''
 const FLUSH_AT = 40
 
 function rid() {
@@ -29,14 +30,15 @@ function payload() {
 }
 
 function flush(useBeacon = false) {
-    if (!sessionId || buffer.length === 0) return
+    if (!ENDPOINT || !sessionId || buffer.length === 0) return
     const body = JSON.stringify(payload())
     buffer = []
     try {
+        // GASはプレフライトを避けるため text/plain で送る（CORSの単純リクエスト化）
         if (useBeacon && typeof navigator !== 'undefined' && navigator.sendBeacon) {
-            navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'application/json' }))
+            navigator.sendBeacon(ENDPOINT, new Blob([body], { type: 'text/plain;charset=UTF-8' }))
         } else {
-            fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => { })
+            fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'text/plain;charset=UTF-8' }, body, keepalive: true, mode: 'no-cors' }).catch(() => { })
         }
     } catch { /* ログ送信失敗は無視 */ }
 }
