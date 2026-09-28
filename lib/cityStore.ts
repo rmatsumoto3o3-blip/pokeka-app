@@ -32,7 +32,7 @@ export function loadCompositionsForDate(date: string, codes: string[]): Promise<
             }
             return map
         } catch { return {} }
-    }, ['city-comps-v1', date], { revalidate: 3600, tags: ['city-data'] })()
+    }, ['city-comps-v2', date], { revalidate: 3600, tags: ['city-data'] })()
 }
 
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
