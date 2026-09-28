@@ -22,6 +22,7 @@ function rid() {
 
 function payload() {
     return {
+        action: 'practice_log', // 既存 cpu_battle GAS の doPost 振り分け用
         session_id: sessionId,
         deck_code: deckCode,
         events: buffer,
