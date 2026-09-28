@@ -4,11 +4,12 @@ import {
     monthOf, fmtMonth, fmtDate, deckUrl,
     buildAdoption, buildDistributionFromReps, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
 } from '@/lib/city'
-import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadRepresentativesMap, loadWatchlistDB, loadAllCardNames } from '@/lib/cityStore'
+import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadDeckIndex, loadWatchlistDB } from '@/lib/cityStore'
 import DeckGrid from '@/components/city/DeckGrid'
 import CityAdminProvider from '@/components/city/CityAdminContext'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 import WatchlistAdmin from '@/components/city/WatchlistAdmin'
+import CardAdoptionSearch from '@/components/city/CardAdoptionSearch'
 import PublicHeader from '@/components/PublicHeader'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
@@ -75,7 +76,8 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
     const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
     const wlDb = await loadWatchlistDB()
     const watchlist = wlDb.length ? wlDb : loadWatchlist() // DB優先・未設定時はファイル
-    const cardNames = await loadAllCardNames() // 注目カード編集の候補（実在カード名）
+    const deckIndex = await loadDeckIndex() // 代表カード・全カード名・カード別採用数・総数（全件1回ロード）
+    const cardNames = deckIndex.cardNames
 
     const months = [...new Set(events.map(e => monthOf(e.date)))].sort((a, b) => b.localeCompare(a))
     const selMonth = (sp.month && months.includes(sp.month)) ? sp.month : months[0]
@@ -93,7 +95,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
     const existing = await loadExistingArchetypesDB()
 
     // 分布は代表カードマップから集計（日/今月/全期間を切替）。全期間・今月も軽量に出せる。
-    const repMap = await loadRepresentativesMap()
+    const repMap = deckIndex.reps
     const distScope = (sp.dist === 'month' || sp.dist === 'all') ? sp.dist : 'day'
     const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
     const dist = buildDistributionFromReps(distEvents, repMap, archMap)
@@ -193,6 +195,8 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                 ))}
                             </div>
                         ) : <p className="text-sm text-gray-500">データが集まると採用率が表示されます。</p>}
+                        <datalist id="city-card-names">{cardNames.map(n => <option key={n} value={n} />)}</datalist>
+                        <CardAdoptionSearch counts={deckIndex.cardCounts} total={deckIndex.total} cardNames={cardNames} />
                         <WatchlistAdmin initial={watchlist} cardNames={cardNames} />
                     </section>
                 </div>

@@ -73,6 +73,36 @@ export const loadAllCardNames = unstable_cache(async (): Promise<string[]> => {
     } catch { return [] }
 }, ['city-cardnames-v1'], { revalidate: 3600, tags: ['city-data'] })
 
+// 全デッキを1回だけ読み、代表カード / 全カード名 / カード別採用数 / 総数 をまとめて返す。
+// 個別に何度も全件読むのを避けて負荷を抑える。結果は軽量なのでキャッシュに載る。1時間キャッシュ。
+export const loadDeckIndex = unstable_cache(async (): Promise<{
+    reps: Record<string, string | null>; cardNames: string[]; cardCounts: Record<string, number>; total: number
+}> => {
+    const reps: Record<string, string | null> = {}
+    const cardCounts: Record<string, number> = {}
+    const nameSet = new Set<string>()
+    let total = 0
+    try {
+        const sb = anon()
+        let from = 0
+        const size = 1000
+        for (;;) {
+            const { data } = await sb.from('city_decks').select('deck_code, cards').range(from, from + size - 1)
+            const rows = (data || []) as { deck_code: string; cards: Card[] }[]
+            for (const r of rows) {
+                reps[r.deck_code] = representativeCard(r.cards)
+                total++
+                const uniq = new Set<string>()
+                for (const c of (r.cards || [])) if (c?.name) { nameSet.add(c.name); uniq.add(c.name) }
+                for (const n of uniq) cardCounts[n] = (cardCounts[n] || 0) + 1
+            }
+            if (rows.length < size) break
+            from += size
+        }
+    } catch { /* 空を返す */ }
+    return { reps, cardNames: [...nameSet].sort((a, b) => a.localeCompare(b, 'ja')), cardCounts, total }
+}, ['city-deck-index-v1'], { revalidate: 3600, tags: ['city-data'] })
+
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
 export const loadExistingArchetypesDB = unstable_cache(async (): Promise<string[]> => {
     try {

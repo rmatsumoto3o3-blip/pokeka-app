@@ -37,7 +37,6 @@ export default function WatchlistAdmin({ initial, cardNames }: { initial: string
                 <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add() }}
                     list="city-card-names" placeholder="カード名を選択（実データから候補表示）"
                     className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs text-gray-900" />
-                <datalist id="city-card-names">{cardNames.map(n => <option key={n} value={n} />)}</datalist>
                 <button onClick={add} className="text-[11px] font-bold border border-gray-300 rounded px-2 py-1 text-gray-700">追加</button>
             </div>
             <p className="text-[10px] text-gray-400 mb-2">※ 実データに存在するカード名のみ採用率に反映されます（候補から選んでください）。</p>
