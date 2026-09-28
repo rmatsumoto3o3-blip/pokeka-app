@@ -144,6 +144,7 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                         <button type="button" onClick={() => setTopTab('tier')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'tier' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境Tier表</button>
                         <button type="button" onClick={() => setTopTab('decks')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'decks' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境・優勝デッキ</button>
                         <button type="button" onClick={() => setTopTab('env')} className={`flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition ${topTab === 'env' ? 'bg-blue-600 text-white shadow' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>環境デッキ</button>
+                        <Link href="/city" className="flex-1 rounded-lg px-2 py-2 text-xs sm:text-sm font-bold transition bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 text-center whitespace-nowrap">シティリーグ結果</Link>
                     </div>
                     {/* 全パネルをHTMLに出しCSSで表示切替（内部リンクをクロール可能に保つ＝SEO） */}
                     <div className={topTab === 'tier' ? '' : 'hidden'}>

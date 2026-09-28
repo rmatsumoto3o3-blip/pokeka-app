@@ -22,6 +22,7 @@ export default async function AdminLayout({
         { href: '/admin/deck-scanner', label: 'デッキ写真読み取り' },
         { href: '/admin/gundam-icons', label: 'ガンダムアイコン' },
         { href: '/admin/weekly-report', label: '週間レポート' },
+        { href: '/city', label: 'シティリーグ結果・区分' },
     ]
 
     return (

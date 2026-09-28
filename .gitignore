@@ -43,3 +43,7 @@ next-env.d.ts
 # Claude Code worktrees
 .claude/worktrees/
 .claire/
+
+# City League ローカル生成データ（本番はSupabase読み。注目カード設定のみ同梱）
+data/city/*
+!data/city/watchlist.json

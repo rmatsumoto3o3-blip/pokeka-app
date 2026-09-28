@@ -200,6 +200,7 @@ export default function Dashboard() {
                         {isAdmin && <button onClick={() => setActiveTab('deck-scanner')} className={tabClass('deck-scanner')}>デッキ写真読み取り</button>}
                         {isAdmin && <button onClick={() => setActiveTab('gundam-icons')} className={tabClass('gundam-icons')}>ガンダムアイコン</button>}
                         {isAdmin && <button onClick={() => setActiveTab('gundam-community')} className={tabClass('gundam-community')}>みんなのデッキ投稿</button>}
+                        {isAdmin && <Link href="/city" className={tabClass('__city__')}>シティリーグ</Link>}
                     </div>
                     <div className="flex items-center gap-2 py-2 shrink-0">
                         <Link
