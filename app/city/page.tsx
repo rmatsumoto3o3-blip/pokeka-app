@@ -145,7 +145,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                     <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center justify-between mb-2 gap-2">
                             <h2 className="text-base font-black text-gray-900">デッキ分布</h2>
-                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">解決 {dist.resolved}</span>
+                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">{dist.resolved}デッキ</span>
                         </div>
                         <div className="flex items-center gap-1 mb-3">
                             {([['day', 'この日付'], ['month', '今月'], ['all', '全期間']] as const).map(([k, label]) => (
@@ -168,14 +168,14 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                     </div>
                                 ))}
                             </div>
-                        ) : <p className="text-sm text-gray-500">解決が進むと分布が表示されます。</p>}
+                        ) : <p className="text-sm text-gray-500">データが集まると分布が表示されます。</p>}
                     </section>
 
                     {/* Adoption watchlist */}
                     <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h2 className="text-base font-black text-gray-900">注目カード採用率</h2>
-                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5">母数 {adoption.total}</span>
+                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5">{adoption.total}デッキ</span>
                         </div>
                         {adoption.total ? (
                             <div className="space-y-1">
@@ -189,7 +189,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                     </div>
                                 ))}
                             </div>
-                        ) : <p className="text-sm text-gray-500">解決が進むと採用率が表示されます。</p>}
+                        ) : <p className="text-sm text-gray-500">データが集まると採用率が表示されます。</p>}
                     </section>
                 </div>
 

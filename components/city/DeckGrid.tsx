@@ -8,7 +8,7 @@ export default function DeckGrid({ cards, deckId }: { cards: Card[] | null | und
     if (!cards) {
         return (
             <div className="text-xs text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-3 py-4 text-center">
-                デッキ構成を解決中です。
+                デッキを読み込み中です。
                 <a href={deckUrl(deckId)} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold ml-1">公式で見る ↗</a>
             </div>
         )
