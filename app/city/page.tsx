@@ -190,7 +190,6 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                 ))}
                             </div>
                         ) : <p className="text-sm text-gray-500">解決が進むと採用率が表示されます。</p>}
-                        <p className="text-[11px] text-gray-400 mt-2">注目カードは data/city/watchlist.json で編集できます。</p>
                     </section>
                 </div>
 
