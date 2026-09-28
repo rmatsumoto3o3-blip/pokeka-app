@@ -72,8 +72,9 @@ function admin() {
     return createClient(url, key)
 }
 
-// 区分マップを Supabase から読む（本番・ローカル共通）。失敗時は空。
-export async function loadArchetypeMapDB(): Promise<ArchetypeMap> {
+// 区分マップを Supabase から読む（本番・ローカル共通）。60秒キャッシュ＝アクセス毎の負荷を排除。
+// 管理者の保存時は API 側で revalidateTag('city-map') して即時反映する。失敗時は空。
+export const loadArchetypeMapDB = unstable_cache(async (): Promise<ArchetypeMap> => {
     try {
         const sb = anon()
         const [ov, rl] = await Promise.all([
@@ -88,7 +89,7 @@ export async function loadArchetypeMapDB(): Promise<ArchetypeMap> {
     } catch {
         return { rules: {}, overrides: {} }
     }
-}
+}, ['city-arch-map-v1'], { revalidate: 60, tags: ['city-map'] })
 
 // デッキ1件の区分を upsert（archetype 空なら削除）
 export async function saveOverrideDB(deckCode: string, archetype: string): Promise<void> {

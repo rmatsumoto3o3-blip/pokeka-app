@@ -32,8 +32,8 @@ export default function CityAdminProvider({
         const supabase = createClient()
         let alive = true
         const check = (email: string | undefined) => { if (alive) setIsAdmin(ADMIN_EMAILS.includes(email || '')) }
-        supabase.auth.getUser().then(({ data }) => check(data.user?.email)).catch(() => { })
-        // ログイン状態が後から変わっても追従
+        // getSession はローカルのcookieを読むだけ（Supabaseへ通信しない）＝一般来訪者にも負荷をかけない
+        supabase.auth.getSession().then(({ data }) => check(data.session?.user?.email)).catch(() => { })
         const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => check(session?.user?.email))
         return () => { alive = false; sub.subscription.unsubscribe() }
     }, [])

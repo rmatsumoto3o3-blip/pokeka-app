@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { createClient } from '@/utils/supabase/server'
 import { loadArchetypeMapDB, saveOverrideDB, saveRuleDB } from '@/lib/cityStore'
 
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: 'deck_id required' }, { status: 400 })
     try {
         await saveOverrideDB(id, (body.archetype || '').trim())
-        revalidatePath('/city')
+        revalidatePath('/city'); revalidateTag('city-map')
         return NextResponse.json({ ok: true, deck_id: id, archetype: (body.archetype || '').trim() || null })
     } catch (e) {
         return NextResponse.json({ error: 'save failed', detail: String(e) }, { status: 500 })
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const rules = body.rules || {}
     try {
         for (const [rep, arch] of Object.entries(rules)) await saveRuleDB(rep, (arch || '').trim())
-        revalidatePath('/city')
+        revalidatePath('/city'); revalidateTag('city-map')
         return NextResponse.json({ ok: true, rules: Object.keys(rules).length })
     } catch (e) {
         return NextResponse.json({ error: 'save failed', detail: String(e) }, { status: 500 })
