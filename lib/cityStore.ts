@@ -55,6 +55,24 @@ export const loadRepresentativesMap = unstable_cache(async (): Promise<Record<st
     } catch { return {} }
 }, ['city-repmap-v1'], { revalidate: 3600, tags: ['city-data'] })
 
+// 収集済みデッキに実在する全カード名（注目カードの選択候補）。1時間キャッシュ。
+export const loadAllCardNames = unstable_cache(async (): Promise<string[]> => {
+    try {
+        const sb = anon()
+        const set = new Set<string>()
+        let from = 0
+        const size = 1000
+        for (;;) {
+            const { data } = await sb.from('city_decks').select('cards').range(from, from + size - 1)
+            const rows = (data || []) as { cards: Card[] }[]
+            for (const r of rows) for (const c of (r.cards || [])) if (c?.name) set.add(c.name)
+            if (rows.length < size) break
+            from += size
+        }
+        return [...set].sort((a, b) => a.localeCompare(b, 'ja'))
+    } catch { return [] }
+}, ['city-cardnames-v1'], { revalidate: 3600, tags: ['city-data'] })
+
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
 export const loadExistingArchetypesDB = unstable_cache(async (): Promise<string[]> => {
     try {
