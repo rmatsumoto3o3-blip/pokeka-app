@@ -4,10 +4,11 @@ import {
     monthOf, fmtMonth, fmtDate, deckUrl,
     buildAdoption, buildDistributionFromReps, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
 } from '@/lib/city'
-import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadRepresentativesMap } from '@/lib/cityStore'
+import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadRepresentativesMap, loadWatchlistDB } from '@/lib/cityStore'
 import DeckGrid from '@/components/city/DeckGrid'
 import CityAdminProvider from '@/components/city/CityAdminContext'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
+import WatchlistAdmin from '@/components/city/WatchlistAdmin'
 import PublicHeader from '@/components/PublicHeader'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
@@ -72,7 +73,8 @@ function EventCard({ ev, cache, map }: { ev: EventRec; cache: DeckCache; map: Ar
 export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string }> }) {
     const sp = await searchParams
     const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
-    const watchlist = loadWatchlist()
+    const wlDb = await loadWatchlistDB()
+    const watchlist = wlDb.length ? wlDb : loadWatchlist() // DB優先・未設定時はファイル
 
     const months = [...new Set(events.map(e => monthOf(e.date)))].sort((a, b) => b.localeCompare(a))
     const selMonth = (sp.month && months.includes(sp.month)) ? sp.month : months[0]
@@ -190,6 +192,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                 ))}
                             </div>
                         ) : <p className="text-sm text-gray-500">データが集まると採用率が表示されます。</p>}
+                        <WatchlistAdmin initial={watchlist} />
                     </section>
                 </div>
 

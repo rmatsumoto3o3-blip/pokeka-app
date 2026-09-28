@@ -91,6 +91,25 @@ export const loadArchetypeMapDB = unstable_cache(async (): Promise<ArchetypeMap>
     }
 }, ['city-arch-map-v1'], { revalidate: 60, tags: ['city-map'] })
 
+// 注目カード（採用率パネル用）。60秒キャッシュ。空なら [] を返す。
+export const loadWatchlistDB = unstable_cache(async (): Promise<string[]> => {
+    try {
+        const sb = anon()
+        const { data } = await sb.from('city_watchlist').select('card_name').order('sort_order', { ascending: true })
+        return ((data || []) as { card_name: string }[]).map(r => r.card_name).filter(Boolean)
+    } catch { return [] }
+}, ['city-watchlist-v1'], { revalidate: 60, tags: ['city-watchlist'] })
+
+// 注目カードを全置き換え（順序＝配列順）
+export async function saveWatchlistDB(cards: string[]): Promise<void> {
+    const sb = admin()
+    const clean = [...new Set(cards.map(c => (c || '').trim()).filter(Boolean))]
+    await sb.from('city_watchlist').delete().neq('card_name', '')
+    if (clean.length) {
+        await sb.from('city_watchlist').insert(clean.map((card_name, i) => ({ card_name, sort_order: i })))
+    }
+}
+
 // デッキ1件の区分を upsert（archetype 空なら削除）
 export async function saveOverrideDB(deckCode: string, archetype: string): Promise<void> {
     const sb = admin()
