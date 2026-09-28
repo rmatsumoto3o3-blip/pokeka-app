@@ -8,6 +8,7 @@ import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExisting
 import DeckGrid from '@/components/city/DeckGrid'
 import CityAdminProvider from '@/components/city/CityAdminContext'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
+import PublicHeader from '@/components/PublicHeader'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
 export const revalidate = 3600
@@ -105,6 +106,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
 
     return (
         <div className="min-h-screen bg-slate-50 text-gray-900">
+            <PublicHeader />
             <div className="max-w-5xl mx-auto px-4 py-6">
                 {/* Header */}
                 <div className="mb-4">
