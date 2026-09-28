@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import {
     loadWatchlist, autoArchetype, listArchetypeOptions,
     monthOf, fmtMonth, fmtDate, deckUrl,
-    buildDistribution, buildAdoption, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
+    buildAdoption, buildDistributionFromReps, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
 } from '@/lib/city'
-import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB } from '@/lib/cityStore'
+import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadRepresentativesMap } from '@/lib/cityStore'
 import DeckGrid from '@/components/city/DeckGrid'
 import CityAdminProvider from '@/components/city/CityAdminContext'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
@@ -69,7 +69,7 @@ function EventCard({ ev, cache, map }: { ev: EventRec; cache: DeckCache; map: Ar
     )
 }
 
-export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string }> }) {
+export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string }> }) {
     const sp = await searchParams
     const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
     const watchlist = loadWatchlist()
@@ -88,7 +88,12 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
 
     const archMap = await loadArchetypeMapDB()
     const existing = await loadExistingArchetypesDB()
-    const dist = buildDistribution(dayEvents, cache, archMap)
+
+    // 分布は代表カードマップから集計（日/今月/全期間を切替）。全期間・今月も軽量に出せる。
+    const repMap = await loadRepresentativesMap()
+    const distScope = (sp.dist === 'month' || sp.dist === 'all') ? sp.dist : 'day'
+    const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
+    const dist = buildDistributionFromReps(distEvents, repMap, archMap)
 
     // 区分の選択肢：既存アーキタイプ（Supabase）と、表示日付の自動検出名を分けて渡す
     const existingSet = new Set(existing)
@@ -138,9 +143,17 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 <div className="grid md:grid-cols-2 gap-4 mb-8">
                     {/* Distribution */}
                     <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-base font-black text-gray-900">デッキ分布（自動分類）</h2>
-                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5">解決 {dist.resolved}</span>
+                        <div className="flex items-center justify-between mb-2 gap-2">
+                            <h2 className="text-base font-black text-gray-900">デッキ分布</h2>
+                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">解決 {dist.resolved}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-3">
+                            {([['day', 'この日付'], ['month', '今月'], ['all', '全期間']] as const).map(([k, label]) => (
+                                <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}`}
+                                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distScope === k
+                                        ? 'bg-indigo-600 text-white border-indigo-600'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
+                            ))}
                         </div>
                         {dist.list.length ? (
                             <div className="space-y-1">

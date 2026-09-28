@@ -79,6 +79,34 @@ export function classifyArchetype(cards: Card[] | null | undefined): string | nu
     return representativeCard(cards)
 }
 
+// 代表カード名から最終アーキタイプを解決（構成データ不要・集計用）
+export function resolveArchetypeFromRep(deckId: string, rep: string | null | undefined, map: ArchetypeMap): string | null {
+    if (map.overrides[deckId]) return map.overrides[deckId]
+    if (!rep) return null
+    return map.rules[rep] || rep
+}
+
+// 代表カードマップから分布を集計（デッキ単位・重複コードは1回）。日/月/全期間の切替に使う。
+export function buildDistributionFromReps(
+    events: EventRec[], repMap: Record<string, string | null>, map: ArchetypeMap,
+) {
+    const seen = new Set<string>()
+    const tally: Record<string, number> = {}
+    let resolved = 0
+    for (const ev of events) for (const r of ev.results) {
+        if (seen.has(r.deck_id)) continue
+        seen.add(r.deck_id)
+        const arch = resolveArchetypeFromRep(r.deck_id, repMap[r.deck_id], map)
+        if (!arch) continue
+        resolved++
+        tally[arch] = (tally[arch] || 0) + 1
+    }
+    const list = Object.entries(tally)
+        .map(([name, count]) => ({ name, count, rate: resolved ? +(count / resolved * 100).toFixed(1) : 0 }))
+        .sort((a, b) => b.count - a.count)
+    return { resolved, list }
+}
+
 // 指定イベント群の解決済みデッキで分布を集計（デッキ単位・重複デッキコードは1回）
 export function buildDistribution(events: EventRec[], cache: DeckCache, map?: ArchetypeMap) {
     const m = map || { rules: {}, overrides: {} }

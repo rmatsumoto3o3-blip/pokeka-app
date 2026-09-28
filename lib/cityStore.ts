@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
+import { representativeCard } from './city'
 import type { ArchetypeMap, EventRec, DeckCache, Card } from './city'
 
 // 読み取り用（公開SELECT・anonキー）
@@ -34,6 +35,25 @@ export function loadCompositionsForDate(date: string, codes: string[]): Promise<
         } catch { return {} }
     }, ['city-comps-v2', date], { revalidate: 3600, tags: ['city-data'] })()
 }
+
+// 全デッキの代表カード名マップ（deck_code -> 代表カード）。月間・全期間の分布集計用。
+// 構成データ全件を1回だけ読み、結果は軽量(文字列マップ)なのでキャッシュに載る。1時間キャッシュ。
+export const loadRepresentativesMap = unstable_cache(async (): Promise<Record<string, string | null>> => {
+    try {
+        const sb = anon()
+        const map: Record<string, string | null> = {}
+        let from = 0
+        const size = 1000
+        for (;;) {
+            const { data } = await sb.from('city_decks').select('deck_code, cards').range(from, from + size - 1)
+            const rows = (data || []) as { deck_code: string; cards: Card[] }[]
+            for (const r of rows) map[r.deck_code] = representativeCard(r.cards)
+            if (rows.length < size) break
+            from += size
+        }
+        return map
+    } catch { return {} }
+}, ['city-repmap-v1'], { revalidate: 3600, tags: ['city-data'] })
 
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
 export const loadExistingArchetypesDB = unstable_cache(async (): Promise<string[]> => {
