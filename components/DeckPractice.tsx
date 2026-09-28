@@ -8,6 +8,7 @@ import { type Card, shuffle, cropImageClass } from '@/lib/deckParser'
 import NumericalSidePrize from './NumericalSidePrize'
 import { CardStack, createStack, getTopCard, canStack, isEnergy, isTool, isPokemon, isStadium, isRuleBox, isTrainer, isSupporter } from '@/lib/cardStack'
 import { getPrizeTrainerFeedbackAction } from '@/app/aiActions'
+import { logEvent } from '@/lib/practiceLog'
 import {
     DndContext,
     useSensors,
@@ -668,6 +669,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         const drawn = remaining.slice(0, count)
         setHand(prev => [...prev, ...drawn])
         setRemaining(prev => prev.slice(count))
+        logEvent('draw', { p: idPrefix, n: count })
     }
 
     const mulligan = () => {
@@ -699,6 +701,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setRemaining(newDeck.slice(7))
         setMulliganReveal(null)
         showToast('手札を山札に戻して7枚引き直しました')
+        logEvent('mulligan', { p: idPrefix })
     }
 
     const increaseBenchSize = () => {
@@ -768,6 +771,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const playToBattleField = (handIndex: number) => {
         const card = hand[handIndex]
         if (!card) return
+        logEvent('play_active', { p: idPrefix, card: card.name, stack: !!battleField })
 
         if (battleField) {
             if (canStack(card, battleField)) {
@@ -1027,6 +1031,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         newBench[index] = currentBattle // Can be null, that's fine
         setBench(newBench)
         closeMenu()
+        logEvent('swap_active', { p: idPrefix })
     }
 
     // performSwap logic consolidated into earlier definition
@@ -1038,6 +1043,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(prev => [...prev, prize])
         setPrizeCards(prev => prev.filter((_, i) => i !== index))
         showToast('サイドを1枚取りました')
+        logEvent('prize_take', { p: idPrefix })
     }
 
     const takePrizeCards = (count: number) => {
@@ -1056,6 +1062,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const shuffleDeck = () => {
         setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
         showToast('山札をシャッフルしました')
+        logEvent('shuffle', { p: idPrefix })
     }
 
     const nextTurn = () => {
@@ -1067,6 +1074,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setSupporterUsedThisTurn(false)
         setEnergyAttachedThisTurn(false)
         setTurnCount(prev => prev + 1)
+        logEvent('turn_end', { p: idPrefix, turn: turnCount })
 
         // Mega Brave reset logic:
         // If it was used this turn, it becomes "used last turn" (still restricted).

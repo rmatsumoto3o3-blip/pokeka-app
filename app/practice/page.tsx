@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { buildDeck, shuffle, type Card } from '@/lib/deckParser'
+import { startPracticeLog, logEvent } from '@/lib/practiceLog'
 import { eventDateSortKey } from '@/lib/eventDate'
 import { getDeckDataAction, getEnvDecksForPractice, type PracticeEnvDeck } from '@/app/actions'
 import { createStack, type CardStack } from '@/lib/cardStack'
@@ -724,6 +725,7 @@ function PracticeContent() {
 
     const handleKnockOut = (defender: 'player1' | 'player2', prizeCount: number, fieldEmpty: boolean) => {
         const attacker = defender === 'player1' ? 'player2' : 'player1'
+        logEvent('ko', { defender, prize: prizeCount, fieldEmpty })
         const attackerRef = attacker === 'player1' ? player1Ref : player2Ref
         const beforePrizes = attackerRef.current?.getPrizeCount() ?? 0
         attackerRef.current?.takePrizes(prizeCount)
@@ -895,6 +897,7 @@ function PracticeContent() {
                     throw new Error(`デッキ1は60枚である必要があります（現在: ${fullDeck1.length}枚）`)
                 }
                 setDeck1(shuffle(fullDeck1))
+                startPracticeLog(targetCode1, { code2: targetCode2 || null })
             }
 
             if (targetCode2 && !targetCode2IsCpu) {
@@ -1004,7 +1007,9 @@ function PracticeContent() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
+    const _logEffect = (source: string, effect: string) => logEvent('effect', { p: source, name: effect })
     const handleEffectTrigger = (source: 'player1' | 'player2', effect: 'judge' | 'apollo' | 'unfair_stamp' | 'boss_orders' | 'special_red_card' | 'xerosic') => {
+        _logEffect(source, effect)
         const targetRef = source === 'player1' ? player2Ref : player1Ref
 
         if (effect === 'special_red_card') {
@@ -1567,7 +1572,7 @@ function PracticeContent() {
                                             }}
                                             onTurnEnd={() => setActivePlayer('player2')}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player1', effect)}
-                                            onAttackTrigger={(dmg, type, idx) => player2Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
+                                            onAttackTrigger={(dmg, type, idx) => { logEvent('attack', { p: 'player1', dmg, type }); player2Ref.current?.receiveEffect('apply_damage', dmg, type, idx) }}
                                             onKnockOut={handleKnockOut}
                                         />
                                     </div>
@@ -1713,7 +1718,7 @@ function PracticeContent() {
                                             }}
                                             onTurnEnd={() => setActivePlayer('player1')}
                                             onEffectTrigger={(effect) => handleEffectTrigger('player2', effect)}
-                                            onAttackTrigger={(dmg, type, idx) => player1Ref.current?.receiveEffect('apply_damage', dmg, type, idx)}
+                                            onAttackTrigger={(dmg, type, idx) => { logEvent('attack', { p: 'player2', dmg, type }); player1Ref.current?.receiveEffect('apply_damage', dmg, type, idx) }}
                                             onKnockOut={handleKnockOut}
                                         />
                                     </div>
