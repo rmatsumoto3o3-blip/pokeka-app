@@ -12,7 +12,7 @@ import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
 export const revalidate = 3600
 export const metadata: Metadata = {
-    title: 'シティリーグ結果（試作） | PokéLix',
+    title: 'シティリーグ結果 | PokéLix',
     description: 'シティリーグの入賞デッキを月・日付別に。1〜4位はデッキ一覧、5位以下はアコーディオン。注目カード採用率とデッキ分布つき。',
     robots: { index: false, follow: false },
 }
@@ -110,7 +110,6 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 <div className="mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h1 className="text-2xl font-black text-gray-900">シティリーグ結果</h1>
-                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 rounded px-2 py-0.5">試作・オープン</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">入賞デッキを月・日付別に。1〜4位はデッキ一覧を表示、5位以下はアコーディオンで開けます。</p>
                 </div>

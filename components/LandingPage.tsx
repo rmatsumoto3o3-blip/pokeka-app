@@ -134,9 +134,6 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                 </div>
             </section>
 
-            {/* 使用率ランキング（ランキングのみ・Tierは下の切替へ） */}
-            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} hideTier />
-
             {/* 環境Tier表 ⇄ 環境・優勝デッキ（タブ切替） */}
             <section className="bg-white border-b border-[#eef1f6]">
                 <div className="max-w-[1080px] mx-auto px-5 py-5">
@@ -267,6 +264,9 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                     </div>
                 </div>
             </section>
+
+            {/* 使用率ランキング（ランキングのみ・Tierは下の切替へ） */}
+            <UsageRankingTop ranking={usageRanking} totalDecks={usageTotalDecks} tierMetas={tierMetas} hideTier />
 
             {/* 広告（728x50 ほそめ） */}
             <section className="bg-[#f4f6fa]">
