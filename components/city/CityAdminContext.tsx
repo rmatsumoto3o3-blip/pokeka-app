@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
 const ADMIN_EMAILS = ['player1@pokeka.local']
 
@@ -29,12 +29,13 @@ export default function CityAdminProvider({
     const [flash, setFlash] = useState('')
 
     useEffect(() => {
+        const supabase = createClient()
         let alive = true
-        supabase.auth.getUser().then(({ data }) => {
-            const email = data.user?.email || ''
-            if (alive) setIsAdmin(ADMIN_EMAILS.includes(email))
-        }).catch(() => { })
-        return () => { alive = false }
+        const check = (email: string | undefined) => { if (alive) setIsAdmin(ADMIN_EMAILS.includes(email || '')) }
+        supabase.auth.getUser().then(({ data }) => check(data.user?.email)).catch(() => { })
+        // ログイン状態が後から変わっても追従
+        const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => check(session?.user?.email))
+        return () => { alive = false; sub.subscription.unsubscribe() }
     }, [])
 
     const save = useCallback(async (deckId: string, arch: string) => {
