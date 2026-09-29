@@ -665,11 +665,23 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         });
     }
 
+    // 盤面スナップショット（各イベントに付与し「状況→行動」を再現できるようにする）
+    const snap = () => ({
+        h: hand.length,
+        b: bench.filter(Boolean).length,
+        d: remaining.length,
+        pz: prizeCards.length,
+        tz: trash.length,
+        act: battleField ? (getTopCard(battleField)?.name || null) : null,
+        ae: battleField ? battleField.energyCount : 0,
+        tc: turnCount,
+    })
+
     const drawCards = (count: number) => {
         const drawn = remaining.slice(0, count)
         setHand(prev => [...prev, ...drawn])
         setRemaining(prev => prev.slice(count))
-        logEvent('draw', { p: idPrefix, n: count })
+        logEvent('draw', { p: idPrefix, n: count, ...snap() })
     }
 
     const mulligan = () => {
@@ -701,7 +713,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setRemaining(newDeck.slice(7))
         setMulliganReveal(null)
         showToast('手札を山札に戻して7枚引き直しました')
-        logEvent('mulligan', { p: idPrefix })
+        logEvent('mulligan', { p: idPrefix, ...snap() })
     }
 
     const increaseBenchSize = () => {
@@ -771,7 +783,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const playToBattleField = (handIndex: number) => {
         const card = hand[handIndex]
         if (!card) return
-        logEvent('play_active', { p: idPrefix, card: card.name, stack: !!battleField })
+        logEvent('play_active', { p: idPrefix, card: card.name, stack: !!battleField, ...snap() })
 
         if (battleField) {
             if (canStack(card, battleField)) {
@@ -809,6 +821,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const playToBench = (handIndex: number, targetIndex?: number) => {
         const card = hand[handIndex]
         if (!card) return
+        logEvent('play_bench', { p: idPrefix, card: card.name, ...snap() })
 
         if (targetIndex !== undefined) {
             setBench(currentBench => {
@@ -1031,7 +1044,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         newBench[index] = currentBattle // Can be null, that's fine
         setBench(newBench)
         closeMenu()
-        logEvent('swap_active', { p: idPrefix })
+        logEvent('swap_active', { p: idPrefix, ...snap() })
     }
 
     // performSwap logic consolidated into earlier definition
@@ -1043,7 +1056,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setHand(prev => [...prev, prize])
         setPrizeCards(prev => prev.filter((_, i) => i !== index))
         showToast('サイドを1枚取りました')
-        logEvent('prize_take', { p: idPrefix })
+        logEvent('prize_take', { p: idPrefix, ...snap() })
     }
 
     const takePrizeCards = (count: number) => {
@@ -1062,7 +1075,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     const shuffleDeck = () => {
         setRemaining(prev => [...prev].sort(() => Math.random() - 0.5))
         showToast('山札をシャッフルしました')
-        logEvent('shuffle', { p: idPrefix })
+        logEvent('shuffle', { p: idPrefix, ...snap() })
     }
 
     const nextTurn = () => {
@@ -1074,7 +1087,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         setSupporterUsedThisTurn(false)
         setEnergyAttachedThisTurn(false)
         setTurnCount(prev => prev + 1)
-        logEvent('turn_end', { p: idPrefix, turn: turnCount })
+        logEvent('turn_end', { p: idPrefix, turn: turnCount, ...snap() })
 
         // Mega Brave reset logic:
         // If it was used this turn, it becomes "used last turn" (still restricted).
@@ -1439,6 +1452,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         if (!attachMode) return
 
         const card = attachMode.card
+        logEvent('attach', { p: idPrefix, card: card.name, to: targetType, kind: isEnergy(card) ? 'energy' : isTool(card) ? 'tool' : 'other', ...snap() })
         let attached = false
 
         if (targetType === 'battle') {
