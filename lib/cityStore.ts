@@ -33,7 +33,7 @@ export function loadCompositionsForDate(date: string, codes: string[]): Promise<
             }
             return map
         } catch { return {} }
-    }, ['city-comps-v2', date], { revalidate: 3600, tags: ['city-data'] })()
+    }, ['city-comps-v3', date], { revalidate: 3600, tags: ['city-data'] })()
 }
 
 // 全デッキの代表カード名マップ（deck_code -> 代表カード）。月間・全期間の分布集計用。
@@ -101,7 +101,7 @@ export const loadDeckIndex = unstable_cache(async (): Promise<{
         }
     } catch { /* 空を返す */ }
     return { reps, cardNames: [...nameSet].sort((a, b) => a.localeCompare(b, 'ja')), cardCounts, total }
-}, ['city-deck-index-v1'], { revalidate: 3600, tags: ['city-data'] })
+}, ['city-deck-index-v2'], { revalidate: 3600, tags: ['city-data'] })
 
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
 export const loadExistingArchetypesDB = unstable_cache(async (): Promise<string[]> => {

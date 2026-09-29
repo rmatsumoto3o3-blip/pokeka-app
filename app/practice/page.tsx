@@ -1644,9 +1644,10 @@ function PracticeContent() {
                                             </DroppableZone>
 
                                             {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
-                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5 order-last md:order-none basis-full md:basis-auto">
+                                            {/* pointer-events-none：この大枠がボードのボタン(特にP2サイド)を覆ってクリックを奪う不具合対策。操作要素は auto で復帰 */}
+                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full sm:w-full md:mt-4 mx-0.5 order-last md:order-none basis-full md:basis-auto pointer-events-none">
                                                 {/* Player Toggle - Mobile Only */}
-                                                <div className="md:hidden flex flex-col gap-1 mb-1">
+                                                <div className="md:hidden flex flex-col gap-1 mb-1 pointer-events-auto">
                                                     <button 
                                                         onClick={() => setActivePlayer('player1')}
                                                         className={`px-3 py-1 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player1' ? 'bg-blue-600 text-white ring-2 ring-white scale-110' : 'bg-white text-blue-600 opacity-60'}`}
@@ -1662,7 +1663,7 @@ function PracticeContent() {
                                                 </div>
 
                                                 {/* Coin */}
-                                                <div className="bg-gray-50 rounded p-0.5 text-center w-[40px] md:w-full">
+                                                <div className="bg-gray-50 rounded p-0.5 text-center w-[40px] md:w-full pointer-events-auto">
                                                     <h3 className="text-[6px] sm:text-[8px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight md:block hidden">Coin</h3>
                                                     <div className="flex justify-center mb-0.5">
                                                         <div
@@ -1676,7 +1677,7 @@ function PracticeContent() {
                                                 </div>
 
                                                 {/* Damage */}
-                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full grid grid-cols-2 place-items-center md:flex md:flex-col md:flex-wrap justify-center gap-0.5">
+                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full grid grid-cols-2 place-items-center md:flex md:flex-col md:flex-wrap justify-center gap-0.5 pointer-events-auto">
                                                     <DraggableDamageCounter amount={100} />
                                                     <DraggableDamageCounter amount={50} />
                                                     <DraggableDamageCounter amount={10} />
