@@ -11,8 +11,17 @@ const SINK = process.env.PRACTICE_LOG_URL
 function noContent() { return new Response(null, { status: 204 }) }
 
 export async function POST(req: NextRequest) {
-    let body: { s?: string; d?: string | null; e?: unknown[]; m?: Record<string, unknown> }
+    let body: { s?: string; d?: string | null; e?: unknown[]; m?: Record<string, unknown>; battle?: Record<string, unknown> }
     try { body = await req.json() } catch { return noContent() }
+
+    // CPU対戦ログ：GASの action:"log" に転送（学習材料）
+    if (body.battle && typeof body.battle === 'object') {
+        try {
+            await fetch(SINK, { method: 'POST', headers: { 'content-type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ action: 'log', game: body.battle }) })
+        } catch { /* 無視 */ }
+        return noContent()
+    }
+
     const events = Array.isArray(body?.e) ? body.e : []
     if (!events.length) return noContent()
 
