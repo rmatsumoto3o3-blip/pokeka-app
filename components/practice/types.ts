@@ -184,6 +184,24 @@ export interface MeowthEXState {
     selectedIndex: number | null
 }
 
+// ナイトジョーカー（Nのゾロアークex）：ベンチの「Nのポケモン」の技をコピー。
+export interface NightJokerCopyableAttack {
+    pokemonName: string
+    attackName: string
+    damage: number                 // 固定ダメージ（可変技は 0）
+    variable?: 'counters' | 'trashEnergy' // ×系：ダメカン数／相手トラッシュの基本エネ数
+    perUnit?: number               // ×系の1単位あたりダメージ
+    note?: string                  // 追加効果のメモ（手動処理を促す）
+    benchDamage?: number           // ベンチにも与える追加ダメージ（ひだるまキャノン等）
+}
+
+export interface NightJokerState {
+    step: 'select' | 'count'       // 技選択 → （×系のみ）単位数入力
+    options: NightJokerCopyableAttack[]
+    selectedIndex: number | null
+    count: number
+}
+
 export interface IronLeavesEXState {
     active: boolean
     targetType: 'battle' | 'bench'

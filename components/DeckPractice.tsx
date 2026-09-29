@@ -45,6 +45,7 @@ import {
     type TatsugiriState,
     type OgerponState,
     type ZoroarkState,
+    type NightJokerState,
     type MeowthEXState,
     type IronLeavesEXState,
     type NPointUpState,
@@ -217,6 +218,9 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
     // Zoroark ex State
     const [zoroarkState, setZoroarkState] = useState<ZoroarkState | null>(null)
+
+    // Nのゾロアークex ナイトジョーカー State
+    const [nightJokerState, setNightJokerState] = useState<NightJokerState | null>(null)
 
     // Meowth ex State
     const [meowthEXState, setMeowthEXState] = useState<MeowthEXState | null>(null)
@@ -1119,6 +1123,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         tatsugiriState, setTatsugiriState,
         ogerponState, setOgerponState,
         zoroarkState, setZoroarkState,
+        nightJokerState, setNightJokerState,
         meowthEXState, setMeowthEXState,
         ironLeavesEXState, setIronLeavesEXState,
         nPointUpState, setNPointUpState,
@@ -1177,6 +1182,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useTatsugiri, handleTatsugiriSelect, handleTatsugiriConfirm,
         useOgerpon, handleOgerponSelect, handleOgerponConfirm,
         useZoroark, handleZoroarkSelect, handleZoroarkConfirm,
+        useNightJoker, handleNightJokerSelect, handleNightJokerSetCount, handleNightJokerConfirm,
         useFezandipiti, useDudunsparce,
         useMeowthEX, handleMeowthEXSelect, handleMeowthEXConfirm,
         useIronLeavesEX, handleIronLeavesEXClickPokemon,
@@ -1240,6 +1246,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         useTatsugiri,
         useOgerpon,
         useZoroark,
+        useNightJoker,
         useFezandipiti,
         useDudunsparce,
         useMeowthEX,
@@ -2180,6 +2187,11 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                 setOgerponState={setOgerponState}
                 zoroarkState={zoroarkState}
                 setZoroarkState={setZoroarkState}
+                nightJokerState={nightJokerState}
+                setNightJokerState={setNightJokerState}
+                handleNightJokerSelect={handleNightJokerSelect}
+                handleNightJokerSetCount={handleNightJokerSetCount}
+                handleNightJokerConfirm={handleNightJokerConfirm}
                 meowthEXState={meowthEXState}
                 ironLeavesEXState={ironLeavesEXState}
                 setIronLeavesEXState={setIronLeavesEXState}

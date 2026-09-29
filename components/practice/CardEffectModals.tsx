@@ -19,6 +19,7 @@ import {
     type TatsugiriState,
     type OgerponState,
     type ZoroarkState,
+    type NightJokerState,
     type MeowthEXState,
     type IronLeavesEXState,
     type NPointUpState,
@@ -92,6 +93,11 @@ interface CardEffectModalsProps {
     setOgerponState: React.Dispatch<React.SetStateAction<OgerponState | null>>
     zoroarkState: ZoroarkState | null
     setZoroarkState: React.Dispatch<React.SetStateAction<ZoroarkState | null>>
+    nightJokerState: NightJokerState | null
+    setNightJokerState: React.Dispatch<React.SetStateAction<NightJokerState | null>>
+    handleNightJokerSelect: (i: number) => void
+    handleNightJokerSetCount: (n: number) => void
+    handleNightJokerConfirm: () => void
     meowthEXState: MeowthEXState | null
     ironLeavesEXState: IronLeavesEXState | null
     setIronLeavesEXState: React.Dispatch<React.SetStateAction<IronLeavesEXState | null>>
@@ -234,6 +240,8 @@ export function CardEffectModals({
     tatsugiriState,
     ogerponState, setOgerponState,
     zoroarkState, setZoroarkState,
+    nightJokerState, setNightJokerState,
+    handleNightJokerSelect, handleNightJokerSetCount, handleNightJokerConfirm,
     meowthEXState,
     ironLeavesEXState, setIronLeavesEXState,
     nPointUpState, setNPointUpState,
@@ -645,6 +653,63 @@ export function CardEffectModals({
                                 決定
                             </button>
                             <button onClick={() => setZoroarkState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">中止</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Nのゾロアークex ナイトジョーカー Modal */}
+            {nightJokerState && (
+                <div className="fixed inset-0 bg-black/60 z-[1000] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-2xl p-6 max-w-lg w-full animate-fade-in-up">
+                        <div className="text-center mb-4">
+                            <h2 className="text-xl font-bold text-gray-800">ナイトジョーカー</h2>
+                            <p className="text-gray-600 text-sm mt-1">ベンチの「Nのポケモン」の技を1つ選び、このワザとして使います。</p>
+                        </div>
+
+                        {nightJokerState.step === 'select' && (
+                            <div className="space-y-2 mb-4">
+                                {nightJokerState.options.map((opt, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleNightJokerSelect(i)}
+                                        className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${nightJokerState.selectedIndex === i ? 'border-gray-800 bg-gray-100' : 'border-gray-200 hover:bg-gray-50'}`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-gray-800">{opt.attackName}</span>
+                                            <span className="text-sm font-bold text-red-600">{opt.variable ? `${opt.perUnit}×` : `${opt.damage}`}</span>
+                                        </div>
+                                        <div className="text-[11px] text-gray-500">{opt.pokemonName}{opt.note ? ` ／ ${opt.note}` : ''}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {nightJokerState.step === 'count' && nightJokerState.selectedIndex !== null && (() => {
+                            const opt = nightJokerState.options[nightJokerState.selectedIndex]
+                            const unitLabel = opt.variable === 'counters' ? 'このポケモンのダメカンの数' : '相手トラッシュの基本エネの枚数'
+                            return (
+                                <div className="mb-4 text-center">
+                                    <p className="text-sm text-gray-700 mb-2">{opt.attackName}：{unitLabel}を入力（×{opt.perUnit}）</p>
+                                    <div className="flex items-center justify-center gap-3">
+                                        <button onClick={() => handleNightJokerSetCount(nightJokerState.count - 1)} className="w-9 h-9 rounded-full bg-gray-200 text-gray-800 font-bold">−</button>
+                                        <span className="text-2xl font-bold text-gray-800 w-12">{nightJokerState.count}</span>
+                                        <button onClick={() => handleNightJokerSetCount(nightJokerState.count + 1)} className="w-9 h-9 rounded-full bg-gray-200 text-gray-800 font-bold">＋</button>
+                                    </div>
+                                    <p className="text-red-600 font-bold mt-2">= {(opt.perUnit || 0) * nightJokerState.count} ダメージ</p>
+                                </div>
+                            )
+                        })()}
+
+                        <div className="flex justify-center gap-3">
+                            <button
+                                onClick={handleNightJokerConfirm}
+                                disabled={nightJokerState.selectedIndex === null}
+                                className="bg-gray-800 text-white font-bold px-8 py-2 rounded-full disabled:opacity-40 hover:bg-gray-900"
+                            >
+                                このワザを使う
+                            </button>
+                            <button onClick={() => setNightJokerState(null)} className="bg-gray-200 text-gray-800 font-bold px-8 py-2 rounded-full">キャンセル</button>
                         </div>
                     </div>
                 </div>

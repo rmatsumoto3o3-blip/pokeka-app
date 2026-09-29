@@ -14,6 +14,8 @@ import {
     type OgerponState,
     type ZoroarkState,
     type MeowthEXState,
+    type NightJokerState,
+    type NightJokerCopyableAttack,
     type IronLeavesEXState,
     type NPointUpState,
     type CyanoState,
@@ -83,6 +85,8 @@ export interface CardEffectHandlerParams {
     setZoroarkState: Dispatch<SetStateAction<ZoroarkState | null>>
     meowthEXState: MeowthEXState | null
     setMeowthEXState: Dispatch<SetStateAction<MeowthEXState | null>>
+    nightJokerState: NightJokerState | null
+    setNightJokerState: Dispatch<SetStateAction<NightJokerState | null>>
     ironLeavesEXState: IronLeavesEXState | null
     setIronLeavesEXState: Dispatch<SetStateAction<IronLeavesEXState | null>>
     nPointUpState: NPointUpState | null
@@ -194,6 +198,7 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         ogerponState, setOgerponState,
         zoroarkState, setZoroarkState,
         meowthEXState, setMeowthEXState,
+        nightJokerState, setNightJokerState,
         ironLeavesEXState, setIronLeavesEXState,
         nPointUpState, setNPointUpState,
         cyanoState, setCyanoState,
@@ -900,6 +905,77 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         }
 
         setZoroarkState(null)
+    }
+
+    // Nのゾロアークex ナイトジョーカー：ベンチの「Nのポケモン」の技を1つ選び、このワザとして使う。
+    // コピーできる技データ（Nのゾロアークデッキ収録カード。数値は公式ページ準拠）。
+    const N_JOKER_ATTACKS: Record<string, NightJokerCopyableAttack[]> = {
+        'Nのゼクロム': [
+            { pokemonName: 'Nのゼクロム', attackName: 'ひきさく', damage: 70, note: '相手にかかっている効果を計算しない' },
+            { pokemonName: 'Nのゼクロム', attackName: 'ランページサンダー', damage: 250, note: '次の自分の番、この個体はワザ不可（入れ替えて別個体を出せば使用可）' },
+        ],
+        'Nのレシラム': [
+            { pokemonName: 'Nのレシラム', attackName: 'パワーレイジ', damage: 0, variable: 'counters', perUnit: 20, note: 'このポケモンにのっているダメカンの数×20' },
+            { pokemonName: 'Nのレシラム', attackName: 'イノセントフレイム', damage: 170 },
+        ],
+        'Nのヒヒダルマ': [
+            { pokemonName: 'Nのヒヒダルマ', attackName: 'バックドラフト', damage: 0, variable: 'trashEnergy', perUnit: 30, note: '相手トラッシュの基本エネの枚数×30' },
+            { pokemonName: 'Nのヒヒダルマ', attackName: 'ひだるまキャノン', damage: 90, benchDamage: 90, note: 'このポケモンのエネをすべてトラッシュ。相手ベンチ1匹にも90（弱点・抵抗力計算なし）' },
+        ],
+        'Nのダルマッカ': [
+            { pokemonName: 'Nのダルマッカ', attackName: 'ころがりタックル', damage: 20 },
+        ],
+        'Nのゾロア': [
+            { pokemonName: 'Nのゾロア', attackName: 'ひっかく', damage: 20 },
+        ],
+    }
+
+    const useNightJoker = () => {
+        // ベンチにいる「Nのポケモン」の技を集める（進化スタックの一番上＝現在のカードで判定）。
+        // スタックの一番上はエネ/どうぐのことがあるので、上から見て最初の「ポケモン」を採用。
+        const benchNames = bench
+            .filter((s): s is CardStack => !!s)
+            .map(s => {
+                const poke = [...s.cards].reverse().find(c => c.supertype === 'Pokémon' || c.supertype === 'Pokemon')
+                return poke?.name || ''
+            })
+        const options: NightJokerCopyableAttack[] = []
+        for (const nm of benchNames) {
+            const atks = N_JOKER_ATTACKS[nm]
+            if (atks) options.push(...atks)
+        }
+        if (options.length === 0) {
+            alert('ナイトジョーカー：コピーできる「Nのポケモン」がベンチにいません')
+            return
+        }
+        setNightJokerState({ step: 'select', options, selectedIndex: null, count: 1 })
+    }
+
+    const handleNightJokerSelect = (index: number) => {
+        setNightJokerState(prev => {
+            if (!prev) return null
+            const opt = prev.options[index]
+            // ×系はダメージ確定に単位数の入力が必要。
+            if (opt.variable) return { ...prev, step: 'count', selectedIndex: index }
+            return { ...prev, selectedIndex: index }
+        })
+    }
+
+    const handleNightJokerSetCount = (count: number) => {
+        setNightJokerState(prev => prev ? { ...prev, count: Math.max(0, count) } : null)
+    }
+
+    const handleNightJokerConfirm = () => {
+        if (!nightJokerState || nightJokerState.selectedIndex === null) return
+        const opt = nightJokerState.options[nightJokerState.selectedIndex]
+        const dmg = opt.variable ? (opt.perUnit || 0) * nightJokerState.count : opt.damage
+        // 相手バトル場へダメージ適用（他ワザと同じ経路）。
+        onAttackTrigger?.(dmg, 'battle', 0)
+        let msg = `ナイトジョーカー → ${opt.attackName}（${opt.pokemonName}）：${dmg}ダメージ`
+        if (opt.benchDamage) msg += `。相手ベンチ1匹にも${opt.benchDamage}は手動でのせてください`
+        if (opt.note) msg += `／${opt.note}`
+        showToast(msg)
+        setNightJokerState(null)
     }
 
     // Fezandipiti ex (Flip the Script) Logic
@@ -2889,6 +2965,10 @@ export function useCardEffectHandlers(params: CardEffectHandlerParams) {
         useZoroark,
         handleZoroarkSelect,
         handleZoroarkConfirm,
+        useNightJoker,
+        handleNightJokerSelect,
+        handleNightJokerSetCount,
+        handleNightJokerConfirm,
         useFezandipiti,
         useDudunsparce,
         useMeowthEX,

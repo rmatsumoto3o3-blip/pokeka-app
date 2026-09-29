@@ -1,46 +1,50 @@
 /**
- * CPU対戦＋一人回しログ 統合 GAS Web App（1スプレッドシート・1デプロイ・1URL）
- * 役割：①CPU思考(think) ②対戦ログ(log→battle_logsタブ) ③一人回しログ(practice_log→practice_logsタブ)
+ * CPU対戦＋ログ 統合 GAS Web App（1スプレッドシート・1デプロイ・1URL）
  *
- * 方針：GASのクォータはGoogleアカウント単位なので、GASを分けても隔離にならない。
- *       1プロジェクトで action により振り分け、タブだけ分ける。過負荷対策はクライアントの
- *       バッチ送信＋（必要なら）%サンプリングで行う。
- *  - CORS回避：クライアントは Content-Type: text/plain でPOST。GASはJSON文字列を返す。
+ * 役割：
+ *  ① CPU思考(think)：盤面(state)＋合法手(legalMoves)を受け取り、採点して1手返す
+ *  ② 対戦ログ(log)：CPU対戦の結果を battle_logs タブに追記
+ *  ③ 一人回しログ(practice_log)：一般ユーザーの匿名プレイを practice_logs タブに追記
+ *  ④ ログ取得(doGet ?dump=practice)：practice_logs の最新行をJSONで返す（分析用）
+ *
+ * 方針：ルール（合法手の生成・適用・勝敗判定）はブラウザ側エンジンが担当。GASは軽量。
+ *       CORS回避：クライアントは Content-Type: text/plain でPOST。GASはJSON文字列を返す。
  *
  * デプロイ：Apps Script に貼り、[デプロイ]→[ウェブアプリ]（実行=自分／アクセス=全員）。
- *   発行URLを CPU思考(CPU_ENDPOINT) と 一人回しログ(NEXT_PUBLIC_PRACTICE_LOG_URL) の両方に使う。
  *
  * ---- 通信契約 ----
  * 思考: { action:"think", state:{...}, legalMoves:[...] } → { ok, moveIndex, reason }
- * 対戦ログ: { action:"log", game:{...} } → { ok, logId }
+ * 対戦ログ: { action:"log", game:{ user, humanDeck, cpuDeck, result, turns, trace, cpuVersion } } → { ok, logId }
  * 一人回しログ: { action:"practice_log", session_id, deck_code, events:[{t,ts,p,...}], meta } → { ok, n }
+ * ログ取得(GET): ?dump=practice&n=300 → { ok, count, rows:[[受信時刻, session, deck, type, ts, player, event_json, meta], ...] }
  */
 
 // 思考の重み（ここを触れば強さ/性格が変わる。後で設定シート化も可）
 var WEIGHTS = {
-  ko: 100,
-  damage: 0.3,
-  selfDamage: -0.2,
-  attachToAttacker: 12,
-  evolve: 14,
-  draw: 8,
-  drawLowHandBonus: 2,
-  search: 9,
-  bench: 6,
-  benchOverextendPenalty: -4,
-  retreat: 3,
-  retreatCostPenalty: -1.5,
-  pass: -50
+  ko: 100,          // 相手をきぜつさせる
+  damage: 0.3,      // 与ダメージ1あたり
+  selfDamage: -0.2, // 自分に乗る反動ダメージ1あたり
+  attachToAttacker: 12, // アタッカーにエネを付ける（攻撃準備）
+  evolve: 14,       // 進化して盤面強化
+  draw: 8,          // 手札が細い時のドロー
+  drawLowHandBonus: 2,  // 手札が少ないほどドローの価値↑（1枚不足あたり）
+  search: 9,        // 必要札サーチ
+  bench: 6,         // ベンチ展開（盤面の厚み）
+  benchOverextendPenalty: -4, // 展開しすぎ（既に3体以上）
+  retreat: 3,       // 逃げ（不利な前を下げる）
+  retreatCostPenalty: -1.5,   // 逃げエネ1あたり
+  pass: -50         // 何もしないは最低評価（他に手があれば選ばない）
 };
 
 var LOG_SHEET_NAME = 'battle_logs';
 var PRACTICE_SHEET_NAME = 'practice_logs';
 
+// ============================ POST ルーティング ============================
 function doPost(e) {
   try {
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (body.action === 'think') return json_(think_(body));
-    if (body.action === 'log')   return json_(log_(body));
+    if (body.action === 'log') return json_(log_(body));
     if (body.action === 'practice_log') return json_(practiceLog_(body));
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
@@ -48,12 +52,21 @@ function doPost(e) {
   }
 }
 
-// 疎通確認用
-function doGet() {
+// ============================ GET（疎通確認 ＋ ログ取得） ============================
+function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p.dump === 'practice') {
+    var sh = getPracticeSheet_();
+    var last = sh.getLastRow();
+    var n = Math.min(parseInt(p.n || '300', 10) || 300, 3000);
+    var start = Math.max(2, last - n + 1); // 1行目はヘッダ
+    var rows = last >= 2 ? sh.getRange(start, 1, last - start + 1, 8).getValues() : [];
+    return json_({ ok: true, count: rows.length, rows: rows });
+  }
   return json_({ ok: true, service: 'cpu_battle', now: new Date().toISOString() });
 }
 
-// ---- 思考：合法手を採点して最善を返す ----
+// ============================ ① 思考 ============================
 function think_(body) {
   var state = body.state || {};
   var moves = body.legalMoves || [];
@@ -82,7 +95,7 @@ function scoreMove_(m, st) {
       break;
     case 'evolve': score += w.evolve; reason = '進化'; break;
     case 'draw': {
-      var deficit = Math.max(0, 5 - (st.myHand || 0));
+      var deficit = Math.max(0, 5 - (st.myHand || 0)); // 手札5枚を基準に不足ぶん
       score += w.draw + deficit * w.drawLowHandBonus;
       reason = 'ドロー';
       break;
@@ -97,12 +110,12 @@ function scoreMove_(m, st) {
       reason = '逃げ';
       break;
     case 'pass': score += w.pass; reason = 'パス'; break;
-    default: score += 1;
+    default: score += 1; // 未知タイプは最小の正
   }
   return { score: score, reason: reason };
 }
 
-// ---- 対戦ログ保存：battle_logs に1行追記 ----
+// ============================ ② 対戦ログ（battle_logs） ============================
 function log_(body) {
   var g = body.game || {};
   var sh = getLogSheet_();
@@ -128,7 +141,7 @@ function getLogSheet_() {
   return sh;
 }
 
-// ---- 一人回しログ保存：1イベント=1行で practice_logs に追記 ----
+// ============================ ③ 一人回しログ（practice_logs） ============================
 function practiceLog_(body) {
   var events = body.events || [];
   if (!events.length) return { ok: true, n: 0 };
@@ -154,6 +167,7 @@ function getPracticeSheet_() {
   return sh;
 }
 
+// ============================ 共通 ============================
 function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }

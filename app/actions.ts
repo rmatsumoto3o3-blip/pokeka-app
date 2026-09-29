@@ -4,6 +4,7 @@ import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
 import { getFirebaseDb } from '@/lib/firebase/admin'
+import { buildCityEnvDecks } from '@/lib/cityStore'
 
 // デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
 // キャッシュヒット時は fetchDeckData を呼ばない＝公式サイトを叩かない。
@@ -1804,22 +1805,37 @@ export async function deleteGundamCommunityDeckAction(id: string): Promise<{ suc
 // ローカル等でFirebase未設定/空なら本番の公開APIにサーバ間フォールバック（CORS不要）。
 export type PracticeEnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
 export async function getEnvDecksForPractice(game: string = 'pokemon'): Promise<PracticeEnvDeck[]> {
+    // ①ベース（Firebase environmentDecks/{game}、未設定/空なら公開APIへフォールバック）
+    let base: PracticeEnvDeck[] = []
     try {
         const db = getFirebaseDb()
         if (db) {
             const snap = await db.collection('environmentDecks').doc(game).get()
             const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as PracticeEnvDeck[]) : []
-            if (decks.length) return decks
+            if (decks.length) base = decks
         }
     } catch (e) {
         console.error('getEnvDecksForPractice firebase error:', e)
     }
+    if (!base.length) {
+        try {
+            const res = await fetch(`https://www.pokelix.jp/api/env-decks?game=${encodeURIComponent(game)}`, { next: { revalidate: 3600 } })
+            const json = await res.json().catch(() => ({}))
+            if (Array.isArray(json?.decks)) base = json.decks as PracticeEnvDeck[]
+        } catch (e) {
+            console.error('getEnvDecksForPractice fallback error:', e)
+        }
+    }
+    // ②シティリーグのデッキ（Supabase由来）を合成。pokemonのみ。
+    //   /env や /archetypes と同じ「ベース＋シティ」を一人回しの選択肢にも反映する。
+    if (game !== 'pokemon') return base
     try {
-        const res = await fetch(`https://www.pokelix.jp/api/env-decks?game=${encodeURIComponent(game)}`, { next: { revalidate: 3600 } })
-        const json = await res.json().catch(() => ({}))
-        return Array.isArray(json?.decks) ? (json.decks as PracticeEnvDeck[]) : []
+        const city = await buildCityEnvDecks()
+        const seen = new Set(base.map(d => d.deckCode))
+        const cityDecks = city.filter(d => !seen.has(d.deckCode)) as PracticeEnvDeck[]
+        return [...base, ...cityDecks]
     } catch (e) {
-        console.error('getEnvDecksForPractice fallback error:', e)
-        return []
+        console.error('getEnvDecksForPractice city merge error:', e)
+        return base
     }
 }

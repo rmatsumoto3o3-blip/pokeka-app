@@ -50,6 +50,7 @@ export interface MenuBuilderParams {
     useTatsugiri: () => void
     useOgerpon: (source: string, index: number) => void
     useZoroark: () => void
+    useNightJoker: () => void
     useFezandipiti: () => void
     useDudunsparce: (source: 'battle' | 'bench', index: number) => void
     useMeowthEX: (handIndex: number) => void
@@ -117,6 +118,7 @@ export function useMenuBuilder(params: MenuBuilderParams) {
         useTatsugiri,
         useOgerpon,
         useZoroark,
+        useNightJoker,
         useFezandipiti,
         useDudunsparce,
         useMeowthEX,
@@ -586,6 +588,18 @@ export function useMenuBuilder(params: MenuBuilderParams) {
                     closeMenu()
                 },
                 color: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            })
+        }
+
+        // ナイトジョーカーはバトル場のNのゾロアークexが使うワザ。
+        if (name === 'Nのゾロアークex' && source === 'battle') {
+            actions.push({
+                label: 'ナイトジョーカー (ワザ)',
+                action: () => {
+                    useNightJoker()
+                    closeMenu()
+                },
+                color: 'bg-gray-800 text-white hover:bg-gray-900'
             })
         }
 
