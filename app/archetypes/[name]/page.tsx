@@ -4,7 +4,7 @@ import { unstable_cache } from 'next/cache'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 import { getDeckDataAction } from '@/app/actions'
 import type { CardData } from '@/lib/deckParser'
 
@@ -61,10 +61,7 @@ type Adoption = Record<string, { totalDecks: number; cards: AggCard[] }>
 const getCurrentAdoptionCached = unstable_cache(
     async (): Promise<Adoption> => {
         try {
-            const db = getFirebaseDb()
-            if (!db) return {}
-            const snap = await db.collection('environmentDecks').doc('pokemon').get()
-            const decks = (snap.exists ? (snap.data()?.decks) : []) as { deckCode?: string; archetype?: string }[] || []
+            const decks = (await loadMergedPokemonEnvDecks()) as { deckCode?: string; archetype?: string }[]
             const targets = decks.filter(d => d.deckCode && (d.archetype || '').trim())
 
             const expanded = await mapLimit(targets, 6, async (d): Promise<{ archetype: string; cards: CardData[] }> => {
@@ -118,10 +115,7 @@ type ArchDeck = { deckCode: string; eventName: string; eventDate: string; rank: 
 const getArchetypeDecksCached = unstable_cache(
     async (): Promise<Record<string, ArchDeck[]>> => {
         try {
-            const db = getFirebaseDb()
-            if (!db) return {}
-            const snap = await db.collection('environmentDecks').doc('pokemon').get()
-            const decks = (snap.exists ? (snap.data()?.decks) : []) as { deckCode?: string; archetype?: string; eventName?: string; eventDate?: string; rank?: string }[] || []
+            const decks = (await loadMergedPokemonEnvDecks()) as { deckCode?: string; archetype?: string; eventName?: string; eventDate?: string; rank?: string }[]
             const out: Record<string, ArchDeck[]> = {}
             for (const d of decks) {
                 const arch = (d.archetype || '').trim()

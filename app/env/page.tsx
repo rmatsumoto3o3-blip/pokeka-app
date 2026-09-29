@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 import { eventDateSortKey } from '@/lib/eventDate'
 
 // 環境デッキ一覧（Firebase由来・画像なし・Supabase不使用）。
@@ -26,12 +26,7 @@ const rankStyle = (r: string) => {
 }
 
 async function getEnvDecks(): Promise<EnvDeck[]> {
-    const db = getFirebaseDb()
-    if (!db) return []
-    const snap = await db.collection('environmentDecks').doc('pokemon').get()
-    const data = snap.exists ? snap.data() : null
-    const decks = Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
-    return decks
+    return (await loadMergedPokemonEnvDecks()) as EnvDeck[]
 }
 
 export default async function EnvDecksPage() {

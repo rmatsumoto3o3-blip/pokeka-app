@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 import { getDeckDataAction } from '@/app/actions'
 
 // 環境デッキ詳細（Firebaseでメタ取得＋デッキコードからカード展開）。Supabase不使用。
@@ -13,13 +13,7 @@ export const dynamicParams = true
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
 
 async function getAllDecks(): Promise<EnvDeck[]> {
-    const db = getFirebaseDb()
-    if (!db) return []
-    try {
-        const snap = await db.collection('environmentDecks').doc('pokemon').get()
-        const data = snap.exists ? snap.data() : null
-        return Array.isArray(data?.decks) ? (data!.decks as EnvDeck[]) : []
-    } catch { return [] }
+    return (await loadMergedPokemonEnvDecks()) as EnvDeck[]
 }
 
 async function getMeta(code: string): Promise<EnvDeck | null> {

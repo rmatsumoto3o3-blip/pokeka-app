@@ -5,29 +5,13 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 
 // 環境デッキ（Firebase・トップ最上部用）。Supabaseを使わずに常時表示。
 type EnvDeckTop = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
-// Firebase(environmentDecks/pokemon)を読み、未設定/空なら本番の公開APIにフォールバック（ローカル開発でも実データ）。
-async function getPokemonEnvDecks(): Promise<EnvDeckTop[]> {
-  try {
-    const db = getFirebaseDb()
-    if (db) {
-      const snap = await db.collection('environmentDecks').doc('pokemon').get()
-      const decks = Array.isArray(snap.data()?.decks) ? (snap.data()!.decks as EnvDeckTop[]) : []
-      if (decks.length) return decks
-    }
-  } catch { /* fallthrough */ }
-  try {
-    const res = await fetch('https://www.pokelix.jp/api/env-decks?game=pokemon', { next: { revalidate: 3600 } })
-    const json = await res.json().catch(() => ({}))
-    return Array.isArray(json?.decks) ? (json.decks as EnvDeckTop[]) : []
-  } catch { return [] }
-}
-
+// 既存の環境デッキ（Firebase/pokemon）＋ シティリーグ（Supabase由来）を合体して取得。
 async function getEnvDecksForTop(): Promise<EnvDeckTop[]> {
-  return getPokemonEnvDecks()
+  return loadMergedPokemonEnvDecks()
 }
 
 // 使用率ランキング：環境デッキ（今の大会＝environmentDecks）から集計。
@@ -54,7 +38,7 @@ export type TierMeta = { archetype: string; deckCount: number; winCount: number;
 const getTierMetasCached = unstable_cache(
   async (): Promise<TierMeta[]> => {
     try {
-      const decks = await getPokemonEnvDecks()
+      const decks = await loadMergedPokemonEnvDecks()
       const total = decks.length || 1
       const g = new Map<string, { deckCount: number; winCount: number; code: string }>()
       for (const d of decks) {

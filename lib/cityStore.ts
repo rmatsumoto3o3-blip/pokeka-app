@@ -1,7 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
-import { representativeCard } from './city'
+import { representativeCard, resolveArchetypeFromRep } from './city'
 import type { ArchetypeMap, EventRec, DeckCache, Card } from './city'
+
+// City（オープン）を環境デッキ形式に変換。既存の環境デッキ(Firebase)と合体して各セクションに流す用。
+export type EnvDeckLike = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
+export async function buildCityEnvDecks(): Promise<EnvDeckLike[]> {
+    const [events, idx, map] = await Promise.all([loadEventsDB(), loadDeckIndex(), loadArchetypeMapDB()])
+    const rankLabel = (r: number) => r === 1 ? '優勝' : r === 2 ? '準優勝' : r <= 4 ? 'TOP4' : r <= 8 ? 'TOP8' : 'ベスト16'
+    const fmt = (d: string) => /^\d{8}$/.test(d) ? `${+d.slice(4, 6)}/${+d.slice(6, 8)}` : d
+    const out: EnvDeckLike[] = []
+    const seen = new Set<string>()
+    for (const ev of events) {
+        if (ev.league !== 'オープン') continue
+        for (const r of ev.results) {
+            if (!r.deck_id || seen.has(r.deck_id)) continue
+            seen.add(r.deck_id)
+            const arch = resolveArchetypeFromRep(r.deck_id, idx.reps[r.deck_id], map)
+            if (!arch) continue
+            out.push({ deckCode: r.deck_id, archetype: arch, eventName: `シティリーグ ${ev.shop || ''}`.trim(), eventDate: fmt(ev.date), rank: rankLabel(r.rank) })
+        }
+    }
+    return out
+}
 
 // 読み取り用（公開SELECT・anonキー）
 function anon() {

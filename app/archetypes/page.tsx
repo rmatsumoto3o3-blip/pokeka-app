@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { unstable_cache } from 'next/cache'
 import PublicHeader from '@/components/PublicHeader'
-import { getFirebaseDb } from '@/lib/firebase/admin'
+import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 
 // 採用率・使用率ランキング一覧。環境デッキ(environmentDecks)由来・Supabase不使用。
 // トップの使用率ランキング／採用率詳細と同じ源なので数字が一致し、詳細も404にならない。
@@ -26,10 +26,7 @@ type Ranked = { name: string; deckCount: number; winCount: number; share: number
 const getRankingCached = unstable_cache(
     async (): Promise<{ ranked: Ranked[]; totalDecks: number }> => {
         try {
-            const db = getFirebaseDb()
-            if (!db) return { ranked: [], totalDecks: 0 }
-            const snap = await db.collection('environmentDecks').doc('pokemon').get()
-            const decks = (snap.exists ? (snap.data()?.decks) : []) as EnvDeck[] || []
+            const decks = (await loadMergedPokemonEnvDecks()) as EnvDeck[]
             const map = new Map<string, { deckCount: number; winCount: number }>()
             for (const d of decks) {
                 const a = (d.archetype || '').trim()
