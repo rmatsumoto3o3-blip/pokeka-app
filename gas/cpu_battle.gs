@@ -1,6 +1,6 @@
 /**
- * CPU対戦 裏ツール用 GAS Web App（＋一人回しプレイログ受け口）
- * 役割：①思考（ルールベースで最善手を選ぶ）②対戦ログの保存 ③一人回しログの保存
+ * CPU対戦 裏ツール用 GAS Web App
+ * 役割：①思考（ルールベースで最善手を選ぶ）②対戦ログの保存（一人回しログは別GAS）
  *
  * 設計方針：
  *  - ルール（合法手の生成・適用・勝敗判定）はブラウザ側エンジンが担当。
@@ -14,7 +14,7 @@
  * ---- 通信契約 ----
  * 思考: { action:"think", state:{...}, legalMoves:[...] } → { ok, moveIndex, reason }
  * 対戦ログ: { action:"log", game:{...} } → { ok, logId }
- * 一人回しログ: { action:"practice_log", session_id, deck_code, events:[{t,ts,...}], meta } → { ok, n }
+ * ※ 一人回しログは別GAS(practice_logs.gs)に分離（思考のクォータ・速度に影響させない）。
  */
 
 // 思考の重み（ここを触れば強さ/性格が変わる。後で設定シート化も可）
@@ -35,14 +35,12 @@ var WEIGHTS = {
 };
 
 var LOG_SHEET_NAME = 'battle_logs';
-var PRACTICE_SHEET_NAME = 'practice_logs';
 
 function doPost(e) {
   try {
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (body.action === 'think') return json_(think_(body));
     if (body.action === 'log')   return json_(log_(body));
-    if (body.action === 'practice_log') return json_(practiceLog_(body));
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -125,32 +123,6 @@ function getLogSheet_() {
   if (!sh) {
     sh = ss.insertSheet(LOG_SHEET_NAME);
     sh.appendRow(['createdAt', 'logId', 'user', 'humanDeck', 'cpuDeck', 'result', 'turns', 'cpuVersion', 'trace']);
-  }
-  return sh;
-}
-
-// ---- 一人回しログ保存：1イベント=1行で practice_logs に追記 ----
-function practiceLog_(body) {
-  var events = body.events || [];
-  if (!events.length) return { ok: true, n: 0 };
-  var sh = getPracticeSheet_();
-  var now = new Date();
-  var sid = String(body.session_id || '');
-  var deck = String(body.deck_code || '');
-  var metaStr = body.meta ? JSON.stringify(body.meta) : '';
-  var rows = events.map(function (ev) {
-    return [now, sid, deck, String(ev.t || ''), ev.ts || '', ev.p || '', JSON.stringify(ev), metaStr];
-  });
-  sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-  return { ok: true, n: rows.length };
-}
-
-function getPracticeSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(PRACTICE_SHEET_NAME);
-  if (!sh) {
-    sh = ss.insertSheet(PRACTICE_SHEET_NAME);
-    sh.appendRow(['received_at', 'session_id', 'deck_code', 'type', 'ts_ms', 'player', 'event_json', 'meta']);
   }
   return sh;
 }
