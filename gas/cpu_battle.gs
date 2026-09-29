@@ -1,20 +1,19 @@
 /**
- * CPU対戦 裏ツール用 GAS Web App
- * 役割：①思考（ルールベースで最善手を選ぶ）②対戦ログの保存（一人回しログは別GAS）
+ * CPU対戦＋一人回しログ 統合 GAS Web App（1スプレッドシート・1デプロイ・1URL）
+ * 役割：①CPU思考(think) ②対戦ログ(log→battle_logsタブ) ③一人回しログ(practice_log→practice_logsタブ)
  *
- * 設計方針：
- *  - ルール（合法手の生成・適用・勝敗判定）はブラウザ側エンジンが担当。
- *  - GASは「盤面(state)＋合法手(legalMoves)」を受け取り、各手をヒューリスティックで採点して1手返すだけ。
- *  - CORS回避：クライアントは Content-Type: text/plain でPOST（プリフライトを避ける）。GASはJSON文字列を返す。
+ * 方針：GASのクォータはGoogleアカウント単位なので、GASを分けても隔離にならない。
+ *       1プロジェクトで action により振り分け、タブだけ分ける。過負荷対策はクライアントの
+ *       バッチ送信＋（必要なら）%サンプリングで行う。
+ *  - CORS回避：クライアントは Content-Type: text/plain でPOST。GASはJSON文字列を返す。
  *
- * デプロイ：拡張機能→Apps Script に本ファイルを貼り、[デプロイ]→[ウェブアプリ]
- *   実行ユーザー=自分 / アクセス=全員。発行URLをフロントに設定
- *   （CPU思考: CPU_ENDPOINT / 一人回しログ: NEXT_PUBLIC_PRACTICE_LOG_URL）。
+ * デプロイ：Apps Script に貼り、[デプロイ]→[ウェブアプリ]（実行=自分／アクセス=全員）。
+ *   発行URLを CPU思考(CPU_ENDPOINT) と 一人回しログ(NEXT_PUBLIC_PRACTICE_LOG_URL) の両方に使う。
  *
  * ---- 通信契約 ----
  * 思考: { action:"think", state:{...}, legalMoves:[...] } → { ok, moveIndex, reason }
  * 対戦ログ: { action:"log", game:{...} } → { ok, logId }
- * ※ 一人回しログは別GAS(practice_logs.gs)に分離（思考のクォータ・速度に影響させない）。
+ * 一人回しログ: { action:"practice_log", session_id, deck_code, events:[{t,ts,p,...}], meta } → { ok, n }
  */
 
 // 思考の重み（ここを触れば強さ/性格が変わる。後で設定シート化も可）
@@ -35,12 +34,14 @@ var WEIGHTS = {
 };
 
 var LOG_SHEET_NAME = 'battle_logs';
+var PRACTICE_SHEET_NAME = 'practice_logs';
 
 function doPost(e) {
   try {
     var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (body.action === 'think') return json_(think_(body));
     if (body.action === 'log')   return json_(log_(body));
+    if (body.action === 'practice_log') return json_(practiceLog_(body));
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err) });
@@ -101,7 +102,7 @@ function scoreMove_(m, st) {
   return { score: score, reason: reason };
 }
 
-// ---- 対戦ログ保存：シートに1行追記 ----
+// ---- 対戦ログ保存：battle_logs に1行追記 ----
 function log_(body) {
   var g = body.game || {};
   var sh = getLogSheet_();
@@ -127,8 +128,32 @@ function getLogSheet_() {
   return sh;
 }
 
+// ---- 一人回しログ保存：1イベント=1行で practice_logs に追記 ----
+function practiceLog_(body) {
+  var events = body.events || [];
+  if (!events.length) return { ok: true, n: 0 };
+  var sh = getPracticeSheet_();
+  var now = new Date();
+  var sid = String(body.session_id || '');
+  var deck = String(body.deck_code || '');
+  var metaStr = body.meta ? JSON.stringify(body.meta) : '';
+  var rows = events.map(function (ev) {
+    return [now, sid, deck, String(ev.t || ''), ev.ts || '', ev.p || '', JSON.stringify(ev), metaStr];
+  });
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  return { ok: true, n: rows.length };
+}
+
+function getPracticeSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(PRACTICE_SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(PRACTICE_SHEET_NAME);
+    sh.appendRow(['received_at', 'session_id', 'deck_code', 'type', 'ts_ms', 'player', 'event_json', 'meta']);
+  }
+  return sh;
+}
+
 function json_(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
