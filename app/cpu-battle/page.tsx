@@ -126,6 +126,13 @@ export default function CpuBattlePage() {
         else { finishGame(); force() }
     }
 
+    const retreat = () => {
+        if (!canAct) return; const s = g!.you
+        if (!s.active || s.bench.length === 0) return
+        const b = s.bench.shift()!; const old = s.active; s.active = b; s.bench.push(old)
+        g!.log.push('あなた：にげる（前後を入れ替え）'); force()
+    }
+
     const endTurn = () => {
         if (!g || g.result) return
         g.you.energyAttached = false
@@ -205,6 +212,7 @@ export default function CpuBattlePage() {
                             <button onClick={draw} disabled={!canAct} className="btn">1枚引く</button>
                             <button onClick={playBench} disabled={!canAct} className="btn">ベンチに出す</button>
                             <button onClick={attachEnergy} disabled={!canAct} className="btn">エネ加速</button>
+                            <button onClick={retreat} disabled={!canAct || !g.you.active || g.you.bench.length === 0} className="btn">にげる</button>
                             <button onClick={attack} disabled={!canAct || !g.you.active || g.you.active.energy < 1} className="btn-red">ワザ（{g.you.active ? atkDamage(g.you.active) : 0}）</button>
                             <button onClick={endTurn} disabled={!canAct} className="btn-dark">番を終了</button>
                         </div>
