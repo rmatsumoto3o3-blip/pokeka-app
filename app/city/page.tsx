@@ -145,7 +145,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 {/* 管理者ログイン時のみ、結果ページ内で各デッキを区分（公開側には一切出さない） */}
                 <CityAdminProvider existing={existing} auto={autoOptions} initialOverrides={archMap.overrides}>
 
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                     {/* Distribution */}
                     <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                         <div className="flex items-center justify-between mb-2 gap-2">
@@ -165,7 +165,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                 {dist.list.slice(0, 12).map((d, i) => (
                                     <div key={d.name} className="flex items-center gap-2">
                                         <span className="text-xs text-gray-400 w-4 text-right shrink-0">{i + 1}</span>
-                                        <span className="flex-1 text-sm text-gray-800 truncate">{d.name}</span>
+                                        <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{d.name}</span>
                                         <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
                                             <div className="h-full bg-indigo-500" style={{ width: `${d.rate}%` }} />
                                         </div>
@@ -186,7 +186,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                             <div className="space-y-1">
                                 {adoption.list.map(c => (
                                     <div key={c.name} className="flex items-center gap-2">
-                                        <span className="flex-1 text-sm text-gray-800 truncate">{c.name}</span>
+                                        <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{c.name}</span>
                                         <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
                                             <div className="h-full bg-emerald-500" style={{ width: `${c.rate}%` }} />
                                         </div>

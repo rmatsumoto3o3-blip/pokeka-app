@@ -12,8 +12,9 @@ let buffer: Ev[] = []
 let timer: ReturnType<typeof setInterval> | null = null
 let listenersBound = false
 
-// 送信先＝GASウェブアプリ(スプレッドシート追記)。Supabaseは使わない。未設定なら送信しない。
-const ENDPOINT = process.env.NEXT_PUBLIC_PRACTICE_LOG_URL || ''
+// 送信先＝自サイトの中立エンドポイント（実際の保存先GAS URLはサーバー側に隠す）。
+// クライアントの通信は pokelix.jp/api/pt のみ見え、Googleスプレッドシートとは分かりにくい。
+const ENDPOINT = '/api/pt'
 const FLUSH_AT = 40
 
 function rid() {
@@ -21,12 +22,12 @@ function rid() {
 }
 
 function payload() {
+    // action は付けない（サーバー側で付与）。クライアントのペイロードを中立的に保つ。
     return {
-        action: 'practice_log', // 既存 cpu_battle GAS の doPost 振り分け用
-        session_id: sessionId,
-        deck_code: deckCode,
-        events: buffer,
-        meta: { w: typeof window !== 'undefined' ? window.innerWidth : 0 },
+        s: sessionId,
+        d: deckCode,
+        e: buffer,
+        m: { w: typeof window !== 'undefined' ? window.innerWidth : 0 },
     }
 }
 
