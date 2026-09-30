@@ -5,6 +5,18 @@ import type { Card } from '@/lib/city'
 const ORDER = ['Pokémon', 'Item', 'Pokémon Tool', 'Supporter', 'Stadium', 'Energy']
 const deckUrl = (c: string) => `https://www.pokemon-card.com/deck/confirm.html/deckID/${c}`
 
+// カテゴリ順のインデックス。supertype に細区分(Item/Supporter…)が入る形式が基本だが、
+// supertype='Trainer' でsubtypesを持つ形式でも崩れないよう堅牢に解決する。
+function catIndex(c: Card): number {
+    const i = ORDER.indexOf(c.supertype)
+    if (i >= 0) return i
+    const sub = (c as { subtypes?: string[] | null }).subtypes?.[0]
+    const j = sub ? ORDER.indexOf(sub) : -1
+    if (j >= 0) return j
+    if (c.supertype === 'Trainer') return 1.5 // ポケモン(0)とエネルギー(5)の間＝トレーナー帯
+    return 99
+}
+
 // 1デッキの一覧グリッド。画面に入った時だけカード画像を描画（遅延マウント）＝初期DOM/描画コストを大幅削減。
 // 画像は公式から直リンク＋lazy読み込み（サーバー転送ゼロ）。
 export default function DeckGrid({ cards, deckId }: { cards: Card[] | null | undefined; deckId: string }) {
@@ -37,7 +49,7 @@ export default function DeckGrid({ cards, deckId }: { cards: Card[] | null | und
     }
 
     const sorted = [...cards].sort(
-        (a, b) => ORDER.indexOf(a.supertype) - ORDER.indexOf(b.supertype) || b.quantity - a.quantity,
+        (a, b) => catIndex(a) - catIndex(b) || b.quantity - a.quantity,
     )
     return (
         <div ref={ref} className="flex flex-wrap gap-1">
