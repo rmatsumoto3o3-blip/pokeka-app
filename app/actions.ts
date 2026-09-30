@@ -4,7 +4,7 @@ import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
 import { getFirebaseDb } from '@/lib/firebase/admin'
-import { buildCityEnvDecks, loadEventsDB, loadDeckIndex, loadArchetypeMapDB } from '@/lib/cityStore'
+import { buildCityEnvDecks, loadEventsDB, loadDeckIndex, loadArchetypeMapDB, loadWatchlistDB } from '@/lib/cityStore'
 import { resolveArchetypeFromRep } from '@/lib/city'
 
 // デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
@@ -1445,6 +1445,21 @@ const getWeeklyReportCached = unstable_cache(
             }
         }).sort((a, b) => b.thisWeekAvg - a.thisWeekAvg)
 
+        // 注目カードはシティリーグ側の設定(city_watchlist)を参照して絞り込む。
+        // 採用率(card_trend_snapshots)は現行パイプラインで日次更新されている値をそのまま使用。
+        let featuredForReport = featuredCards
+        try {
+            const cityWatch = await loadWatchlistDB()
+            const watchSet = new Set(cityWatch)
+            if (watchSet.size) {
+                const filtered = featuredCards.filter(c => watchSet.has(c.card_name))
+                // watchlist順（未取得カードは除外）。スナップショットに無い注目カードは0%で補完しない＝実データのみ。
+                if (filtered.length) featuredForReport = filtered
+            }
+        } catch (e) {
+            console.error('weekly-report watchlist filter error:', e)
+        }
+
         const fmtDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`
 
         return {
@@ -1452,7 +1467,7 @@ const getWeeklyReportCached = unstable_cache(
             lastWeekRange: { from: fmtDate(lastWeekFrom), to: fmtDate(thisWeekFrom) },
             archetypes: archetypeStats,
             topArchetypes,
-            featuredCards,
+            featuredCards: featuredForReport,
             totalDecksThisWeek,
         }
     },
