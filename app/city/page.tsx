@@ -11,13 +11,36 @@ import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 import WatchlistAdmin from '@/components/city/WatchlistAdmin'
 import CardAdoptionSearch from '@/components/city/CardAdoptionSearch'
 import PublicHeader from '@/components/PublicHeader'
+import AdPlaceholder from '@/components/AdPlaceholder'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
 export const revalidate = 3600
+
+const CITY_URL = 'https://www.pokelix.jp/city'
 export const metadata: Metadata = {
-    title: 'シティリーグ結果 | PokéLix',
-    description: 'シティリーグの入賞デッキを月・日付別に。1〜4位はデッキ一覧、5位以下はアコーディオン。注目カード採用率とデッキ分布つき。',
-    robots: { index: false, follow: false },
+    title: 'シティリーグ結果・入賞デッキ・採用率 | ポケカ環境 | PokéLix',
+    description:
+        'ポケモンカード「シティリーグ」の入賞デッキを日付・開催店舗別に掲載。優勝〜ベスト16のデッキレシピ（公式デッキコード）、デッキ分布（使用率ランキング）、注目カードの採用率を毎日更新。いまのポケカ環境デッキを一目でチェックできます。',
+    keywords: [
+        'ポケカ シティリーグ', 'シティリーグ 結果', 'シティリーグ 入賞デッキ', 'ポケカ 入賞デッキ',
+        'ポケカ 環境デッキ', 'ポケカ 環境', 'デッキ分布', 'カード 採用率', 'ポケモンカード デッキレシピ',
+        'ポケカ 優勝デッキ', 'デッキコード',
+    ],
+    alternates: { canonical: CITY_URL },
+    openGraph: {
+        title: 'シティリーグ結果・入賞デッキ・採用率 | PokéLix',
+        description: 'ポケカ シティリーグの入賞デッキ・デッキ分布・注目カード採用率を日付/店舗別に毎日更新。',
+        url: CITY_URL,
+        siteName: 'PokéLix',
+        type: 'website',
+        locale: 'ja_JP',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'シティリーグ結果・入賞デッキ | PokéLix',
+        description: 'ポケカ シティリーグの入賞デッキ・採用率を毎日更新。',
+    },
+    robots: { index: true, follow: true },
 }
 
 function rankBadge(rank: number) {
@@ -114,17 +137,63 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
             ? 'bg-gray-900 text-white border-gray-900'
             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`
 
+    // 上位アーキタイプ（導入文・構造化データ用）
+    const topArch = dist.list.slice(0, 3)
+    const introMeta = topArch.length
+        ? `現在のポケカ環境で使用率が高いのは ${topArch.map(d => `${d.name}（${d.rate}%）`).join('・')} など。`
+        : ''
+
+    // 構造化データ（検索エンジン向け）
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    { '@type': 'ListItem', position: 1, name: 'PokéLix', item: 'https://www.pokelix.jp/' },
+                    { '@type': 'ListItem', position: 2, name: 'シティリーグ結果', item: CITY_URL },
+                ],
+            },
+            {
+                '@type': 'CollectionPage',
+                name: 'シティリーグ結果・入賞デッキ・採用率',
+                description: 'ポケカ シティリーグの入賞デッキ・デッキ分布（使用率）・注目カード採用率を日付/店舗別に毎日更新。',
+                url: CITY_URL,
+                inLanguage: 'ja',
+                isPartOf: { '@type': 'WebSite', name: 'PokéLix', url: 'https://www.pokelix.jp/' },
+                ...(dist.list.length
+                    ? {
+                        mainEntity: {
+                            '@type': 'ItemList',
+                            name: 'ポケカ環境 デッキ分布（使用率ランキング）',
+                            itemListElement: dist.list.slice(0, 10).map((d, i) => ({
+                                '@type': 'ListItem', position: i + 1, name: d.name,
+                            })),
+                        },
+                    }
+                    : {}),
+            },
+        ],
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 text-gray-900">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <PublicHeader />
             <div className="max-w-5xl mx-auto px-4 py-6">
                 {/* Header */}
                 <div className="mb-4">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <h1 className="text-2xl font-black text-gray-900">シティリーグ結果</h1>
+                        <h1 className="text-2xl font-black text-gray-900">ポケカ シティリーグ結果・入賞デッキ・採用率</h1>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">入賞デッキを月・日付別に。1〜4位はデッキ一覧を表示、5位以下はアコーディオンで開けます。</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                        ポケモンカード「シティリーグ」の入賞デッキ（優勝〜ベスト16）を開催日・店舗別にまとめています。
+                        各デッキは公式デッキコードからレシピを確認でき、<strong>デッキ分布（使用率ランキング）</strong>と
+                        <strong>注目カードの採用率</strong>もあわせて掲載。いまのポケカ環境デッキを一目でチェックできます。
+                        {introMeta && <span className="block mt-1 text-gray-500">{introMeta}</span>}
+                    </p>
                 </div>
+                <div className="mb-5"><AdPlaceholder slot="2515406718" format="auto" /></div>
 
                 {/* Month select */}
                 <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -208,6 +277,23 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 {dayEvents.length === 0 && (
                     <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">この日付の大会はありません。</div>
                 )}
+
+                <div className="mt-8"><AdPlaceholder slot="2515406718" format="auto" /></div>
+
+                {/* SEO用の補足テキスト（検索意図の受け皿） */}
+                <section className="mt-8 text-sm leading-relaxed text-gray-600 space-y-2">
+                    <h2 className="text-base font-black text-gray-900">ポケカ シティリーグとは</h2>
+                    <p>
+                        シティリーグはポケモンカードゲームの公式大会で、全国の店舗で毎週末を中心に開催されています。
+                        本ページでは各大会の入賞デッキ（オープンリーグ）を開催日・店舗ごとに集計し、
+                        どのデッキタイプがどれだけ勝ち上がっているか（<strong>デッキ分布・使用率</strong>）や、
+                        入賞デッキでの<strong>カード採用率</strong>を毎日更新しています。
+                        新弾後の環境変化のチェック、デッキ構築の参考、対面（メタ）の把握にご活用ください。
+                    </p>
+                    <p className="text-gray-500">
+                        各デッキのレシピは「公式 ↗」から公式デッキコードで確認できます。使用率・採用率は入賞デッキ（重複デッキコードは1回）で集計しています。
+                    </p>
+                </section>
 
                 </CityAdminProvider>
             </div>
