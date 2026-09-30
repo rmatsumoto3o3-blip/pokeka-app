@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import PublicHeader from '@/components/PublicHeader'
 import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 import { eventDateSortKey } from '@/lib/eventDate'
+import EnvDeckList from '@/components/EnvDeckList'
 
 // 環境デッキ一覧（Firebase由来・画像なし・Supabase不使用）。
 // 月別シート→GAS→Firestore(environmentDecks/pokemon) のデータを、アーキタイプ別に表示。
@@ -18,12 +18,6 @@ type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDa
 
 const RANK_ORDER: Record<string, number> = { '優勝': 0, '準優勝': 1, 'TOP4': 2, 'TOP8': 3 }
 const rankKey = (r: string) => (r in RANK_ORDER ? RANK_ORDER[r] : 9)
-
-const rankStyle = (r: string) => {
-    if (r === '優勝') return 'bg-amber-100 text-amber-800 border-amber-300'
-    if (r === '準優勝') return 'bg-gray-100 text-gray-700 border-gray-300'
-    return 'bg-blue-50 text-blue-700 border-blue-200'
-}
 
 async function getEnvDecks(): Promise<EnvDeck[]> {
     return (await loadMergedPokemonEnvDecks()) as EnvDeck[]
@@ -71,24 +65,7 @@ export default async function EnvDecksPage() {
                                     {group.archetype}
                                     <span className="text-xs font-normal text-gray-400">{group.list.length}件</span>
                                 </h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    {group.list.map(d => (
-                                        <div key={d.deckCode} className="rounded-xl border border-gray-200 bg-white p-3">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${rankStyle(d.rank)}`}>{d.rank || '—'}</span>
-                                                <span className="text-sm text-gray-800 font-bold truncate">{d.eventName || '大会名なし'}</span>
-                                            </div>
-                                            <div className="text-xs text-gray-500 mb-2">
-                                                {d.eventDate && <span>{d.eventDate}・</span>}
-                                                <span className="font-mono text-gray-400">{d.deckCode}</span>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-sm font-bold text-gray-800 border border-gray-300 rounded-lg py-1.5 hover:bg-gray-50">デッキを見る</Link>
-                                                <Link href={`/practice?code1=${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg py-1.5 hover:bg-blue-100">▶ 一人回し</Link>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <EnvDeckList decks={group.list} />
                             </section>
                         ))}
                     </div>
