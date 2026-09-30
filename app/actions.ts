@@ -4,7 +4,8 @@ import { fetchDeckData, parsePTCGLFormat, type CardData } from '@/lib/deckParser
 import { eventDateSortKey } from '@/lib/eventDate'
 import { unstable_cache } from 'next/cache'
 import { getFirebaseDb } from '@/lib/firebase/admin'
-import { buildCityEnvDecks } from '@/lib/cityStore'
+import { buildCityEnvDecks, loadEventsDB, loadDeckIndex, loadArchetypeMapDB } from '@/lib/cityStore'
+import { resolveArchetypeFromRep } from '@/lib/city'
 
 // デッキコード→カード一覧は不変なので長期キャッシュ（pokemon-card.com への都度アクセスを削減）。
 // キャッシュヒット時は fetchDeckData を呼ばない＝公式サイトを叩かない。
@@ -1332,6 +1333,33 @@ const getWeeklyReportCached = unstable_cache(
             .select('id, name')
 
         const nameMap = new Map(archetypes?.map(a => [a.id, a.name]) || [])
+
+        // --- シティリーグ(city_events)の優勝/準優勝を合流 ---
+        // featured_decks が障害で止まっても、日次更新されるシティ結果でレポートを生かす。
+        // アーキタイプ名は city_archetype_rules で deck_archetypes と同じ名前に正規化済みなので、
+        // 名前でマッチして archetype_id を共有（無ければ名前を合成IDに使う）。集計は既存hourlyキャッシュ再利用。
+        try {
+            const [cityEvents, cityIdx, cityMap] = await Promise.all([loadEventsDB(), loadDeckIndex(), loadArchetypeMapDB()])
+            const nameToId = new Map((archetypes || []).map(a => [a.name, a.id]))
+            const citySeen = new Set<string>()
+            for (const ev of cityEvents) {
+                if (ev.league !== 'オープン') continue
+                if (!/^\d{8}$/.test(ev.date)) continue
+                const recordDate = new Date(Date.UTC(+ev.date.slice(0, 4), +ev.date.slice(4, 6) - 1, +ev.date.slice(6, 8)))
+                for (const r of ev.results) {
+                    if (r.rank !== 1 && r.rank !== 2) continue
+                    if (!r.deck_id || citySeen.has(r.deck_id)) continue
+                    citySeen.add(r.deck_id)
+                    const nm = resolveArchetypeFromRep(r.deck_id, cityIdx.reps[r.deck_id], cityMap)
+                    if (!nm) continue
+                    const id = nameToId.get(nm) || nm
+                    if (!nameMap.has(id)) nameMap.set(id, nm)
+                    records.push({ archetype_id: id, event_rank: r.rank === 1 ? '優勝' : '準優勝', recordDate })
+                }
+            }
+        } catch (e) {
+            console.error('weekly-report city merge error:', e)
+        }
 
         // 今週/先週でカウント（大会日基準。全件取得のため両ウィンドウを明示的に判定）
         const thisWeekCounts: Record<string, number> = {}
