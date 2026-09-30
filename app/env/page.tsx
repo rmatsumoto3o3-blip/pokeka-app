@@ -10,8 +10,19 @@ import EnvDeckList from '@/components/EnvDeckList'
 
 export const revalidate = 3600
 export const metadata: Metadata = {
-    title: 'ポケカ 環境デッキ一覧（大会入賞）',
-    description: 'ポケカの大会優勝・入賞デッキを一覧で。デッキコードからそのまま一人回し（ソリティア）で回せます。',
+    title: 'ポケカ 環境デッキ一覧｜大会優勝・入賞デッキレシピ【最新】',
+    description: 'ポケモンカードの最新環境デッキを大会優勝・入賞デッキから一覧掲載。アーキタイプ別にデッキレシピ（デッキコード）をまとめ、そのまま「一人回し」で試せます。いまのポケカ環境デッキをまとめてチェック。',
+    keywords: ['ポケカ 環境デッキ', 'ポケカ 環境', 'ポケカ 優勝デッキ', 'ポケカ デッキレシピ', 'ポケモンカード 環境', '環境デッキ', 'ポケカ 最新 デッキ'],
+    alternates: { canonical: 'https://www.pokelix.jp/env' },
+    openGraph: {
+        title: 'ポケカ 環境デッキ一覧｜大会優勝・入賞デッキレシピ',
+        description: '最新のポケカ環境デッキ（大会優勝・入賞）をアーキタイプ別に一覧。デッキコードからそのまま一人回し。',
+        url: 'https://www.pokelix.jp/env',
+        siteName: 'PokéLix（ポケリス）',
+        type: 'website',
+        locale: 'ja_JP',
+    },
+    robots: { index: true, follow: true },
 }
 
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
@@ -48,8 +59,11 @@ export default async function EnvDecksPage() {
 
             <main className="max-w-5xl mx-auto px-4 py-6">
                 <div className="mb-5">
-                    <h1 className="text-2xl font-bold text-gray-900">環境デッキ</h1>
-                    <p className="mt-1 text-sm text-gray-600">大会の優勝・入賞デッキ。デッキ名から中身を確認、<span className="font-bold text-blue-600">ワンタップで一人回し</span>できます。</p>
+                    <h1 className="text-2xl font-bold text-gray-900">ポケカ 環境デッキ一覧【大会優勝・入賞】</h1>
+                    <p className="mt-1 text-sm text-gray-600 leading-relaxed">
+                        いまのポケカ最新環境デッキを、大会（シティリーグ等）の優勝・入賞デッキから<strong>アーキタイプ別</strong>にまとめています。
+                        各デッキはデッキコードから中身（デッキレシピ）を確認でき、<span className="font-bold text-blue-600">ワンタップで一人回し</span>してそのまま試せます。
+                    </p>
                 </div>
 
                 {decks.length === 0 ? (

@@ -133,11 +133,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { name } = await params
     const decoded = safeDecodeName(name)
     const encoded = encodeURIComponent(decoded)
-    const title = `${decoded}デッキの採用カード・採用率`
-    const description = `ポケカ「${decoded}」デッキの採用カード一覧と採用率。大会入賞デッキから集計したリアルな構築をカードごとの採用率・平均枚数で確認できます。`
+    const title = `${decoded}デッキ レシピ・採用率｜ポケカ最新環境`
+    const description = `ポケカ「${decoded}」デッキのレシピと採用カード・採用率。大会入賞デッキから集計した最新環境のリアルな構築を、代表デッキレシピ（60枚）とカードごとの採用率・平均枚数で確認できます。`
     return {
         title, description,
-        keywords: [`${decoded} デッキ`, `${decoded} デッキレシピ`, `${decoded} 採用率`, `${decoded} 構築`, 'ポケカ', 'ポケモンカード'],
+        keywords: [`${decoded} デッキ`, `${decoded} デッキレシピ`, `${decoded} 採用率`, `${decoded} 構築`, `${decoded} 環境`, `${decoded} 優勝`, 'ポケカ 環境デッキ', 'ポケモンカード'],
         openGraph: { title: `${decoded}デッキの採用カード・採用率 | PokéLix`, description, url: `https://www.pokelix.jp/archetypes/${encoded}`, siteName: 'PokéLix（ポケリス）', locale: 'ja_JP', type: 'website' },
         alternates: { canonical: `https://www.pokelix.jp/archetypes/${encoded}` },
     }
@@ -157,6 +157,35 @@ export default async function ArchetypePage({ params }: Props) {
     // 内部リンク用：このアーキの入賞デッキ一覧（最大12件）
     const archDecksMap = await getArchetypeDecksCached()
     const archDecks = (archDecksMap[decoded] || []).slice(0, 12)
+
+    // データ由来の説明本文（アーキタイプ固有のユニークテキスト＝SEO本文）
+    const pct = (c: AggCard) => Math.round((c.adoption_count / c.total_decks) * 100)
+    const topPokes = list.filter((c) => categoryOf(c.supertype, c.subtypes) === 'Pokemon').slice(0, 4)
+    const topTrainers = list.filter((c) => ['Goods', 'Supporter', 'Tool', 'Stadium'].includes(categoryOf(c.supertype, c.subtypes))).slice(0, 3)
+    const introText =
+        `「${decoded}」デッキは、直近の大会入賞デッキ${totalDecks}件を集計したポケカ最新環境のデッキです。` +
+        (topPokes.length ? `主軸となるポケモンは${topPokes.map((c) => `${c.card_name}（採用率${pct(c)}%）`).join('、')}。` : '') +
+        (topTrainers.length ? `トレーナーズでは${topTrainers.map((c) => `${c.card_name}（${pct(c)}%）`).join('、')}などの採用率が高い構築です。` : '')
+
+    // 代表構築（優勝→無ければ先頭）のデッキレシピをテキスト掲載（"○○デッキ レシピ"需要＋本文量）
+    const repDeck = archDecks.find((d) => d.rank === '優勝') || archDecks[0] || null
+    let repCards: CardData[] = []
+    if (repDeck) {
+        try { const r = await getDeckDataAction(repDeck.deckCode); if (r.success && r.data) repCards = r.data } catch { /* noop */ }
+    }
+    const repByCat: Record<string, CardData[]> = {}
+    for (const c of repCards) {
+        const cat = categoryOf(c.supertype, (c.subtypes as string[] | undefined) || null)
+        ; (repByCat[cat] ||= []).push(c)
+    }
+    const repTotal = repCards.reduce((s, c) => s + (c.quantity || 0), 0)
+
+    // FAQ（データ由来・ユニーク）
+    const faqs = [
+        { q: `${decoded}デッキで採用率が高いカードは？`, a: topPokes.length ? `${topPokes.map((c) => `${c.card_name}（${pct(c)}%）`).join('、')} などの採用率が高いです。` : '大会入賞デッキから集計した採用率を掲載しています。' },
+        { q: `${decoded}デッキのレシピはどこで見られますか？`, a: `本ページに代表的な入賞デッキの60枚レシピを掲載しています。各デッキはデッキコードから公式リストの確認と「一人回し」ができます。` },
+        { q: `${decoded}デッキの採用率データの出典は？`, a: `直近の大会（シティリーグ等）の入賞デッキ${totalDecks}件を集計しています。` },
+    ]
 
     const byCategory: Record<string, AggCard[]> = {}
     list.forEach((c) => {
@@ -185,6 +214,13 @@ export default async function ArchetypePage({ params }: Props) {
                     { '@type': 'ListItem', position: 3, name: decoded, item: `https://www.pokelix.jp/archetypes/${encodeURIComponent(decoded)}` },
                 ],
             },
+            {
+                '@type': 'FAQPage',
+                mainEntity: faqs.map((f) => ({
+                    '@type': 'Question', name: f.q,
+                    acceptedAnswer: { '@type': 'Answer', text: f.a },
+                })),
+            },
         ],
     }
 
@@ -198,10 +234,10 @@ export default async function ArchetypePage({ params }: Props) {
                     <div className="mb-8">
                         <Link href="/" className="text-sm text-pink-600 hover:text-pink-800 font-medium">← トップに戻る</Link>
                         <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 mt-3 mb-2">
-                            {decoded}デッキの採用カード一覧
+                            {decoded}デッキ レシピ・採用カード・採用率【ポケカ最新環境】
                         </h1>
-                        <p className="text-gray-600 text-sm md:text-base">
-                            直近の大会入賞デッキ（{totalDecks}件）から集計した、{decoded}デッキの採用カードと採用率です。
+                        <p className="text-gray-700 text-sm md:text-base leading-relaxed">
+                            {introText}
                         </p>
                     </div>
 
@@ -230,6 +266,48 @@ export default async function ArchetypePage({ params }: Props) {
                         </section>
                     )}
 
+                    {/* 代表構築（デッキレシピ・テキスト）＝"○○デッキ レシピ"需要の受け皿＋本文量 */}
+                    {repCards.length > 0 && (
+                        <section className="mb-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
+                            <h2 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+                                <span className="w-1.5 h-5 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full"></span>
+                                {decoded}デッキ 代表構築（デッキレシピ・{repTotal}枚）
+                            </h2>
+                            <p className="text-xs text-gray-500 mb-4">
+                                {repDeck?.rank ? `${repDeck.rank}構築の一例` : '入賞構築の一例'}
+                                {repDeck?.eventName ? `（${repDeck.eventName}${repDeck.eventDate ? '・' + repDeck.eventDate : ''}）` : ''}。
+                                デッキコード <span className="font-mono text-gray-600">{repDeck?.deckCode}</span>
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                                {CATEGORY_ORDER.filter((cat) => repByCat[cat]?.length).map((cat) => {
+                                    const catCount = repByCat[cat].reduce((s, c) => s + (c.quantity || 0), 0)
+                                    return (
+                                        <div key={cat}>
+                                            <h3 className="text-sm font-bold text-gray-700 border-b border-gray-100 pb-1 mb-1.5">
+                                                {CATEGORY_LABEL[cat]} <span className="text-gray-400 font-normal">{catCount}</span>
+                                            </h3>
+                                            <ul className="space-y-0.5">
+                                                {repByCat[cat].map((c, i) => (
+                                                    <li key={c.name + i} className="flex items-baseline text-sm text-gray-800">
+                                                        <span className="w-6 text-right font-bold text-gray-500 shrink-0">{c.quantity}</span>
+                                                        <span className="ml-2 truncate">{c.name}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                            {repDeck && (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    <Link href={`/env/${encodeURIComponent(repDeck.deckCode)}`} className="text-sm font-bold text-gray-800 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50">デッキ詳細を見る</Link>
+                                    <Link href={`/practice?code1=${encodeURIComponent(repDeck.deckCode)}`} className="text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 hover:bg-blue-100">▶ このデッキで一人回し</Link>
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    <h2 className="text-xl font-black text-gray-900 mb-3">{decoded}デッキの採用カード・採用率</h2>
                     {CATEGORY_ORDER.filter((cat) => byCategory[cat]?.length).map((cat) => (
                         <section key={cat} className="mb-8">
                             <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -265,6 +343,19 @@ export default async function ArchetypePage({ params }: Props) {
                             </div>
                         </section>
                     ))}
+
+                    {/* FAQ（FAQPage構造化データと対） */}
+                    <section className="mt-10 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
+                        <h2 className="text-lg font-bold text-gray-800 mb-3">{decoded}デッキ よくある質問</h2>
+                        <div className="divide-y divide-gray-100">
+                            {faqs.map((f, i) => (
+                                <div key={i} className="py-3">
+                                    <p className="text-sm font-bold text-gray-900 mb-1">Q. {f.q}</p>
+                                    <p className="text-sm text-gray-600 leading-relaxed">A. {f.a}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
 
                     <div className="mt-10 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 p-6 text-white text-center">
                         <h2 className="text-lg md:text-xl font-bold mb-2">このデッキの初手確率を計算してみる</h2>
