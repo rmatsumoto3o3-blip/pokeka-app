@@ -94,7 +94,7 @@ function EventCard({ ev, cache, map }: { ev: EventRec; cache: DeckCache; map: Ar
     )
 }
 
-export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string }> }) {
+export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string; pref?: string }> }) {
     const sp = await searchParams
     const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
     const wlDb = await loadWatchlistDB()
@@ -122,8 +122,11 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
     const distScope = (sp.dist === 'month' || sp.dist === 'all') ? sp.dist : 'day'
     const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
     const dist = buildDistributionFromReps(distEvents, repMap, archMap)
-    // 都道府県別アーキタイプ（同じスコープ・同じ分類ロジックを開催地で束ねる）
-    const prefDist = buildDistributionByPrefecture(distEvents, repMap, archMap)
+    // 都道府県別アーキタイプ（同じスコープ・同じ分類ロジックを開催地で束ねる）。ボタンで表示切替。
+    const showPref = sp.pref === '1'
+    const prefDist = showPref ? buildDistributionByPrefecture(distEvents, repMap, archMap) : []
+    const prefBaseQ = `month=${selMonth}&date=${selDate}&dist=${distScope}`
+    const prefToggleHref = showPref ? `/city?${prefBaseQ}` : `/city?${prefBaseQ}&pref=1`
 
     // 区分の選択肢：既存アーキタイプ（Supabase）と、表示日付の自動検出名を分けて渡す
     const existingSet = new Set(existing)
@@ -197,6 +200,17 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 </div>
                 <div className="mb-5"><AdPlaceholder slot="2515406718" format="auto" /></div>
 
+                {/* 都道府県別デッキ分布 トグル（月別の上・押すと都道府県別が表示される） */}
+                <div className="mb-3">
+                    <a href={prefToggleHref}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-black border transition ${showPref
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                            : 'bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50'}`}>
+                        <span>🗾 都道府県別デッキ分布</span>
+                        <span className="text-[11px] font-bold opacity-80">{showPref ? '（表示中：閉じる）' : 'を見る'}</span>
+                    </a>
+                </div>
+
                 {/* Month select */}
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                     <span className="text-xs font-bold text-gray-500">月</span>
@@ -225,7 +239,7 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                         </div>
                         <div className="flex items-center gap-1 mb-3">
                             {([['day', 'この日付'], ['month', '今月'], ['all', '全期間']] as const).map(([k, label]) => (
-                                <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}`}
+                                <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}${showPref ? '&pref=1' : ''}`}
                                     className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distScope === k
                                         ? 'bg-indigo-600 text-white border-indigo-600'
                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
@@ -272,10 +286,11 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                     </section>
                 </div>
 
-                {/* 都道府県別アーキタイプ（同じ集計・分類を開催地で束ねる） */}
-                <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-8">
+                {/* 都道府県別アーキタイプ（ボタンで表示ONのときだけ・同じ集計/分類を開催地で束ねる） */}
+                {showPref && (
+                <section id="pref-dist" className="bg-white rounded-xl border border-indigo-200 shadow-sm p-4 mb-8">
                     <div className="flex items-center justify-between mb-1 gap-2">
-                        <h2 className="text-base font-black text-gray-900">都道府県別アーキタイプ</h2>
+                        <h2 className="text-base font-black text-gray-900">都道府県別デッキ分布（アーキタイプ）</h2>
                         <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">
                             {distScope === 'all' ? '全期間' : distScope === 'month' ? '今月' : 'この日付'}・{prefDist.length}都道府県
                         </span>
@@ -304,8 +319,9 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                                 </div>
                             ))}
                         </div>
-                    ) : <p className="text-sm text-gray-500">データが集まると都道府県別の傾向が表示されます（「今月」「全期間」で見やすくなります）。</p>}
+                    ) : <p className="text-sm text-gray-500">この期間はデータがありません。「今月」「全期間」に切り替えると見やすくなります。</p>}
                 </section>
+                )}
 
                 {/* Events */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
