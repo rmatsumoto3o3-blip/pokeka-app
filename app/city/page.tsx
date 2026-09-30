@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import {
     loadWatchlist, autoArchetype, listArchetypeOptions,
     monthOf, fmtMonth, fmtDate, deckUrl,
-    buildAdoption, buildDistributionFromReps, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
+    buildAdoption, buildDistributionFromReps, buildDistributionByPrefecture, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
 } from '@/lib/city'
 import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadDeckIndex, loadWatchlistDB } from '@/lib/cityStore'
 import DeckGrid from '@/components/city/DeckGrid'
@@ -122,6 +122,8 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
     const distScope = (sp.dist === 'month' || sp.dist === 'all') ? sp.dist : 'day'
     const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
     const dist = buildDistributionFromReps(distEvents, repMap, archMap)
+    // 都道府県別アーキタイプ（同じスコープ・同じ分類ロジックを開催地で束ねる）
+    const prefDist = buildDistributionByPrefecture(distEvents, repMap, archMap)
 
     // 区分の選択肢：既存アーキタイプ（Supabase）と、表示日付の自動検出名を分けて渡す
     const existingSet = new Set(existing)
@@ -269,6 +271,41 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                         <WatchlistAdmin initial={watchlist} cardNames={cardNames} />
                     </section>
                 </div>
+
+                {/* 都道府県別アーキタイプ（同じ集計・分類を開催地で束ねる） */}
+                <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-8">
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                        <h2 className="text-base font-black text-gray-900">都道府県別アーキタイプ</h2>
+                        <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">
+                            {distScope === 'all' ? '全期間' : distScope === 'month' ? '今月' : 'この日付'}・{prefDist.length}都道府県
+                        </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mb-3">開催都道府県ごとの使用アーキタイプ上位。「デッキ分布」の集計切替（この日付／今月／全期間）に連動します。</p>
+                    {prefDist.length ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {prefDist.map(p => (
+                                <div key={p.prefecture} className="border border-gray-100 rounded-lg p-3 bg-gray-50/50">
+                                    <div className="flex items-baseline justify-between mb-2">
+                                        <span className="font-bold text-gray-900 text-sm">{p.prefecture}</span>
+                                        <span className="text-[11px] text-gray-500 shrink-0">{p.total}デッキ</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {p.list.slice(0, 3).map(d => (
+                                            <div key={d.name} className="flex items-center gap-1.5">
+                                                <span className="flex-1 min-w-0 text-xs text-gray-700 truncate">{d.name}</span>
+                                                <div className="w-12 h-1.5 bg-gray-200 rounded overflow-hidden shrink-0">
+                                                    <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, d.rate)}%` }} />
+                                                </div>
+                                                <span className="text-xs font-bold text-indigo-700 w-9 text-right shrink-0">{d.rate}%</span>
+                                            </div>
+                                        ))}
+                                        {p.list.length > 3 && <div className="text-[10px] text-gray-400">ほか{p.list.length - 3}型</div>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : <p className="text-sm text-gray-500">データが集まると都道府県別の傾向が表示されます（「今月」「全期間」で見やすくなります）。</p>}
+                </section>
 
                 {/* Events */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

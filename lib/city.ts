@@ -107,6 +107,41 @@ export function buildDistributionFromReps(
     return { resolved, list }
 }
 
+// 上と同じ集計を「開催都道府県ごと」に束ねる。分類ロジック(rep+別名map)は共通で、
+// 集計タイミングの区分をそのまま都道府県別に反映する。1年分溜まっても同じ経路で動く。
+export type PrefDistribution = {
+    prefecture: string
+    total: number
+    list: { name: string; count: number; rate: number }[]
+}
+export function buildDistributionByPrefecture(
+    events: EventRec[], repMap: Record<string, string | null>, map: ArchetypeMap,
+): PrefDistribution[] {
+    const seen = new Set<string>() // デッキコードはユニーク→全体で1回だけ数える
+    const byPref: Record<string, { tally: Record<string, number>; total: number }> = {}
+    for (const ev of events) {
+        const pref = ev.prefecture || '不明'
+        for (const r of ev.results) {
+            if (seen.has(r.deck_id)) continue
+            seen.add(r.deck_id)
+            const arch = resolveArchetypeFromRep(r.deck_id, repMap[r.deck_id], map)
+            if (!arch) continue
+            const bucket = byPref[pref] || (byPref[pref] = { tally: {}, total: 0 })
+            bucket.tally[arch] = (bucket.tally[arch] || 0) + 1
+            bucket.total++
+        }
+    }
+    return Object.entries(byPref)
+        .map(([prefecture, { tally, total }]) => ({
+            prefecture,
+            total,
+            list: Object.entries(tally)
+                .map(([name, count]) => ({ name, count, rate: +(count / total * 100).toFixed(1) }))
+                .sort((a, b) => b.count - a.count),
+        }))
+        .sort((a, b) => b.total - a.total)
+}
+
 // 指定イベント群の解決済みデッキで分布を集計（デッキ単位・重複デッキコードは1回）
 export function buildDistribution(events: EventRec[], cache: DeckCache, map?: ArchetypeMap) {
     const m = map || { rules: {}, overrides: {} }
