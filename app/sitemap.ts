@@ -35,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         { path: '/decks',            priority: 0.85, freq: 'daily'  },
         { path: '/env',              priority: 0.85, freq: 'daily'  },
         { path: '/archetypes',       priority: 0.85, freq: 'daily'  },
+        { path: '/city',             priority: 0.9,  freq: 'daily'  },
         { path: '/articles',         priority: 0.85, freq: 'daily'  },
         { path: '/overseas',         priority: 0.7,  freq: 'daily'  },
         { path: '/unionarena',        priority: 0.8,  freq: 'daily'  },
