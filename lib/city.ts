@@ -142,6 +142,22 @@ export function buildDistributionByPrefecture(
         .sort((a, b) => b.total - a.total)
 }
 
+// 八地方区分（都道府県→地方）。都道府県別ページの「地方」フィルタ用。
+export const REGIONS: { key: string; label: string; prefs: string[] }[] = [
+    { key: 'hokkaido', label: '北海道', prefs: ['北海道'] },
+    { key: 'tohoku', label: '東北', prefs: ['青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県'] },
+    { key: 'kanto', label: '関東', prefs: ['茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県'] },
+    { key: 'chubu', label: '中部', prefs: ['新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県'] },
+    { key: 'kinki', label: '近畿', prefs: ['三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県'] },
+    { key: 'chugoku', label: '中国', prefs: ['鳥取県', '島根県', '岡山県', '広島県', '山口県'] },
+    { key: 'shikoku', label: '四国', prefs: ['徳島県', '香川県', '愛媛県', '高知県'] },
+    { key: 'kyushu', label: '九州沖縄', prefs: ['福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'] },
+]
+export function regionOfPrefecture(pref: string): string | null {
+    for (const r of REGIONS) if (r.prefs.includes(pref)) return r.key
+    return null
+}
+
 // 指定イベント群の解決済みデッキで分布を集計（デッキ単位・重複デッキコードは1回）
 export function buildDistribution(events: EventRec[], cache: DeckCache, map?: ArchetypeMap) {
     const m = map || { rules: {}, overrides: {} }
