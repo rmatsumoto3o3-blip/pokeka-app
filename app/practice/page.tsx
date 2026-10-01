@@ -1207,11 +1207,11 @@ function PracticeContent() {
                                         ) : (
                                             <div className="grid gap-2 sm:grid-cols-2">
                                                 {selectedEnvDecks.map(d => (
-                                                    <div key={d.deckCode} className="rounded-lg border border-gray-200 bg-white p-2.5">
-                                                        <div className="mb-1.5 flex items-center gap-2">
-                                                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${d.rank === '優勝' ? 'bg-amber-100 text-amber-800' : d.rank === '準優勝' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'}`}>{d.rank || '—'}</span>
-                                                            <span className="truncate text-sm font-bold text-gray-800">{d.eventName || '大会'}</span>
-                                                            <span className="ml-auto shrink-0 text-xs text-gray-400">{d.eventDate}</span>
+                                                    <div key={d.deckCode} className="min-w-0 overflow-hidden rounded-lg border border-gray-200 bg-white p-2.5">
+                                                        <div className="mb-1.5 flex min-w-0 items-center gap-2">
+                                                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${d.rank === '優勝' ? 'bg-amber-100 text-amber-800' : d.rank === '準優勝' ? 'bg-gray-100 text-gray-700' : 'bg-blue-50 text-blue-700'}`}>{d.rank || '—'}</span>
+                                                            <span className="min-w-0 flex-1 truncate text-sm font-bold text-gray-800">{d.eventName || '大会'}</span>
+                                                            <span className="shrink-0 text-xs text-gray-400">{d.eventDate}</span>
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <button type="button" onClick={() => useEnvDeck(d.deckCode, 'player1')} className="flex-1 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-black text-white transition hover:bg-blue-600">自分で使う</button>
