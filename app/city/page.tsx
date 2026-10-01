@@ -11,7 +11,6 @@ import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 import WatchlistAdmin from '@/components/city/WatchlistAdmin'
 import CardAdoptionSearch from '@/components/city/CardAdoptionSearch'
 import PublicHeader from '@/components/PublicHeader'
-import AdPlaceholder from '@/components/AdPlaceholder'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
 export const revalidate = 3600
@@ -193,8 +192,6 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                         {introMeta && <span className="block mt-1 text-gray-500">{introMeta}</span>}
                     </p>
                 </div>
-                <div className="mb-5"><AdPlaceholder slot="2515406718" format="horizontal" /></div>
-
                 {/* 都道府県別デッキ分布は専用ページへ（一覧までのスクロールを伸ばさない） */}
                 <div className="mb-3">
                     <a href="/city/prefectures"
@@ -286,8 +283,6 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 {dayEvents.length === 0 && (
                     <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">この日付の大会はありません。</div>
                 )}
-
-                <div className="mt-8"><AdPlaceholder slot="2515406718" format="horizontal" /></div>
 
                 {/* SEO用の補足テキスト（検索意図の受け皿） */}
                 <section className="mt-8 text-sm leading-relaxed text-gray-600 space-y-2">
