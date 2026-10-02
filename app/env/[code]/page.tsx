@@ -7,7 +7,7 @@ import { getDeckDataAction } from '@/app/actions'
 // 環境デッキ詳細（Firebaseでメタ取得＋デッキコードからカード展開）。Supabase不使用。
 // 上部に大きな「一人回し」CTA（＝発射台）。カードはキャッシュ済みの getDeckDataAction 経由。
 
-export const revalidate = 3600
+export const revalidate = 86400
 export const dynamicParams = true
 
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }

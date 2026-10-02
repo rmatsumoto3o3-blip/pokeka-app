@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/unionarena/titles' },
 }
 
-export const revalidate = 3600
+export const revalidate = 21600
 
 export default async function UnionArenaTitlesPage() {
     const { recommendedDecks: decks, series: seriesList } = await getUnionRecommended()

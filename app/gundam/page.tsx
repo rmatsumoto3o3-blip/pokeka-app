@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     },
 }
 
-export const revalidate = 3600
+export const revalidate = 21600
 
 export default async function GundamPage() {
     const envDecks = await getGundamEnvDecks()

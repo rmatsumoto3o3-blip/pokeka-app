@@ -5,7 +5,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import type { Metadata } from 'next'
 
-export const revalidate = 3600 // Revalidate every hour
+export const revalidate = 86400 // Revalidate every hour
 
 interface Props {
     params: Promise<{ slug: string }>

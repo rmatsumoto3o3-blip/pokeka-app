@@ -8,7 +8,7 @@ import EnvDeckList from '@/components/EnvDeckList'
 // 月別シート→GAS→Firestore(environmentDecks/pokemon) のデータを、アーキタイプ別に表示。
 // 各デッキから「デッキを見る(/env/<code>)」「一人回し(/practice?deckCode=)」へ送る。
 
-export const revalidate = 3600
+export const revalidate = 21600
 export const metadata: Metadata = {
     title: 'ポケカ 環境デッキ一覧｜大会優勝・入賞デッキレシピ【最新】',
     description: 'ポケモンカードの最新環境デッキを大会優勝・入賞デッキから一覧掲載。アーキタイプ別にデッキレシピ（デッキコード）をまとめ、そのまま「一人回し」で試せます。いまのポケカ環境デッキをまとめてチェック。',

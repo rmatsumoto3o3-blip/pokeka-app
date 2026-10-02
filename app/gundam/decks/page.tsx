@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/gundam/decks' },
 }
 
-export const revalidate = 3600
+export const revalidate = 21600
 
 export default async function GundamDecksPage() {
     const [envDecks, images] = await Promise.all([getGundamEnvDecks(), getGundamDeckImages()])

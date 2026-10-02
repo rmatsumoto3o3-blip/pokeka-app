@@ -7,7 +7,7 @@ import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 // 採用率・使用率ランキング一覧。環境デッキ(environmentDecks)由来・Supabase不使用。
 // トップの使用率ランキング／採用率詳細と同じ源なので数字が一致し、詳細も404にならない。
 
-export const revalidate = 3600
+export const revalidate = 21600
 
 export const metadata: Metadata = {
     title: 'ポケカ 採用率・使用率ランキング（環境デッキ）',

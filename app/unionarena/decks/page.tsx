@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     alternates: { canonical: 'https://www.pokelix.jp/unionarena/decks' },
 }
 
-export const revalidate = 3600
+export const revalidate = 21600
 
 // Firebase（environmentDecks/unionarena）由来。Supabase制限中でも表示できる。
 type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }

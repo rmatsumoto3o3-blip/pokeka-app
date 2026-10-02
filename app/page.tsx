@@ -279,7 +279,7 @@ export const metadata: Metadata = {
 
 // Incremental Static Regeneration (ISR)
 // Revalidate this page content at most once every 60 seconds
-export const revalidate = 3600
+export const revalidate = 21600
 
 export default async function Home() {
   // 公開読み取りは cookie 非依存の anon クライアント（lib/supabase）を使用。
