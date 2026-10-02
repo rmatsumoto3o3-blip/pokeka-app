@@ -1952,7 +1952,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                 {/* Main Row: Prizes, Battle */}
                 {/* Main Row: Prizes, Battle */}
-                <div className={`flex flex-row gap-0.5 sm:gap-4 items-start justify-center order-none ${mobile && portalTarget ? 'hidden' : ''}`}>
+                <div className={`flex flex-row gap-1 sm:gap-4 ${mobile ? 'items-stretch' : 'items-start'} justify-center order-none`}>
                     {/* Prizes - Desktop Only */}
                     {/* Prizes - Desktop Only (Simplified Numeric) */}
                     {!mobile && (
@@ -1973,10 +1973,43 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     )}
 
-                {/* Main Row: Prizes, Battle */}
-                <div className="flex-1 flex justify-center">
-                    {mobile && portalTarget ? createPortal(BattleFieldContent, portalTarget) : BattleFieldContent}
+                {/* バトル場（②: モバイルも各ボード内に表示＝中央ポータルは使わない） */}
+                <div className={`flex-1 flex justify-center ${mobile ? 'order-2' : ''}`}>
+                    {BattleFieldContent}
                 </div>
+
+                {/* サイド（モバイルのみ・バトル場の左にコンパクト表示＝高さはバトル場に合わせる） */}
+                {mobile && (
+                    <div className="order-1 flex-shrink-0 w-[42px]" style={{ height: sizes.battle.h }}>
+                        <NumericalSidePrize
+                            count={prizeCards.length}
+                            isPlayer1={idPrefix === 'player1'}
+                            onClick={() => takePrizeCard()}
+                        />
+                    </div>
+                )}
+
+                {/* デッキ/トラッシュ（モバイルのみ・コンパクト縦） */}
+                {mobile && (
+                    <div className="order-3 flex flex-col gap-1 flex-shrink-0 w-[44px]" style={{ height: sizes.battle.h }}>
+                        <div
+                            className="flex-1 bg-blue-50 rounded shadow border-2 border-blue-200 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition"
+                            onClick={() => setShowDeckViewer(true)}
+                        >
+                            <h2 className="text-[7px] font-bold text-blue-500 uppercase leading-none">Deck</h2>
+                            <div className="text-xs font-black text-blue-700 leading-none">{remaining.length}</div>
+                        </div>
+                        <DroppableZone id={`${idPrefix}-trash-zone`} className="flex-1">
+                            <div
+                                className="h-full bg-red-50 rounded shadow border-2 border-dashed border-red-200 flex flex-col items-center justify-center cursor-pointer hover:bg-red-100 transition"
+                                onClick={() => setShowTrashViewer(true)}
+                            >
+                                <h2 className="text-[7px] font-bold text-red-400 uppercase leading-none">Trash</h2>
+                                <div className="text-xs font-black text-red-600 leading-none">{trash.length}</div>
+                            </div>
+                        </DroppableZone>
+                    </div>
+                )}
 
                     {/* Deck & Trash - Desktop Only (Restored PC Layout) */}
                     {!mobile && (
@@ -2006,18 +2039,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
 
                 {/* Bench Row: Includes Deck/Trash on the Right */}
                 <div className="rounded-2xl shadow-2xl p-1 sm:p-3 w-full overflow-hidden bg-white/[0.03] backdrop-blur-xl border border-white/10 order-none flex flex-row">
-                    {/* Mobile Only: Side (Prizes) on Left of Bench */}
-                    {mobile && (
-                        <div className="flex-shrink-0 mr-1 flex items-center">
-                            <NumericalSidePrize 
-                                count={prizeCards.length} 
-                                isPlayer1={idPrefix === 'player1'} 
-                                onClick={() => takePrizeCard()}
-                            />
-                        </div>
-                    )}
-
-                    {/* Left: Bench Cards (4x2 Grid for Mobile) */}
+                    {/* Bench Cards（②: モバイルはサイド/デッキを上段へ移したのでベンチは1列横並び） */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                             <h2 className="text-[10px] sm:text-sm font-bold text-gray-900 uppercase">ベンチ</h2>
@@ -2025,7 +2047,7 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                             <span className="text-[8px] text-gray-500">Max: {benchSize}</span>
                         </div>
                         <div className={`
-                            ${mobile ? 'grid grid-cols-4 grid-rows-2 gap-x-1 gap-y-1.5' : 'flex gap-1 sm:gap-6 overflow-x-auto scrollbar-black items-end'} 
+                            ${mobile ? 'flex gap-1 justify-center overflow-x-auto scrollbar-black items-end' : 'flex gap-1 sm:gap-6 overflow-x-auto scrollbar-black items-end'}
                             py-1 px-1 sm:h-auto
                         `}>
                             {bench.slice(0, benchSize).map((stack, i) => (
@@ -2072,30 +2094,6 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
                         </div>
                     </div>
 
-                    {/* Right: Deck & Trash (Compact Column) - Mobile Only */}
-                    {mobile && (
-                        <div className={`flex flex-col gap-1 ml-1 flex-shrink-0 w-[50px]`}>
-                            {/* Visual Deck */}
-                            <div
-                                className={`bg-blue-50 rounded shadow p-0.5 border-2 border-blue-200 h-[40px] flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition`}
-                                onClick={() => setShowDeckViewer(true)}
-                            >
-                                <h2 className="text-[8px] font-bold text-blue-500 uppercase tracking-tight leading-none">Deck</h2>
-                                <div className="text-xs font-black text-blue-700 leading-none">{remaining.length}</div>
-                            </div>
-
-                            {/* Trash */}
-                            <DroppableZone id={`${idPrefix}-trash-zone`} className="w-full">
-                                <div
-                                    className={`bg-red-50 rounded shadow p-0.5 relative cursor-pointer hover:bg-red-100 transition border-2 border-dashed border-red-200 h-[40px] flex flex-col items-center justify-center`}
-                                    onClick={() => setShowTrashViewer(true)}
-                                >
-                                    <h2 className="text-[8px] font-bold text-red-400 uppercase tracking-tight leading-none">Trash</h2>
-                                    <div className="text-xs font-black text-red-600 leading-none">{trash.length}</div>
-                                </div>
-                            </DroppableZone>
-                        </div>
-                    )}
                 </div>
             </div>
 

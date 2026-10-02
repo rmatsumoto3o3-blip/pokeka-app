@@ -1583,13 +1583,12 @@ function PracticeContent() {
                                     {/* Mobile: P2 - Stadium - Tools - P1 in a Row. */}
                                     <div className="p-1 sm:p-2 sticky top-4 md:top-24 w-full flex flex-col items-center justify-center gap-1 md:gap-0">
 
-                                        {/* Main Battle Row: Opponent - Stadium - Coin/Dmg - Self */}
-                                        <div className="flex flex-row flex-wrap md:flex-nowrap items-center justify-center gap-1 md:gap-0 w-full md:flex-col">
-                                            {/* Mobile Portal Slot: Opponent Battle (P2) */}
-                                            <div id="mobile-battle-p2" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
+                                        {/* Main Battle Row（モバイル1段）: 相手 - P1/P2 - コイン - スタジアム - ダメカン - 自分 */}
+                                        <div className="flex flex-row flex-nowrap items-center justify-center gap-1.5 w-full md:flex-col md:gap-0">
+                                            {/* ②: バトル場は各ボードに戻したので中央のポータルスロットは廃止。中央はP1P2/コイン/スタジアム/ダメカンのみ */}
 
-                                            {/* Stadium Zone */}
-                                            <DroppableZone id="stadium-zone" className="w-[60px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-[10px] text-center p-0.5 sm:p-2 overflow-visible relative group bg-gray-200/90 flex-shrink-0 shadow-lg">
+                                            {/* Stadium Zone（モバイルは3番目／デスクトップは縦並び先頭） */}
+                                            <DroppableZone id="stadium-zone" className="order-4 md:order-none w-[58px] sm:w-[120px] aspect-[5/7] rounded border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 text-[10px] text-center p-0.5 sm:p-2 overflow-visible relative group bg-gray-200/90 flex-shrink-0 shadow-lg">
                                                 {(stadium1 || stadium2) ? (
                                                     <div
                                                         onClick={(e) => {
@@ -1643,50 +1642,43 @@ function PracticeContent() {
                                                 )}
                                             </DroppableZone>
 
-                                            {/* Coin & Damage - Inserted Narrowly Between Stadium and P1 */}
-                                            {/* pointer-events-none：この大枠がボードのボタン(特にP2サイド)を覆ってクリックを奪う不具合対策。操作要素は auto で復帰 */}
-                                            <div className="flex flex-row md:flex-col gap-1 items-center justify-center flex-shrink-0 w-auto h-full md:h-auto sm:w-full md:mt-4 mx-0.5 order-last md:order-none basis-full md:basis-auto pointer-events-none">
-                                                {/* Player Toggle - Mobile Only */}
-                                                <div className="md:hidden flex flex-col gap-1 mb-1 pointer-events-auto">
-                                                    <button 
-                                                        onClick={() => setActivePlayer('player1')}
-                                                        className={`px-3 py-1 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player1' ? 'bg-blue-600 text-white ring-2 ring-white scale-110' : 'bg-white text-blue-600 opacity-60'}`}
-                                                    >
-                                                        P1
-                                                    </button>
-                                                    <button 
-                                                        onClick={() => setActivePlayer('player2')}
-                                                        className={`px-3 py-1 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player2' ? 'bg-red-600 text-white ring-2 ring-white scale-110' : 'bg-white text-red-600 opacity-60'}`}
-                                                    >
-                                                        P2
-                                                    </button>
-                                                </div>
+                                            {/* P1/P2 切替（モバイルのみ・2番目） */}
+                                            <div className="md:hidden order-2 flex flex-col gap-0.5 flex-shrink-0">
+                                                <button
+                                                    onClick={() => setActivePlayer('player1')}
+                                                    className={`px-2 py-0.5 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player1' ? 'bg-blue-600 text-white ring-2 ring-white' : 'bg-white text-blue-600 opacity-60'}`}
+                                                >
+                                                    P1
+                                                </button>
+                                                <button
+                                                    onClick={() => setActivePlayer('player2')}
+                                                    className={`px-2 py-0.5 text-[10px] font-black rounded-full shadow-sm transition ${activePlayer === 'player2' ? 'bg-red-600 text-white ring-2 ring-white' : 'bg-white text-red-600 opacity-60'}`}
+                                                >
+                                                    P2
+                                                </button>
+                                            </div>
 
-                                                {/* Coin */}
-                                                <div className="bg-gray-50 rounded p-0.5 text-center w-[40px] md:w-full pointer-events-auto">
-                                                    <h3 className="text-[6px] sm:text-[8px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight md:block hidden">Coin</h3>
-                                                    <div className="flex justify-center mb-0.5">
-                                                        <div
-                                                            onClick={handleCoinFlip}
-                                                            className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 cursor-pointer transition-all duration-500 flex items-center justify-center text-[10px] font-bold ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600 text-white' : coinResult === 'tails' ? 'bg-white border-gray-400 text-black' : 'bg-gray-200 border-gray-300'}`}
-                                                        >
-                                                            {/* Tiny indicator */}
-                                                            {coinResult === 'heads' ? '表' : coinResult === 'tails' ? '裏' : ''}
-                                                        </div>
+                                            {/* Coin（モバイル3番目／デスクトップ縦並び） */}
+                                            <div className="order-3 md:order-none bg-gray-50 rounded p-0.5 text-center w-[38px] md:w-full flex-shrink-0 md:mt-4">
+                                                <h3 className="hidden md:block text-[8px] font-bold text-gray-500 mb-0.5 uppercase tracking-tight">Coin</h3>
+                                                <div className="flex justify-center">
+                                                    <div
+                                                        onClick={handleCoinFlip}
+                                                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 cursor-pointer transition-all duration-500 flex items-center justify-center text-[10px] font-bold ${coinResult === 'heads' ? 'bg-orange-400 border-orange-600 text-white' : coinResult === 'tails' ? 'bg-white border-gray-400 text-black' : 'bg-gray-200 border-gray-300'}`}
+                                                    >
+                                                        {coinResult === 'heads' ? '表' : coinResult === 'tails' ? '裏' : ''}
                                                     </div>
-                                                </div>
-
-                                                {/* Damage */}
-                                                <div className="bg-gray-50 rounded p-0.5 text-center w-auto md:w-full grid grid-cols-2 place-items-center md:flex md:flex-col md:flex-wrap justify-center gap-0.5 pointer-events-auto">
-                                                    <DraggableDamageCounter amount={100} />
-                                                    <DraggableDamageCounter amount={50} />
-                                                    <DraggableDamageCounter amount={10} />
-                                                    <DraggableDamageCounter amount={-999} />
                                                 </div>
                                             </div>
 
-                                            {/* Mobile Portal Slot: Self Battle (P1) */}
-                                            <div id="mobile-battle-p1" className="md:hidden w-[70px] h-[98px] flex-shrink-0 flex items-center justify-center"></div>
+                                            {/* Damage（モバイル4番目・横1列／デスクトップ縦並び） */}
+                                            <div className="order-5 md:order-none bg-gray-50 rounded p-0.5 w-auto md:w-full flex flex-row items-center md:flex-col md:flex-wrap justify-center gap-0.5 flex-shrink-0 md:mt-2">
+                                                <DraggableDamageCounter amount={100} />
+                                                <DraggableDamageCounter amount={50} />
+                                                <DraggableDamageCounter amount={10} />
+                                                <DraggableDamageCounter amount={-999} />
+                                            </div>
+
                                         </div>
 
                                         {/* PC Only Tools Area (Hidden on Mobile) */}
