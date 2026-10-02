@@ -570,20 +570,22 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
         isActivePlayer: () => isActive
     }))
 
-    // Auto-setup prize cards and draw initial hand when deck is first loaded
+    // デッキが差し替わるたびに必ず初期化（初手は常に7枚）。
+    // マウント/再マウントのタイミングに依存せず、「新しい60枚デッキ」を受け取った瞬間に
+    // 手札7枚・残り53枚へリセットする（初手が4/6枚になる不具合の根本対策）。
+    const lastDeckRef = useRef<Card[] | null>(null)
     useEffect(() => {
-        if (!initialized && deck && deck.length === 60) {
-            console.log(`[${playerName}] Initializing deck...`)
-            // ポケカの準備ルールに従い、最初は手札7枚のみを引き、サイドはまだ置かない
-            const initialHand = deck.slice(0, 7)
-            const initialRemaining = deck.slice(7)
-
+        if (deck && deck.length === 60 && deck !== lastDeckRef.current) {
+            lastDeckRef.current = deck
+            setHand(deck.slice(0, 7))
+            setRemaining(deck.slice(7))
             setPrizeCards([])
-            setHand(initialHand)
-            setRemaining(initialRemaining)
+            setBench(new Array(8).fill(null))
+            setBattleField(null)
+            setTrash([])
             setInitialized(true)
         }
-    }, [deck, initialized])
+    }, [deck])
 
     // Track previous stadium to handle trashing logic
     const prevStadiumRef = useRef<Card | null>(null)
@@ -689,32 +691,17 @@ const DeckPractice = forwardRef<DeckPracticeRef, DeckPracticeProps>(({ deck, onR
     }
 
     const mulligan = () => {
-        const combined = [
-            ...remaining, 
-            ...hand, 
-            ...prizeCards,
-            ...(battleField ? battleField.cards : []),
-            ...bench.flatMap(s => s ? s.cards : [])
-        ]
-        
-        // Show cards and wait for user to click a button
+        // 手札を見せて、確認後に引き直す（マリガンは手札だけを戻す）
         setMulliganReveal([...hand])
     }
 
     const executeMulligan = () => {
-        const combined = [
-            ...remaining, 
-            ...hand, 
-            ...prizeCards,
-            ...(battleField ? battleField.cards : []),
-            ...bench.flatMap(s => s ? s.cards : [])
-        ]
-        const newDeck = combined.sort(() => Math.random() - 0.5)
-        setHand(newDeck.slice(0, 7))
-        setPrizeCards([])
-        setBattleField(null)
-        setBench(new Array(8).fill(null))
-        setRemaining(newDeck.slice(7))
+        // マリガン：手札（7枚）だけを山札に戻してシャッフルし、7枚引き直す。
+        // サイド・バトル場・ベンチには触れない（全リセットではない）。
+        const combined = [...remaining, ...hand].sort(() => Math.random() - 0.5)
+        const drawCount = Math.min(7, combined.length)
+        setHand(combined.slice(0, drawCount))
+        setRemaining(combined.slice(drawCount))
         setMulliganReveal(null)
         showToast('手札を山札に戻して7枚引き直しました')
         logEvent('mulligan', { p: idPrefix, ...snap() })
