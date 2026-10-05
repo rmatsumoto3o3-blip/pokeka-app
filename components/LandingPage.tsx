@@ -26,7 +26,7 @@ interface LandingPageProps {
     weeklyRanking?: Record<string, number>  // アーキタイプ別デッキ数（全期間・集計stats由来）
     recentRanking?: Record<string, number>  // アーキタイプ別デッキ数（直近2週間・大会日基準）
     winCounts?: Record<string, number>       // アーキタイプ別優勝数（集計stats由来）
-    winnerDecks?: { id: string; deck_code: string | null; archetype_id: string | null; event_date: string | null }[]  // 直近優勝デッキ（featured_decks由来）
+    winnerDecks?: { id: string; deck_code: string | null; archetype_id: string | null; event_date: string | null; source?: 'featured' | 'city' }[]  // 直近優勝デッキ（シティリーグ優先・不足分はfeatured_decks）
     featuredCards?: { card_name: string; current_adoption_rate: number }[]
 }
 
@@ -210,7 +210,7 @@ export default function LandingPage({ envDecks = [], usageRanking = [], usageTot
                                         {validWinnerDecks.map(d => {
                                             const arch = archetypeMap.get(d.archetype_id!)!
                                             return (
-                                                <Link key={d.id} href={`/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
+                                                <Link key={d.id} href={d.source === 'city' ? `/env/${encodeURIComponent(d.deck_code!)}` : `/decks/${encodeURIComponent(d.deck_code!)}`} className="text-center">
                                                     <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
                                                         {arch.cover_image_url && (
                                                             <Image src={arch.cover_image_url} alt={arch.name} fill className="object-cover" />

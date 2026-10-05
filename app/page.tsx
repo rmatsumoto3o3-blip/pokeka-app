@@ -6,6 +6,8 @@ import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
+import { loadEventsDB, loadDeckIndex, loadArchetypeMapDB } from '@/lib/cityStore'
+import { resolveArchetypeFromRep } from '@/lib/city'
 
 // 環境デッキ（Firebase・トップ最上部用）。Supabaseを使わずに常時表示。
 type EnvDeckTop = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
@@ -231,6 +233,47 @@ const getCachedFeaturedWinnerDecks = unstable_cache(
   { revalidate: 3600 }
 )
 
+// TOPの「環境・優勝デッキ集」用：シティリーグ(city_events)の優勝デッキを新しい順に取得。
+// featured_decks が止まっても日次のシティ結果で最新の優勝デッキを出す。
+// archetype名は deck_archetypes の id に紐づけ（カバー画像・名称表示のため）。
+type WinnerDeck = { id: string; deck_code: string | null; archetype_id: string | null; event_date: string | null; source?: 'featured' | 'city' }
+const getCityWinnerDecks = unstable_cache(
+  async (): Promise<WinnerDeck[]> => {
+    const [events, idx, map] = await Promise.all([loadEventsDB(), loadDeckIndex(), loadArchetypeMapDB()])
+    const sb = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    const { data: archRows } = await sb.from('deck_archetypes').select('id, name')
+    const nameToId = new Map<string, string>((archRows || []).map((a: { id: string; name: string }) => [a.name, a.id]))
+    const fmt = (d: string) => /^\d{8}$/.test(d) ? `${+d.slice(4, 6)}/${+d.slice(6, 8)}` : d
+    const out: WinnerDeck[] = []
+    const seen = new Set<string>()
+    for (const ev of events) { // events は date 降順
+      if (ev.league !== 'オープン') continue
+      for (const r of ev.results) {
+        if (r.rank !== 1 || !r.deck_id || seen.has(r.deck_id)) continue
+        seen.add(r.deck_id)
+        const name = resolveArchetypeFromRep(r.deck_id, idx.reps[r.deck_id], map)
+        const archId = name ? nameToId.get(name) ?? null : null
+        out.push({ id: r.deck_id, deck_code: r.deck_id, archetype_id: archId, event_date: fmt(ev.date), source: 'city' })
+      }
+    }
+    return out
+  },
+  ['city-winner-decks-v1'],
+  { revalidate: 3600, tags: ['city-data'] }
+)
+
+// シティ優勝（最新・現行環境）を優先し、不足分を featured_decks で補完。重複はdeck_codeで排除。
+function mergeWinnerDecks(city: WinnerDeck[], featured: WinnerDeck[]): WinnerDeck[] {
+  const seen = new Set<string>()
+  const merged: WinnerDeck[] = []
+  for (const d of [...city.map(d => ({ ...d, source: 'city' as const })), ...featured.map(d => ({ ...d, source: 'featured' as const }))]) {
+    if (!d.deck_code || seen.has(d.deck_code)) continue
+    seen.add(d.deck_code)
+    merged.push(d)
+  }
+  return merged.slice().sort(byEventDateDesc).slice(0, 8)
+}
+
 // 直近2ヶ月の採用カードデータがあるアーキタイプID（リンク表示の404回避用、24時間キャッシュ）
 const getCachedRecentArchetypeIds = unstable_cache(
   async () => {
@@ -292,8 +335,9 @@ export default async function Home() {
     archStats,
     recentArchetypeIds,
     featuredCards,
-    winnerDecks,
+    featuredWinnerDecks,
     recentRanking,
+    cityWinnerDecks,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
@@ -303,7 +347,11 @@ export default async function Home() {
     getCachedFeaturedCards(),
     getCachedFeaturedWinnerDecks(),
     getCachedRecentTier(),
+    getCityWinnerDecks(),
   ])
+
+  // 環境・優勝デッキ集：シティ（最新）を優先し、不足分だけ featured で補完
+  const winnerDecks = mergeWinnerDecks(cityWinnerDecks, featuredWinnerDecks as WinnerDeck[])
 
   const envDecks = await getEnvDecksForTop()
   const usageRanking = buildUsageRanking(envDecks)
