@@ -7,7 +7,7 @@ import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchUnionArenaDeckData, type UnionArenaCard } from '@/lib/unionArenaDeckParser'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 
-export const revalidate = 86400
+export const revalidate = 604800
 export const dynamicParams = true
 
 // Supabase制限中でも詳細を出せるよう、id を deckCode とみなして Firebase（recommendedDecks/unionarena）から引く。

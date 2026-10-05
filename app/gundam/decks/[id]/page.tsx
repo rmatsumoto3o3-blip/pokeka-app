@@ -7,7 +7,7 @@ import GundamDeckIcon from '@/components/GundamDeckIcon'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
 import { getFirebaseDb } from '@/lib/firebase/admin'
 
-export const revalidate = 86400
+export const revalidate = 604800
 export const dynamicParams = true
 
 // Supabase制限中でも詳細を出せるよう、id を deckCode とみなして Firebase（environmentDecks/gundam）から引く。

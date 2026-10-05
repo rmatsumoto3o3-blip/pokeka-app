@@ -6,7 +6,7 @@ import { buildDistributionByPrefecture, REGIONS, monthOf, fmtMonth } from '@/lib
 
 // 都道府県別デッキ分布の専用ページ。全期間/月 × 全国/地方 で絞り込み。
 // 集計は /city と同じ（rep+別名map）。Supabase追加読み込みなし・静的ISR。
-export const revalidate = 3600
+export const revalidate = 43200
 
 const PREF_URL = 'https://www.pokelix.jp/city/prefectures'
 export const metadata: Metadata = {

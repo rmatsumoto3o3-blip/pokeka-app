@@ -13,7 +13,7 @@ import CardAdoptionSearch from '@/components/city/CardAdoptionSearch'
 import PublicHeader from '@/components/PublicHeader'
 
 // 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
-export const revalidate = 3600
+export const revalidate = 43200
 
 const CITY_URL = 'https://www.pokelix.jp/city'
 export const metadata: Metadata = {

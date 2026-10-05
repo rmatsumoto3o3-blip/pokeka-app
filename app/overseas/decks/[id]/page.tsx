@@ -7,7 +7,7 @@ import Footer from '@/components/Footer'
 import OverseasDeckCardGrid from '@/components/OverseasDeckCardGrid'
 import { getOverseasDeck } from '@/lib/overseasData'
 
-export const revalidate = 86400
+export const revalidate = 604800
 export const dynamicParams = true
 
 export function generateStaticParams() {

@@ -6,7 +6,7 @@ import DeckPracticeLauncher from '@/components/DeckPracticeLauncher'
 import { fetchDeckData, cropImageClass } from '@/lib/deckParser'
 import { getDeckDataAction } from '@/app/actions'
 
-export const revalidate = 86400
+export const revalidate = 604800
 export const dynamicParams = true
 
 // event_location が "7/7 7/7ジムバトル" のように日付を重複して含む場合があるため除去

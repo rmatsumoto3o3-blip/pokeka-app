@@ -7,7 +7,7 @@ import GundamDeckIcon from '@/components/GundamDeckIcon'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import { fetchGundamDeckData, type GundamCard } from '@/lib/gundamDeckParser'
 
-export const revalidate = 86400
+export const revalidate = 604800
 export const dynamicParams = true
 
 async function getRecommendedDeck(id: string) {
