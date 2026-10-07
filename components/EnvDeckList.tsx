@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import CopyDeckCode from '@/components/CopyDeckCode'
 
 export type EnvDeck = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
 
@@ -22,7 +23,7 @@ function DeckCard({ d }: { d: EnvDeck }) {
             </div>
             <div className="text-xs text-gray-500 mb-2">
                 {d.eventDate && <span>{d.eventDate}・</span>}
-                <span className="font-mono text-gray-400">{d.deckCode}</span>
+                <CopyDeckCode code={d.deckCode} className="text-gray-400 align-middle" />
             </div>
             <div className="flex gap-2">
                 <Link href={`/env/${encodeURIComponent(d.deckCode)}`} className="flex-1 text-center text-sm font-bold text-gray-800 border border-gray-300 rounded-lg py-1.5 hover:bg-gray-50">デッキを見る</Link>

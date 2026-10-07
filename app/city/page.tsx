@@ -6,6 +6,7 @@ import {
 } from '@/lib/city'
 import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadDeckIndex, loadWatchlistDB } from '@/lib/cityStore'
 import DeckGrid from '@/components/city/DeckGrid'
+import CopyDeckCode from '@/components/CopyDeckCode'
 import CityAdminProvider from '@/components/city/CityAdminContext'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 import WatchlistAdmin from '@/components/city/WatchlistAdmin'
@@ -56,7 +57,7 @@ function ResultBlock({ r, cache, map }: { r: ResultRow; cache: DeckCache; map: A
         <div className="py-2">
             <div className="flex items-center gap-2 mb-1.5">
                 <span className={rankBadge(r.rank)}>{r.rank}</span>
-                <span className="font-mono text-[11px] text-gray-400 truncate flex-1">{r.deck_id}</span>
+                <CopyDeckCode code={r.deck_id} className="text-[11px] text-gray-400 flex-1 text-left" />
                 <a href={deckUrl(r.deck_id)} target="_blank" rel="noopener noreferrer"
                     className="text-[11px] font-bold text-blue-600 hover:underline shrink-0">公式 ↗</a>
             </div>
