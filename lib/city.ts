@@ -92,19 +92,22 @@ export function buildDistributionFromReps(
 ) {
     const seen = new Set<string>()
     const tally: Record<string, number> = {}
+    const winTally: Record<string, number> = {} // 優勝数（rank===1）。大会ごとの優勝を数えるため deck_id 重複排除しない。
     let resolved = 0
     for (const ev of events) for (const r of ev.results) {
-        if (seen.has(r.deck_id)) continue
-        seen.add(r.deck_id)
         const arch = resolveArchetypeFromRep(r.deck_id, repMap[r.deck_id], map)
         if (!arch) continue
+        if (r.rank === 1) winTally[arch] = (winTally[arch] || 0) + 1
+        if (seen.has(r.deck_id)) continue
+        seen.add(r.deck_id)
         resolved++
         tally[arch] = (tally[arch] || 0) + 1
     }
+    const totalWins = Object.values(winTally).reduce((a, b) => a + b, 0)
     const list = Object.entries(tally)
-        .map(([name, count]) => ({ name, count, rate: resolved ? +(count / resolved * 100).toFixed(1) : 0 }))
+        .map(([name, count]) => ({ name, count, wins: winTally[name] || 0, rate: resolved ? +(count / resolved * 100).toFixed(1) : 0 }))
         .sort((a, b) => b.count - a.count)
-    return { resolved, list }
+    return { resolved, totalWins, list }
 }
 
 // 上と同じ集計を「開催都道府県ごと」に束ねる。分類ロジック(rep+別名map)は共通で、

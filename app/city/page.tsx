@@ -103,6 +103,9 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
     const cardNames = deckIndex.cardNames
 
     const months = [...new Set(events.map(e => monthOf(e.date)))].sort((a, b) => b.localeCompare(a))
+    // 月の行の先頭「全期間」ボタン（?month=all）。選択時はデッキ分布を全期間スコープで表示する。
+    // 個別大会・日付タブ・採用率は従来どおり最新月を既定コンテキストとして出す。
+    const isAll = sp.month === 'all'
     const selMonth = (sp.month && months.includes(sp.month)) ? sp.month : months[0]
     const monthEvents = events.filter(e => monthOf(e.date) === selMonth)
     const dates = [...new Set(monthEvents.map(e => e.date))].sort((a, b) => b.localeCompare(a))
@@ -119,9 +122,16 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
 
     // 分布は代表カードマップから集計（日/今月/全期間を切替）。全期間・今月も軽量に出せる。
     const repMap = deckIndex.reps
-    const distScope = (sp.dist === 'month' || sp.dist === 'all') ? sp.dist : 'day'
+    // 全期間は月の行の「全期間」ボタンで指定。デッキ分布のトグルは この日付/今月 のみ。
+    const distScope: 'day' | 'month' | 'all' = isAll ? 'all' : (sp.dist === 'month' ? 'month' : 'day')
     const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
     const dist = buildDistributionFromReps(distEvents, repMap, archMap)
+    // 「使用率／優勝数」で並び替え（全期間・月・日付のいずれでも切替可）。優勝数順は rank===1 の累計で並べる。
+    const distSort: 'use' | 'win' = sp.sort === 'win' ? 'win' : 'use'
+    const distList = distSort === 'win'
+        ? [...dist.list].sort((a, b) => b.wins - a.wins || b.count - a.count)
+        : dist.list
+    const maxWins = Math.max(1, ...dist.list.map(d => d.wins))
 
     // 区分の選択肢：既存アーキタイプ（Supabase）と、表示日付の自動検出名を分けて渡す
     const existingSet = new Set(existing)
@@ -210,17 +220,20 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 {/* Month select */}
                 <div className="flex items-center gap-2 flex-wrap mb-2">
                     <span className="text-xs font-bold text-gray-500">月</span>
+                    <a href="/city?month=all" className={tabCls(isAll)}>全期間</a>
                     {months.map(m => (
-                        <a key={m} href={`/city?month=${m}`} className={tabCls(m === selMonth)}>{fmtMonth(m)}</a>
+                        <a key={m} href={`/city?month=${m}`} className={tabCls(!isAll && m === selMonth)}>{fmtMonth(m)}</a>
                     ))}
                 </div>
-                {/* Date tabs */}
+                {/* Date tabs（全期間選択中はどの日付も未選択。日付を押すとその月の個別結果へ） */}
                 <div className="flex items-center gap-2 flex-wrap mb-5">
                     <span className="text-xs font-bold text-gray-500">日付</span>
                     {dates.map(d => (
-                        <a key={d} href={`/city?month=${selMonth}&date=${d}`} className={tabCls(d === selDate)}>{fmtDate(d)}</a>
+                        <a key={d} href={`/city?month=${selMonth}&date=${d}`} className={tabCls(!isAll && d === selDate)}>{fmtDate(d)}</a>
                     ))}
-                    <span className="text-xs text-gray-500 ml-1">大会 {dayEvents.length}／入賞 {totalDecks}</span>
+                    {isAll
+                        ? <span className="text-xs text-gray-400 ml-1">全期間のデッキ分布を表示中（日付を選ぶとその日の大会結果）</span>
+                        : <span className="text-xs text-gray-500 ml-1">大会 {dayEvents.length}／入賞 {totalDecks}</span>}
                 </div>
 
                 {/* 管理者ログイン時のみ、結果ページ内で各デッキを区分（公開側には一切出さない） */}
@@ -233,24 +246,54 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                             <h2 className="text-base font-black text-gray-900">デッキ分布</h2>
                             <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">{dist.resolved}デッキ</span>
                         </div>
-                        <div className="flex items-center gap-1 mb-3">
-                            {([['day', 'この日付'], ['month', '今月'], ['all', '全期間']] as const).map(([k, label]) => (
-                                <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}`}
-                                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distScope === k
-                                        ? 'bg-indigo-600 text-white border-indigo-600'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
-                            ))}
-                        </div>
-                        {dist.list.length ? (
+                        {isAll ? (
+                            <div className="flex items-center gap-1 mb-3 flex-wrap">
+                                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold border bg-indigo-600 text-white border-indigo-600">全期間</span>
+                                {([['use', '使用率'], ['win', '優勝数']] as const).map(([k, label]) => (
+                                    <a key={k} href={`/city?month=all&sort=${k}`}
+                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distSort === k
+                                            ? 'bg-amber-500 text-white border-amber-500'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 mb-3 flex-wrap">
+                                {([['day', 'この日付'], ['month', '今月']] as const).map(([k, label]) => (
+                                    <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}&sort=${distSort}`}
+                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distScope === k
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
+                                ))}
+                                <span className="w-px h-4 bg-gray-200 mx-0.5" />
+                                {([['use', '使用率'], ['win', '優勝数']] as const).map(([k, label]) => (
+                                    <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${distScope}&sort=${k}`}
+                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distSort === k
+                                            ? 'bg-amber-500 text-white border-amber-500'
+                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
+                                ))}
+                            </div>
+                        )}
+                        {distList.length ? (
                             <div className="space-y-1">
-                                {dist.list.slice(0, 12).map((d, i) => (
+                                {distList.slice(0, 12).map((d, i) => (
                                     <div key={d.name} className="flex items-center gap-2">
                                         <span className="text-xs text-gray-400 w-4 text-right shrink-0">{i + 1}</span>
                                         <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{d.name}</span>
-                                        <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
-                                            <div className="h-full bg-indigo-500" style={{ width: `${d.rate}%` }} />
-                                        </div>
-                                        <span className="text-sm font-black text-indigo-700 w-14 text-right shrink-0">{d.rate}%</span>
+                                        {distSort === 'win' ? (
+                                            <>
+                                                <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
+                                                    <div className="h-full bg-amber-500" style={{ width: `${(d.wins / maxWins) * 100}%` }} />
+                                                </div>
+                                                <span className="text-sm font-black text-amber-600 w-14 text-right shrink-0">{d.wins}<span className="text-[10px] font-bold ml-0.5">優勝</span></span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
+                                                    <div className="h-full bg-indigo-500" style={{ width: `${d.rate}%` }} />
+                                                </div>
+                                                <span className="text-sm font-black text-indigo-700 w-14 text-right shrink-0">{d.rate}%</span>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -282,12 +325,20 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                     </section>
                 </div>
 
-                {/* Events */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {dayEvents.map(ev => <EventCard key={ev.event_holding_id} ev={ev} cache={cache} map={archMap} />)}
-                </div>
-                {dayEvents.length === 0 && (
-                    <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">この日付の大会はありません。</div>
+                {/* Events（全期間選択中は日付未選択のため個別大会は出さず、日付選択を促す） */}
+                {isAll ? (
+                    <div className="bg-white rounded-xl border border-dashed border-gray-200 p-8 text-center text-gray-500">
+                        全期間のデッキ分布を表示中です。個別の大会結果を見るには、上の<span className="font-bold text-gray-700">「日付」</span>を選択してください。
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {dayEvents.map(ev => <EventCard key={ev.event_holding_id} ev={ev} cache={cache} map={archMap} />)}
+                        </div>
+                        {dayEvents.length === 0 && (
+                            <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">この日付の大会はありません。</div>
+                        )}
+                    </>
                 )}
 
                 {/* SEO用の補足テキスト（検索意図の受け皿） */}
