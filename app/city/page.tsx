@@ -193,8 +193,13 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                         {introMeta && <span className="block mt-1 text-gray-500">{introMeta}</span>}
                     </p>
                 </div>
-                {/* 都道府県別デッキ分布は専用ページへ（一覧までのスクロールを伸ばさない） */}
-                <div className="mb-3">
+                {/* 専用ページへの導線 */}
+                <div className="mb-3 flex flex-wrap gap-2">
+                    <a href="/city/archetypes"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-black border bg-white text-blue-700 border-blue-300 hover:bg-blue-50 transition">
+                        <span>📊 デッキ別 採用カード・採用率</span>
+                        <span className="text-[11px] font-bold opacity-80">を見る（全期間・月別）→</span>
+                    </a>
                     <a href="/city/prefectures"
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-black border bg-white text-indigo-700 border-indigo-300 hover:bg-indigo-50 transition">
                         <span>🗾 都道府県別デッキ分布</span>

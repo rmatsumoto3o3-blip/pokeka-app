@@ -238,3 +238,60 @@ export function buildAdoption(events: EventRec[], cache: DeckCache, watchlist: s
     })).sort((a, b) => b.rate - a.rate)
     return { total, list }
 }
+
+// アーキタイプ別カード採用率。deckCards: deck_code -> Card[]。monthFilter 指定で月(YYYYMM)に絞る。
+// 返り値：[{archetype, total(デッキ数), cards:[{name,supertype,image,decks,rate(%),avg(平均採用枚数)}]}]（デッキ数降順）
+export function buildArchetypeCardAdoption(
+    events: EventRec[],
+    deckCards: Record<string, Card[]>,
+    map: ArchetypeMap,
+    monthFilter?: string,
+) {
+    const archDecks = new Map<string, string[]>()
+    const seen = new Set<string>()
+    for (const ev of events) {
+        if (monthFilter && monthOf(ev.date) !== monthFilter) continue
+        for (const r of ev.results) {
+            if (!r.deck_id || seen.has(r.deck_id)) continue
+            seen.add(r.deck_id)
+            const cards = deckCards[r.deck_id]
+            if (!cards) continue
+            const arch = resolveArchetypeFromRep(r.deck_id, representativeCard(cards), map) || 'その他'
+            if (!archDecks.has(arch)) archDecks.set(arch, [])
+            archDecks.get(arch)!.push(r.deck_id)
+        }
+    }
+    const out: {
+        archetype: string; total: number
+        cards: { name: string; supertype: string; image: string | null; decks: number; rate: number; avg: number }[]
+    }[] = []
+    for (const [arch, codes] of archDecks) {
+        const total = codes.length
+        const agg = new Map<string, { name: string; supertype: string; image: string | null; decks: number; qty: number }>()
+        for (const code of codes) {
+            const cards = deckCards[code] || []
+            const uniqQty = new Map<string, number>()
+            const sup = new Map<string, string>()
+            const img = new Map<string, string | null>()
+            for (const c of cards) {
+                if (!c?.name) continue
+                uniqQty.set(c.name, (uniqQty.get(c.name) || 0) + (c.quantity || 0))
+                sup.set(c.name, c.supertype)
+                img.set(c.name, c.image ?? null)
+            }
+            for (const [name, qty] of uniqQty) {
+                let e = agg.get(name)
+                if (!e) { e = { name, supertype: sup.get(name) || '', image: img.get(name) ?? null, decks: 0, qty: 0 }; agg.set(name, e) }
+                e.decks++; e.qty += qty
+            }
+        }
+        const cards = [...agg.values()]
+            .map(c => ({ name: c.name, supertype: c.supertype, image: c.image, decks: c.decks, rate: +(c.decks / total * 100).toFixed(1), avg: +(c.qty / c.decks).toFixed(1) }))
+            .filter(c => c.rate > 0.9) // 採用率0.9%以下(誤差・ノイズ)は除外
+            .sort((a, b) => b.rate - a.rate || b.avg - a.avg)
+        out.push({ archetype: arch, total, cards })
+    }
+    out.sort((a, b) => b.total - a.total)
+    return out
+}
+export type ArchetypeAdoption = ReturnType<typeof buildArchetypeCardAdoption>

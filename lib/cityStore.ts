@@ -198,3 +198,28 @@ export async function saveRuleDB(representative: string, archetype: string): Pro
         await sb.from('city_archetype_rules').delete().eq('representative', representative)
     }
 }
+
+// アーキタイプ別カード採用率（全期間＋月別）。全city_decksをスキャンして集計し、結果をキャッシュ。
+export const loadArchetypeAdoption = (month?: string) => unstable_cache(async () => {
+    const [events, map] = await Promise.all([loadEventsDB(), loadArchetypeMapDB()])
+    const deckCards: Record<string, Card[]> = {}
+    try {
+        const sb = anon()
+        let from = 0; const size = 1000
+        for (;;) {
+            const { data } = await sb.from('city_decks').select('deck_code, cards').range(from, from + size - 1)
+            const rows = (data || []) as { deck_code: string; cards: Card[] }[]
+            for (const r of rows) deckCards[r.deck_code] = r.cards
+            if (rows.length < size) break
+            from += size
+        }
+    } catch { /* 空 */ }
+    const { buildArchetypeCardAdoption } = await import('./city')
+    return buildArchetypeCardAdoption(events, deckCards, map, month)
+}, ['city-arch-adoption-v2', month || 'all'], { revalidate: 43200, tags: ['city-data'] })()
+
+// 月の一覧（アーキタイプ採用ページのタブ用）
+export const loadCityMonths = unstable_cache(async (): Promise<string[]> => {
+    const events = await loadEventsDB()
+    return [...new Set(events.map(e => e.date.slice(0, 6)))].sort((a, b) => b.localeCompare(a))
+}, ['city-months-v1'], { revalidate: 43200, tags: ['city-data'] })
