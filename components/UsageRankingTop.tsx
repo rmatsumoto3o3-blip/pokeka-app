@@ -36,7 +36,7 @@ export default function UsageRankingTop({ ranking, totalDecks, tierMetas = [], h
                         <div className="md:w-[150px] md:shrink-0">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs font-bold text-gray-600">環境Tier</span>
-                                <Link href="/archetypes" className="text-[11px] text-blue-600 font-semibold">採用率 ›</Link>
+                                <Link href="/city/archetypes" className="text-[11px] text-blue-600 font-semibold">採用率 ›</Link>
                             </div>
                             <div className="space-y-2">
                                 {TIER_ROWS.map(t => {

@@ -31,7 +31,7 @@ export default function NoticeBanner() {
                 <p className="flex-1 text-[12px] md:text-[13px] text-amber-800 leading-relaxed">
                     現在サーバーの都合により、<Link href="/" className="underline font-semibold">環境Tier表</Link>・
                     <Link href="/env" className="underline font-semibold">環境デッキ</Link>・
-                    <Link href="/archetypes" className="underline font-semibold">採用率</Link>
+                    <Link href="/city/archetypes" className="underline font-semibold">採用率</Link>
                     などのデータ表示が一時的にご利用いただけません。順次復旧いたします。
                     <Link href="/practice" className="underline font-semibold">一人回し</Link>・
                     <Link href="/simulator" className="underline font-semibold">確率シミュレーター</Link>

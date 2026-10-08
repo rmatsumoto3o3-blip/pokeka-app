@@ -20,7 +20,7 @@ export default function TierTable({ metas }: { metas: TierMeta[] }) {
                     <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                         <span className="w-1.5 h-5 bg-blue-500 rounded-full" />環境Tier表
                     </h2>
-                    <Link href="/archetypes" className="text-sm text-blue-600 font-semibold">採用率ランキング ›</Link>
+                    <Link href="/city/archetypes" className="text-sm text-blue-600 font-semibold">採用率ランキング ›</Link>
                 </div>
 
                 <div className="space-y-2">
