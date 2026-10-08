@@ -116,16 +116,22 @@ const EMPTY_PAYLOAD: RawPayload = { generatedAt: '', totalDecks: 0, archetypes: 
 const fetchOverseas = cache(async (): Promise<RawPayload> => {
     // 取得元(GAS)が一時的に404/500やタイムアウトを返してもサイト全体のビルドを落とさない。
     // 失敗時は空データを返し、ページは空状態で描画→次回 revalidate で自動復帰する。
+    // ★無応答対策：GASが固まると fetch が返らず Next のプリレンダ60秒上限でビルドワーカーが
+    //   落ちる（サイト全体のビルド失敗）。AbortController で15秒上限を付け、超過時は空データで継続。
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 15000)
     try {
-        const res = await fetch(OVERSEAS_DATA_URL, { next: { revalidate: 86400 } })
+        const res = await fetch(OVERSEAS_DATA_URL, { next: { revalidate: 86400 }, signal: ctrl.signal })
         if (!res.ok) {
             console.warn('overseas fetch failed: ' + res.status + ' → 空データで継続')
             return EMPTY_PAYLOAD
         }
         return await res.json()
     } catch (e) {
-        console.warn('overseas fetch error → 空データで継続', e)
+        console.warn('overseas fetch error/timeout → 空データで継続', e)
         return EMPTY_PAYLOAD
+    } finally {
+        clearTimeout(timer)
     }
 })
 

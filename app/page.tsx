@@ -133,85 +133,9 @@ function mapCategory(supertype: string, subtypes?: string[]): string {
   return 'Goods'
 }
 
-// アーキタイプ別の「デッキ数(ALL)」と「優勝数(優勝)」を集計statsから取得。
-// 個別デッキ(deck_records)ではなく archetype_card_stats（匿名の集計）から数えるため、
-// 生データを削除してもランキング・分布は残る。total_decks はアーキタイプ+rankごとに
-// 全カード行へ同値で入っているので、アーキタイプ単位で最初の1件を採用する。
-const getCachedArchetypeStats = unstable_cache(
-  async () => {
-    const supabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    const deckCounts: Record<string, number> = {}
-    const winCounts: Record<string, number> = {}
-    const ranks: [string, Record<string, number>][] = [['ALL', deckCounts], ['優勝', winCounts]]
-    for (const [rank, target] of ranks) {
-      for (let offset = 0; offset < 30000; offset += 1000) {
-        const { data } = await supabase
-          .from('archetype_card_stats')
-          .select('archetype_id,total_decks')
-          .eq('event_rank', rank)
-          .range(offset, offset + 999)
-        if (!data || data.length === 0) break
-        data.forEach(r => {
-          if (r.archetype_id && !(r.archetype_id in target)) target[r.archetype_id] = r.total_decks || 0
-        })
-        if (data.length < 1000) break
-      }
-    }
-    return { deckCounts, winCounts }
-  },
-  ['archetype-counts-v1'],
-  { revalidate: 14400 }
-)
-
-// 直近2週間の環境Tier用：deck_records（過去）＋featured_decks（現在）を大会日(event_date)基準で
-// 数え、アーキタイプ別デッキ数を返す。集計stats（7/31凍結）ではなくライブな大会日で現環境を映す。
-const getCachedRecentTier = unstable_cache(
-  async () => {
-    const supabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    const now = Date.now()
-    const from = now - 14 * 24 * 60 * 60 * 1000
-    // deck_records は created_at で粗く絞る（同期は大会後なので上側にマージン）
-    const lo = new Date(from - 3 * 24 * 60 * 60 * 1000).toISOString()
-    const hi = new Date(now + 2 * 24 * 60 * 60 * 1000).toISOString()
-
-    const counts: Record<string, number> = {}
-    const seen = new Set<string>()
-    const bump = (aid?: string | null, ed?: string | null, ca?: string | null, code?: string | null) => {
-      if (!aid) return
-      const key = `${code || ''}__${aid}`
-      if (seen.has(key)) return
-      const t = eventDateSortKey(ed, ca)
-      if (t < from || t > now) return
-      seen.add(key)
-      counts[aid] = (counts[aid] || 0) + 1
-    }
-
-    for (let off = 0; off < 30000; off += 1000) {
-      const { data } = await supabase
-        .from('deck_records')
-        .select('archetype_id, event_date, created_at, deck_code')
-        .gte('created_at', lo).lte('created_at', hi)
-        .range(off, off + 999)
-      if (!data || data.length === 0) break
-      data.forEach(r => bump(r.archetype_id, r.event_date, r.created_at, r.deck_code))
-      if (data.length < 1000) break
-    }
-    const { data: feat } = await supabase
-      .from('featured_decks')
-      .select('archetype_id, event_date, created_at, deck_code')
-    ;(feat || []).forEach(r => bump(r.archetype_id, r.event_date, r.created_at, r.deck_code))
-
-    return counts
-  },
-  ['recent-tier-14d-v1'],
-  { revalidate: 3600 }
-)
+// ※ 旧Tier表の集計元（archetype_card_stats＝7/31凍結、deck_records＝同期停止中）は廃止。
+//   いまは現環境マージ（Firebase環境デッキ＋シティリーグ）からTier表・分布をライブ算出する
+//   （page本体の buildLiveTierRankings 参照）。シティ結果もそのまま反映される。
 
 // TOPの「環境・優勝デッキ集」用：featured_decks の優勝デッキを新しい順に取得（1時間キャッシュ）
 const getCachedFeaturedWinnerDecks = unstable_cache(
@@ -332,21 +256,17 @@ export default async function Home() {
     { data: archetypes },
     { data: articles },
     analyticsData,
-    archStats,
     recentArchetypeIds,
     featuredCards,
     featuredWinnerDecks,
-    recentRanking,
     cityWinnerDecks,
   ] = await Promise.all([
     supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
     getCachedAnalytics(),
-    getCachedArchetypeStats(),
     getCachedRecentArchetypeIds(),
     getCachedFeaturedCards(),
     getCachedFeaturedWinnerDecks(),
-    getCachedRecentTier(),
     getCityWinnerDecks(),
   ])
 
@@ -357,9 +277,26 @@ export default async function Home() {
   const usageRanking = buildUsageRanking(envDecks)
   const tierMetas = await getTierMetasCached()
 
-  // ランキング＝アーキタイプ別デッキ数(ALL)、分布＝優勝数（いずれも集計stats由来）
-  const weeklyRanking = archStats.deckCounts
-  const winCounts = archStats.winCounts
+  // Tier表・分布・優勝数は「現環境マージ（Firebase環境デッキ＋シティリーグ）」からライブ算出。
+  // 旧集計stats（7/31凍結）・deck_records（同期停止中）は使わないので、シティ結果まで反映される。
+  // Tier表の描画は archetype_id キーで動くため、アーキタイプ名→id（deck_archetypes）に変換する。
+  const nameToId = new Map<string, string>()
+  for (const a of (archetypes || [])) {
+    const nm = (a.name || '').trim()
+    if (nm && !nameToId.has(nm)) nameToId.set(nm, a.id)
+  }
+  const RECENT_MS = 14 * 24 * 60 * 60 * 1000
+  const nowMs = Date.now()
+  const weeklyRanking: Record<string, number> = {} // 全期間（マージ全件）
+  const recentRanking: Record<string, number> = {} // 直近2週間（大会日基準）
+  const winCounts: Record<string, number> = {}      // 優勝数（分布ドーナツ用）
+  for (const d of envDecks) {
+    const id = nameToId.get((d.archetype || '').trim())
+    if (!id) continue
+    weeklyRanking[id] = (weeklyRanking[id] || 0) + 1
+    if (d.rank === '優勝') winCounts[id] = (winCounts[id] || 0) + 1
+    if (nowMs - eventDateSortKey(d.eventDate) <= RECENT_MS) recentRanking[id] = (recentRanking[id] || 0) + 1
+  }
 
   // デッキ数が多い順にアーキタイプをソート
   const sortedArchetypes = [...(archetypes || [])].sort(
