@@ -94,7 +94,7 @@ function EventCard({ ev, cache, map }: { ev: EventRec; cache: DeckCache; map: Ar
     )
 }
 
-export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string }> }) {
+export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string; sort?: string }> }) {
     const sp = await searchParams
     const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
     const wlDb = await loadWatchlistDB()
