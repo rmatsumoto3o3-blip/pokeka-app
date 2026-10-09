@@ -7,7 +7,20 @@ import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/action
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
 import { loadEventsDB, loadDeckIndex, loadArchetypeMapDB } from '@/lib/cityStore'
+import { fbReadDeckArchetypes, type DeckArchetypeRow } from '@/lib/cityFirebase'
 import { resolveArchetypeFromRep } from '@/lib/city'
+
+// deck_archetypes（id↔名前・表示順・カバー画像）。Firebase(cityData/deckArchetypes)優先・Supabaseフォールバック。
+// TOPの環境Tier表/分布/優勝デッキは archetype_id で描画するため、これが無いと空になる。
+const getArchetypesCached = unstable_cache(async (): Promise<DeckArchetypeRow[]> => {
+  const fb = await fbReadDeckArchetypes()
+  if (fb && fb.length) return fb
+  try {
+    const { data } = await supabase.from('deck_archetypes').select('*')
+      .order('display_order', { ascending: true }).order('name', { ascending: true })
+    return (data || []) as DeckArchetypeRow[]
+  } catch { return [] }
+}, ['top-deck-archetypes-v1'], { revalidate: 3600, tags: ['city-data'] })
 
 // 環境デッキ（Firebase・トップ最上部用）。Supabaseを使わずに常時表示。
 type EnvDeckTop = { deckCode: string; archetype: string; eventName: string; eventDate: string; rank: string }
@@ -164,9 +177,8 @@ type WinnerDeck = { id: string; deck_code: string | null; archetype_id: string |
 const getCityWinnerDecks = unstable_cache(
   async (): Promise<WinnerDeck[]> => {
     const [events, idx, map] = await Promise.all([loadEventsDB(), loadDeckIndex(), loadArchetypeMapDB()])
-    const sb = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
-    const { data: archRows } = await sb.from('deck_archetypes').select('id, name')
-    const nameToId = new Map<string, string>((archRows || []).map((a: { id: string; name: string }) => [a.name, a.id]))
+    const archRows = await getArchetypesCached()
+    const nameToId = new Map<string, string>((archRows || []).map((a) => [a.name, a.id]))
     const fmt = (d: string) => /^\d{8}$/.test(d) ? `${+d.slice(4, 6)}/${+d.slice(6, 8)}` : d
     const out: WinnerDeck[] = []
     const seen = new Set<string>()
@@ -253,7 +265,7 @@ export default async function Home() {
   // これにより本ページは真のISR（revalidate=3600）として静的配信され、毎リクエストの動的レンダリング＝Fluid Active CPU を回避する。
   // 記事・アーキタイプは60秒ISR、採用率データは24時間キャッシュで並列取得
   const [
-    { data: archetypes },
+    archetypes,
     { data: articles },
     analyticsData,
     recentArchetypeIds,
@@ -261,7 +273,7 @@ export default async function Home() {
     featuredWinnerDecks,
     cityWinnerDecks,
   ] = await Promise.all([
-    supabase.from('deck_archetypes').select('*').order('display_order', { ascending: true }).order('name', { ascending: true }),
+    getArchetypesCached(),
     supabase.from('articles').select('*').eq('is_published', true).order('published_at', { ascending: false, nullsFirst: false }).limit(5),
     getCachedAnalytics(),
     getCachedRecentArchetypeIds(),
