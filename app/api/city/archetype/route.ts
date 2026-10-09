@@ -7,10 +7,12 @@ export const dynamic = 'force-dynamic'
 
 const ADMIN_EMAILS = ['player1@pokeka.local']
 
-// 管理者判定：セッションCookieのJWTをローカルで読む（getSession＝Supabaseへ通信しない）。
-// getUser はAuthサーバへ通信するため、Supabase制限中は失敗して編集不能になる。制限中でも
-// 既ログインのCookieがあれば編集できるよう getSession に変更。
-async function authed(): Promise<boolean> {
+// 管理者判定。Supabase Auth が止まっても使えるよう2経路:
+//  ① 管理シークレット: ヘッダ x-city-admin-secret === env CITY_ADMIN_SECRET（Auth非依存・障害時もOK）
+//  ② 従来のSupabaseセッション: CookieのJWTをローカル判定（getSession＝通信なし）
+async function authed(req: NextRequest): Promise<boolean> {
+    const secret = process.env.CITY_ADMIN_SECRET
+    if (secret && req.headers.get('x-city-admin-secret') === secret) return true
     try {
         const supabase = await createClient()
         const { data: { session } } = await supabase.auth.getSession()
@@ -21,15 +23,15 @@ async function authed(): Promise<boolean> {
     }
 }
 
-// 現在のマップを返す（管理者のみ）
-export async function GET() {
-    if (!(await authed())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+// 現在のマップを返す（管理者のみ）。シークレット検証にも使う（200ならOK）。
+export async function GET(req: NextRequest) {
+    if (!(await authed(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     return NextResponse.json(await loadArchetypeMapDB())
 }
 
 // デッキ1件の区分（override）を更新。archetype が空なら解除。
 export async function PATCH(req: NextRequest) {
-    if (!(await authed())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    if (!(await authed(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     let body: { deck_id?: string; archetype?: string }
     try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }
     const id = (body.deck_id || '').trim()
@@ -45,7 +47,7 @@ export async function PATCH(req: NextRequest) {
 
 // 代表カード→既存アーキタイプ の一括エイリアス設定。{ rules: { rep: archetype } }
 export async function POST(req: NextRequest) {
-    if (!(await authed())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    if (!(await authed(req))) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     let body: { rules?: Record<string, string> }
     try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }
     const rules = body.rules || {}
