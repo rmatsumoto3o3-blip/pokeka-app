@@ -200,24 +200,34 @@ export async function saveWatchlistDB(cards: string[]): Promise<void> {
     }
 }
 
-// デッキ1件の区分を upsert（archetype 空なら削除）
-export async function saveOverrideDB(deckCode: string, archetype: string): Promise<void> {
-    const sb = admin()
-    if (archetype) {
-        await sb.from('city_deck_archetypes').upsert({ deck_code: deckCode, archetype, updated_at: new Date().toISOString() })
-    } else {
-        await sb.from('city_deck_archetypes').delete().eq('deck_code', deckCode)
-    }
+// Firebase の archMap ドキュメント(cityData/archMap)を読んで1項目だけ変更して書き戻す。
+// 公開ページ(/city 分布・TOP)は archMap を Firebase から読むため、ここを更新すれば即反映される。
+async function fbUpdateArchMap(mutate: (m: ArchetypeMap) => void): Promise<void> {
+    const { fbReadArchMap, fbWriteDoc } = await import('./cityFirebase')
+    const cur = (await fbReadArchMap()) || { rules: {}, overrides: {} }
+    const m: ArchetypeMap = { rules: { ...cur.rules }, overrides: { ...cur.overrides } }
+    mutate(m)
+    await fbWriteDoc('archMap', m)
 }
 
-// 代表カードのエイリアスを upsert（archetype 空なら削除）
+// デッキ1件の区分を保存（archetype 空なら解除）。Firebaseを更新（公開の読み元）＋Supabaseはベストエフォート。
+export async function saveOverrideDB(deckCode: string, archetype: string): Promise<void> {
+    await fbUpdateArchMap(m => { if (archetype) m.overrides[deckCode] = archetype; else delete m.overrides[deckCode] })
+    try {
+        const sb = admin()
+        if (archetype) await sb.from('city_deck_archetypes').upsert({ deck_code: deckCode, archetype, updated_at: new Date().toISOString() })
+        else await sb.from('city_deck_archetypes').delete().eq('deck_code', deckCode)
+    } catch { /* Supabase制限中はFirebaseのみで継続 */ }
+}
+
+// 代表カードのエイリアスを保存（archetype 空なら解除）。Firebase更新＋Supabaseベストエフォート。
 export async function saveRuleDB(representative: string, archetype: string): Promise<void> {
-    const sb = admin()
-    if (archetype) {
-        await sb.from('city_archetype_rules').upsert({ representative, archetype, updated_at: new Date().toISOString() })
-    } else {
-        await sb.from('city_archetype_rules').delete().eq('representative', representative)
-    }
+    await fbUpdateArchMap(m => { if (archetype) m.rules[representative] = archetype; else delete m.rules[representative] })
+    try {
+        const sb = admin()
+        if (archetype) await sb.from('city_archetype_rules').upsert({ representative, archetype, updated_at: new Date().toISOString() })
+        else await sb.from('city_archetype_rules').delete().eq('representative', representative)
+    } catch { /* Supabase制限中はFirebaseのみで継続 */ }
 }
 
 // アーキタイプ別カード採用率（全期間＋月別）。全city_decksをスキャンして集計し、結果をキャッシュ。

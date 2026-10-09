@@ -7,12 +7,15 @@ export const dynamic = 'force-dynamic'
 
 const ADMIN_EMAILS = ['player1@pokeka.local']
 
-// 管理者（Supabaseセッションのメールが ADMIN_EMAILS）だけ編集可
+// 管理者判定：セッションCookieのJWTをローカルで読む（getSession＝Supabaseへ通信しない）。
+// getUser はAuthサーバへ通信するため、Supabase制限中は失敗して編集不能になる。制限中でも
+// 既ログインのCookieがあれば編集できるよう getSession に変更。
 async function authed(): Promise<boolean> {
     try {
         const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        return !!user?.email && ADMIN_EMAILS.includes(user.email)
+        const { data: { session } } = await supabase.auth.getSession()
+        const email = session?.user?.email
+        return !!email && ADMIN_EMAILS.includes(email)
     } catch {
         return false
     }
