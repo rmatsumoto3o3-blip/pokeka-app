@@ -26,7 +26,20 @@ export const fbReadExistingArch = () => readDoc<string[]>('existingArch')
 // 採用率は月別にドキュメント分割（全期間は 'all'）
 export const fbReadAdoption = (month?: string) => readDoc<unknown>(`adoption_${month || 'all'}`)
 // 日別デッキ構成（イベントカードのカード画像用）。recent日だけ投入される。
-export const fbReadCompositions = (date: string) => readDoc<Record<string, Card[]>>(`comp_${date}`)
+// 大規模日は1MiB超のためシャード化：comp_{date} が {__shards:N} のときは comp_{date}__0..N-1 を結合。
+export const fbReadCompositions = async (date: string): Promise<Record<string, Card[]> | null> => {
+    const head = await readDoc<Record<string, Card[]> & { __shards?: number }>(`comp_${date}`)
+    if (!head) return null
+    if (typeof head.__shards === 'number') {
+        const merged: Record<string, Card[]> = {}
+        for (let i = 0; i < head.__shards; i++) {
+            const sh = await readDoc<Record<string, Card[]>>(`comp_${date}__${i}`)
+            if (sh) Object.assign(merged, sh)
+        }
+        return merged
+    }
+    return head
+}
 
 // --- 書き込み（本番APIルート専用。service-account が無ければ何もしない） ---
 export async function fbWriteDoc(docId: string, payload: unknown): Promise<boolean> {
