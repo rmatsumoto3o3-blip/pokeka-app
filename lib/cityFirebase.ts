@@ -24,7 +24,7 @@ export const fbReadArchMap = () => readDoc<ArchetypeMap>('archMap')
 export const fbReadWatchlist = () => readDoc<string[]>('watchlist')
 export const fbReadExistingArch = () => readDoc<string[]>('existingArch')
 // deck_archetypes（id↔名前・表示順・カバー画像）。TOPのTier表/優勝デッキのid紐付けに必要。
-export type DeckArchetypeRow = { id: string; name: string; display_order: number | null; cover_image_url: string | null; created_at?: string }
+export type DeckArchetypeRow = { id: string; name: string; display_order: number | null; cover_image_url: string | null; created_at: string }
 export const fbReadDeckArchetypes = () => readDoc<DeckArchetypeRow[]>('deckArchetypes')
 // 採用率は月別にドキュメント分割（全期間は 'all'）
 export const fbReadAdoption = (month?: string) => readDoc<unknown>(`adoption_${month || 'all'}`)
