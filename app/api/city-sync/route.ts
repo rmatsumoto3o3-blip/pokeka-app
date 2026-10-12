@@ -28,6 +28,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: true, mode: 'write-docs', writes: results })
     }
 
+    // --- モードR: 投入後に一度だけ公開ページのキャッシュを更新（{revalidate:true}）。
+    //     長いキャッシュは維持しつつ、新データ投入時のみ1回リフレッシュ＝トラフィックに比例しない最小負荷。
+    if (body && typeof body === 'object' && (body as { revalidate?: unknown }).revalidate) {
+        const svc = process.env.SUPABASE_SERVICE_ROLE_KEY
+        const key = request.headers.get('x-sync-key')
+        if (!svc || key !== svc) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+        const { revalidatePath } = await import('next/cache')
+        const paths = ['/', '/city', '/city/archetypes', '/city/prefectures']
+        for (const p of paths) revalidatePath(p)
+        return NextResponse.json({ ok: true, mode: 'revalidate', paths })
+    }
+
     // --- モードB: Supabase から集計して投入（Supabase 復帰後用） ---
     const secret = process.env.CITY_SYNC_SECRET || process.env.ENV_DECKS_SYNC_SECRET
     const provided = request.headers.get('x-city-sync-secret')
