@@ -205,7 +205,8 @@ export async function saveWatchlistDB(cards: string[]): Promise<void> {
 async function fbUpdateArchMap(mutate: (m: ArchetypeMap) => void): Promise<void> {
     const { fbReadArchMap, fbWriteDoc } = await import('./cityFirebase')
     const cur = (await fbReadArchMap()) || { rules: {}, overrides: {} }
-    const m: ArchetypeMap = { rules: { ...cur.rules }, overrides: { ...cur.overrides } }
+    // overridesAuto / cardRules（カード含有ルール関連）も保持したまま、overrides/rules のみ変更する
+    const m: ArchetypeMap = { ...cur, rules: { ...cur.rules }, overrides: { ...cur.overrides } }
     mutate(m)
     await fbWriteDoc('archMap', m)
 }

@@ -36,10 +36,12 @@ export function loadWatchlist(): string[] {
 // アーキタイプ区分マップ（管理者だけが編集）。
 //  rules:     代表カード名 -> 正式アーキタイプ名（束ね・改名）
 //  overrides: deck_id     -> 正式アーキタイプ名（個別上書き）
-export type ArchetypeMap = { rules: Record<string, string>; overrides: Record<string, string> }
+// overridesAuto: deck_id -> アーキタイプ（カード含有ルールを事前解決した結果。集計時に再計算される）
+// cardRules:     指定カードを含むデッキを割り当てるルール（上から順に先勝ち）。参照用に保持。
+export type ArchetypeMap = { rules: Record<string, string>; overrides: Record<string, string>; overridesAuto?: Record<string, string>; cardRules?: { card: string; archetype: string }[] }
 export function loadArchetypeMap(): ArchetypeMap {
     const m = readJSON<Partial<ArchetypeMap>>('data/city/archetype_map.json', {})
-    return { rules: m.rules || {}, overrides: m.overrides || {} }
+    return { rules: m.rules || {}, overrides: m.overrides || {}, overridesAuto: m.overridesAuto || {}, cardRules: m.cardRules || [] }
 }
 
 export const monthOf = (d: string) => d.slice(0, 6)          // "20260927" -> "202609"
@@ -66,9 +68,14 @@ export function representativeCard(cards: Card[] | null | undefined): string | n
     return pool[0].name
 }
 
-// 最終アーキタイプ = 個別上書き ▷ 代表カードのルール ▷ 代表カードそのもの
+// 最終アーキタイプ = 個別上書き ▷ カード含有ルール ▷ 代表カードのルール ▷ 代表カードそのもの
 export function resolveArchetype(deckId: string, cards: Card[] | null | undefined, map: ArchetypeMap): string | null {
     if (map.overrides[deckId]) return map.overrides[deckId]
+    if (map.cardRules && map.cardRules.length && cards) {
+        const names = new Set(cards.map(c => c?.name).filter(Boolean))
+        for (const r of map.cardRules) if (names.has(r.card)) return r.archetype
+    }
+    if (map.overridesAuto && map.overridesAuto[deckId]) return map.overridesAuto[deckId]
     const rep = representativeCard(cards)
     if (!rep) return null
     return map.rules[rep] || rep
@@ -81,9 +88,10 @@ export function classifyArchetype(cards: Card[] | null | undefined): string | nu
 
 // 代表カード名から最終アーキタイプを解決（構成データ不要・集計用）
 export function resolveArchetypeFromRep(deckId: string, rep: string | null | undefined, map: ArchetypeMap): string | null {
-    if (map.overrides[deckId]) return map.overrides[deckId]
+    if (map.overrides[deckId]) return map.overrides[deckId]          // ① 手動override（最優先）
+    if (map.overridesAuto && map.overridesAuto[deckId]) return map.overridesAuto[deckId] // ② カード含有ルール(事前解決)
     if (!rep) return null
-    return map.rules[rep] || rep
+    return map.rules[rep] || rep                                      // ③ 代表カード別名 / ④ 代表カード
 }
 
 // 代表カードマップから分布を集計（デッキ単位・重複コードは1回）。日/月/全期間の切替に使う。
