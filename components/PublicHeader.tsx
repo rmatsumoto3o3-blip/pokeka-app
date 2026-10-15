@@ -149,8 +149,8 @@ export default function PublicHeader({ game = 'pokemon' }: PublicHeaderProps) {
             ) : game === 'champions' ? (
                 <nav className="border-t border-emerald-100 bg-white">
                     <div className="max-w-7xl mx-auto px-2 sm:px-2.5 lg:px-2.5 flex items-center gap-5 py-2 text-[13px] text-gray-600 overflow-x-auto whitespace-nowrap">
-                        <Link href="/champions" className="text-emerald-600 font-semibold shrink-0">TOP</Link>
-                        <span className="text-gray-400 shrink-0">構築 / ダメージ計算 / 逆算 / 選出</span>
+                        <Link href="/champions" className="text-emerald-600 font-semibold shrink-0">構築・ダメージ計算</Link>
+                        <Link href="/champions/select" className="hover:text-emerald-600 transition shrink-0">選出おすすめ</Link>
                     </div>
                 </nav>
             ) : game === 'unionarena' ? (

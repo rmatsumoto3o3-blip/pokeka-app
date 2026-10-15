@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 // ツール本体は public/champions-tool.html（自己完結の静的アプリ）。
 // iframe内から postMessage で高さを受け取り、二重スクロールを避けて全体を1スクロールにする。
-export default function ChampionsTool() {
+export default function ChampionsTool({ src = '/champions-tool.html', title = 'ポケモンチャンピオンズ 構築＆ダメージ計算ツール' }: { src?: string; title?: string } = {}) {
     const [height, setHeight] = useState(1400)
     useEffect(() => {
         const onMsg = (e: MessageEvent) => {
@@ -18,8 +18,8 @@ export default function ChampionsTool() {
     }, [])
     return (
         <iframe
-            src="/champions-tool.html"
-            title="ポケモンチャンピオンズ 構築＆ダメージ計算ツール"
+            src={src}
+            title={title}
             style={{ width: '100%', height, border: 0, display: 'block', background: '#f8fafc' }}
         />
     )
