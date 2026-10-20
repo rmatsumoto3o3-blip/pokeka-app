@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import PublicHeader from '@/components/PublicHeader'
-import { fmtMonth } from '@/lib/city'
 import { loadArchetypeAdoption, loadCityMonths } from '@/lib/cityStore'
-import ArchetypeCardAdoption from '@/components/city/ArchetypeCardAdoption'
+import ArchetypesClient from '@/components/city/ArchetypesClient'
 
-export const revalidate = 43200 // 12時間
+// 静的ISR（searchParams不使用）。既定＝全期間をSSRし、月切替は /api/city/archetypes（CDNキャッシュ）から取得。
+export const revalidate = 43200
 export const metadata: Metadata = {
     title: 'ポケカ デッキ別 採用カード・採用率｜シティリーグ集計',
     description: 'シティリーグの全入賞デッキを集計し、デッキ（アーキタイプ）ごとに採用されているカードと採用率・平均採用枚数を一覧化。全期間／月別で、いまの環境デッキの中身がわかります。',
@@ -18,11 +18,9 @@ export const metadata: Metadata = {
     robots: { index: true, follow: true },
 }
 
-export default async function CityArchetypesPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-    const { month } = await searchParams
+export default async function CityArchetypesPage() {
     const months = await loadCityMonths()
-    const selMonth = month && months.includes(month) ? month : undefined // undefined = 全期間
-    const data = await loadArchetypeAdoption(selMonth)
+    const data = await loadArchetypeAdoption() // 全期間（既定）をSSR
 
     return (
         <div className="min-h-screen bg-[#f5f7fa]">
@@ -36,19 +34,7 @@ export default async function CityArchetypesPage({ searchParams }: { searchParam
                     </p>
                 </div>
 
-                {/* 期間切替：全期間 ＋ 月別 */}
-                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4">
-                    <Link href="/city/archetypes"
-                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold border transition ${!selMonth ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>全期間</Link>
-                    {months.map(m => (
-                        <Link key={m} href={`/city/archetypes?month=${m}`}
-                            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold border transition ${selMonth === m ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{fmtMonth(m)}</Link>
-                    ))}
-                </div>
-
-                {data.length === 0
-                    ? <div className="text-center text-gray-400 py-24 bg-white rounded-xl border border-dashed">集計できるデータがありません。</div>
-                    : <ArchetypeCardAdoption data={data} />}
+                <ArchetypesClient months={months} initial={data} />
 
                 <p className="mt-8 text-[11px] text-gray-400">※採用率はアーキタイプ内のデッキ数を母数に算出。データはシティリーグの入賞デッキをもとに随時更新されます。</p>
             </main>

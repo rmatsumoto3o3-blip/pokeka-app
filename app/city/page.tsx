@@ -1,19 +1,11 @@
 import type { Metadata } from 'next'
-import {
-    loadWatchlist, autoArchetype, listArchetypeOptions,
-    monthOf, fmtMonth, fmtDate, deckUrl,
-    buildAdoption, buildDistributionFromReps, type ArchetypeMap, type DeckCache, type EventRec, type ResultRow,
-} from '@/lib/city'
-import { loadArchetypeMapDB, loadEventsDB, loadCompositionsForDate, loadExistingArchetypesDB, loadDeckIndex, loadWatchlistDB } from '@/lib/cityStore'
-import DeckGrid from '@/components/city/DeckGrid'
-import CopyDeckCode from '@/components/CopyDeckCode'
-import CityAdminProvider from '@/components/city/CityAdminContext'
-import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
-import WatchlistAdmin from '@/components/city/WatchlistAdmin'
-import CardAdoptionSearch from '@/components/city/CardAdoptionSearch'
 import PublicHeader from '@/components/PublicHeader'
+import CityAdminProvider from '@/components/city/CityAdminContext'
+import CityClient from '@/components/city/CityClient'
+import { loadCityStatic, buildCityView } from '@/lib/cityView'
 
-// 公開ページは静的ISR（cookie非依存）。データはSupabaseからキャッシュ読み。
+// 公開ページは静的ISR（searchParams不使用＝本当に静的）。既定（最新月・最新日）をSSRし、
+// 月/日付/分布/並び替えの切替は CityClient が /api/city/view（CDNキャッシュ）から取得する。
 export const revalidate = 43200
 
 const CITY_URL = 'https://www.pokelix.jp/city'
@@ -43,117 +35,11 @@ export const metadata: Metadata = {
     robots: { index: true, follow: true },
 }
 
-function rankBadge(rank: number) {
-    const base = 'inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-black shrink-0'
-    if (rank === 1) return `${base} bg-yellow-400 text-yellow-950`
-    if (rank === 2) return `${base} bg-gray-300 text-gray-800`
-    if (rank === 3) return `${base} bg-amber-600 text-amber-50`
-    if (rank === 4) return `${base} bg-orange-200 text-orange-900`
-    return `${base} bg-gray-100 text-gray-600 border border-gray-200`
-}
+export default async function CityPage() {
+    const s = await loadCityStatic()
+    const view = await buildCityView({}) // 既定ビュー（最新月・最新日）をSSR
 
-function ResultBlock({ r, cache, map }: { r: ResultRow; cache: DeckCache; map: ArchetypeMap }) {
-    return (
-        <div className="py-2">
-            <div className="flex items-center gap-2 mb-1.5">
-                <span className={rankBadge(r.rank)}>{r.rank}</span>
-                <CopyDeckCode code={r.deck_id} className="text-[11px] text-gray-400 flex-1 text-left" />
-                <a href={deckUrl(r.deck_id)} target="_blank" rel="noopener noreferrer"
-                    className="text-[11px] font-bold text-blue-600 hover:underline shrink-0">公式 ↗</a>
-            </div>
-            <DeckGrid cards={cache[r.deck_id]} deckId={r.deck_id} />
-            <DeckArchetypeSelect deckId={r.deck_id} auto={autoArchetype(cache[r.deck_id], map)} />
-        </div>
-    )
-}
-
-function EventCard({ ev, cache, map }: { ev: EventRec; cache: DeckCache; map: ArchetypeMap }) {
-    const top = ev.results.filter(r => r.rank <= 4)
-    const rest = ev.results.filter(r => r.rank > 4)
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                <div className="font-bold text-gray-900 leading-tight">{ev.shop}</div>
-                <div className="text-xs text-gray-500 mt-0.5">{ev.prefecture}・{ev.league}・{ev.entrants_count}人</div>
-            </div>
-            <div className="px-4 divide-y divide-gray-50">
-                {top.map((r, i) => <ResultBlock key={i} r={r} cache={cache} map={map} />)}
-            </div>
-            {rest.length > 0 && (
-                <details className="group border-t border-gray-100">
-                    <summary className="cursor-pointer list-none px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-between">
-                        <span>5位以下を表示（{rest.length}）</span>
-                        <span className="text-gray-400 group-open:rotate-180 transition">▼</span>
-                    </summary>
-                    <div className="px-4 pb-2 divide-y divide-gray-50">
-                        {rest.map((r, i) => <ResultBlock key={i} r={r} cache={cache} map={map} />)}
-                    </div>
-                </details>
-            )}
-        </div>
-    )
-}
-
-export default async function CityPage({ searchParams }: { searchParams: Promise<{ month?: string; date?: string; dist?: string; sort?: string }> }) {
-    const sp = await searchParams
-    const events = (await loadEventsDB()).filter(e => e.league === 'オープン')
-    const wlDb = await loadWatchlistDB()
-    const watchlist = wlDb.length ? wlDb : loadWatchlist() // DB優先・未設定時はファイル
-    const deckIndex = await loadDeckIndex() // 代表カード・全カード名・カード別採用数・総数（全件1回ロード）
-    const cardNames = deckIndex.cardNames
-
-    const months = [...new Set(events.map(e => monthOf(e.date)))].sort((a, b) => b.localeCompare(a))
-    // 月の行の先頭「全期間」ボタン（?month=all）。選択時はデッキ分布を全期間スコープで表示する。
-    // 個別大会・日付タブ・採用率は従来どおり最新月を既定コンテキストとして出す。
-    const isAll = sp.month === 'all'
-    const selMonth = (sp.month && months.includes(sp.month)) ? sp.month : months[0]
-    const monthEvents = events.filter(e => monthOf(e.date) === selMonth)
-    const dates = [...new Set(monthEvents.map(e => e.date))].sort((a, b) => b.localeCompare(a))
-    const selDate = (sp.date && dates.includes(sp.date)) ? sp.date : (dates[0] || '')
-    const dayEvents = monthEvents.filter(e => e.date === selDate)
-        .sort((a, b) => a.shop.localeCompare(b.shop, 'ja'))
-
-    // 表示中の日付のデッキ構成だけを読む（負荷対策・日付キーでキャッシュ）
-    const dayCodes = [...new Set(dayEvents.flatMap(e => e.results.map(r => r.deck_id)))]
-    const cache = await loadCompositionsForDate(selDate, dayCodes)
-
-    const archMap = await loadArchetypeMapDB()
-    const existing = await loadExistingArchetypesDB()
-
-    // 分布は代表カードマップから集計（日/今月/全期間を切替）。全期間・今月も軽量に出せる。
-    const repMap = deckIndex.reps
-    // 全期間は月の行の「全期間」ボタンで指定。デッキ分布のトグルは この日付/今月 のみ。
-    const distScope: 'day' | 'month' | 'all' = isAll ? 'all' : (sp.dist === 'month' ? 'month' : 'day')
-    const distEvents = distScope === 'all' ? events : distScope === 'month' ? monthEvents : dayEvents
-    const dist = buildDistributionFromReps(distEvents, repMap, archMap)
-    // 「使用率／優勝数」で並び替え（全期間・月・日付のいずれでも切替可）。優勝数順は rank===1 の累計で並べる。
-    const distSort: 'use' | 'win' = sp.sort === 'win' ? 'win' : 'use'
-    const distList = distSort === 'win'
-        ? [...dist.list].sort((a, b) => b.wins - a.wins || b.count - a.count)
-        : dist.list
-    const maxWins = Math.max(1, ...dist.list.map(d => d.wins))
-
-    // 区分の選択肢：既存アーキタイプ（Supabase）と、表示日付の自動検出名を分けて渡す
-    const existingSet = new Set(existing)
-    const autoOptions = [...new Set([
-        ...listArchetypeOptions(dayEvents, cache, archMap),
-        ...Object.values(archMap.rules), ...Object.values(archMap.overrides),
-    ].filter(Boolean))].filter(n => !existingSet.has(n)).sort((a, b) => a.localeCompare(b, 'ja'))
-    const adoption = buildAdoption(dayEvents, cache, watchlist)
-    const totalDecks = dayEvents.reduce((s, e) => s + e.results.length, 0)
-
-    const tabCls = (active: boolean) =>
-        `px-3 py-1.5 rounded-lg text-sm font-bold border ${active
-            ? 'bg-gray-900 text-white border-gray-900'
-            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`
-
-    // 上位アーキタイプ（導入文・構造化データ用）
-    const topArch = dist.list.slice(0, 3)
-    const introMeta = topArch.length
-        ? `現在のポケカ環境で使用率が高いのは ${topArch.map(d => `${d.name}（${d.rate}%）`).join('・')} など。`
-        : ''
-
-    // 構造化データ（検索エンジン向け）
+    const introMeta = view.introMeta
     const jsonLd = {
         '@context': 'https://schema.org',
         '@graph': [
@@ -171,12 +57,12 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                 url: CITY_URL,
                 inLanguage: 'ja',
                 isPartOf: { '@type': 'WebSite', name: 'PokéLix', url: 'https://www.pokelix.jp/' },
-                ...(dist.list.length
+                ...(view.dist.list.length
                     ? {
                         mainEntity: {
                             '@type': 'ItemList',
                             name: 'ポケカ環境 デッキ分布（使用率ランキング）',
-                            itemListElement: dist.list.slice(0, 10).map((d, i) => ({
+                            itemListElement: view.dist.list.slice(0, 10).map((d, i) => ({
                                 '@type': 'ListItem', position: i + 1, name: d.name,
                             })),
                         },
@@ -217,145 +103,24 @@ export default async function CityPage({ searchParams }: { searchParams: Promise
                     </a>
                 </div>
 
-                {/* Month select */}
-                <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <span className="text-xs font-bold text-gray-500">月</span>
-                    <a href="/city?month=all" className={tabCls(isAll)}>全期間</a>
-                    {months.map(m => (
-                        <a key={m} href={`/city?month=${m}`} className={tabCls(!isAll && m === selMonth)}>{fmtMonth(m)}</a>
-                    ))}
-                </div>
-                {/* Date tabs（全期間選択中はどの日付も未選択。日付を押すとその月の個別結果へ） */}
-                <div className="flex items-center gap-2 flex-wrap mb-5">
-                    <span className="text-xs font-bold text-gray-500">日付</span>
-                    {dates.map(d => (
-                        <a key={d} href={`/city?month=${selMonth}&date=${d}`} className={tabCls(!isAll && d === selDate)}>{fmtDate(d)}</a>
-                    ))}
-                    {isAll
-                        ? <span className="text-xs text-gray-400 ml-1">全期間のデッキ分布を表示中（日付を選ぶとその日の大会結果）</span>
-                        : <span className="text-xs text-gray-500 ml-1">大会 {dayEvents.length}／入賞 {totalDecks}</span>}
-                </div>
+                {/* 管理者ログイン時のみ各デッキを区分（公開側には一切出さない） */}
+                <CityAdminProvider existing={s.existing} auto={s.autoOptions} initialOverrides={s.overrides}>
+                    <CityClient initial={view} s={s} />
 
-                {/* 管理者ログイン時のみ、結果ページ内で各デッキを区分（公開側には一切出さない） */}
-                <CityAdminProvider existing={existing} auto={autoOptions} initialOverrides={archMap.overrides}>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    {/* Distribution */}
-                    <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                        <div className="flex items-center justify-between mb-2 gap-2">
-                            <h2 className="text-base font-black text-gray-900">デッキ分布</h2>
-                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5 shrink-0">{dist.resolved}デッキ</span>
-                        </div>
-                        {isAll ? (
-                            <div className="flex items-center gap-1 mb-3 flex-wrap">
-                                <span className="px-2.5 py-1 rounded-md text-[11px] font-bold border bg-indigo-600 text-white border-indigo-600">全期間</span>
-                                {([['use', '使用率'], ['win', '優勝数']] as const).map(([k, label]) => (
-                                    <a key={k} href={`/city?month=all&sort=${k}`}
-                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distSort === k
-                                            ? 'bg-amber-500 text-white border-amber-500'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-1 mb-3 flex-wrap">
-                                {([['day', 'この日付'], ['month', '今月']] as const).map(([k, label]) => (
-                                    <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${k}&sort=${distSort}`}
-                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distScope === k
-                                            ? 'bg-indigo-600 text-white border-indigo-600'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
-                                ))}
-                                <span className="w-px h-4 bg-gray-200 mx-0.5" />
-                                {([['use', '使用率'], ['win', '優勝数']] as const).map(([k, label]) => (
-                                    <a key={k} href={`/city?month=${selMonth}&date=${selDate}&dist=${distScope}&sort=${k}`}
-                                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${distSort === k
-                                            ? 'bg-amber-500 text-white border-amber-500'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>{label}</a>
-                                ))}
-                            </div>
-                        )}
-                        {distList.length ? (
-                            <div className="space-y-1">
-                                {distList.slice(0, 12).map((d, i) => (
-                                    <div key={d.name} className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-400 w-4 text-right shrink-0">{i + 1}</span>
-                                        <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{d.name}</span>
-                                        {distSort === 'win' ? (
-                                            <>
-                                                <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
-                                                    <div className="h-full bg-amber-500" style={{ width: `${(d.wins / maxWins) * 100}%` }} />
-                                                </div>
-                                                <span className="text-sm font-black text-amber-600 w-14 text-right shrink-0">{d.wins}<span className="text-[10px] font-bold ml-0.5">優勝</span></span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
-                                                    <div className="h-full bg-indigo-500" style={{ width: `${d.rate}%` }} />
-                                                </div>
-                                                <span className="text-sm font-black text-indigo-700 w-14 text-right shrink-0">{d.rate}%</span>
-                                            </>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        ) : <p className="text-sm text-gray-500">データが集まると分布が表示されます。</p>}
+                    {/* SEO用の補足テキスト（検索意図の受け皿） */}
+                    <section className="mt-8 text-sm leading-relaxed text-gray-600 space-y-2">
+                        <h2 className="text-base font-black text-gray-900">ポケカ シティリーグとは</h2>
+                        <p>
+                            シティリーグはポケモンカードゲームの公式大会で、全国の店舗で毎週末を中心に開催されています。
+                            本ページでは各大会の入賞デッキ（オープンリーグ）を開催日・店舗ごとに集計し、
+                            どのデッキタイプがどれだけ勝ち上がっているか（<strong>デッキ分布・使用率</strong>）や、
+                            入賞デッキでの<strong>カード採用率</strong>を毎日更新しています。
+                            新弾後の環境変化のチェック、デッキ構築の参考、対面（メタ）の把握にご活用ください。
+                        </p>
+                        <p className="text-gray-500">
+                            各デッキのレシピは「公式 ↗」から公式デッキコードで確認できます。使用率・採用率は入賞デッキ（重複デッキコードは1回）で集計しています。
+                        </p>
                     </section>
-
-                    {/* Adoption watchlist */}
-                    <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-base font-black text-gray-900">注目カード採用率</h2>
-                            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 rounded px-2 py-0.5">{adoption.total}デッキ</span>
-                        </div>
-                        {adoption.total ? (
-                            <div className="space-y-1">
-                                {adoption.list.map(c => (
-                                    <div key={c.name} className="flex items-center gap-2">
-                                        <span className="flex-1 min-w-0 text-sm text-gray-800 truncate">{c.name}</span>
-                                        <div className="w-20 h-2 bg-gray-100 rounded overflow-hidden shrink-0">
-                                            <div className="h-full bg-emerald-500" style={{ width: `${c.rate}%` }} />
-                                        </div>
-                                        <span className="text-sm font-black text-emerald-700 w-14 text-right shrink-0">{c.rate}%</span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : <p className="text-sm text-gray-500">データが集まると採用率が表示されます。</p>}
-                        <datalist id="city-card-names">{cardNames.map(n => <option key={n} value={n} />)}</datalist>
-                        <CardAdoptionSearch counts={deckIndex.cardCounts} total={deckIndex.total} cardNames={cardNames} />
-                        <WatchlistAdmin initial={watchlist} cardNames={cardNames} />
-                    </section>
-                </div>
-
-                {/* Events（全期間選択中は日付未選択のため個別大会は出さず、日付選択を促す） */}
-                {isAll ? (
-                    <div className="bg-white rounded-xl border border-dashed border-gray-200 p-8 text-center text-gray-500">
-                        全期間のデッキ分布を表示中です。個別の大会結果を見るには、上の<span className="font-bold text-gray-700">「日付」</span>を選択してください。
-                    </div>
-                ) : (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {dayEvents.map(ev => <EventCard key={ev.event_holding_id} ev={ev} cache={cache} map={archMap} />)}
-                        </div>
-                        {dayEvents.length === 0 && (
-                            <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-500">この日付の大会はありません。</div>
-                        )}
-                    </>
-                )}
-
-                {/* SEO用の補足テキスト（検索意図の受け皿） */}
-                <section className="mt-8 text-sm leading-relaxed text-gray-600 space-y-2">
-                    <h2 className="text-base font-black text-gray-900">ポケカ シティリーグとは</h2>
-                    <p>
-                        シティリーグはポケモンカードゲームの公式大会で、全国の店舗で毎週末を中心に開催されています。
-                        本ページでは各大会の入賞デッキ（オープンリーグ）を開催日・店舗ごとに集計し、
-                        どのデッキタイプがどれだけ勝ち上がっているか（<strong>デッキ分布・使用率</strong>）や、
-                        入賞デッキでの<strong>カード採用率</strong>を毎日更新しています。
-                        新弾後の環境変化のチェック、デッキ構築の参考、対面（メタ）の把握にご活用ください。
-                    </p>
-                    <p className="text-gray-500">
-                        各デッキのレシピは「公式 ↗」から公式デッキコードで確認できます。使用率・採用率は入賞デッキ（重複デッキコードは1回）で集計しています。
-                    </p>
-                </section>
-
                 </CityAdminProvider>
             </div>
         </div>
