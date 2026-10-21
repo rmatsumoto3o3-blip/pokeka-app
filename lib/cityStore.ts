@@ -44,7 +44,7 @@ export const loadEventsDB = unstable_cache(async (): Promise<EventRec[]> => {
             .order('date', { ascending: false })
         return (data || []) as EventRec[]
     } catch { return [] }
-}, ['city-events-v3'], { revalidate: 3600, tags: ['city-data'] })
+}, ['city-events-v4'], { revalidate: 600, tags: ['city-data'] })
 
 // 指定日付の deck_code 群だけデッキ構成を読む（負荷対策）。日付キーで1時間キャッシュ。
 export function loadCompositionsForDate(date: string, codes: string[]): Promise<DeckCache> {
@@ -65,7 +65,7 @@ export function loadCompositionsForDate(date: string, codes: string[]): Promise<
             }
             return map
         } catch { return {} }
-    }, ['city-comps-v4', date], { revalidate: 3600, tags: ['city-data'] })()
+    }, ['city-comps-v5', date], { revalidate: 600, tags: ['city-data'] })()
 }
 
 // 全デッキの代表カード名マップ（deck_code -> 代表カード）。月間・全期間の分布集計用。
@@ -137,7 +137,7 @@ export const loadDeckIndex = unstable_cache(async (): Promise<{
         }
     } catch { /* 空を返す */ }
     return { reps, cardNames: [...nameSet].sort((a, b) => a.localeCompare(b, 'ja')), cardCounts, total }
-}, ['city-deck-index-v3'], { revalidate: 3600, tags: ['city-data'] })
+}, ['city-deck-index-v4'], { revalidate: 600, tags: ['city-data'] })
 
 // 既存アーキタイプ（公開：deck_archetypes の名前）。1時間キャッシュ。
 export const loadExistingArchetypesDB = unstable_cache(async (): Promise<string[]> => {
@@ -251,10 +251,10 @@ export const loadArchetypeAdoption = (month?: string) => unstable_cache(async ()
         }
     } catch { /* 空 */ }
     return buildArchetypeCardAdoption(events, deckCards, map, month)
-}, ['city-arch-adoption-v3', month || 'all'], { revalidate: 43200, tags: ['city-data'] })()
+}, ['city-arch-adoption-v4', month || 'all'], { revalidate: 600, tags: ['city-data'] })()
 
 // 月の一覧（アーキタイプ採用ページのタブ用）
 export const loadCityMonths = unstable_cache(async (): Promise<string[]> => {
     const events = await loadEventsDB()
     return [...new Set(events.map(e => e.date.slice(0, 6)))].sort((a, b) => b.localeCompare(a))
-}, ['city-months-v1'], { revalidate: 43200, tags: ['city-data'] })
+}, ['city-months-v2'], { revalidate: 600, tags: ['city-data'] })
