@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import DeckGrid from '@/components/city/DeckGrid'
+import DeckImage from '@/components/city/DeckImage'
 import CopyDeckCode from '@/components/CopyDeckCode'
 import DeckArchetypeSelect from '@/components/city/DeckArchetypeSelect'
 import WatchlistAdmin from '@/components/city/WatchlistAdmin'
@@ -36,7 +36,7 @@ function ResultBlock({ r, cache, auto }: { r: ResultRow; cache: DeckCache; auto:
                 <a href={deckUrl(r.deck_id)} target="_blank" rel="noopener noreferrer"
                     className="text-[11px] font-bold text-blue-600 hover:underline shrink-0">公式 ↗</a>
             </div>
-            <DeckGrid cards={cache[r.deck_id]} deckId={r.deck_id} />
+            <DeckImage deckId={r.deck_id} cards={cache[r.deck_id]} alt={`シティリーグ入賞デッキ ${r.rank}位${auto ? `（${auto}）` : ''}`} />
             <DeckArchetypeSelect deckId={r.deck_id} auto={auto} />
         </div>
     )
