@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
         const key = request.headers.get('x-sync-key')
         if (!svc || key !== svc) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
         const { revalidatePath } = await import('next/cache')
+        // revalidatePath で公開ページ＋共有データキャッシュ(unstable_cache)を更新。
+        // APIルート(/api/city/*)のCDNキャッシュは Cache-Control s-maxage=300 で5分後に自動更新される。
         const paths = ['/', '/city', '/city/archetypes', '/city/prefectures']
         for (const p of paths) revalidatePath(p)
         return NextResponse.json({ ok: true, mode: 'revalidate', paths })
