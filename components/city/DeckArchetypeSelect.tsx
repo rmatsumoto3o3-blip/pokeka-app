@@ -25,12 +25,12 @@ export default function DeckArchetypeSelect({ deckId, auto }: { deckId: string; 
                 <option value="">自動（{auto || '—'}）</option>
                 {ctx.existing.length > 0 && (
                     <optgroup label="既存アーキタイプ">
-                        {ctx.existing.map(o => <option key={'e-' + o} value={o}>{o}</option>)}
+                        {[...ctx.existing].sort((a, b) => a.localeCompare(b, 'ja')).map(o => <option key={'e-' + o} value={o}>{o}</option>)}
                     </optgroup>
                 )}
                 {ctx.auto.length > 0 && (
                     <optgroup label="検出された構成">
-                        {ctx.auto.map(o => <option key={'a-' + o} value={o}>{o}</option>)}
+                        {[...ctx.auto].sort((a, b) => a.localeCompare(b, 'ja')).map(o => <option key={'a-' + o} value={o}>{o}</option>)}
                     </optgroup>
                 )}
                 <option value="__new__">＋新規…</option>
