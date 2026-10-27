@@ -3,7 +3,7 @@ import { buildCityView } from '@/lib/cityView'
 
 // 絞り込み（月/日付/分布スコープ/並び替え）変更時だけ叩かれる。
 // Cache-Control で CDN(エッジ)にキャッシュさせ、同一条件の再取得は関数を起動しない＝Active CPUを消費しない。
-export const revalidate = 300
+export const revalidate = 3600
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
     })
     return NextResponse.json(view, {
         headers: {
-            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
         },
     })
 }
