@@ -34,12 +34,15 @@ export async function POST(request: NextRequest) {
         const svc = process.env.SUPABASE_SERVICE_ROLE_KEY
         const key = request.headers.get('x-sync-key')
         if (!svc || key !== svc) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
-        const { revalidatePath } = await import('next/cache')
-        // revalidatePath で公開ページ＋共有データキャッシュ(unstable_cache)を更新。
-        // APIルート(/api/city/*)のCDNキャッシュは Cache-Control s-maxage=300 で5分後に自動更新される。
+        const { revalidatePath, revalidateTag } = await import('next/cache')
+        // データローダー(unstable_cache)は 'city-data' タグ付きで TTL 1h。
+        // revalidatePath だけでは unstable_cache は落ちない（TTL切れまで古いデータが残る）ので、
+        // 投入時に revalidateTag で明示的にバストして即時反映する（読み取りは長TTLのまま＝低コスト）。
+        const tags = ['city-data', 'city-map', 'city-watchlist']
+        for (const t of tags) revalidateTag(t, { expire: 0 })
         const paths = ['/', '/city', '/city/archetypes', '/city/prefectures']
         for (const p of paths) revalidatePath(p)
-        return NextResponse.json({ ok: true, mode: 'revalidate', paths })
+        return NextResponse.json({ ok: true, mode: 'revalidate', tags, paths })
     }
 
     // --- モードB: Supabase から集計して投入（Supabase 復帰後用） ---
