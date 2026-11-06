@@ -1,17 +1,13 @@
-'use client'
-
-import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
-import SimulatorManager from '@/components/SimulatorManager'
+import SimulatorLoader from '@/components/SimulatorLoader'
 import AdPlaceholder from '@/components/AdPlaceholder'
 import RelatedTools from '@/components/RelatedTools'
 
+// サーバーコンポーネント。?code= は SimulatorLoader（client）が <Suspense> 内で読むため、
+// ページ本体（h1・導入文・SEO本文）は静的に生成される（ISR 維持・Vercel 関数負荷なし）。
 export default function SimulatorPage() {
-    const searchParams = useSearchParams()
-    const codeParam = searchParams.get('code')
-    const code = codeParam ?? undefined
-
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <PublicHeader />
@@ -28,7 +24,9 @@ export default function SimulatorPage() {
                         </p>
                     </div>
 
-                    <SimulatorManager initialDeckCode={code} />
+                    <Suspense fallback={<div className="min-h-[400px]" aria-hidden="true" />}>
+                        <SimulatorLoader />
+                    </Suspense>
 
                     <AdPlaceholder
                         slot="1093986865"

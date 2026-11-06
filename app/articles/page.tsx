@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 export const revalidate = 3600 // Revalidate every 60 seconds
 
 export const metadata: Metadata = {
-    title: 'コラム・記事一覧 | PokéLix',
+    title: 'コラム・記事一覧',
     description: 'ポケモンカードの環境考察、デッキ解説、初心者向けガイドなど、役立つ情報を発信しています。',
 }
 

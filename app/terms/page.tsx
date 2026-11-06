@@ -2,7 +2,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 
 export const metadata = {
-    title: '利用規約 | PokéLix',
+    title: '利用規約',
     description: 'PokéLix（ポケリックス）の利用規約です。',
 }
 

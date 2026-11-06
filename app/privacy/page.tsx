@@ -2,7 +2,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 
 export const metadata = {
-    title: 'プライバシーポリシー | PokéLix',
+    title: 'プライバシーポリシー',
     description: 'PokéLix（ポケリックス）のプライバシーポリシーです。個人情報の取り扱い、Cookie、広告配信について説明しています。',
 }
 

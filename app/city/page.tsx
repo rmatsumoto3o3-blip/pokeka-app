@@ -10,7 +10,7 @@ export const revalidate = 43200
 
 const CITY_URL = 'https://www.pokelix.jp/city'
 export const metadata: Metadata = {
-    title: 'シティリーグ結果・入賞デッキ・採用率 | ポケカ環境 | PokéLix',
+    title: 'シティリーグ結果・入賞デッキ・採用率 | ポケカ環境',
     description:
         'ポケモンカード「シティリーグ」の入賞デッキを日付・開催店舗別に掲載。優勝〜ベスト16のデッキレシピ（公式デッキコード）、デッキ分布（使用率ランキング）、注目カードの採用率を毎日更新。いまのポケカ環境デッキを一目でチェックできます。',
     keywords: [

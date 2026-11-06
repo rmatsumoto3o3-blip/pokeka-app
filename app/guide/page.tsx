@@ -5,7 +5,7 @@ import PublicHeader from '@/components/PublicHeader'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'ポケリス活用ガイド | PokéLix',
+    title: 'ポケリス活用ガイド',
     description: 'ポケリス（PokéLix）の使い方ガイドです。アカウント作成からデッキ登録、戦績管理、データ分析の活用方法まで分かりやすく解説します。',
 }
 

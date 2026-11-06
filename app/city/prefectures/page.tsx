@@ -10,7 +10,7 @@ export const revalidate = 43200
 
 const PREF_URL = 'https://www.pokelix.jp/city/prefectures'
 export const metadata: Metadata = {
-    title: '都道府県別デッキ分布 | ポケカ シティリーグ環境 | PokéLix',
+    title: '都道府県別デッキ分布 | ポケカ シティリーグ環境',
     description: 'ポケモンカード シティリーグ入賞デッキの都道府県別・地方別アーキタイプ分布（使用率）。全期間／月別、全国／地方（関東・近畿…）で絞り込み。地域ごとの環境メタの偏りがわかります。',
     keywords: ['ポケカ 都道府県別', 'シティリーグ 地域', 'ポケカ 地方別 環境', 'デッキ分布 都道府県', 'ポケカ 環境 地域差'],
     alternates: { canonical: PREF_URL },
