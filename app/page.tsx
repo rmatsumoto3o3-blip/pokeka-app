@@ -6,7 +6,7 @@ import LandingPage from '@/components/LandingPage'
 import { getFeaturedCardsWithStatsAction, getDeckDataAction } from '@/app/actions'
 import { byEventDateDesc, eventDateSortKey } from '@/lib/eventDate'
 import { loadMergedPokemonEnvDecks } from '@/lib/pokemonEnvDecks'
-import { loadEventsDB, loadDeckIndex, loadArchetypeMapDB } from '@/lib/cityStore'
+import { loadEventsDB, loadDeckIndex, loadArchetypeMapDB, loadArchetypeAdoption } from '@/lib/cityStore'
 import { fbReadDeckArchetypes, type DeckArchetypeRow } from '@/lib/cityFirebase'
 import { resolveArchetypeFromRep } from '@/lib/city'
 
@@ -86,6 +86,34 @@ const getTierMetasCached = unstable_cache(
   },
   ['tier-metas-pokemon-v2'],
   { revalidate: 3600 },
+)
+
+// アーキタイプ名 → 代表カード画像（pokemon-card.com）。
+// deck_archetypes の cover_image_url は Supabase Storage 発で、unoptimized のため
+// TOP 閲覧ごとに生画像が直配信され Supabase の Cached Egress を食い潰していた。
+// city 集計(adoption=Firebase優先)の各アーキタイプ上位ポケモンのカード画像で置き換え、
+// 画像配信を pokemon-card.com 直（＝Supabase egress ゼロ・Vercel 画像最適化コストもゼロ）にする。
+const getArchetypeCardImages = unstable_cache(
+  async (): Promise<Record<string, string>> => {
+    try {
+      const adoption = await loadArchetypeAdoption()
+      const out: Record<string, string> = {}
+      for (const a of (adoption || [])) {
+        const name = (a.archetype || '').trim()
+        if (!name || out[name]) continue
+        const core = name.replace(/BOX|ＢＯＸ|デッキ|ex|EX|\s+/gi, '').trim()
+        const cards = a.cards || []
+        const pick =
+          (core ? cards.find(c => c.image && c.supertype === 'Pokémon' && c.name.includes(core)) : undefined)
+          || cards.find(c => c.image && c.supertype === 'Pokémon')
+          || cards.find(c => c.image)
+        if (pick?.image) out[name] = pick.image
+      }
+      return out
+    } catch { return {} }
+  },
+  ['archetype-card-images-v1'],
+  { revalidate: 3600, tags: ['city-data'] },
 )
 
 // 注目カード採用率（1時間キャッシュ）
@@ -289,6 +317,13 @@ export default async function Home() {
   const usageRanking = buildUsageRanking(envDecks)
   const tierMetas = await getTierMetasCached()
 
+  // カバー画像を Supabase Storage → 代表カード画像(pokemon-card.com) に置き換えるための対応表。
+  // tierMetas（実デッキコード展開・高品質）を優先し、不足分を adoption 由来で補完する。
+  const archCardImages = await getArchetypeCardImages()
+  const coverByName = new Map<string, string>()
+  for (const t of tierMetas) if (t.image) coverByName.set(t.archetype, t.image)
+  for (const [name, img] of Object.entries(archCardImages)) if (!coverByName.has(name)) coverByName.set(name, img)
+
   // Tier表・分布・優勝数は「現環境マージ（Firebase環境デッキ＋シティリーグ）」からライブ算出。
   // 旧集計stats（7/31凍結）・deck_records（同期停止中）は使わないので、シティ結果まで反映される。
   // Tier表の描画は archetype_id キーで動くため、アーキタイプ名→id（deck_archetypes）に変換する。
@@ -310,10 +345,11 @@ export default async function Home() {
     if (nowMs - eventDateSortKey(d.eventDate) <= RECENT_MS) recentRanking[id] = (recentRanking[id] || 0) + 1
   }
 
-  // デッキ数が多い順にアーキタイプをソート
-  const sortedArchetypes = [...(archetypes || [])].sort(
-    (a, b) => (weeklyRanking[b.id] || 0) - (weeklyRanking[a.id] || 0)
-  )
+  // デッキ数が多い順にアーキタイプをソートし、カバー画像を代表カード画像に差し替える
+  // （Supabase Storage の URL は使わない＝Cached Egress ゼロ。該当カードが無ければ null で枠のみ）。
+  const sortedArchetypes = [...(archetypes || [])]
+    .sort((a, b) => (weeklyRanking[b.id] || 0) - (weeklyRanking[a.id] || 0))
+    .map(a => ({ ...a, cover_image_url: coverByName.get((a.name || '').trim()) ?? null }))
 
   const faqJsonLd = {
     '@context': 'https://schema.org',
