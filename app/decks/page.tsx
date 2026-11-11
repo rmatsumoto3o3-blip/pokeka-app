@@ -3,6 +3,7 @@ import PublicHeader from '@/components/PublicHeader'
 import Footer from '@/components/Footer'
 import ReferenceDeckList from '@/components/ReferenceDeckList'
 import AdPlaceholder from '@/components/AdPlaceholder'
+import { getArchetypeCardImageMap } from '@/lib/archetypeCovers'
 
 export const metadata: Metadata = {
     title: '環境・優勝デッキ一覧 | PokéLix（ポケリス）',
@@ -18,7 +19,9 @@ export const metadata: Metadata = {
 
 export const revalidate = 21600
 
-export default function DecksPage() {
+export default async function DecksPage() {
+    // アーキタイプのカバー画像は Supabase ストレージではなく公式カード画像に差し替え（egress対策）
+    const coverImages = await getArchetypeCardImageMap()
     return (
         <div className="min-h-screen bg-[#f4f6fa] flex flex-col">
             <PublicHeader />
@@ -29,7 +32,7 @@ export default function DecksPage() {
                 <h1 className="text-xl font-semibold text-gray-900 mb-1">環境・優勝デッキ一覧</h1>
                 <p className="text-xs text-gray-500 mb-4">大会で結果を残したデッキをアーキタイプ別にまとめています。</p>
                 <div className="bg-white border border-[#e2e8f0] rounded-lg p-2.5">
-                    <ReferenceDeckList />
+                    <ReferenceDeckList coverImages={coverImages} />
                 </div>
                 {/* 本文下（FV外）の広告。固定枠でCLSを出さない */}
                 <div className="mt-6">

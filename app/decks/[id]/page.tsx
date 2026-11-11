@@ -5,6 +5,7 @@ import PublicHeader from '@/components/PublicHeader'
 import DeckPracticeLauncher from '@/components/DeckPracticeLauncher'
 import { fetchDeckData, cropImageClass } from '@/lib/deckParser'
 import { getDeckDataAction } from '@/app/actions'
+import { representativeCardImage } from '@/lib/archetypeCovers'
 
 export const revalidate = 604800
 export const dynamicParams = true
@@ -66,7 +67,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const displayName = deck.event_date
         ? `${deck.event_date} ${cleanLoc} ${deck.event_rank || ''}`.replace(/\s+/g, ' ').trim()
         : archetype
-    const imageUrl = (deck.deck_archetypes as any)?.cover_image_url as string | undefined
+    // カバーは Supabase ストレージを使わず、デッキ自身の代表カード(公式画像)を使用
+    const imageUrl = representativeCardImage(deck.cards as any[])
 
     return {
         title: `${displayName} (${archetype}) | ポケリス`,
@@ -93,7 +95,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     }
 
     const archetype = (deck.deck_archetypes as any)?.name || 'Unknown'
-    const imageUrl = (deck.deck_archetypes as any)?.cover_image_url as string | undefined
+    // カバーは Supabase ストレージを使わず、デッキ自身の代表カード(公式画像)を使用
+    const imageUrl = representativeCardImage(deck.cards as any[])
     const deckUrl = deck.deck_code
         ? `https://www.pokemon-card.com/deck/confirm.html/deckID/${deck.deck_code}`
         : undefined

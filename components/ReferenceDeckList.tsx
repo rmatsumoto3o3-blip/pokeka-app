@@ -57,6 +57,7 @@ interface ReferenceDeckListProps {
     initialDecks?: ReferenceDeck[]
     initialArchetypes?: DeckArchetype[]
     gridClassName?: string
+    coverImages?: Record<string, string>
 }
 
 
@@ -65,7 +66,8 @@ export default function ReferenceDeckList({
     userEmail,
     initialDecks = [],
     initialArchetypes = [],
-    gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4"
+    gridClassName = "grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-8 gap-3 md:gap-4",
+    coverImages = {}
 }: ReferenceDeckListProps) {
     const supabase = createClient()
     const [archetypes, setArchetypes] = useState<DeckArchetype[]>(initialArchetypes)
@@ -493,9 +495,8 @@ export default function ReferenceDeckList({
                             const archetypeData = archetypes.find(a => a.id === archetypeId)
                             if (archetypeData) {
                                 displayName = archetypeData.name
-                                if (archetypeData.cover_image_url) {
-                                    coverImage = archetypeData.cover_image_url
-                                }
+                                // Supabaseストレージのカバーは使わず、公式カード画像(採用率データ由来)に差し替え
+                                coverImage = coverImages[(archetypeData.name || '').trim()] ?? null
                             }
                         }
 
